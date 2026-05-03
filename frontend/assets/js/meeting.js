@@ -56,12 +56,15 @@ let MEETING_DATA = null;
   await renderJourneyHeader(c.id);
   await maybeAutoLoad();
   bindActions();
-  mountAgentBuilderMinis();
+  await mountAgentBuilderMinis();
 })();
 
 // ============================================================ Agent Builder mini embeds
-function buildContextPreamble() {
-  // Compact (<800 chars) preamble that pre-loads the master agent with just enough context.
+
+// Lightweight base preamble used as a header on every tab. Tab-specific data
+// (brief sections, post-meeting MEDDPICC, competitors, transcript turns) is
+// appended below this in the per-tab preambles.
+function buildBaseContext() {
   const c = MEETING_DATA.company || {};
   const m = MEETING_DATA.meeting || {};
   const stack = c.tech_stack || {};
@@ -74,77 +77,174 @@ function buildContextPreamble() {
   if (stack.observability?.length) stackParts.push(`obs=${stack.observability.slice(0, 4).join(", ")}`);
   if (stack.search?.length) stackParts.push(`search=${stack.search.slice(0, 4).join(", ")}`);
   if (stack.cloud?.length) stackParts.push(`cloud=${stack.cloud.slice(0, 4).join(", ")}`);
+  if (stack.siem?.length) stackParts.push(`siem=${stack.siem.slice(0, 4).join(", ")}`);
   if (stackParts.length) lines.push(`Stack: ${stackParts.join(" · ")}`);
   return lines.join("\n");
 }
 
-function mountAgentBuilderMinis() {
+function summariseBriefForPreamble(brief) {
+  if (!brief || !brief.sections) return "";
+  const blocks = [`### Pre-meeting brief`, `Headline: ${(brief.headline || "").slice(0, 240)}`];
+  brief.sections.slice(0, 6).forEach((s) => {
+    const bullets = (s.bullets || []).slice(0, 3).map((b) => "- " + String(b).slice(0, 200));
+    if (bullets.length) blocks.push(`**${s.heading}**\n${bullets.join("\n")}`);
+  });
+  return blocks.join("\n");
+}
+
+function summarisePostForPreamble(post) {
+  if (!post) return "";
+  const blocks = [`### Post-meeting record`];
+  if (post.summary) blocks.push(`Summary: ${String(post.summary).slice(0, 360)}`);
+  if (Array.isArray(post.meddpicc_signals) && post.meddpicc_signals.length) {
+    const items = post.meddpicc_signals.slice(0, 8).map((s) =>
+      `- [${s.category || "?"}] "${String(s.quote || "").slice(0, 160)}"${s.note ? ` (${String(s.note).slice(0, 120)})` : ""}`
+    );
+    blocks.push(`**MEDDPICC signals captured (${post.meddpicc_signals.length} total):**\n${items.join("\n")}`);
+  }
+  if (Array.isArray(post.competitor_mentions) && post.competitor_mentions.length) {
+    const items = post.competitor_mentions.map((c) =>
+      `- ${c.competitor || "?"}: "${String(c.context || "").slice(0, 200)}"`
+    );
+    blocks.push(`**Competitor mentions in this meeting (${post.competitor_mentions.length}):**\n${items.join("\n")}`);
+  } else {
+    blocks.push("**Competitor mentions:** none detected by the post-meeting agent.");
+  }
+  if (Array.isArray(post.action_items) && post.action_items.length) {
+    const items = post.action_items.slice(0, 6).map((a) =>
+      `- ${a.title || "?"} (owner: ${a.owner_name || "?"}${a.due_date ? `, due ${a.due_date}` : ""})`
+    );
+    blocks.push(`**Action items (${post.action_items.length}):**\n${items.join("\n")}`);
+  }
+  return blocks.join("\n\n");
+}
+
+function summariseTranscriptForPreamble(turns, max = 8) {
+  if (!turns || !turns.length) return "";
+  const tail = turns.slice(-max).map((t) => `${t.speaker || "?"}: ${String(t.text || "").slice(0, 240)}`);
+  return `### Last ${tail.length} transcript turns\n${tail.join("\n")}`;
+}
+
+function summariseContextForPreamble() {
+  const news = (MEETING_DATA.news || []).slice(0, 4).map((n) => `- ${n.title || ""} (${n.source || ""}${n.published_at ? `, ${fmtDate(n.published_at)}` : ""})`);
+  const tickets = (MEETING_DATA.tickets || []).slice(0, 4).map((t) => `- [${t.priority || "?"}] ${t.subject || ""} (${t.status || "?"})`);
+  const lines = [];
+  if (news.length) lines.push(`### Recent news\n${news.join("\n")}`);
+  if (tickets.length) lines.push(`### Open tickets\n${tickets.join("\n")}`);
+  return lines.join("\n\n");
+}
+
+async function loadMeetingArtifacts() {
+  // Best-effort: pull brief + post records so per-tab preambles can include
+  // them. Both are small JSON files; failures fall back to empty objects so
+  // the chat still works without them.
+  let brief = null, post = null;
+  try { brief = await apiGet(`/briefs/${meetingId}`); } catch (_) {}
+  if (brief && brief.exists === false) brief = null;
+  try { post = await apiGet(`/briefs/${meetingId}/post`); } catch (_) {}
+  if (post && post.exists === false) post = null;
+  return { brief, post };
+}
+
+async function mountAgentBuilderMinis() {
   if (!window.AgentBuilderMini) return;
   const c = MEETING_DATA.company || {};
   const m = MEETING_DATA.meeting || {};
-  const baseContext = buildContextPreamble();
+  const baseContext = buildBaseContext();
   const ctxLabel = `${c.name || "account"} · ${m.title?.slice(0, 28) || "meeting"}`;
 
-  // Brief tab: pre-meeting prep
+  const { brief, post } = await loadMeetingArtifacts();
+  const briefSummary = summariseBriefForPreamble(brief);
+  const postSummary = summarisePostForPreamble(post);
+  const transcriptSummary = summariseTranscriptForPreamble((MEETING_DATA.transcript || {}).turns || []);
+  const contextExtras = summariseContextForPreamble();
+
+  // Brief tab: pre-meeting prep. Includes the brief headline + section bullets
+  // so questions about pain, signals, sources can be answered with grounded data.
   const briefHost = document.getElementById("abm-brief");
   if (briefHost) {
+    const preamble = [
+      baseContext,
+      briefSummary,
+      "Use this context to help me prepare for the meeting. Cite the brief where useful.",
+    ].filter(Boolean).join("\n\n");
     AgentBuilderMini.mount(briefHost, {
       title: "Field Assistant · Pre-meeting",
       contextLabel: ctxLabel,
-      contextPreamble: `${baseContext}\n\nYou are helping me prepare for this meeting. The Pre-Meeting brief above is from the FE Copilot pre-meeting agent. Use the seven FE Copilot tools when they help (POC plan, SPL→ES|QL, compliance, stack extract, code, cost, capacity).`,
-      storageKey: `fec.ab.brief.${meetingId}`,
+      contextPreamble: preamble,
+      storageKey: `fec.ab.brief.v2.${meetingId}`,
       suggestions: [
-        { label: "Top 5 questions to ask", prompt: "What are the top 5 discovery questions I should ask this account in the meeting? Anchor them to MEDDPICC." },
-        { label: "POV plan outline", prompt: "Sketch a 6-week Proof-of-Value plan tailored to this account, focused on observability + search." },
-        { label: "Compliance angle", prompt: "Which regulations matter most for this customer and how does Elastic map to them?" },
+        { label: "Top 5 questions to ask", prompt: "What are the top 5 discovery questions I should ask this account in the meeting? Anchor them to MEDDPICC and reference the pain points already captured in the brief above." },
+        { label: "POV plan outline", prompt: "Sketch a 6-week Proof-of-Value plan tailored to this account, grounded in the pain points and signals from the brief." },
+        { label: "Compliance angle", prompt: "Which regulations matter most for this customer (use the company industry above) and how does Elastic map to them?" },
         { label: "TCO at 200 GB/day", prompt: "Run a TCO comparison at 200 GB/day, 12 months retention, current spend $1.5M." },
       ],
     });
   }
 
-  // Post tab: follow-up + chained tools
+  // Post tab: includes the FULL post-meeting record (MEDDPICC, competitors,
+  // action items, summary) so questions like "for each competitor mentioned"
+  // can be answered without the assistant claiming it lacks the data.
   const postHost = document.getElementById("abm-post");
   if (postHost) {
+    const preamble = [
+      baseContext,
+      postSummary || "_The post-meeting agent has not run yet, so no MEDDPICC, competitor or action-item data is available. Tell the user to run the post-meeting agent first._",
+      "The meeting just ended. Help me action the items above. Use the FE Copilot tools where helpful (POC plan, SPL->ES|QL, cost calc, capacity, code sample, compliance, stack extract).",
+    ].filter(Boolean).join("\n\n");
     AgentBuilderMini.mount(postHost, {
       title: "Field Assistant · Post-meeting",
       contextLabel: ctxLabel,
-      contextPreamble: `${baseContext}\n\nThe meeting just ended. The post-meeting agent extracted MEDDPICC signals, action items, competitor mentions, and a follow-up email draft (visible above). Help me action those next steps. Use the FE Copilot tools where helpful.`,
-      storageKey: `fec.ab.post.${meetingId}`,
+      contextPreamble: preamble,
+      storageKey: `fec.ab.post.v2.${meetingId}`,
       suggestions: [
         { label: "POV plan from this meeting", prompt: `Build a Proof-of-Value plan based on the post-meeting record for meeting ${meetingId}. Use the fec_poc_plan tool.` },
         { label: "Cost + capacity follow-up", prompt: "If the customer's workload is 150 GB/day at peak 30k EPS, run both the cost calculator and the capacity planner so I can include them in the follow-up email." },
-        { label: "Competitor counter-positioning", prompt: "For each competitor mentioned in this meeting, give me a one-paragraph counter-positioning anchored on Elastic strengths." },
-        { label: "Translate any SPL discussed", prompt: "If the customer mentioned any SPL queries during the meeting, translate them to ES|QL." },
+        { label: "Competitor counter-positioning", prompt: "Use the competitor-mentions list above. For each competitor named, give me a one-paragraph counter-positioning anchored on Elastic strengths and the customer's current pain points." },
+        { label: "Translate any SPL discussed", prompt: "If the customer mentioned any SPL queries during the meeting (check the MEDDPICC signals and transcript context above), translate them to ES|QL using fec_spl_to_esql." },
       ],
     });
   }
 
-  // Live tab: real-time helper
+  // Live tab: includes the last few transcript turns so "what should I say next"
+  // works without the assistant asking the rep for the transcript.
   const liveHost = document.getElementById("abm-live");
   if (liveHost) {
+    const preamble = [
+      baseContext,
+      transcriptSummary,
+      postSummary,
+      "The transcript turns above are the live conversation as it stands. Help me think on my feet. Be concise.",
+    ].filter(Boolean).join("\n\n");
     AgentBuilderMini.mount(liveHost, {
       title: "Field Assistant · Live",
       contextLabel: ctxLabel,
-      contextPreamble: `${baseContext}\n\nThe transcript above shows the live conversation. Help me think on my feet during the call. Be concise; the rep is in front of the customer.`,
-      storageKey: `fec.ab.live.${meetingId}`,
+      contextPreamble: preamble,
+      storageKey: `fec.ab.live.v2.${meetingId}`,
       suggestions: [
-        { label: "What should I say next?", prompt: "Given the last 3 turns of the transcript, what is the strongest next question I can ask?" },
-        { label: "Pull a battlecard", prompt: "If a competitor was just mentioned, give me the 3-bullet counter for them." },
-        { label: "Quick cost ballpark", prompt: "Give me a quick Elastic vs Splunk cost ballpark at 100 GB/day, 6 months." },
+        { label: "What should I say next?", prompt: "Given the last few transcript turns above, what is the strongest next question I can ask to advance the deal? Anchor to MEDDPICC." },
+        { label: "Pull a battlecard", prompt: "If a competitor was mentioned in the transcript above, give me the 3-bullet counter for them. If multiple, do all of them." },
+        { label: "Quick cost ballpark", prompt: "Give me a quick Elastic vs Splunk cost ballpark at 100 GB/day, 6 months. Use fec_cost_calc." },
       ],
     });
   }
 
-  // Context tab: deeper research
+  // Context tab: deeper account research. Uses news + tickets in addition to
+  // the company profile so industry questions can pull from real signals.
   const ctxHost = document.getElementById("abm-context");
   if (ctxHost) {
+    const preamble = [
+      baseContext,
+      contextExtras,
+      "Use this thread to dig deeper into the account: industry trends, regulatory landscape, competitive context, technical fit.",
+    ].filter(Boolean).join("\n\n");
     AgentBuilderMini.mount(ctxHost, {
       title: "Field Assistant · Context",
       contextLabel: ctxLabel,
-      contextPreamble: `${baseContext}\n\nUse this thread to dig deeper into the account: industry trends, regulatory landscape, competitive context, technical fit.`,
-      storageKey: `fec.ab.context.${meetingId}`,
+      contextPreamble: preamble,
+      storageKey: `fec.ab.context.v2.${meetingId}`,
       suggestions: [
-        { label: "Industry trends", prompt: "What are the top 3 trends in this customer's industry that should shape my Elastic pitch?" },
+        { label: "Industry trends", prompt: "What are the top 3 trends in this customer's industry (above) that should shape my Elastic pitch?" },
         { label: "Stack extraction", prompt: `Extract this customer's tech stack into canonical buckets given what we know. Use fec_stack_extract.` },
         { label: "Code sample", prompt: "Give me a Python code sample to bulk-index 1000 web logs into Elasticsearch using ES|QL semantics." },
       ],
