@@ -22,12 +22,14 @@ from app.api import (
     routes_battlecards,
     routes_briefs,
     routes_calendar,
+    routes_demo_data,
     routes_health,
     routes_kibana,
     routes_mcp,
     routes_meetings,
     routes_salesforce,
     routes_tools,
+    routes_workflows,
 )
 from app.config import settings
 from app.utils.logging import get_logger
@@ -79,6 +81,8 @@ app.include_router(routes_tools.router, prefix="/api/v1")
 app.include_router(routes_agent_builder.router, prefix="/api/v1")
 app.include_router(routes_mcp.router, prefix="/api/v1")
 app.include_router(routes_kibana.router, prefix="/api/v1")
+app.include_router(routes_demo_data.router, prefix="/api/v1")
+app.include_router(routes_workflows.router, prefix="/api/v1")
 
 # Serve the markdown docs folder (compliance.md, architecture.md, etc.) before the catch-all frontend mount.
 docs_path = Path(__file__).resolve().parents[2] / "docs"

@@ -1,0 +1,112 @@
+<!--
+  filename: workflow-demo.html
+  description: FE Copilot - Workflow demo page. Shows Kibana alerting rule status, lets the user sync the rule + connector, fire a synthetic transcript document into the fec-transcript-inbox index, and watch the webhook fires that the rule pushes back to the post-meeting agent.
+  Author: Rodrigo Careaga
+  Date: 03-05-2026
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FE Copilot — Workflow demo</title>
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+  <link rel="stylesheet" href="/assets/css/agent-builder.css" />
+  <link rel="icon" type="image/svg+xml" href="/assets/img/elastic/glyph-cluster-color.svg" />
+  <style>
+    .wf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 18px; }
+    @media (max-width: 900px) { .wf-grid { grid-template-columns: 1fr; } }
+    .wf-card { background: var(--surface, #11161d); border: 1px solid rgba(255,255,255,.06); border-radius: 12px; padding: 18px 20px; }
+    .wf-card h3 { margin: 0 0 12px; font-size: 14px; letter-spacing: .04em; text-transform: uppercase; color: rgba(255,255,255,.7); }
+    .wf-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed rgba(255,255,255,.06); }
+    .wf-row:last-child { border-bottom: 0; }
+    .wf-key { color: rgba(255,255,255,.55); font-size: 12px; }
+    .wf-val { font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; font-size: 12px; color: #d8e3ff; word-break: break-all; max-width: 65%; text-align: right; }
+    .wf-pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+    .wf-pill.ok { background: rgba(0,191,165,.18); color: #00bfa5; }
+    .wf-pill.warn { background: rgba(255,179,0,.18); color: #ffb300; }
+    .wf-pill.err { background: rgba(255,82,82,.18); color: #ff5252; }
+    .wf-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+    .wf-fires { font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; font-size: 12px; max-height: 320px; overflow-y: auto; }
+    .wf-fire { padding: 8px 10px; border: 1px solid rgba(255,255,255,.06); border-radius: 8px; margin-bottom: 8px; background: rgba(255,255,255,.02); }
+    .wf-fire .when { color: rgba(255,255,255,.55); font-size: 11px; }
+    .wf-fire .ok { color: #00bfa5; }
+    .wf-fire .err { color: #ff5252; }
+    .wf-empty { color: rgba(255,255,255,.45); font-style: italic; padding: 12px 0; }
+    .wf-result { margin-top: 12px; padding: 12px; border-radius: 8px; background: rgba(0,191,165,.06); border: 1px solid rgba(0,191,165,.25); font-size: 13px; }
+    .wf-result pre { margin: 6px 0 0; white-space: pre-wrap; font-size: 12px; color: #c8d6f3; }
+    .wf-step { display: flex; gap: 10px; align-items: flex-start; padding: 6px 0; }
+    .wf-step .num { color: rgba(255,255,255,.45); font-family: ui-monospace, monospace; font-size: 11px; min-width: 18px; }
+    .wf-flow { background: rgba(255,255,255,.02); border: 1px dashed rgba(255,255,255,.08); border-radius: 10px; padding: 10px 14px; margin-top: 8px; font-size: 13px; }
+  </style>
+</head>
+<body class="agent-builder-page">
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="FE Copilot home">
+      <img class="logo-elastic" src="/assets/img/elastic/logo-horizontal-white.svg" alt="Elastic" />
+      <span class="brand-sep">/</span>
+      <span class="name">FE <span class="accent">Copilot</span></span>
+      <span class="tag">Workflow</span>
+    </a>
+    <div class="right">
+      <div class="lang-host" id="lang-host"></div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <h1>Workflow <span class="grad">live in Elastic.</span></h1>
+      <p class="lede">
+        FE Copilot ships with a Kibana alerting rule that watches the
+        <code>fec-transcript-inbox</code> Elasticsearch index. When a transcript document lands,
+        the rule fires a <code>.webhook</code> connector back to this backend, which invokes the
+        Post-Meeting agent and writes the deal record to the Salesforce + Slack mocks. End-to-end:
+        <strong>doc → workflow → agent → SFDC + Slack</strong>.
+      </p>
+      <div class="wf-flow">
+        <div class="wf-step"><span class="num">1.</span><span>Demo button indexes a synthetic transcript into <code>fec-transcript-inbox</code>.</span></div>
+        <div class="wf-step"><span class="num">2.</span><span>Kibana ES-query alerting rule (<code>.es-query</code>, 1-minute schedule) detects the new doc and fires a <code>.webhook</code> action.</span></div>
+        <div class="wf-step"><span class="num">3.</span><span>Webhook hits <code>/api/v1/workflows/triggered</code>; backend looks up the doc, runs the Post-Meeting agent.</span></div>
+        <div class="wf-step"><span class="num">4.</span><span>Agent writes Account, Opportunity, MEDDPICC, deal-health, ContentNote, Slack post to the SFDC + Slack mocks.</span></div>
+      </div>
+    </section>
+
+    <div class="wf-grid">
+      <section class="wf-card">
+        <h3>Kibana workflow status</h3>
+        <div id="wf-status">Loading…</div>
+        <div class="wf-actions">
+          <button class="btn primary" id="wf-sync">Sync workflow</button>
+          <button class="btn ghost" id="wf-refresh">Refresh status</button>
+        </div>
+      </section>
+
+      <section class="wf-card">
+        <h3>Fire a demo transcript</h3>
+        <p style="font-size: 13px; color: rgba(255,255,255,.6); margin: 0 0 10px;">
+          Indexes a Northwind Bank discovery transcript into <code>fec-transcript-inbox</code>.
+          The rule polls every 60 seconds; a webhook fire should arrive within ~1 minute.
+        </p>
+        <div class="wf-actions">
+          <button class="btn primary" id="wf-fire">Fire demo transcript</button>
+          <button class="btn ghost" id="wf-trigger-now">Trigger now (skip wait)</button>
+        </div>
+        <div id="wf-fire-result"></div>
+      </section>
+
+      <section class="wf-card" style="grid-column: 1 / -1;">
+        <h3>Recent webhook fires <span style="font-size: 11px; color: rgba(255,255,255,.4); font-weight: normal; text-transform: none;">(auto-refreshes every 15s)</span></h3>
+        <div class="wf-fires" id="wf-fires"><div class="wf-empty">No fires yet.</div></div>
+      </section>
+    </div>
+
+    <section id="toast-host"></section>
+  </main>
+
+  <script src="/assets/js/i18n.js"></script>
+  <script src="/assets/js/api.js"></script>
+  <script src="/assets/js/ui.js"></script>
+  <script src="/assets/js/tools-rail.js"></script>
+  <script src="/assets/js/workflow-demo.js"></script>
+</body>
+</html>

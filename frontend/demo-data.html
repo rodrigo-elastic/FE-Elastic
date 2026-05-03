@@ -1,0 +1,53 @@
+<!--
+  filename: demo-data.html
+  description: FE Copilot - Demo Data Generator. Three story scenarios that seed realistic data into the live Elastic cluster and create Kibana dashboards on demand.
+  Author: Rodrigo Careaga
+  Date: 03-05-2026
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FE Copilot — Demo Data</title>
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+  <link rel="stylesheet" href="/assets/css/agent-builder.css" />
+  <link rel="icon" type="image/svg+xml" href="/assets/img/elastic/glyph-cluster-color.svg" />
+</head>
+<body class="demo-data-page">
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="FE Copilot home">
+      <img class="logo-elastic" src="/assets/img/elastic/logo-horizontal-white.svg" alt="Elastic" />
+      <span class="brand-sep">/</span>
+      <span class="name">FE <span class="accent">Copilot</span></span>
+      <span class="tag">Demo Data</span>
+    </a>
+    <div class="right">
+      <div class="lang-host" id="lang-host"></div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <h1>Realistic demo data <span class="grad">on demand.</span></h1>
+      <p class="lede">
+        One click seeds a story-driven dataset into your live Elastic cluster and creates a Kibana dashboard
+        that narrates it: Black Friday outage, credential stuffing attack, or noisy microservice. Use them
+        in customer demos when you need real data with real anomalies, not Lorem ipsum.
+      </p>
+    </section>
+
+    <section class="dd-grid" id="dd-grid">
+      <p class="muted">Loading scenarios…</p>
+    </section>
+
+    <section id="toast-host"></section>
+  </main>
+
+  <script src="/assets/js/i18n.js"></script>
+  <script src="/assets/js/api.js"></script>
+  <script src="/assets/js/ui.js"></script>
+  <script src="/assets/js/tools-rail.js"></script>
+  <script src="/assets/js/demo-data.js"></script>
+</body>
+</html>

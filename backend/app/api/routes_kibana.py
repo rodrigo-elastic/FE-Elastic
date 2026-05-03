@@ -247,21 +247,34 @@ def _md_action_items(post: Optional[Dict[str, Any]]) -> str:
 # ============================================================ Panels ==============
 
 
-def _markdown_panel(panel_id: str, x: int, y: int, w: int, h: int, markdown: str) -> Dict[str, Any]:
+def _markdown_panel(panel_id: str, x: int, y: int, w: int, h: int, markdown: str,
+                    title: str = "") -> Dict[str, Any]:
+    """Build a by-value markdown panel using the legacy visualization embeddable wrapper.
+
+    Kibana 9.x does not register a top-level "markdown" embeddable factory; markdown panels
+    must be wrapped as type "visualization" with savedVis.type "markdown" so the visualization
+    embeddable picks them up.
+    """
     return {
-        "type": "markdown",
+        "type": "visualization",
         "panelIndex": panel_id,
         "gridData": {"x": x, "y": y, "w": w, "h": h, "i": panel_id},
         "version": "9.3.4",
         "embeddableConfig": {
             "enhancements": {},
             "savedVis": {
-                "title": "",
-                "description": "",
                 "type": "markdown",
+                "title": title,
+                "description": "",
                 "params": {"fontSize": 12, "openLinksInNewTab": True, "markdown": markdown},
+                "uiState": {},
+                "data": {
+                    "aggs": [],
+                    "searchSource": {"query": {"language": "kuery", "query": ""}, "filter": []},
+                },
             },
         },
+        "title": title,
     }
 
 
@@ -271,14 +284,14 @@ def build_panels(company: Dict[str, Any], meeting: Dict[str, Any], brief: Option
     scale = _scale_defaults(company)
     industry = company.get("industry") or ""
     layout = [
-        ("p1", 0, 0, 24, 14, _md_customer_profile(company, meeting)),
-        ("p2", 24, 0, 24, 14, _md_what_they_care_about(post, brief)),
-        ("p3", 0, 14, 24, 14, _md_pain_points(brief)),
-        ("p4", 24, 14, 24, 14, _md_compliance(industry)),
-        ("p5", 0, 28, 24, 14, _md_tco(scale)),
-        ("p6", 24, 28, 24, 14, _md_capacity(scale)),
-        ("p7", 0, 42, 24, 14, _md_competitive(post, company)),
-        ("p8", 24, 42, 24, 14, _md_action_items(post)),
+        ("p1", 0, 0, 24, 14, _md_customer_profile(company, meeting), "Customer profile"),
+        ("p2", 24, 0, 24, 14, _md_what_they_care_about(post, brief), "What they care about"),
+        ("p3", 0, 14, 24, 14, _md_pain_points(brief), "Pain points & concerns"),
+        ("p4", 24, 14, 24, 14, _md_compliance(industry), "Compliance fit"),
+        ("p5", 0, 28, 24, 14, _md_tco(scale), "TCO comparison"),
+        ("p6", 24, 28, 24, 14, _md_capacity(scale), "Capacity sizing"),
+        ("p7", 0, 42, 24, 14, _md_competitive(post, company), "Competitive landscape"),
+        ("p8", 24, 42, 24, 14, _md_action_items(post), "Action items & next steps"),
     ]
     return [_markdown_panel(*args) for args in layout]
 
@@ -316,7 +329,7 @@ def create_dashboard(meeting_id: str) -> Dict[str, Any]:
 
     panels = build_panels(company, meeting, brief, post)
     panels_json = json.dumps(panels, ensure_ascii=False)
-    options_json = json.dumps({"useMargins": True, "hidePanelTitles": True, "syncColors": False, "syncCursor": False, "syncTooltips": False})
+    options_json = json.dumps({"useMargins": True, "hidePanelTitles": False, "syncColors": False, "syncCursor": False, "syncTooltips": False})
     search_source_json = json.dumps({"query": {"language": "kuery", "query": ""}, "filter": []})
 
     dashboard_id = f"fec-{_slug(meeting_id)}"

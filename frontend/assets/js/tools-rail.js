@@ -20,6 +20,20 @@
       icon:
         '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="M5 7h14l-1 13H6Z"/><circle cx="9" cy="13" r="1"/><circle cx="15" cy="13" r="1"/><path d="M9 17h6"/></svg>',
     },
+    {
+      id: "workflow",
+      label: "Workflow",
+      href: "/workflow-demo.html",
+      icon:
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M7 6h10"/><path d="M5 8v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><path d="M12 13v3"/></svg>',
+    },
+    {
+      id: "demo-data",
+      label: "Demo Data",
+      href: "/demo-data.html",
+      icon:
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 11v6c0 1.7 4 3 9 3s9-1.3 9-3v-6"/></svg>',
+    },
   ];
 
   const TOOLS = [
@@ -40,6 +54,12 @@
   }
   function isAgentBuilderPage() {
     return /\/agent-builder(\.html)?$/.test(location.pathname) || document.body.classList.contains("agent-builder-page");
+  }
+  function isWorkflowPage() {
+    return /\/workflow-demo(\.html)?$/.test(location.pathname);
+  }
+  function isDemoDataPage() {
+    return /\/demo-data(\.html)?$/.test(location.pathname);
   }
 
   function ensureBodyClass() {
@@ -72,6 +92,8 @@
     a.href = p.href;
     if (p.id === "dashboard" && isDashboardPage()) a.classList.add("active");
     if (p.id === "agent-builder" && isAgentBuilderPage()) a.classList.add("active");
+    if (p.id === "workflow" && isWorkflowPage()) a.classList.add("active");
+    if (p.id === "demo-data" && isDemoDataPage()) a.classList.add("active");
     const ico = document.createElement("span");
     ico.className = "tools-nav-icon";
     ico.innerHTML = p.icon;
