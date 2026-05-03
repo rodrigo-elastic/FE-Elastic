@@ -1,0 +1,159 @@
+{
+  "companies": {
+    "mappings": {
+      "properties": {
+        "id": { "type": "keyword" },
+        "name": { "type": "text" },
+        "industry": { "type": "keyword" },
+        "size": { "type": "keyword" },
+        "tech_stack": { "type": "object" },
+        "description": { "type": "text" }
+      }
+    }
+  },
+  "news": {
+    "mappings": {
+      "properties": {
+        "company_id": { "type": "keyword" },
+        "title": { "type": "text" },
+        "url": { "type": "keyword" },
+        "published_at": { "type": "date" },
+        "summary": { "type": "text" }
+      }
+    }
+  },
+  "meetings": {
+    "mappings": {
+      "properties": {
+        "id": { "type": "keyword" },
+        "company_id": { "type": "keyword" },
+        "title": { "type": "text" },
+        "start_time": { "type": "date" },
+        "end_time": { "type": "date" },
+        "attendees": { "type": "keyword" }
+      }
+    }
+  },
+  "transcripts": {
+    "mappings": {
+      "properties": {
+        "meeting_id": { "type": "keyword" },
+        "turns": { "type": "nested" }
+      }
+    }
+  },
+  "tickets": {
+    "mappings": {
+      "properties": {
+        "company_id": { "type": "keyword" },
+        "subject": { "type": "text" },
+        "status": { "type": "keyword" },
+        "priority": { "type": "keyword" },
+        "created_at": { "type": "date" }
+      }
+    }
+  },
+  "fec-briefs": {
+    "mappings": {
+      "properties": {
+        "meeting_id": { "type": "keyword" },
+        "company_id": { "type": "keyword" },
+        "company_name": { "type": "text" },
+        "headline": { "type": "text" },
+        "sections": {
+          "type": "nested",
+          "properties": {
+            "heading": { "type": "text" },
+            "bullets": { "type": "text" }
+          }
+        },
+        "ad_hoc": { "type": "boolean" },
+        "generated_at": { "type": "date" },
+        "artifact_path": { "type": "keyword" }
+      }
+    }
+  },
+  "fec-post-meetings": {
+    "mappings": {
+      "properties": {
+        "meeting_id": { "type": "keyword" },
+        "company_id": { "type": "keyword" },
+        "summary": { "type": "text" },
+        "action_items": {
+          "type": "nested",
+          "properties": {
+            "title": { "type": "text" },
+            "owner_name": { "type": "keyword" },
+            "owner_email": { "type": "keyword" },
+            "due_date": { "type": "keyword" },
+            "impact": { "type": "keyword" },
+            "description": { "type": "text" },
+            "source_quote": { "type": "text" }
+          }
+        },
+        "meddpicc_signals": {
+          "type": "nested",
+          "properties": {
+            "category": { "type": "keyword" },
+            "quote": { "type": "text" },
+            "note": { "type": "text" }
+          }
+        },
+        "competitor_mentions": {
+          "type": "nested",
+          "properties": {
+            "competitor": { "type": "keyword" },
+            "context": { "type": "text" }
+          }
+        },
+        "follow_up_email": { "type": "object", "enabled": false },
+        "generated_at": { "type": "date" },
+        "salesforce_task_ids": { "type": "keyword" }
+      }
+    }
+  },
+  "fec-battlecards": {
+    "mappings": {
+      "properties": {
+        "id": { "type": "keyword" },
+        "competitor": { "type": "keyword" },
+        "competitor_slug": { "type": "keyword" },
+        "tagline": { "type": "text" },
+        "key_pain": { "type": "text" },
+        "talking_points": {
+          "type": "nested",
+          "properties": {
+            "angle": { "type": "keyword" },
+            "claim": { "type": "text" },
+            "proof": { "type": "text" }
+          }
+        },
+        "elastic_advantages": { "type": "text" },
+        "common_objections": {
+          "type": "nested",
+          "properties": {
+            "q": { "type": "text" },
+            "a": { "type": "text" }
+          }
+        },
+        "discovery_questions": { "type": "text" }
+      }
+    }
+  },
+  "fec-audit": {
+    "mappings": {
+      "properties": {
+        "ts": { "type": "date" },
+        "model": { "type": "keyword" },
+        "agent": { "type": "keyword" },
+        "mode": { "type": "keyword" },
+        "input_tokens": { "type": "long" },
+        "output_tokens": { "type": "long" },
+        "cache_read_input_tokens": { "type": "long" },
+        "cache_creation_input_tokens": { "type": "long" },
+        "meeting_id": { "type": "keyword" },
+        "company_id": { "type": "keyword" }
+      }
+    }
+  }
+}

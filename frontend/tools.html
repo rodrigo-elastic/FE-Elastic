@@ -1,0 +1,361 @@
+<!--
+  filename: tools.html
+  description: FE Copilot - technical tools page. POC Plan, SPL to ES|QL, Compliance, Cost calculator, Capacity planner, Stack extractor, Code sample generator.
+  Author: Rodrigo Careaga
+  Date: 03-05-2026
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FE Copilot — Tools</title>
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="/assets/img/elastic/glyph-cluster-color.svg" />
+</head>
+<body class="tools-page">
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="FE Copilot home">
+      <img class="logo-elastic" src="/assets/img/elastic/logo-horizontal-white.svg" alt="Elastic" />
+      <span class="brand-sep">/</span>
+      <span class="name">FE <span class="accent">Copilot</span></span>
+      <span class="tag">Technical tools</span>
+    </a>
+    <div class="right">
+      <div class="lang-host" id="lang-host"></div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <h1>Technical tools <span class="grad">for Field Engineers.</span></h1>
+      <p class="lede">
+        Seven utilities for the technical-sales motion: POC plans, SPL to ES|QL conversion, compliance mappings,
+        cost calculator, capacity planner, automatic tech-stack extraction, and code-sample generation.
+        Each tool is a one-shot Claude call (or pure compute) backed by structured JSON output.
+      </p>
+    </section>
+
+    <div class="tools-content">
+
+    <!-- ========================================================== POC Plan -->
+    <details class="tool-panel" id="tool-poc">
+      <summary>
+        <span class="tool-num">01</span>
+        <div class="tool-meta">
+          <h3 class="tool-title">POC plan generator</h3>
+          <p class="tool-desc">Structured 4-8 week proof-of-value plan grounded in the latest post-meeting record (success criteria, phases, owners, risks).</p>
+        </div>
+        <span class="tool-tag tag-claude">Claude</span>
+        <span class="chevron"></span>
+      </summary>
+      <div class="tool-body">
+        <form id="poc-form" class="tool-form" onsubmit="return false">
+          <div class="qr-row">
+            <label class="qr-field grow">
+              <span class="qr-lbl">Meeting</span>
+              <select id="poc-meeting-id"></select>
+            </label>
+            <label class="qr-model">
+              <span class="qr-model-lbl">Model</span>
+              <select id="poc-model">
+                <option value="">Default</option>
+                <option value="claude-haiku-4-5">Haiku 4.5</option>
+                <option value="claude-sonnet-4-6">Sonnet 4.6</option>
+                <option value="claude-opus-4-7">Opus 4.7</option>
+              </select>
+            </label>
+          </div>
+          <div class="tool-actions">
+            <button type="submit" class="btn primary">Generate POC plan</button>
+            <span class="muted small" id="poc-status"></span>
+          </div>
+        </form>
+        <div id="poc-result" class="tool-result"></div>
+      </div>
+    </details>
+
+    <!-- ========================================================== SPL to ES|QL -->
+    <details class="tool-panel" id="tool-spl">
+      <summary>
+        <span class="tool-num">02</span>
+        <div class="tool-meta">
+          <h3 class="tool-title">SPL → ES|QL converter</h3>
+          <p class="tool-desc">Paste a Splunk SPL block, get the ES|QL equivalent plus the migration caveats. Perfect for Splunk-renewal deals.</p>
+        </div>
+        <span class="tool-tag tag-claude">Claude</span>
+        <span class="chevron"></span>
+      </summary>
+      <div class="tool-body">
+        <form id="spl-form" class="tool-form" onsubmit="return false">
+          <label class="qr-field">
+            <span class="qr-lbl">SPL input</span>
+            <textarea id="spl-input" rows="6" placeholder="index=trades source=app sourcetype=access | stats count by user | sort -count | head 10"></textarea>
+          </label>
+          <div class="tool-actions">
+            <button type="submit" class="btn primary">Convert to ES|QL</button>
+            <label class="qr-model">
+              <span class="qr-model-lbl">Model</span>
+              <select id="spl-model">
+                <option value="">Default</option>
+                <option value="claude-haiku-4-5">Haiku 4.5</option>
+                <option value="claude-sonnet-4-6">Sonnet 4.6</option>
+                <option value="claude-opus-4-7">Opus 4.7</option>
+              </select>
+            </label>
+            <span class="muted small" id="spl-status"></span>
+          </div>
+        </form>
+        <div id="spl-result" class="tool-result"></div>
+      </div>
+    </details>
+
+    <!-- ========================================================== Compliance -->
+    <details class="tool-panel" id="tool-compliance">
+      <summary>
+        <span class="tool-num">03</span>
+        <div class="tool-meta">
+          <h3 class="tool-title">Compliance checklist</h3>
+          <p class="tool-desc">Map regulations (FCA, ECB, SOC 2, HIPAA, GDPR, PCI-DSS, FFIEC, FINRA, BSA/AML) to native Elastic controls.</p>
+        </div>
+        <span class="tool-tag tag-claude">Claude</span>
+        <span class="chevron"></span>
+      </summary>
+      <div class="tool-body">
+        <form id="comp-form" class="tool-form" onsubmit="return false">
+          <label class="qr-field">
+            <span class="qr-lbl">Regulations (multi-select)</span>
+            <div class="checkbox-grid" id="comp-regs">
+              <label><input type="checkbox" value="FCA"/> FCA (UK)</label>
+              <label><input type="checkbox" value="ECB"/> ECB</label>
+              <label><input type="checkbox" value="SOC 2"/> SOC 2</label>
+              <label><input type="checkbox" value="HIPAA"/> HIPAA</label>
+              <label><input type="checkbox" value="GDPR"/> GDPR</label>
+              <label><input type="checkbox" value="PCI-DSS"/> PCI-DSS</label>
+              <label><input type="checkbox" value="FFIEC"/> FFIEC</label>
+              <label><input type="checkbox" value="FINRA"/> FINRA</label>
+              <label><input type="checkbox" value="BSA/AML"/> BSA/AML</label>
+            </div>
+          </label>
+          <div class="qr-row">
+            <label class="qr-field grow">
+              <span class="qr-lbl">Industry</span>
+              <input type="text" id="comp-industry" placeholder="UK retail bank, EU investment bank, US health payer..." />
+            </label>
+            <label class="qr-model">
+              <span class="qr-model-lbl">Model</span>
+              <select id="comp-model">
+                <option value="">Default</option>
+                <option value="claude-haiku-4-5">Haiku 4.5</option>
+                <option value="claude-sonnet-4-6">Sonnet 4.6</option>
+                <option value="claude-opus-4-7">Opus 4.7</option>
+              </select>
+            </label>
+          </div>
+          <div class="tool-actions">
+            <button type="submit" class="btn primary">Map to Elastic controls</button>
+            <span class="muted small" id="comp-status"></span>
+          </div>
+        </form>
+        <div id="comp-result" class="tool-result"></div>
+      </div>
+    </details>
+
+    <!-- ========================================================== Cost Calc -->
+    <details class="tool-panel" id="tool-cost">
+      <summary>
+        <span class="tool-num">04</span>
+        <div class="tool-meta">
+          <h3 class="tool-title">Cost calculator (TCO)</h3>
+          <p class="tool-desc">12-month TCO comparison: Elastic Cloud (hot/warm/frozen) vs Splunk vs Datadog. Pure compute, no Claude call.</p>
+        </div>
+        <span class="tool-tag tag-compute">Compute</span>
+        <span class="chevron"></span>
+      </summary>
+      <div class="tool-body">
+        <form id="cost-form" class="tool-form" onsubmit="return false">
+          <div class="qr-row">
+            <label class="qr-field">
+              <span class="qr-lbl">Ingest (GB/day)</span>
+              <input type="number" id="cost-ingest" value="500" min="1" />
+            </label>
+            <label class="qr-field">
+              <span class="qr-lbl">Retention (months)</span>
+              <input type="number" id="cost-retention" value="18" min="1" max="120" />
+            </label>
+            <label class="qr-field">
+              <span class="qr-lbl">Current annual spend (USD, optional)</span>
+              <input type="number" id="cost-current" placeholder="3000000" />
+            </label>
+          </div>
+          <div class="qr-row">
+            <label class="qr-field">
+              <span class="qr-lbl">Hot %</span>
+              <input type="number" id="cost-hot" value="20" min="0" max="100" />
+            </label>
+            <label class="qr-field">
+              <span class="qr-lbl">Warm %</span>
+              <input type="number" id="cost-warm" value="20" min="0" max="100" />
+            </label>
+            <label class="qr-field">
+              <span class="qr-lbl">Frozen %</span>
+              <input type="number" id="cost-frozen" value="60" min="0" max="100" />
+            </label>
+          </div>
+          <div class="tool-actions">
+            <button type="submit" class="btn primary">Calculate TCO</button>
+            <span class="muted small" id="cost-status"></span>
+          </div>
+        </form>
+        <div id="cost-result" class="tool-result"></div>
+      </div>
+    </details>
+
+    <!-- ========================================================== Capacity -->
+    <details class="tool-panel" id="tool-capacity">
+      <summary>
+        <span class="tool-num">05</span>
+        <div class="tool-meta">
+          <h3 class="tool-title">Capacity planner</h3>
+          <p class="tool-desc">Heuristic Elastic Cloud cluster sizing from peak EPS, data volume, and replica count.</p>
+        </div>
+        <span class="tool-tag tag-compute">Compute</span>
+        <span class="chevron"></span>
+      </summary>
+      <div class="tool-body">
+        <form id="cap-form" class="tool-form" onsubmit="return false">
+          <div class="qr-row">
+            <label class="qr-field">
+              <span class="qr-lbl">Peak indexing (events/sec)</span>
+              <input type="number" id="cap-eps" value="80000" min="1000" />
+            </label>
+            <label class="qr-field">
+              <span class="qr-lbl">Hot data (GB)</span>
+              <input type="number" id="cap-hot" value="2000" min="100" />
+            </label>
+            <label class="qr-field">
+              <span class="qr-lbl">Warm data (GB, optional)</span>
+              <input type="number" id="cap-warm" value="10000" />
+            </label>
+          </div>
+          <div class="qr-row">
+            <label class="qr-field">
+              <span class="qr-lbl">Replicas</span>
+              <input type="number" id="cap-replicas" value="1" min="0" max="3" />
+            </label>
+            <label class="qr-field">
+              <span class="qr-lbl">Peak QPS (search)</span>
+              <input type="number" id="cap-qps" value="500" min="10" />
+            </label>
+          </div>
+          <div class="tool-actions">
+            <button type="submit" class="btn primary">Plan cluster</button>
+            <span class="muted small" id="cap-status"></span>
+          </div>
+        </form>
+        <div id="cap-result" class="tool-result"></div>
+      </div>
+    </details>
+
+    <!-- ========================================================== Stack extract -->
+    <details class="tool-panel" id="tool-stack">
+      <summary>
+        <span class="tool-num">06</span>
+        <div class="tool-meta">
+          <h3 class="tool-title">Tech stack auto-detect</h3>
+          <p class="tool-desc">Paste any text (transcript, dossier, email thread) and Claude extracts the customer's tech stack with evidence quotes.</p>
+        </div>
+        <span class="tool-tag tag-claude">Claude</span>
+        <span class="chevron"></span>
+      </summary>
+      <div class="tool-body">
+        <form id="stack-form" class="tool-form" onsubmit="return false">
+          <label class="qr-field">
+            <span class="qr-lbl">Source text (transcript or notes)</span>
+            <textarea id="stack-input" rows="6" placeholder="Paste transcript or dossier text..."></textarea>
+          </label>
+          <div class="tool-actions">
+            <button type="submit" class="btn primary">Extract stack</button>
+            <label class="qr-model">
+              <span class="qr-model-lbl">Model</span>
+              <select id="stack-model">
+                <option value="">Default</option>
+                <option value="claude-haiku-4-5">Haiku 4.5</option>
+                <option value="claude-sonnet-4-6">Sonnet 4.6</option>
+                <option value="claude-opus-4-7">Opus 4.7</option>
+              </select>
+            </label>
+            <span class="muted small" id="stack-status"></span>
+          </div>
+        </form>
+        <div id="stack-result" class="tool-result"></div>
+      </div>
+    </details>
+
+    <!-- ========================================================== Code sample -->
+    <details class="tool-panel" id="tool-code">
+      <summary>
+        <span class="tool-num">07</span>
+        <div class="tool-meta">
+          <h3 class="tool-title">API / SDK code sample</h3>
+          <p class="tool-desc">Generate copy-pastable Elasticsearch code in the customer's preferred language for a specific use case.</p>
+        </div>
+        <span class="tool-tag tag-claude">Claude</span>
+        <span class="chevron"></span>
+      </summary>
+      <div class="tool-body">
+        <form id="code-form" class="tool-form" onsubmit="return false">
+          <div class="qr-row">
+            <label class="qr-field">
+              <span class="qr-lbl">Language</span>
+              <select id="code-lang">
+                <option value="Python">Python</option>
+                <option value="JavaScript">JavaScript / TypeScript</option>
+                <option value="Java">Java</option>
+                <option value="Go">Go</option>
+                <option value="Ruby">Ruby</option>
+                <option value="C#">C#</option>
+              </select>
+            </label>
+            <label class="qr-field grow">
+              <span class="qr-lbl">Use case</span>
+              <select id="code-usecase">
+                <option value="Bulk-index documents into Elasticsearch">Bulk-index documents</option>
+                <option value="Run an ES|QL search query">Run an ES|QL search</option>
+                <option value="Vector search using ELSER for semantic relevance">Vector search via ELSER</option>
+                <option value="Subscribe to Elastic Security alerts via watcher">Subscribe to Security alerts</option>
+                <option value="Import a Kibana dashboard via the saved-objects API">Import Kibana dashboard</option>
+                <option value="Stream events from Kafka into Elasticsearch">Stream events from Kafka</option>
+              </select>
+            </label>
+            <label class="qr-model">
+              <span class="qr-model-lbl">Model</span>
+              <select id="code-model">
+                <option value="">Default</option>
+                <option value="claude-haiku-4-5">Haiku 4.5</option>
+                <option value="claude-sonnet-4-6">Sonnet 4.6</option>
+                <option value="claude-opus-4-7">Opus 4.7</option>
+              </select>
+            </label>
+          </div>
+          <div class="tool-actions">
+            <button type="submit" class="btn primary">Generate code</button>
+            <span class="muted small" id="code-status"></span>
+          </div>
+        </form>
+        <div id="code-result" class="tool-result"></div>
+      </div>
+    </details>
+
+    </div><!-- /.tools-content -->
+
+    <section id="toast-host"></section>
+  </main>
+
+  <script src="/assets/js/i18n.js"></script>
+  <script src="/assets/js/api.js"></script>
+  <script src="/assets/js/ui.js"></script>
+  <script src="/assets/js/tools-rail.js"></script>
+  <script src="/assets/js/tools.js"></script>
+</body>
+</html>

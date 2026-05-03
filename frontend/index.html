@@ -1,0 +1,263 @@
+<!--
+  filename: index.html
+  description: FE Copilot dashboard. Quick Research (ad-hoc account), search filter, history, audit footer.
+  Author: Rodrigo Careaga
+  Date: 03-05-2026
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FE Copilot</title>
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="/assets/img/elastic/glyph-cluster-color.svg" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="FE Copilot home">
+      <img class="logo-elastic" src="/assets/img/elastic/logo-horizontal-white.svg" alt="Elastic" />
+      <span class="brand-sep">/</span>
+      <span class="name">FE <span class="accent">Copilot</span></span>
+      <span class="tag">for Field Engineers</span>
+    </a>
+    <div class="right">
+      <div class="lang-host" id="lang-host"></div>
+      <span class="pill" id="model-pill">Loading model...</span>
+      <span class="pill" id="status" data-i18n="topbar.connecting">Connecting...</span>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <h1><span data-i18n="hero.title.1">Three agents.</span> <span class="grad" data-i18n="hero.title.2">One pre-meeting flow.</span></h1>
+      <p class="lede" data-i18n="hero.lede">
+        FE Copilot chains a Pre-Meeting Researcher, a Live Companion, and a Post-Meeting Action Engine on top of Claude.
+        All sample data here is synthetic; no customer data was used.
+      </p>
+      <div class="hero-stats">
+        <div class="hero-stat teal"><div class="num" id="stat-companies">-</div><div class="lbl" data-i18n="stats.accounts">Accounts</div></div>
+        <div class="hero-stat yellow"><div class="num" id="stat-upcoming">-</div><div class="lbl" data-i18n="stats.upcoming">Upcoming</div></div>
+        <div class="hero-stat blue"><div class="num" id="stat-past">-</div><div class="lbl" data-i18n="stats.past">Past meetings</div></div>
+        <div class="hero-stat pink"><div class="num" id="stat-briefs">-</div><div class="lbl" data-i18n="stats.briefs">Briefs generated</div></div>
+      </div>
+    </section>
+
+    <div class="entry-tabs">
+      <button class="entry-tab active" data-mode="qr">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span data-i18n="tab.qr">Pre-meeting research</span>
+      </button>
+      <button class="entry-tab" data-mode="tr">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        <span data-i18n="tab.tr">Analyze transcript</span>
+      </button>
+    </div>
+
+    <section class="quick-research" id="entry-qr">
+      <div class="qr-head">
+        <div>
+          <h2 data-i18n="qr.title">Quick research</h2>
+          <p class="muted small" style="margin: 4px 0 0 0" data-i18n="qr.subtitle">Research any account in 10 seconds. Only what you type leaves the boundary.</p>
+        </div>
+      </div>
+      <form id="qr-form" class="qr-form" onsubmit="return false;">
+        <div class="qr-row">
+          <label class="qr-field grow">
+            <span class="qr-lbl" data-i18n="qr.field.company">Company</span>
+            <input type="text" id="qr-name" data-i18n-placeholder="qr.placeholder.company" placeholder="e.g. Stripe, Mercado Libre, Banco Itau" required />
+          </label>
+          <label class="qr-field">
+            <span class="qr-lbl" data-i18n="qr.field.industry">Industry</span>
+            <input type="text" id="qr-industry" data-i18n-placeholder="qr.placeholder.industry" placeholder="Fintech, Retail, Public sector..." />
+          </label>
+          <label class="qr-field">
+            <span class="qr-lbl" data-i18n="qr.field.size">Size</span>
+            <input type="text" id="qr-size" data-i18n-placeholder="qr.placeholder.size" placeholder="Mid-market, Enterprise..." />
+          </label>
+        </div>
+        <label class="qr-field">
+          <span class="qr-lbl" data-i18n="qr.field.stack">Stack notes (optional)</span>
+          <input type="text" id="qr-stack" data-i18n-placeholder="qr.placeholder.stack" placeholder="Comma-separated. e.g. Splunk, AWS, ServiceNow" />
+        </label>
+        <label class="qr-field">
+          <span class="qr-lbl" data-i18n="qr.field.notes">Meeting context (optional)</span>
+          <textarea id="qr-notes" rows="2" data-i18n-placeholder="qr.placeholder.notes" placeholder="What do you want to discuss? Recent signal? Blocker?"></textarea>
+        </label>
+        <div class="qr-actions">
+          <button type="submit" class="btn primary" id="qr-submit">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <span data-i18n="qr.submit">Generate brief</span>
+          </button>
+          <label class="qr-model">
+            <span class="qr-model-lbl">Model</span>
+            <select id="qr-model">
+              <option value="">Default (server)</option>
+              <option value="claude-haiku-4-5">Haiku 4.5 (fastest, cheapest)</option>
+              <option value="claude-sonnet-4-6">Sonnet 4.6 (balanced)</option>
+              <option value="claude-opus-4-7">Opus 4.7 (deepest research)</option>
+            </select>
+          </label>
+          <span class="muted small" id="qr-status"></span>
+        </div>
+      </form>
+    </section>
+
+    <section class="quick-research" id="entry-tr" hidden>
+      <div class="qr-head">
+        <div>
+          <h2 data-i18n="tr.title">Analyze transcript</h2>
+          <p class="muted small" style="margin: 4px 0 0 0" data-i18n="tr.subtitle">Paste a Zoom .vtt, Gong export, or any "Speaker: text" transcript. The Post-Meeting agent extracts action items, MEDDPICC signals, and competitor mentions.</p>
+        </div>
+      </div>
+      <form id="tr-form" class="qr-form" onsubmit="return false;">
+        <div class="qr-row">
+          <label class="qr-field grow">
+            <span class="qr-lbl" data-i18n="tr.field.company">Company</span>
+            <input type="text" id="tr-name" placeholder="e.g. Globex, Mercado Libre" required />
+          </label>
+          <label class="qr-field">
+            <span class="qr-lbl" data-i18n="tr.field.title">Meeting title</span>
+            <input type="text" id="tr-title" placeholder="Discovery, QBR, technical follow-up..." />
+          </label>
+          <label class="qr-field">
+            <span class="qr-lbl" data-i18n="tr.field.source">Source</span>
+            <select id="tr-source">
+              <option value="zoom">Zoom (.vtt)</option>
+              <option value="gong">Gong export</option>
+              <option value="manual">Manual paste</option>
+            </select>
+          </label>
+        </div>
+        <label class="qr-field">
+          <span class="qr-lbl" data-i18n="tr.field.text">Transcript</span>
+          <textarea id="tr-text" rows="6" data-i18n-placeholder="tr.placeholder.text" placeholder="Paste the transcript here, or drop a .vtt file below."></textarea>
+        </label>
+        <div class="qr-row">
+          <label class="qr-field grow">
+            <span class="qr-lbl" data-i18n="tr.field.file">Or upload a .vtt</span>
+            <input type="file" id="tr-file" accept=".vtt,.txt" />
+          </label>
+        </div>
+        <div class="qr-actions">
+          <button type="submit" class="btn primary" id="tr-submit">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            <span data-i18n="tr.submit">Analyze transcript</span>
+          </button>
+          <label class="qr-model">
+            <span class="qr-model-lbl">Model</span>
+            <select id="tr-model">
+              <option value="">Default (server)</option>
+              <option value="claude-haiku-4-5">Haiku 4.5 (fastest, cheapest)</option>
+              <option value="claude-sonnet-4-6">Sonnet 4.6 (balanced)</option>
+              <option value="claude-opus-4-7">Opus 4.7 (deepest research)</option>
+            </select>
+          </label>
+          <span class="muted small" id="tr-status"></span>
+        </div>
+      </form>
+    </section>
+
+    <section>
+      <div class="row-between">
+        <h2>Calendar inbox</h2>
+        <span class="muted small" id="cal-count"></span>
+      </div>
+      <p class="muted small" style="margin: 0 0 8px 0">Mock Google Calendar feed; the smart-resolver picks the customer for each invite even when consultants are in the room.</p>
+      <ul id="calendar-list" class="meetings"></ul>
+    </section>
+
+    <section>
+      <div class="row-between">
+        <h2 data-i18n="section.meetings">Meetings on file</h2>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <span class="muted small" id="meetings-count"></span>
+          <div class="search-wrap">
+            <svg class="search-ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="meetings-search" data-i18n-placeholder="search.placeholder" placeholder="Filter by company, title, industry..." />
+            <kbd class="kbd">/</kbd>
+          </div>
+        </div>
+      </div>
+      <div class="row-between" style="margin: 10px 0 6px 0">
+        <h3 class="subhead yellow"><span class="dot"></span> <span data-i18n="section.upcoming">Upcoming</span></h3>
+        <span class="muted small" id="upcoming-count"></span>
+      </div>
+      <ul id="upcoming" class="meetings"></ul>
+
+      <div class="row-between" style="margin: 22px 0 6px 0">
+        <h3 class="subhead blue"><span class="dot"></span> <span data-i18n="section.past">Past</span></h3>
+        <span class="muted small" id="past-count"></span>
+      </div>
+      <ul id="past" class="meetings"></ul>
+    </section>
+
+    <section style="margin-top: 28px">
+      <div class="row-between">
+        <h2 data-i18n="section.history">History</h2>
+        <span class="muted small" id="history-count"></span>
+      </div>
+      <ul id="history" class="history"></ul>
+    </section>
+
+    <section id="toast-host"></section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="footer-col">
+        <div class="footer-lbl" data-i18n="footer.audit">Audit log</div>
+        <div class="footer-val">
+          <span id="audit-calls">0</span> <span data-i18n="footer.audit.calls">calls</span> <span class="dot">·</span>
+          <span id="audit-in">0</span> in / <span id="audit-out">0</span> out tokens
+          <a class="footer-link" href="/api/v1/audit" target="_blank" data-i18n="footer.audit.view">view JSON</a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <div class="footer-lbl">Elasticsearch</div>
+        <div class="footer-val">
+          <span class="es-state" id="es-state">checking...</span>
+          <span class="dot">·</span>
+          <span id="es-url" class="muted small">-</span>
+          <button class="btn-link" id="es-reindex">reindex disk → ES</button>
+          <button class="btn-link" id="es-reconnect">reconnect</button>
+        </div>
+      </div>
+      <div class="footer-col">
+        <div class="footer-lbl">Kibana</div>
+        <div class="footer-val">
+          <span class="es-state" id="kibana-state">checking...</span>
+          <span class="dot">·</span>
+          <span id="kibana-url" class="muted small">-</span>
+          <button class="btn-link" id="kibana-setup">create data views</button>
+          <span class="muted" style="margin-left:6px"></span>
+          <a class="footer-link" id="kibana-briefs" href="#" target="_blank">briefs</a>
+          <a class="footer-link" id="kibana-post" href="#" target="_blank">post-meetings</a>
+          <a class="footer-link" id="kibana-audit" href="#" target="_blank">audit</a>
+          <a class="footer-link" id="kibana-bc" href="#" target="_blank">battlecards</a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <div class="footer-lbl" data-i18n="footer.compliance">Compliance</div>
+        <div class="footer-val">
+          <span data-i18n="footer.compliance.text">Synthetic data · Append-only audit · Per-agent model override · See compliance.md</span>
+          <a class="footer-link" href="/docs-md/compliance.md" target="_blank">compliance.md ↗</a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <div class="footer-lbl">Built by</div>
+        <div class="footer-val">
+          <a class="footer-link" href="https://www.linkedin.com/in/rodrigocareaga/" target="_blank" rel="noopener">Rodrigo Careaga ↗</a>
+          <span class="muted small">  ·  Hackathon FY27 SKO FE Summit</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/assets/js/i18n.js"></script>
+  <script src="/assets/js/api.js"></script>
+  <script src="/assets/js/ui.js"></script>
+  <script src="/assets/js/tools-rail.js"></script>
+  <script src="/assets/js/app.js"></script>
+</body>
+</html>

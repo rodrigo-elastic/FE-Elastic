@@ -1,0 +1,148 @@
+[
+  {
+    "id": "battlecard-splunk",
+    "competitor": "Splunk",
+    "competitor_slug": "splunk",
+    "tagline": "Cost-effective alternative for log analytics at audit-grade retention",
+    "key_pain": "License plus storage costs are punitive at compliance retention windows. Index-time pricing scales linearly with ingest, not value.",
+    "talking_points": [
+      {
+        "angle": "TCO",
+        "claim": "Frozen tier on object storage cuts long-retention costs 60 to 80 percent.",
+        "proof": "Searchable snapshots on S3 / GCS / Azure Blob: pay storage rates, not warm-tier hot rates. Typical 18 month audit retention drops from $X to $X/4."
+      },
+      {
+        "angle": "Single platform",
+        "claim": "Logs, metrics, APM, and Security in one cluster on one license.",
+        "proof": "Eliminates Splunk Observability Cloud upsell + Splunk Enterprise Security add-on. Same data plane for ops + sec teams."
+      },
+      {
+        "angle": "Open data format",
+        "claim": "ECS plus Lucene index files are documented and exportable. No proprietary lock-in.",
+        "proof": "Customers can read raw index files; no vendor egress fee to leave Elastic."
+      }
+    ],
+    "elastic_advantages": [
+      "Frozen tier on object storage at retention scale",
+      "Native cross-cluster search and replication included",
+      "Built-in ML anomaly detection (no separate license)",
+      "Open inference API for vector and sparse retrieval (ELSER)",
+      "Marketplace billing on AWS / GCP / Azure"
+    ],
+    "common_objections": [
+      {
+        "q": "We have years of SPL queries; rewriting is a non-starter.",
+        "a": "ES|QL went GA in 8.13. SPL to ES|QL conversion docs are public; most queries map mechanically. Splunk-style pipe syntax is preserved."
+      },
+      {
+        "q": "Splunk Enterprise Security is more mature for SIEM.",
+        "a": "Elastic Security ships MITRE ATT&CK coverage with prebuilt detections, plus a purpose-built threat-hunting workspace. Dashboarding parity since 8.x."
+      },
+      {
+        "q": "Migration risk on a critical observability platform.",
+        "a": "Side-by-side dual-ingest period via Logstash or Filebeat outputs both targets. POV path validates parity before cutover."
+      }
+    ],
+    "discovery_questions": [
+      "What is your audit retention requirement and what does the storage cost line look like today?",
+      "How many license tiers are you paying for across Splunk Core, Observability, and Enterprise Security?",
+      "If you had to consolidate to one platform in 12 months, what's the blocker?"
+    ]
+  },
+  {
+    "id": "battlecard-datadog",
+    "competitor": "Datadog",
+    "competitor_slug": "datadog",
+    "tagline": "Predictable storage economics + open data for the AWS-heavy customer",
+    "key_pain": "Per-host pricing plus index-rate ingest cost surprises. Vendor lock-in on the agent stack.",
+    "talking_points": [
+      {
+        "angle": "Predictable cost",
+        "claim": "Pay for ingest plus storage tiers, not per-host. Frozen tier removes the index-rate trap.",
+        "proof": "Detailed cost calculator inline in our brief. Common 60 to 70 percent reduction at 18+ month retention."
+      },
+      {
+        "angle": "Native AWS integration",
+        "claim": "First-party AWS marketplace billing, AWS PrivateLink ingest, IoT Core integration.",
+        "proof": "Same data plane handles factory edge telemetry plus cloud-native; Datadog requires separate IoT/Splunk-edge integration."
+      },
+      {
+        "angle": "Cross-stack correlation",
+        "claim": "Logs, metrics, traces, and synthetics in one query language (ES|QL) and one data store.",
+        "proof": "Removes the Datadog notebook plus dashboard split that the customer is fighting today."
+      }
+    ],
+    "elastic_advantages": [
+      "Storage cost predictability via warm/cold/frozen tiers",
+      "Open agent (Elastic Agent) avoids dd-agent vendor lock",
+      "OpenTelemetry-first; OTel Collector is GA",
+      "Native AWS Marketplace plus PrivateLink",
+      "Full-text search on logs (Datadog charges separately)"
+    ],
+    "common_objections": [
+      {
+        "q": "Datadog APM is more refined for application teams.",
+        "a": "Elastic APM ships service maps, distributed traces, RUM, and synthetics. OTel-first means no agent rewrite when tooling changes."
+      },
+      {
+        "q": "Datadog dashboards are easier to build.",
+        "a": "Kibana Lens is drag-and-drop; pre-built dashboards ship for common stacks (AWS, Kubernetes, Postgres). Vega for power users."
+      },
+      {
+        "q": "Switching agents is too risky.",
+        "a": "Run dd-agent and Elastic Agent side-by-side during the POV. Cut over per service, not big-bang."
+      }
+    ],
+    "discovery_questions": [
+      "What is your Datadog renewal date and current ARR with them?",
+      "Where does the ingest cost spike most: logs, traces, or custom metrics?",
+      "Have you hit the 'we cannot afford to keep more history' moment yet?"
+    ]
+  },
+  {
+    "id": "battlecard-sumologic",
+    "competitor": "Sumo Logic",
+    "competitor_slug": "sumo logic",
+    "tagline": "Modern SIEM plus search depth Sumo cannot match",
+    "key_pain": "Sumo's CSE is bolted on; query performance degrades at 100s of GB/day; cloud-only with no air-gap option.",
+    "talking_points": [
+      {
+        "angle": "Query performance",
+        "claim": "Lucene indices plus dedicated search nodes hold low-latency at 1+ TB/day.",
+        "proof": "Customer benchmarks: median query latency 200ms at 2TB/day vs Sumo CSE 1.5s+."
+      },
+      {
+        "angle": "Deployment flexibility",
+        "claim": "Self-hosted, Elastic Cloud, AWS/GCP/Azure marketplace, plus air-gapped on-prem.",
+        "proof": "Sumo is SaaS-only; regulated workloads (defense, healthcare) often disqualify it."
+      },
+      {
+        "angle": "Security depth",
+        "claim": "Elastic Security ships MITRE ATT&CK coverage, entity analytics, and a hunting workspace.",
+        "proof": "Sumo CSE leans on rule packs; less customization at the detection-engineering layer."
+      }
+    ],
+    "elastic_advantages": [
+      "Self-hosted plus cloud plus air-gapped",
+      "Full Lucene query depth at scale",
+      "MITRE ATT&CK + threat hunting in Security",
+      "Open Elastic Agent + Beats data shippers",
+      "ELSER for semantic search across logs"
+    ],
+    "common_objections": [
+      {
+        "q": "Sumo is fully managed, less ops overhead.",
+        "a": "Elastic Cloud is fully managed too: hosted, patched, scaled. Same operational model with deeper search."
+      },
+      {
+        "q": "We already trained the team on Sumo's query language.",
+        "a": "ES|QL syntax is similar; conversion docs exist; Lucene KQL also available for free-text users."
+      }
+    ],
+    "discovery_questions": [
+      "Do you have any workloads that need air-gapped or self-hosted deployment?",
+      "What is your typical query latency at peak ingest?",
+      "Is your team feeling the limits of Sumo's CSE customization?"
+    ]
+  }
+]
