@@ -110,7 +110,7 @@
       if (s.type === "tool_call") {
         body.appendChild(el("div", {}, [
           el("span", { class: "ab-step-name" }, s.tool_id || "tool"),
-          document.createTextNode(" — call"),
+          document.createTextNode(" - call"),
         ]));
         if (s.params) {
           body.appendChild(el("pre", { class: "ab-step-detail" }, JSON.stringify(s.params, null, 2)));

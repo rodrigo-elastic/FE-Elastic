@@ -3,7 +3,7 @@ filename: black_friday.py
 description: FE Copilot · Demo Data Generator · Black Friday Outage scenario.
 
 Story arc:
-    Lumen Apparel — a fast-growing online apparel brand — runs their biggest sale
+    Lumen Apparel - a fast-growing online apparel brand - runs their biggest sale
     of the year. Around 10am PT on Black Friday, sustained upstream load from
     catalog-svc drives checkout-db into IO contention. p99 latency on the
     checkout-db dependency jumps from a 180ms baseline to 4-8s; checkout-svc
@@ -56,7 +56,7 @@ log = get_logger(__name__)
 SCENARIO_ID: str = "black-friday-outage"
 SCENARIO_TITLE: str = "Black Friday Outage"
 SCENARIO_DESCRIPTION: str = (
-    "Lumen Apparel — a growing fintech-backed e-commerce platform — runs its biggest "
+    "Lumen Apparel - a growing fintech-backed e-commerce platform - runs its biggest "
     "sale of the year. At 10:00am PT, checkout-db hits IO contention: p99 latency jumps "
     "from 180ms to 4-8s, cart abandonment doubles, and 5xx errors cascade through "
     "payment-svc. Three precursor incidents in the prior week were the warning signs. "
@@ -72,7 +72,7 @@ INDICES: Dict[str, str] = {
 
 DASHBOARD_ID: str = "demo-black-friday-outage-dashboard"
 
-# The seed anchor — fixes "now" for reproducibility. Without this the timestamps
+# The seed anchor - fixes "now" for reproducibility. Without this the timestamps
 # walk every time you re-seed, which is fine for fresh demos but ugly for tests.
 _DEFAULT_SEED: int = 20260503
 
@@ -170,7 +170,7 @@ _PATHS: List[Tuple[str, str, str]] = [
     ("POST", "/api/payment/retry", "PaymentRetry"),
 ]
 
-# Lumen apparel SKUs — these get embedded in URLs, payloads.
+# Lumen apparel SKUs - these get embedded in URLs, payloads.
 _SKUS = [
     "LUM-AURA-COAT-NVY-M", "LUM-AURA-COAT-NVY-L", "LUM-AURA-COAT-CAM-S",
     "LUM-MERINO-CREW-OAT-M", "LUM-MERINO-CREW-CHA-L", "LUM-RIB-BEANIE-BLK-OS",
@@ -193,28 +193,28 @@ def _anomaly_windows(now: datetime) -> List[Dict[str, Any]]:
     """
     return [
         {
-            "label": "Precursor 1 — mild",
+            "label": "Precursor 1 - mild",
             "start": now - timedelta(days=6, hours=10),  # T-6d 14:00 UTC if 'now' is 00:00 UTC
             "end": now - timedelta(days=6, hours=10) + timedelta(minutes=25),
             "severity": 0.35,
             "tail_factor": 6.0,
         },
         {
-            "label": "Precursor 2 — moderate",
+            "label": "Precursor 2 - moderate",
             "start": now - timedelta(days=4, hours=6),
             "end": now - timedelta(days=4, hours=6) + timedelta(minutes=60),
             "severity": 0.55,
             "tail_factor": 11.0,
         },
         {
-            "label": "Precursor 3 — dress rehearsal",
+            "label": "Precursor 3 - dress rehearsal",
             "start": now - timedelta(days=2, hours=8),
             "end": now - timedelta(days=2, hours=8) + timedelta(minutes=90),
             "severity": 0.75,
             "tail_factor": 18.0,
         },
         {
-            "label": "Headliner — Black Friday outage",
+            "label": "Headliner - Black Friday outage",
             "start": now - timedelta(hours=6),
             "end": now - timedelta(hours=6) + timedelta(minutes=90),
             "severity": 1.0,
@@ -381,7 +381,7 @@ def _gen_checkout_logs(rng: random.Random, now: datetime,
             timestamps.append(candidate)
     timestamps.sort()
 
-    # Path popularity weights — mostly browse + cart, then a smaller checkout funnel.
+    # Path popularity weights - mostly browse + cart, then a smaller checkout funnel.
     path_weights = [
         ("GET", "/", "Home", 0.10),
         ("GET", "/c/womens-coats", "BrowseCategory", 0.08),
@@ -612,7 +612,7 @@ def _gen_apm_traces(rng: random.Random, now: datetime,
 
         latency_ms = _heavy_tail_latency(rng, cfg["p50"], cfg["p99"], eff_anomaly, is_db=is_db)
 
-        # Outcome — db elevated failure rate during anomaly; checkout-svc cascades; others mostly fine.
+        # Outcome - db elevated failure rate during anomaly; checkout-svc cascades; others mostly fine.
         if is_db and anomaly is not None:
             err_p = 0.18 + 0.05 * anomaly["severity"]
         elif svc == "checkout-svc" and anomaly is not None:
@@ -743,7 +743,7 @@ def _gen_metrics_rollups(rng: random.Random, now: datetime,
     """Per-service 5-minute metric rollups.
 
     For each service, emit a rollup every 5 minutes for the last 24 hours
-    (288 buckets) or every 30 minutes for the prior 6 days (288 buckets) — but
+    (288 buckets) or every 30 minutes for the prior 6 days (288 buckets) - but
     we cap the total at ~600 docs.
 
     Each rollup includes:
@@ -792,7 +792,7 @@ def _gen_metrics_rollups(rng: random.Random, now: datetime,
             p95 = samples[76]
             p99 = samples[78]
 
-            # Request count — diurnal+headliner shaped
+            # Request count - diurnal+headliner shaped
             mult = _traffic_multiplier(bstart, headliner["start"])
             base_rps = {
                 "frontend": 320, "api-gateway": 320, "catalog-svc": 220,
@@ -876,7 +876,7 @@ def _gen_metrics_rollups(rng: random.Random, now: datetime,
                     "utilization": round(min(1.0, pool_in_use / pool_max), 3),
                 }
 
-            # checkout funnel KPIs — only on checkout-svc, the customer-facing measure.
+            # checkout funnel KPIs - only on checkout-svc, the customer-facing measure.
             if svc == "checkout-svc":
                 if anomaly is not None:
                     abandonment = 0.30 + 0.27 * anomaly["severity"] + rng.uniform(-0.03, 0.05)
@@ -904,7 +904,7 @@ def _gen_metrics_rollups(rng: random.Random, now: datetime,
 
 
 def get_mappings() -> Dict[str, Dict[str, Any]]:
-    """Index mappings — keyword for high-cardinality strings, date for @timestamp,
+    """Index mappings - keyword for high-cardinality strings, date for @timestamp,
     long for counts, double for floats. Avoids dynamic mapping pitfalls (status_code
     being inferred as long+keyword inconsistently)."""
     common_props: Dict[str, Any] = {
@@ -1209,7 +1209,7 @@ def _spec_p99_by_service() -> Dict[str, Any]:
     return {
         "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
         "title": {
-            "text": "p99 latency by service — 10m buckets",
+            "text": "p99 latency by service - 10m buckets",
             "subtitle": "checkout-db is the villain. Healthy services (recs-svc, frontend) stay flat.",
             "color": "#e6e8eb",
             "subtitleColor": "#9aa0a6",
@@ -1323,7 +1323,7 @@ def _spec_errors_stacked() -> Dict[str, Any]:
     return {
         "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
         "title": {
-            "text": "Errors by service over time — 30m buckets",
+            "text": "Errors by service over time - 30m buckets",
             "subtitle": "Stacked errors. Watch the headliner spike. checkout-svc, payment-svc and checkout-db light up together.",
             "color": "#e6e8eb",
             "subtitleColor": "#9aa0a6",
@@ -1387,7 +1387,7 @@ def _spec_errors_stacked() -> Dict[str, Any]:
 def _spec_outage_kpi() -> Dict[str, Any]:
     """Lightweight Vega text panel: peak p99 in seconds + total errors during
     the last 7 days (matches the dashboard timeRestore window). We render it
-    as a Vega-Lite text mark for portability — Lens metric saved-objects need
+    as a Vega-Lite text mark for portability - Lens metric saved-objects need
     a data view ID and are migration-fragile.
 
     Trick: ES returns aggregations as a single nested object. To make
@@ -1619,7 +1619,7 @@ def _vega_panel(panel_id: str, x: int, y: int, w: int, h: int,
 def get_dashboard_panels() -> List[Dict[str, Any]]:
     """Six panels in a 48-wide grid. All charts are Vega-Lite for portability."""
     md_header = (
-        "## Black Friday Outage — Lumen Apparel\n\n"
+        "## Black Friday Outage - Lumen Apparel\n\n"
         "**The story.** It is Black Friday at Lumen Apparel. Traffic is 3.4x normal. "
         "At **10:00am PT** the catalog page-size change shipped on Tuesday starts hammering "
         "`checkout-db` with a 12x query plan; the database falls into IO contention; p99 "
@@ -1628,15 +1628,15 @@ def get_dashboard_panels() -> List[Dict[str, Any]]:
         "from 28% to 55%. **At 11:30am PT** SRE rolls back the catalog config and "
         "everything snaps back inside one bucket.\n\n"
         "**What this dashboard proves.**  This is *not* a system-wide outage. "
-        "`recs-svc`, `frontend`, and `notification-svc` stay flat throughout — the failure "
+        "`recs-svc`, `frontend`, and `notification-svc` stay flat throughout - the failure "
         "is localised to the checkout writer DB and its dependents. That is the whole "
         "point of a service-aware observability platform.\n\n"
         "**Customer talk-track.**  *Three Elastic features would have caught this earlier:* "
-        "(1) **APM service maps** — visualises that `catalog-svc` was driving load to "
+        "(1) **APM service maps** - visualises that `catalog-svc` was driving load to "
         "`checkout-db` 48 hours before the outage; "
-        "(2) **Elastic ML anomaly detection** — flags the p99 distribution shift in the "
+        "(2) **Elastic ML anomaly detection** - flags the p99 distribution shift in the "
         "first precursor window 6 days ago; "
-        "(3) **SLO burn-rate alerts** — would page on the 4 hour burn-rate breach during "
+        "(3) **SLO burn-rate alerts** - would page on the 4 hour burn-rate breach during "
         "the dress-rehearsal precursor at T-2d. Combined, the team would have seen "
         "the warning, pinpointed the change, and avoided **~$1.4M of lost GMV** during "
         "the headline window."
@@ -1645,12 +1645,12 @@ def get_dashboard_panels() -> List[Dict[str, Any]]:
     md_followup = (
         "## How this becomes a customer conversation\n\n"
         "**MEDDPICC pain & metrics surfaced by this scenario:**\n\n"
-        "- **Metrics**  — Lost GMV per minute of checkout downtime; cart abandonment baseline vs peak; p99 SLO breach minutes\n"
-        "- **Economic Buyer pain**  — \"We had four near-misses in the week before BF and didn't know.\" Detection time = 0 with anomaly ML\n"
-        "- **Decision Criteria**  — APM + Logs + SIEM + ML in one license; no per-host gotcha; ECS taxonomy across services\n"
-        "- **Champion enablement**  — Service maps, anomaly explorer, SLO burn rate dashboards out of the box; no Splunk SPL rewrite\n"
-        "- **Identify pain**  — Today their tool was Datadog APM; logs were in Splunk; correlation across the two was manual\n"
-        "- **Competition**  — Splunk ITSI ($$$, slow rollout), Datadog APM (no log/SIEM unification), New Relic (per-seat)\n\n"
+        "- **Metrics**  - Lost GMV per minute of checkout downtime; cart abandonment baseline vs peak; p99 SLO breach minutes\n"
+        "- **Economic Buyer pain**  - \"We had four near-misses in the week before BF and didn't know.\" Detection time = 0 with anomaly ML\n"
+        "- **Decision Criteria**  - APM + Logs + SIEM + ML in one license; no per-host gotcha; ECS taxonomy across services\n"
+        "- **Champion enablement**  - Service maps, anomaly explorer, SLO burn rate dashboards out of the box; no Splunk SPL rewrite\n"
+        "- **Identify pain**  - Today their tool was Datadog APM; logs were in Splunk; correlation across the two was manual\n"
+        "- **Competition**  - Splunk ITSI ($$$, slow rollout), Datadog APM (no log/SIEM unification), New Relic (per-seat)\n\n"
         "**Call to action.**  *Schedule a 30-minute live APM walkthrough on the customer's "
         "own services next week.* We will set up an Elastic Cloud trial with "
         "their staging traffic mirrored in, and reproduce this exact dashboard in "
@@ -1659,7 +1659,7 @@ def get_dashboard_panels() -> List[Dict[str, Any]]:
 
     panels = [
         _markdown_panel("hdr", 0, 0, 48, 8, md_header,
-                        "Black Friday outage — story & talk track"),
+                        "Black Friday outage - story & talk track"),
         _vega_panel("p99", 0, 8, 24, 14,
                     "p99 latency by service", _spec_p99_by_service()),
         _vega_panel("err", 24, 8, 24, 14,

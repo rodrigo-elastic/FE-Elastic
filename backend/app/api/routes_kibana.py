@@ -105,7 +105,7 @@ def _md_what_they_care_about(post: Optional[Dict[str, Any]], brief: Optional[Dic
         )[:6]
         lines = ["## What They Care About\n", "_Top MEDDPICC signals captured in this conversation._\n"]
         for s in signals:
-            lines.append(f"- **{s.get('category', '')}** — \"{s.get('quote', '').strip()}\"")
+            lines.append(f"- **{s.get('category', '')}** - \"{s.get('quote', '').strip()}\"")
             if s.get("note"):
                 lines.append(f"  - _{s['note']}_")
         return "\n".join(lines)
@@ -239,7 +239,7 @@ def _md_action_items(post: Optional[Dict[str, Any]]) -> str:
     lines = ["## Action Items & Next Steps\n", "| Action | Owner | Due | Impact |", "| --- | --- | --- | --- |"]
     for a in post["action_items"][:10]:
         lines.append(
-            f"| {a.get('title', '')} | {a.get('owner_name', '?')} | {a.get('due_date') or '—'} | {a.get('impact') or '—'} |"
+            f"| {a.get('title', '')} | {a.get('owner_name', '?')} | {a.get('due_date') or '-'} | {a.get('impact') or '-'} |"
         )
     return "\n".join(lines)
 

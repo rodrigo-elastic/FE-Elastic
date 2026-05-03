@@ -57,7 +57,7 @@ async def get_meeting(meeting_id: str) -> dict:
             "tickets": synthetic.tickets_for(company.get("id", "")),
         }
 
-    # Ad-hoc meeting (Quick Research brief or uploaded transcript) — fall back to the
+    # Ad-hoc meeting (Quick Research brief or uploaded transcript) - fall back to the
     # snapshot stashed alongside the artifact.
     for sub in ("briefs", "post_meeting"):
         path = settings.runtime_dir / sub / f"{meeting_id}.json"

@@ -89,7 +89,7 @@ class PostMeetingAgent(Agent):
             to=meeting.get("attendees", []),
         )
 
-        # Extended Salesforce writes — the post-meeting flow drives the full deal record.
+        # Extended Salesforce writes - the post-meeting flow drives the full deal record.
         sfdc_writes = _full_salesforce_sync(company, meeting_id, data)
 
         record = {

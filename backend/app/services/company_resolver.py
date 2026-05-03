@@ -46,7 +46,7 @@ CONSULTING_DOMAINS = {
     "thoughtworks.com",
 }
 
-# Free / personal mail providers — present in the room but not a corporate signal.
+# Free / personal mail providers - present in the room but not a corporate signal.
 FREEMAIL_DOMAINS = {
     "gmail.com",
     "outlook.com",

@@ -1,6 +1,6 @@
 /*
   filename: agent-builder-mini.js
-  description: Reusable inline Agent Builder chat panel. Mount inside any container with `AgentBuilderMini.mount(host, { contextLabel, contextPreamble, suggestions, storageKey, agentId })` — talks to /api/v1/agent-builder/converse with optional per-instance conversation persistence and a context preamble that is prepended to the first user message only.
+  description: Reusable inline Agent Builder chat panel. Mount inside any container with `AgentBuilderMini.mount(host, { contextLabel, contextPreamble, suggestions, storageKey, agentId })` - talks to /api/v1/agent-builder/converse with optional per-instance conversation persistence and a context preamble that is prepended to the first user message only.
   Author: Rodrigo Careaga
   Date: 03-05-2026
 */
@@ -135,7 +135,7 @@
         if (s.type === "tool_call") {
           body.appendChild($el("div", {}, [
             $el("strong", {}, s.tool_id || "tool"),
-            document.createTextNode(" — call"),
+            document.createTextNode(" - call"),
           ]));
           if (s.params) {
             body.appendChild($el("pre", { class: "abm-step-detail" }, JSON.stringify(s.params, null, 2)));

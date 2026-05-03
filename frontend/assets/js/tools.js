@@ -22,7 +22,7 @@ async function populatePocMeetings() {
       return;
     }
     past.forEach((m) =>
-      select.appendChild(el("option", { value: m.id }, `${m.company_name || m.company_id} — ${m.title}`))
+      select.appendChild(el("option", { value: m.id }, `${m.company_name || m.company_id} - ${m.title}`))
     );
   } catch (e) {
     select.appendChild(el("option", { value: "" }, "(failed to load meetings)"));
@@ -368,7 +368,7 @@ async function runStackExtract() {
     const items = res[key] || [];
     const card = el("div", { class: "stack-bucket stack-" + klass });
     card.appendChild(el("div", { class: "stack-head" }, [el("span", {}, label), el("span", { class: "muted small" }, "" + items.length)]));
-    if (!items.length) card.appendChild(el("div", { class: "muted small" }, "—"));
+    if (!items.length) card.appendChild(el("div", { class: "muted small" }, "-"));
     items.forEach((it) => {
       card.appendChild(
         el("div", { class: "stack-item", title: it.evidence || "" }, [

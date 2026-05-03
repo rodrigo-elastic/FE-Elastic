@@ -53,7 +53,7 @@ def _build_events() -> List[Dict[str, Any]]:
             {"email": "rodrigo.careaga@elastic.co"},
             {"email": "lucia.fernandez@mercadolibre.com"},
             {"email": "diego.alvarez@mercadolibre.com"},
-            # Accenture consultant — should NOT be picked as the customer.
+            # Accenture consultant - should NOT be picked as the customer.
             {"email": "j.morales@accenture.com"},
             {"email": "another.consultant@accenture.com"},
         ],

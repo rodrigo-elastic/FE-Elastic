@@ -672,7 +672,7 @@ function bindActions() {
       const result = await apiPost(`/kibana/dashboard/${meetingId}`, {});
       if (result && result.dashboard_url) {
         window.open(result.dashboard_url, "_blank", "noreferrer");
-        toast(`Dashboard created with ${result.panels} panels — opening in Kibana`, "ok");
+        toast(`Dashboard created with ${result.panels} panels - opening in Kibana`, "ok");
       } else {
         toast("Dashboard request returned no URL", "bad");
       }

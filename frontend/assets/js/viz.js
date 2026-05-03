@@ -184,7 +184,7 @@ function renderEisenhowerMatrix(actions) {
         el("span", { class: "eis-count" }, `${buckets[key].length}`),
       ]),
       el("div", { class: "eis-q-sub" }, sub),
-      el("div", { class: "eis-q-body" }, buckets[key].length ? buckets[key].map(card) : [el("div", { class: "eis-empty" }, "—")]),
+      el("div", { class: "eis-q-body" }, buckets[key].length ? buckets[key].map(card) : [el("div", { class: "eis-empty" }, "-")]),
     ]);
 
   const wrap = el("div", { class: "viz viz-eisenhower" }, [
@@ -321,7 +321,7 @@ function renderPowerInterestGrid(transcript, attendees) {
   const cell = (key, label, klass) =>
     el("div", { class: `pi-cell ${klass}` }, [
       el("div", { class: "pi-cell-label" }, label),
-      el("div", { class: "pi-cell-body" }, buckets[key].length ? buckets[key].map(stake) : [el("span", { class: "pi-empty" }, "—")]),
+      el("div", { class: "pi-cell-body" }, buckets[key].length ? buckets[key].map(stake) : [el("span", { class: "pi-empty" }, "-")]),
     ]);
 
   return el("div", { class: "viz viz-pi" }, [

@@ -20,7 +20,7 @@
   }
 
   function row(key, val) {
-    return `<div class="wf-row"><span class="wf-key">${key}</span><span class="wf-val">${val ?? "—"}</span></div>`;
+    return `<div class="wf-row"><span class="wf-key">${key}</span><span class="wf-val">${val ?? "-"}</span></div>`;
   }
 
   function fmtKind(s) {
@@ -39,10 +39,10 @@
       : pill("not registered", "warn");
     $status.innerHTML = `
       <div style="margin-bottom: 12px;">${overall}</div>
-      ${row("Rule status", `${pill(data.rule_status || "—", ruleKind)}`)}
-      ${row("Rule id", `<code>${data.rule_id || "—"}</code>`)}
-      ${row("Connector status", `${pill(data.connector_status || "—", connKind)}`)}
-      ${row("Connector id", `<code>${data.connector_id || "—"}</code>`)}
+      ${row("Rule status", `${pill(data.rule_status || "-", ruleKind)}`)}
+      ${row("Rule id", `<code>${data.rule_id || "-"}</code>`)}
+      ${row("Connector status", `${pill(data.connector_status || "-", connKind)}`)}
+      ${row("Connector id", `<code>${data.connector_id || "-"}</code>`)}
       ${row("Inbox index", `<code>${data.inbox_index}</code> ${inboxPill}`)}
       ${row("Webhook URL", `<code>${data.webhook_url}</code>`)}
     `;

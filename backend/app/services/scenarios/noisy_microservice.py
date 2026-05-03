@@ -1,6 +1,6 @@
 """
 filename: noisy_microservice.py
-description: Story-driven demo dataset for Elastic Observability — "One Bad Apple".
+description: Story-driven demo dataset for Elastic Observability - "One Bad Apple".
 A fictional payments platform (Stride Payments) runs 10 microservices behind an API
 gateway. The recently-deployed checkout-service produces ~80% of all errors despite
 handling only ~12% of traffic. Three deployment events in the last 7 days each cause
@@ -61,7 +61,7 @@ _REGIONS = ["us-east-1", "us-west-2", "eu-west-1"]
 _NODES_PER_REGION = 3
 _SLO_TARGET = 0.999
 
-# The 10 services. The first is the bad apple — heavy error weighting + rolling deploys.
+# The 10 services. The first is the bad apple - heavy error weighting + rolling deploys.
 # Each entry: (name, base_p50_ms, base_err_rate, traffic_weight, transactions, version_stable)
 _SERVICES: List[Dict[str, Any]] = [
     {
@@ -76,7 +76,7 @@ _SERVICES: List[Dict[str, Any]] = [
             ("GET /checkout/{id}", "request"),
             ("POST /checkout/refund", "request"),
         ],
-        "version": None,           # rolling — picked from deploys
+        "version": None,           # rolling - picked from deploys
         "team": "checkout-platform",
     },
     {
@@ -171,7 +171,7 @@ _CHECKOUT_DEPLOYS: List[Dict[str, Any]] = [
         "release_notes": "Migrated DTO to schema v2; payload contract change.",
     },
     {
-        "hours_ago": 12,            # T-12h — the worst
+        "hours_ago": 12,            # T-12h - the worst
         "version": "1.7.3",
         "commit_sha": "c6d2410",
         "author": "okafor",
@@ -194,7 +194,7 @@ _CHECKOUT_ERRORS: List[Tuple[str, float]] = [
     ("RateLimitExceeded", 0.17),
 ]
 
-# Stack traces — realistic class.method paths.
+# Stack traces - realistic class.method paths.
 _STACKS: Dict[str, List[List[str]]] = {
     "NullPointerException": [
         [
@@ -262,11 +262,11 @@ _STACKS: Dict[str, List[List[str]]] = {
 _CHECKOUT_ERROR_MESSAGES: Dict[str, List[str]] = {
     "NullPointerException": [
         "Cannot invoke \"IdempotencyKey.value()\" because \"key\" is null",
-        "null pointer dereference in CartTotalCalculator.totals — line items list returned null",
+        "null pointer dereference in CartTotalCalculator.totals - line items list returned null",
         "Cannot read field \"customerId\" of null OrderContext returned by upstream",
     ],
     "DBConnectionTimeout": [
-        "HikariPool-1 — Connection is not available, request timed out after 30000ms",
+        "HikariPool-1 - Connection is not available, request timed out after 30000ms",
         "Could not acquire connection from pool 'checkout-primary' after 30s; active=20, idle=0",
         "DataAccessResourceFailureException: connect timeout to checkout-db.stride.internal:5432",
     ],
@@ -278,14 +278,14 @@ _CHECKOUT_ERROR_MESSAGES: Dict[str, List[str]] = {
     "RateLimitExceeded": [
         "Rate limit exceeded for tenant t_3a8f: 200 rpm budget consumed",
         "Token bucket exhausted on /checkout/confirm; retry after 4.5s",
-        "Redis CLUSTERDOWN during rate-limit acquire — failing closed",
+        "Redis CLUSTERDOWN during rate-limit acquire - failing closed",
     ],
 }
 
 # Generic transient error pool for the OTHER 9 services (kept rare).
 _OTHER_ERRORS: List[Tuple[str, str]] = [
     ("UpstreamTimeout", "downstream call to fraud-service exceeded 5s budget"),
-    ("CacheMiss", "soft cache miss on key user_pref:%(uid)s — recovered from origin"),
+    ("CacheMiss", "soft cache miss on key user_pref:%(uid)s - recovered from origin"),
     ("DeserializationError", "unexpected nullable field 'legacy_id' in incoming payload"),
     ("RetryableUpstream", "503 from external partner; retry scheduled"),
     ("S3PutFailure", "S3 PutObject failed for bucket stride-receipts; will retry"),
@@ -609,7 +609,7 @@ def generate_documents(seed: int = 20260503) -> Dict[str, List[Dict[str, Any]]]:
     pod_restarts = _gen_pod_restart_logs(rng, now)
     logs.extend(pod_restarts)
 
-    # ---- Logs (~3500 docs) — correlated app logs and stack traces ----
+    # ---- Logs (~3500 docs) - correlated app logs and stack traces ----
     target_logs = 3500 - len(pod_restarts)
     for _ in range(target_logs):
         svc_name = _weighted_choice(rng, weights)
@@ -811,7 +811,7 @@ def _gen_deployments(rng: random.Random, now: datetime) -> List[Dict[str, Any]]:
     plus stable rollouts for the other 9 services scattered earlier in the week."""
     docs: List[Dict[str, Any]] = []
 
-    # Checkout — three rolling deploys
+    # Checkout - three rolling deploys
     prev_version = _CHECKOUT_BASE_VERSION
     for dep in sorted(_CHECKOUT_DEPLOYS, key=lambda d: -d["hours_ago"]):
         ts = now - timedelta(hours=dep["hours_ago"])
@@ -879,12 +879,12 @@ def _gen_deployments(rng: random.Random, now: datetime) -> List[Dict[str, Any]]:
                     "dataset": "kubernetes.deployment",
                 },
                 "release": {"commit_sha": sha, "author": author, "version": ver,
-                             "notes": "routine patch — dependency bump and metrics polish."},
+                             "notes": "routine patch - dependency bump and metrics polish."},
                 "deployment": {
                     "id": f"dep-{sha}",
                     "name": f"{svc['name']} rollout {ver}",
                     "strategy": "RollingUpdate",
-                    "previous_version": ver,  # patch-level — same minor
+                    "previous_version": ver,  # patch-level - same minor
                     "next_version": ver,
                     "result": "succeeded",
                     "duration_seconds": rng.randint(120, 360),
@@ -908,10 +908,10 @@ def _gen_pod_restart_logs(rng: random.Random, now: datetime) -> List[Dict[str, A
             ver = dep["version"]
             pod = _pod_name(rng, "checkout-service", ver)
             reason = rng.choice([
-                "OOMKilled — memory cgroup exceeded 1.5Gi limit",
-                "CrashLoopBackOff — exit code 137",
+                "OOMKilled - memory cgroup exceeded 1.5Gi limit",
+                "CrashLoopBackOff - exit code 137",
                 "Liveness probe failed: HTTP 503 from /healthz",
-                "Readiness probe failed for 90s — kubelet restarted container",
+                "Readiness probe failed for 90s - kubelet restarted container",
             ])
             docs.append({
                 "@timestamp": _iso(ts),
@@ -997,7 +997,7 @@ def _vega_errors_by_service_spec() -> Dict[str, Any]:
     """Vega-Lite bar chart: errors-by-service from Elasticsearch (terms agg)."""
     return {
         "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-        "title": {"text": "Errors by service (last 7d) — checkout-service dominates",
+        "title": {"text": "Errors by service (last 7d) - checkout-service dominates",
                   "fontSize": 14, "anchor": "start"},
         "data": {
             "url": {
@@ -1031,7 +1031,7 @@ def _vega_error_rate_over_time_spec() -> Dict[str, Any]:
     """Vega-Lite line: error rate % per service over time (5-min buckets)."""
     return {
         "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-        "title": {"text": "Error rate % by service (5-min buckets) — three deploys land on checkout-service",
+        "title": {"text": "Error rate % by service (5-min buckets) - three deploys land on checkout-service",
                   "fontSize": 14, "anchor": "start"},
         "data": {
             "url": {
@@ -1093,7 +1093,7 @@ def _vega_top_error_types_spec() -> Dict[str, Any]:
     """Vega-Lite horizontal bar: top error.type for checkout-service."""
     return {
         "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-        "title": {"text": "Top error.type — checkout-service (last 7d)", "fontSize": 14, "anchor": "start"},
+        "title": {"text": "Top error.type - checkout-service (last 7d)", "fontSize": 14, "anchor": "start"},
         "data": {
             "url": {
                 "%context%": True, "%timefield%": "@timestamp",
@@ -1188,12 +1188,12 @@ def _vega_deploy_timeline_spec(now: datetime) -> Dict[str, Any]:
 
 def _md_header() -> str:
     return (
-        "## One Bad Apple — Noisy Microservice\n"
+        "## One Bad Apple - Noisy Microservice\n"
         f"_{_FICT_COMPANY}_ runs **10 microservices** behind an API gateway. Over the last 7 days, "
         "the recently-deployed `checkout-service` (rolling **v1.7.0 → v1.7.3**) has produced **~80% of all "
         "errors** despite handling only **~12%** of traffic. Three deployment events land as discrete "
         "error-rate jumps; the **T-12h** rollout (v1.7.3) introduced a `NullPointerException` regression.\n\n"
-        "**How Elastic catches this fast** — Service Map highlights the 80/20 split, "
+        "**How Elastic catches this fast** - Service Map highlights the 80/20 split, "
         "**ML anomaly detection** flags the post-deploy regression in <5 minutes, "
         "**SLO burn-rate alerts** fire on the 0.999 availability target, and **Cases** auto-assigns the "
         "on-call (`@okafor`, the deploy author of `c6d2410`)."
@@ -1202,13 +1202,13 @@ def _md_header() -> str:
 
 def _md_how_elastic_catches() -> str:
     return (
-        "## How Elastic catches this — playbook\n"
+        "## How Elastic catches this - playbook\n"
         "| Step | Elastic capability | What it surfaces |\n"
         "| --- | --- | --- |\n"
-        "| 1 | **Service Map** (Observability) | Auto-rendered topology — `checkout-service` lights red while peers stay green; click-through into APM |\n"
-        "| 2 | **APM transaction breakdown** | p50 / p99 latency per `transaction.name` — `POST /checkout/confirm` regressed 4x at T-12h |\n"
+        "| 1 | **Service Map** (Observability) | Auto-rendered topology - `checkout-service` lights red while peers stay green; click-through into APM |\n"
+        "| 2 | **APM transaction breakdown** | p50 / p99 latency per `transaction.name` - `POST /checkout/confirm` regressed 4x at T-12h |\n"
         "| 3 | **ML anomaly job** (`high_error_rate` + `apm_tx_metrics`) | Pre-built detectors flag the 5-min bucket within 1-2 buckets of the deploy |\n"
-        "| 4 | **SLO burn-rate alert** (target 0.999) | Fast-burn alert at 14.4x in 5 min — pages the checkout on-call |\n"
+        "| 4 | **SLO burn-rate alert** (target 0.999) | Fast-burn alert at 14.4x in 5 min - pages the checkout on-call |\n"
         "| 5 | **Cases** | Auto-attaches the failing trace + stack trace + the `release.commit_sha` of the bad deploy |\n"
         "| 6 | **Logs + APM correlation** | Single click pivot from anomaly to top stack-traces (NullPointerException dominates) |\n"
         "| 7 | **AIOps Log Rate Analysis** | Highlights `IdempotencyKeyExtractor.extract` as the regressing log signature |\n"
@@ -1223,7 +1223,7 @@ def _md_stack_traces_table() -> str:
          "Cannot invoke \"IdempotencyKey.value()\" because \"key\" is null",
          _STACKS["NullPointerException"][0]),
         ("DBConnectionTimeout", "checkout-service", "a4f9c21", "marquez",
-         "HikariPool-1 — Connection is not available, request timed out after 30000ms",
+         "HikariPool-1 - Connection is not available, request timed out after 30000ms",
          _STACKS["DBConnectionTimeout"][0]),
         ("JsonParseException", "checkout-service", "bd8e137", "patel",
          "Mismatched input: schema v2 requires 'cart_lines'; received legacy 'items'",
@@ -1232,11 +1232,11 @@ def _md_stack_traces_table() -> str:
          "Rate limit exceeded for tenant t_3a8f: 200 rpm budget consumed",
          _STACKS["RateLimitExceeded"][0]),
         ("NullPointerException", "checkout-service", "c6d2410", "okafor",
-         "null pointer dereference in CartTotalCalculator.totals — line items list returned null",
+         "null pointer dereference in CartTotalCalculator.totals - line items list returned null",
          _STACKS["NullPointerException"][2]),
     ]
     parts = [
-        "## Representative stack traces — paste into a Case\n",
+        "## Representative stack traces - paste into a Case\n",
         "_Bug-bash starter pack. Each row has the deploy commit that introduced the regression._\n",
     ]
     for i, (etype, svc, sha, author, msg, stack) in enumerate(samples, 1):
@@ -1255,13 +1255,13 @@ def get_dashboard_panels() -> List[Dict[str, Any]]:
     panels = []
     # 1. Header (full width, h=8)
     panels.append(_markdown_panel("p1", 0, 0, 48, 8, _md_header(),
-                                  "Noisy microservice — story & talk track"))
+                                  "Noisy microservice - story & talk track"))
     # 2. Vega errors-by-service bar (24x14)
     panels.append(_vega_panel("p2", 0, 8, 24, 14, "Errors by service", _vega_errors_by_service_spec()))
     # 3. Vega error-rate-over-time line (24x14)
     panels.append(_vega_panel("p3", 24, 8, 24, 14, "Error rate by service", _vega_error_rate_over_time_spec()))
     # 4. Vega top error.type for checkout (24x12)
-    panels.append(_vega_panel("p4", 0, 22, 24, 12, "Top error types — checkout-service", _vega_top_error_types_spec()))
+    panels.append(_vega_panel("p4", 0, 22, 24, 12, "Top error types - checkout-service", _vega_top_error_types_spec()))
     # 5. Vega deploy timeline + checkout error rate (24x12)
     panels.append(_vega_panel("p5", 24, 22, 24, 12, "Deploys vs error rate", _vega_deploy_timeline_spec(now)))
     # 6. How Elastic catches this (full, h=10)
@@ -1269,7 +1269,7 @@ def get_dashboard_panels() -> List[Dict[str, Any]]:
                                   "How Elastic catches this earlier"))
     # 7. Stack traces table (full, h=12)
     panels.append(_markdown_panel("p7", 0, 44, 48, 12, _md_stack_traces_table(),
-                                  "Top stack traces — checkout-service"))
+                                  "Top stack traces - checkout-service"))
     return panels
 
 
@@ -1333,7 +1333,7 @@ def _create_dashboard() -> Dict[str, Any]:
     panels_json = json.dumps(panels, ensure_ascii=False)
     options_json = json.dumps({"useMargins": True, "hidePanelTitles": False, "syncColors": False, "syncCursor": False, "syncTooltips": False})
     search_source_json = json.dumps({"query": {"language": "kuery", "query": ""}, "filter": []})
-    title = "Demo · Noisy Microservice — One Bad Apple"
+    title = "Demo · Noisy Microservice - One Bad Apple"
     description = (
         f"Story-driven demo dashboard for {_FICT_COMPANY}. checkout-service produces ~80% of "
         "errors with three deploy-correlated regressions in the last 7 days. Backed by "

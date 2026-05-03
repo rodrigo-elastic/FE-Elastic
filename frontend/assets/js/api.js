@@ -22,7 +22,7 @@ async function apiPost(path, body) {
     let detail = String(res.status);
     try {
       const j = await res.json();
-      if (j && j.detail) detail = `${res.status} — ${j.detail}`;
+      if (j && j.detail) detail = `${res.status} - ${j.detail}`;
     } catch (_) {}
     throw new Error(`POST ${path} failed: ${detail}`);
   }

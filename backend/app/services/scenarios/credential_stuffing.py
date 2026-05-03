@@ -1454,7 +1454,7 @@ def get_dashboard_panels() -> List[Dict[str, Any]]:
 
     # Row 1: full-width markdown header (h=8)
     panels.append(_markdown_panel("p1", 0, 0, 48, 8, _md_header(),
-                                  "Credential stuffing — incident overview"))
+                                  "Credential stuffing - incident overview"))
 
     # Row 2: heatmap left (24w, h=14) + top IPs right (24w, h=14)
     panels.append(_vega_panel("p2", 0, 8, 24, 14,
