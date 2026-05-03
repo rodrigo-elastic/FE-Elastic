@@ -1193,8 +1193,6 @@ def _spec_p99_by_service() -> Dict[str, Any]:
                     "field": "@timestamp",
                     "fixed_interval": "10m",
                     "min_doc_count": 0,
-                    "extended_bounds": {"min": "{{timefilter.from}}",
-                                        "max": "{{timefilter.to}}"},
                 },
                 "aggs": {
                     "by_service": {
@@ -1280,17 +1278,6 @@ def _spec_p99_by_service() -> Dict[str, Any]:
                     "y": {"field": "slo", "type": "quantitative"},
                 },
             },
-            {
-                "data": {"values": [
-                    {"label": "1s SLO", "y": 1000, "x": "{{timefilter.from}}"}]},
-                "mark": {"type": "text", "align": "left", "dx": 4, "dy": -4,
-                         "color": "#ff5252", "fontSize": 11},
-                "encoding": {
-                    "x": {"field": "x", "type": "temporal"},
-                    "y": {"field": "y", "type": "quantitative"},
-                    "text": {"field": "label", "type": "nominal"},
-                },
-            },
         ],
         "config": {
             "background": "transparent",
@@ -1303,13 +1290,14 @@ def _spec_p99_by_service() -> Dict[str, Any]:
 
 
 def _spec_errors_stacked() -> Dict[str, Any]:
-    """Stacked bar of error count per service per 15-minute bucket, sourced
-    from the APM index."""
+    """Stacked bar of error count per service per 30-minute bucket, sourced from
+    the metrics index where every doc carries a per-service `error.count` rollup.
+    The APM transaction index is too sparse to render visually (a few discrete
+    failure traces); the metrics rollup is a richer canvas for storytelling."""
     body = {
         "size": 0,
         "query": {
             "bool": {
-                "must": [{"term": {"event.outcome": "failure"}}],
                 "filter": [{"match_all": {}}],
             },
         },
@@ -1318,13 +1306,14 @@ def _spec_errors_stacked() -> Dict[str, Any]:
                 "date_histogram": {
                     "field": "@timestamp",
                     "fixed_interval": "30m",
-                    "min_doc_count": 0,
-                    "extended_bounds": {"min": "{{timefilter.from}}",
-                                        "max": "{{timefilter.to}}"},
+                    "min_doc_count": 1,
                 },
                 "aggs": {
                     "by_service": {
                         "terms": {"field": "service.name", "size": 10},
+                        "aggs": {
+                            "errs": {"sum": {"field": "error.count"}},
+                        },
                     },
                 },
             },
@@ -1343,7 +1332,7 @@ def _spec_errors_stacked() -> Dict[str, Any]:
             "url": {
                 "%context%": True,
                 "%timefield%": "@timestamp",
-                "index": INDICES["apm"],
+                "index": INDICES["metrics"],
                 "body": body,
             },
             "format": {"property": "aggregations.time.buckets"},
@@ -1352,7 +1341,8 @@ def _spec_errors_stacked() -> Dict[str, Any]:
             {"flatten": ["by_service.buckets"], "as": ["sub"]},
             {"calculate": "datum.key", "as": "ts"},
             {"calculate": "datum.sub.key", "as": "service"},
-            {"calculate": "datum.sub.doc_count", "as": "errors"},
+            {"calculate": "datum.sub.errs ? datum.sub.errs.value : 0", "as": "errors"},
+            {"filter": "datum.errors > 0"},
         ],
         "mark": {"type": "bar", "tooltip": True},
         "encoding": {
@@ -1396,26 +1386,54 @@ def _spec_errors_stacked() -> Dict[str, Any]:
 
 def _spec_outage_kpi() -> Dict[str, Any]:
     """Lightweight Vega text panel: peak p99 in seconds + total errors during
-    the last 24h. We render it as a Vega-Lite text mark for portability —
-    Lens metric saved-objects need a data view ID and are migration-fragile."""
+    the last 7 days (matches the dashboard timeRestore window). We render it
+    as a Vega-Lite text mark for portability — Lens metric saved-objects need
+    a data view ID and are migration-fragile.
+
+    Trick: ES returns aggregations as a single nested object. To make
+    Vega-Lite render text marks we wrap each agg into a single-row dataset by
+    pointing the format.property at the outer `aggregations.<name>` path and
+    binding the resulting record."""
+    # Use a `composite` shape that ALWAYS yields a single-bucket array under
+    # aggregations.kpi.buckets so Vega-Lite's array iterator gets exactly one
+    # row. `filters` agg with named buckets is the cleanest way to materialise
+    # "one synthetic bucket" containing nested metrics.
     body_p99 = {
         "size": 0,
         "query": {"bool": {"filter": [
             {"term": {"service.name": "checkout-db"}},
-            {"range": {"@timestamp": {"gte": "now-24h"}}},
+            {"range": {"@timestamp": {"gte": "now-7d", "lte": "now"}}},
         ]}},
-        "aggs": {"max_p99": {"max": {"field": "latency.p99_ms"}}},
+        "aggs": {
+            "kpi": {
+                "filters": {
+                    "filters": {"all": {"match_all": {}}},
+                },
+                "aggs": {
+                    "max_p99": {"max": {"field": "latency.p99_ms"}},
+                },
+            },
+        },
     }
     body_errors = {
         "size": 0,
         "query": {"bool": {"filter": [
-            {"term": {"event.outcome": "failure"}},
-            {"range": {"@timestamp": {"gte": "now-24h"}}},
+            {"range": {"@timestamp": {"gte": "now-7d", "lte": "now"}}},
         ]}},
+        "aggs": {
+            "kpi": {
+                "filters": {
+                    "filters": {"all": {"match_all": {}}},
+                },
+                "aggs": {
+                    "total_errors": {"sum": {"field": "error.count"}},
+                },
+            },
+        },
     }
     return {
         "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-        "title": {"text": "Outage KPIs (last 24h)",
+        "title": {"text": "Outage KPIs (last 7d)",
                   "color": "#e6e8eb"},
         "vconcat": [
             {
@@ -1427,10 +1445,13 @@ def _spec_outage_kpi() -> Dict[str, Any]:
                         "index": INDICES["metrics"],
                         "body": body_p99,
                     },
-                    "format": {"property": "aggregations"},
+                    # filters-agg `keyed: false` flips buckets into a list. Even
+                    # without setting it explicitly the default keyed:true gives
+                    # us a dict; we point at a known key to get the bucket dict.
+                    "format": {"property": "aggregations.kpi.buckets.all"},
                 },
                 "transform": [
-                    {"calculate": "datum.max_p99.value / 1000.0", "as": "value_s"},
+                    {"calculate": "datum.max_p99 && datum.max_p99.value ? datum.max_p99.value / 1000.0 : 0", "as": "value_s"},
                     {"calculate": "format(datum.value_s, '.2f') + ' s'", "as": "label"},
                 ],
                 "mark": {"type": "text", "fontSize": 42, "fontWeight": "bold",
@@ -1438,18 +1459,18 @@ def _spec_outage_kpi() -> Dict[str, Any]:
                 "encoding": {"text": {"field": "label", "type": "nominal"}},
             },
             {
-                "title": {"text": "Errors (count)", "color": "#9aa0a6", "fontSize": 11},
+                "title": {"text": "Errors (count, last 7d)", "color": "#9aa0a6", "fontSize": 11},
                 "data": {
                     "url": {
                         "%context%": False,
-                        "index": INDICES["apm"],
+                        "index": INDICES["metrics"],
                         "body": body_errors,
                     },
-                    "format": {"property": "hits"},
+                    "format": {"property": "aggregations.kpi.buckets.all"},
                 },
                 "transform": [
-                    {"calculate": "datum.total.value", "as": "value"},
-                    {"calculate": "format(datum.value, ',') + ' failures'", "as": "label"},
+                    {"calculate": "datum.total_errors && datum.total_errors.value ? datum.total_errors.value : 0", "as": "value"},
+                    {"calculate": "format(datum.value, ',') + ' errors'", "as": "label"},
                 ],
                 "mark": {"type": "text", "fontSize": 28, "fontWeight": "bold",
                          "color": "#f4a35a", "align": "center"},
@@ -1473,9 +1494,7 @@ def _spec_funnel() -> Dict[str, Any]:
                 "date_histogram": {
                     "field": "@timestamp",
                     "fixed_interval": "30m",
-                    "min_doc_count": 0,
-                    "extended_bounds": {"min": "{{timefilter.from}}",
-                                        "max": "{{timefilter.to}}"},
+                    "min_doc_count": 1,
                 },
                 "aggs": {
                     "abandon": {"avg": {"field": "funnel.cart_abandonment_rate"}},
