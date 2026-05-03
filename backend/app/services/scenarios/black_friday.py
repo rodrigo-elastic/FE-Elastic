@@ -1175,239 +1175,20 @@ def generate_documents(seed: int = _DEFAULT_SEED) -> Dict[str, List[Dict[str, An
 
 
 def _spec_p99_by_service() -> Dict[str, Any]:
-    """Vega-Lite line chart of p99 latency per service over time, with a 1-second
-    SLO threshold rule. Pulls the precomputed latency.p99_ms field from the
-    metrics index, so we don't have to ask Kibana to compute percentiles
-    client-side. Anomaly band overlay highlights the headliner window."""
+    """Top-N services by MAX p99 over the dashboard window, rendered as a
+    horizontal bar chart. We sidestep Vega-Lite's flatten transform entirely
+    by asking ES to bucket by service first; each datum already has key
+    (service name) and max_p99.value. This is a known-working shape for the
+    Kibana 9.3 Vega plugin."""
     body = {
         "size": 0,
-        "query": {
-            "bool": {
-                "must": [{"match_all": {}}],
-                "filter": [{"match_all": {}}],
-            },
-        },
+        "query": {"bool": {"filter": [{"match_all": {}}]}},
         "aggs": {
-            "time": {
-                "date_histogram": {
-                    "field": "@timestamp",
-                    "fixed_interval": "10m",
-                    "min_doc_count": 0,
-                },
-                "aggs": {
-                    "by_service": {
-                        "terms": {"field": "service.name", "size": 10},
-                        "aggs": {
-                            "p99": {"avg": {"field": "latency.p99_ms"}},
-                        },
-                    },
-                },
-            },
-        },
-    }
-
-    return {
-        "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-        "title": {
-            "text": "p99 latency by service - 10m buckets",
-            "subtitle": "checkout-db is the villain. Healthy services (recs-svc, frontend) stay flat.",
-            "color": "#e6e8eb",
-            "subtitleColor": "#9aa0a6",
-        },
-        "data": {
-            "url": {
-                "%context%": True,
-                "%timefield%": "@timestamp",
-                "index": INDICES["metrics"],
-                "body": body,
-            },
-            "format": {"property": "aggregations.time.buckets"},
-        },
-        "transform": [
-            {"flatten": ["by_service.buckets"], "as": ["sub"]},
-            {"calculate": "datum.key", "as": "ts"},
-            {"calculate": "datum.sub.key", "as": "service"},
-            {"calculate": "datum.sub.p99.value", "as": "p99_ms"},
-            {"filter": "datum.p99_ms != null"},
-        ],
-        "layer": [
-            {
-                "mark": {"type": "line", "interpolate": "monotone", "strokeWidth": 2,
-                         "point": {"filled": True, "size": 30}},
-                "encoding": {
-                    "x": {"field": "ts", "type": "temporal", "title": None,
-                          "axis": {"labelColor": "#cfd2d6", "titleColor": "#cfd2d6",
-                                   "format": "%a %H:%M"}},
-                    "y": {"field": "p99_ms", "type": "quantitative",
-                          "title": "p99 (ms)",
-                          "scale": {"type": "log", "domainMin": 30},
-                          "axis": {"labelColor": "#cfd2d6", "titleColor": "#cfd2d6"}},
-                    "color": {
-                        "field": "service",
-                        "type": "nominal",
-                        "title": "service",
-                        "scale": {
-                            "domain": [
-                                "checkout-db", "checkout-svc", "payment-svc", "api-gateway",
-                                "cart-svc", "catalog-svc", "inventory-svc",
-                                "recs-svc", "frontend", "notification-svc",
-                            ],
-                            "range": [
-                                "#e85b5b", "#f4a35a", "#f6cf60", "#7d8cf2",
-                                "#7fc4ec", "#7ad6c1", "#9bd17f",
-                                "#a5cb7d", "#9aa0a6", "#c8a4f0",
-                            ],
-                        },
-                        "legend": {"labelColor": "#cfd2d6", "titleColor": "#cfd2d6",
-                                   "orient": "right"},
-                    },
-                    "tooltip": [
-                        {"field": "ts", "type": "temporal", "title": "time",
-                         "format": "%a %H:%M"},
-                        {"field": "service", "type": "nominal"},
-                        {"field": "p99_ms", "type": "quantitative", "format": ".0f",
-                         "title": "p99 (ms)"},
-                    ],
-                },
-            },
-            {
-                "data": {"values": [{"slo": 1000}]},
-                "mark": {"type": "rule", "color": "#ff5252", "strokeDash": [6, 4],
-                         "strokeWidth": 2},
-                "encoding": {
-                    "y": {"field": "slo", "type": "quantitative"},
-                },
-            },
-        ],
-        "config": {
-            "background": "transparent",
-            "view": {"stroke": "transparent"},
-            "axis": {"labelColor": "#cfd2d6", "titleColor": "#cfd2d6",
-                     "gridColor": "#2a2d33"},
-            "legend": {"labelColor": "#cfd2d6", "titleColor": "#cfd2d6"},
-        },
-    }
-
-
-def _spec_errors_stacked() -> Dict[str, Any]:
-    """Stacked bar of error count per service per 30-minute bucket, sourced from
-    the metrics index where every doc carries a per-service `error.count` rollup.
-    The APM transaction index is too sparse to render visually (a few discrete
-    failure traces); the metrics rollup is a richer canvas for storytelling."""
-    body = {
-        "size": 0,
-        "query": {
-            "bool": {
-                "filter": [{"match_all": {}}],
-            },
-        },
-        "aggs": {
-            "time": {
-                "date_histogram": {
-                    "field": "@timestamp",
-                    "fixed_interval": "30m",
-                    "min_doc_count": 1,
-                },
-                "aggs": {
-                    "by_service": {
-                        "terms": {"field": "service.name", "size": 10},
-                        "aggs": {
-                            "errs": {"sum": {"field": "error.count"}},
-                        },
-                    },
-                },
-            },
-        },
-    }
-
-    return {
-        "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-        "title": {
-            "text": "Errors by service over time - 30m buckets",
-            "subtitle": "Stacked errors. Watch the headliner spike. checkout-svc, payment-svc and checkout-db light up together.",
-            "color": "#e6e8eb",
-            "subtitleColor": "#9aa0a6",
-        },
-        "data": {
-            "url": {
-                "%context%": True,
-                "%timefield%": "@timestamp",
-                "index": INDICES["metrics"],
-                "body": body,
-            },
-            "format": {"property": "aggregations.time.buckets"},
-        },
-        "transform": [
-            {"flatten": ["by_service.buckets"], "as": ["sub"]},
-            {"calculate": "datum.key", "as": "ts"},
-            {"calculate": "datum.sub.key", "as": "service"},
-            {"calculate": "datum.sub.errs ? datum.sub.errs.value : 0", "as": "errors"},
-            {"filter": "datum.errors > 0"},
-        ],
-        "mark": {"type": "bar", "tooltip": True},
-        "encoding": {
-            "x": {"field": "ts", "type": "temporal", "title": None,
-                  "axis": {"format": "%a %H:%M", "labelColor": "#cfd2d6",
-                           "titleColor": "#cfd2d6"}},
-            "y": {"field": "errors", "type": "quantitative", "title": "errors",
-                  "axis": {"labelColor": "#cfd2d6", "titleColor": "#cfd2d6"}},
-            "color": {
-                "field": "service",
-                "type": "nominal",
-                "scale": {
-                    "domain": [
-                        "checkout-db", "checkout-svc", "payment-svc",
-                        "api-gateway", "cart-svc", "catalog-svc",
-                        "inventory-svc", "recs-svc", "frontend",
-                        "notification-svc",
-                    ],
-                    "range": [
-                        "#e85b5b", "#f4a35a", "#f6cf60", "#7d8cf2",
-                        "#7fc4ec", "#7ad6c1", "#9bd17f",
-                        "#a5cb7d", "#9aa0a6", "#c8a4f0",
-                    ],
-                },
-                "legend": {"labelColor": "#cfd2d6", "titleColor": "#cfd2d6"},
-            },
-            "tooltip": [
-                {"field": "ts", "type": "temporal", "title": "time",
-                 "format": "%a %H:%M"},
-                {"field": "service", "type": "nominal"},
-                {"field": "errors", "type": "quantitative"},
-            ],
-        },
-        "config": {
-            "background": "transparent",
-            "view": {"stroke": "transparent"},
-            "axis": {"gridColor": "#2a2d33"},
-        },
-    }
-
-
-def _spec_outage_kpi() -> Dict[str, Any]:
-    """Lightweight Vega text panel: peak p99 in seconds + total errors during
-    the last 7 days (matches the dashboard timeRestore window). We render it
-    as a Vega-Lite text mark for portability - Lens metric saved-objects need
-    a data view ID and are migration-fragile.
-
-    Trick: ES returns aggregations as a single nested object. To make
-    Vega-Lite render text marks we wrap each agg into a single-row dataset by
-    pointing the format.property at the outer `aggregations.<name>` path and
-    binding the resulting record."""
-    # Use a `composite` shape that ALWAYS yields a single-bucket array under
-    # aggregations.kpi.buckets so Vega-Lite's array iterator gets exactly one
-    # row. `filters` agg with named buckets is the cleanest way to materialise
-    # "one synthetic bucket" containing nested metrics.
-    body_p99 = {
-        "size": 0,
-        "query": {"bool": {"filter": [
-            {"term": {"service.name": "checkout-db"}},
-            {"range": {"@timestamp": {"gte": "now-7d", "lte": "now"}}},
-        ]}},
-        "aggs": {
-            "kpi": {
-                "filters": {
-                    "filters": {"all": {"match_all": {}}},
+            "by_service": {
+                "terms": {
+                    "field": "service.name",
+                    "size": 10,
+                    "order": {"max_p99": "desc"},
                 },
                 "aggs": {
                     "max_p99": {"max": {"field": "latency.p99_ms"}},
@@ -1415,75 +1196,171 @@ def _spec_outage_kpi() -> Dict[str, Any]:
             },
         },
     }
-    body_errors = {
+
+    return {
+        "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+        "title": {
+            "text": "Peak p99 latency by service (last 7d)",
+            "subtitle": "checkout-db is the villain. Healthy services stay flat.",
+        },
+        "data": {
+            "url": {
+                "%context%": True,
+                "%timefield%": "@timestamp",
+                "index": INDICES["metrics"],
+                "body": body,
+            },
+            "format": {"property": "aggregations.by_service.buckets"},
+        },
+        "mark": {"type": "bar", "tooltip": True},
+        "encoding": {
+            "y": {
+                "field": "key",
+                "type": "nominal",
+                "title": "service",
+                "sort": "-x",
+            },
+            "x": {
+                "field": "max_p99.value",
+                "type": "quantitative",
+                "title": "peak p99 (ms)",
+            },
+            "color": {
+                "field": "key",
+                "type": "nominal",
+                "legend": None,
+            },
+            "tooltip": [
+                {"field": "key", "type": "nominal", "title": "service"},
+                {"field": "max_p99.value", "type": "quantitative",
+                 "format": ".0f", "title": "peak p99 (ms)"},
+            ],
+        },
+    }
+
+
+def _spec_errors_stacked() -> Dict[str, Any]:
+    """Top-N services by total error.count over the dashboard window. A flat
+    bar chart instead of stacked-by-time. Same business message (which
+    services light up), simpler render path, no flatten transform."""
+    body = {
         "size": 0,
-        "query": {"bool": {"filter": [
-            {"range": {"@timestamp": {"gte": "now-7d", "lte": "now"}}},
-        ]}},
+        "query": {"bool": {"filter": [{"match_all": {}}]}},
         "aggs": {
-            "kpi": {
-                "filters": {
-                    "filters": {"all": {"match_all": {}}},
+            "by_service": {
+                "terms": {
+                    "field": "service.name",
+                    "size": 10,
+                    "order": {"errs": "desc"},
                 },
                 "aggs": {
-                    "total_errors": {"sum": {"field": "error.count"}},
+                    "errs": {"sum": {"field": "error.count"}},
                 },
             },
         },
     }
+
     return {
         "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-        "title": {"text": "Outage KPIs (last 7d)",
-                  "color": "#e6e8eb"},
-        "vconcat": [
-            {
-                "title": {"text": "checkout-db peak p99",
-                          "color": "#9aa0a6", "fontSize": 11},
-                "data": {
-                    "url": {
-                        "%context%": False,
-                        "index": INDICES["metrics"],
-                        "body": body_p99,
-                    },
-                    # filters-agg `keyed: false` flips buckets into a list. Even
-                    # without setting it explicitly the default keyed:true gives
-                    # us a dict; we point at a known key to get the bucket dict.
-                    "format": {"property": "aggregations.kpi.buckets.all"},
-                },
-                "transform": [
-                    {"calculate": "datum.max_p99 && datum.max_p99.value ? datum.max_p99.value / 1000.0 : 0", "as": "value_s"},
-                    {"calculate": "format(datum.value_s, '.2f') + ' s'", "as": "label"},
-                ],
-                "mark": {"type": "text", "fontSize": 42, "fontWeight": "bold",
-                         "color": "#e85b5b", "align": "center"},
-                "encoding": {"text": {"field": "label", "type": "nominal"}},
+        "title": {
+            "text": "Total errors by service (last 7d)",
+            "subtitle": "checkout-svc, payment-svc and checkout-db light up together.",
+        },
+        "data": {
+            "url": {
+                "%context%": True,
+                "%timefield%": "@timestamp",
+                "index": INDICES["metrics"],
+                "body": body,
             },
-            {
-                "title": {"text": "Errors (count, last 7d)", "color": "#9aa0a6", "fontSize": 11},
-                "data": {
-                    "url": {
-                        "%context%": False,
-                        "index": INDICES["metrics"],
-                        "body": body_errors,
-                    },
-                    "format": {"property": "aggregations.kpi.buckets.all"},
-                },
-                "transform": [
-                    {"calculate": "datum.total_errors && datum.total_errors.value ? datum.total_errors.value : 0", "as": "value"},
-                    {"calculate": "format(datum.value, ',') + ' errors'", "as": "label"},
-                ],
-                "mark": {"type": "text", "fontSize": 28, "fontWeight": "bold",
-                         "color": "#f4a35a", "align": "center"},
-                "encoding": {"text": {"field": "label", "type": "nominal"}},
+            "format": {"property": "aggregations.by_service.buckets"},
+        },
+        "mark": {"type": "bar", "tooltip": True},
+        "encoding": {
+            "y": {
+                "field": "key",
+                "type": "nominal",
+                "title": "service",
+                "sort": "-x",
             },
-        ],
-        "config": {"background": "transparent", "view": {"stroke": "transparent"}},
+            "x": {
+                "field": "errs.value",
+                "type": "quantitative",
+                "title": "total errors",
+            },
+            "color": {
+                "field": "key",
+                "type": "nominal",
+                "legend": None,
+            },
+            "tooltip": [
+                {"field": "key", "type": "nominal", "title": "service"},
+                {"field": "errs.value", "type": "quantitative",
+                 "format": ",.0f", "title": "errors"},
+            ],
+        },
     }
+
+
+def _spec_outage_kpi() -> Dict[str, Any]:
+    """Deprecated. Kept for backwards compatibility with any external caller.
+    The dashboard now renders KPI tiles via a markdown panel populated by
+    `_kpi_markdown()`, which queries ES once at seed time and embeds the
+    values as static text. Markdown panels always render in Kibana 9.3,
+    sidestepping the Vega-Lite text-mark rendering issues we hit with
+    filters-agg + format.property."""
+    return {
+        "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+        "data": {"values": [{"x": 0}]},
+        "mark": "text",
+        "encoding": {"text": {"value": "see markdown panel"}},
+    }
+
+
+def _kpi_markdown() -> str:
+    """Compute peak checkout-db p99 + total errors over the last 7 days and
+    render as a markdown KPI block. Falls back to a static narrative if ES
+    is unreachable so the dashboard still has something to show."""
+    try:
+        es = get_client()
+        r1 = es.search(index=INDICES["metrics"], body={
+            "size": 0,
+            "query": {"bool": {"filter": [
+                {"term": {"service.name": "checkout-db"}},
+                {"range": {"@timestamp": {"gte": "now-7d", "lte": "now"}}},
+            ]}},
+            "aggs": {"max_p99": {"max": {"field": "latency.p99_ms"}}},
+        })
+        peak_p99_ms = r1["aggregations"]["max_p99"]["value"] or 0
+        r2 = es.search(index=INDICES["metrics"], body={
+            "size": 0,
+            "query": {"bool": {"filter": [
+                {"range": {"@timestamp": {"gte": "now-7d", "lte": "now"}}},
+            ]}},
+            "aggs": {"total_errors": {"sum": {"field": "error.count"}}},
+        })
+        total_errors = int(r2["aggregations"]["total_errors"]["value"] or 0)
+    except Exception as exc:
+        log.warning("black_friday.kpi.compute.failed", error=str(exc))
+        peak_p99_ms = 0
+        total_errors = 0
+
+    peak_p99_s = peak_p99_ms / 1000.0
+    return (
+        "## Outage KPIs (last 7d)\n\n"
+        f"### checkout-db peak p99\n"
+        f"# **{peak_p99_s:.2f} s**\n\n"
+        f"_Baseline is ~180 ms. Peak is ~{int(peak_p99_s)}x baseline._\n\n"
+        f"### Total errors (all services)\n"
+        f"# **{total_errors:,}**\n\n"
+        "_Concentrated in checkout-svc, payment-svc, checkout-db._\n"
+    )
 
 
 def _spec_funnel() -> Dict[str, Any]:
     """Cart abandonment rate vs payment success rate over time, dual-line.
-    Sourced from the metrics index, scoped to checkout-svc."""
+    Uses transform.fold to convert {abandon, success} columns into long
+    format and color by metric. No flatten, no nested aggs."""
     body = {
         "size": 0,
         "query": {"bool": {"filter": [
@@ -1507,9 +1384,7 @@ def _spec_funnel() -> Dict[str, Any]:
         "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
         "title": {
             "text": "Customer-impact funnel: abandonment vs payment success",
-            "subtitle": "Abandonment doubles from 28% to 55% during the headliner. Payment success collapses to 50%.",
-            "color": "#e6e8eb",
-            "subtitleColor": "#9aa0a6",
+            "subtitle": "Abandonment spikes during the headliner. Payment success collapses.",
         },
         "data": {
             "url": {
@@ -1521,43 +1396,24 @@ def _spec_funnel() -> Dict[str, Any]:
             "format": {"property": "aggregations.time.buckets"},
         },
         "transform": [
-            {"calculate": "datum.key", "as": "ts"},
             {"calculate": "datum.abandon.value", "as": "abandonment_rate"},
             {"calculate": "datum.success.value", "as": "payment_success_rate"},
             {"fold": ["abandonment_rate", "payment_success_rate"],
              "as": ["metric", "rate"]},
             {"filter": "datum.rate != null"},
         ],
-        "mark": {"type": "line", "interpolate": "monotone", "strokeWidth": 2.5,
-                 "point": {"filled": True, "size": 40}},
+        "mark": {"type": "line", "tooltip": True},
         "encoding": {
-            "x": {"field": "ts", "type": "temporal", "title": None,
-                  "axis": {"format": "%a %H:%M", "labelColor": "#cfd2d6",
-                           "titleColor": "#cfd2d6"}},
-            "y": {"field": "rate", "type": "quantitative", "title": "rate",
-                  "axis": {"format": ".0%", "labelColor": "#cfd2d6",
-                           "titleColor": "#cfd2d6"},
-                  "scale": {"domain": [0, 1]}},
-            "color": {
-                "field": "metric",
-                "type": "nominal",
-                "scale": {
-                    "domain": ["abandonment_rate", "payment_success_rate"],
-                    "range": ["#e85b5b", "#7ad6c1"],
-                },
-                "legend": {"labelColor": "#cfd2d6", "titleColor": "#cfd2d6"},
-            },
+            "x": {"field": "key", "type": "temporal", "title": "time"},
+            "y": {"field": "rate", "type": "quantitative",
+                  "title": "rate",
+                  "axis": {"format": ".0%"}},
+            "color": {"field": "metric", "type": "nominal", "title": "metric"},
             "tooltip": [
-                {"field": "ts", "type": "temporal", "title": "time",
-                 "format": "%a %H:%M"},
+                {"field": "key", "type": "temporal", "title": "time"},
                 {"field": "metric", "type": "nominal"},
                 {"field": "rate", "type": "quantitative", "format": ".1%"},
             ],
-        },
-        "config": {
-            "background": "transparent",
-            "view": {"stroke": "transparent"},
-            "axis": {"gridColor": "#2a2d33"},
         },
     }
 
@@ -1664,8 +1520,8 @@ def get_dashboard_panels() -> List[Dict[str, Any]]:
                     "p99 latency by service", _spec_p99_by_service()),
         _vega_panel("err", 24, 8, 24, 14,
                     "Errors by service over time", _spec_errors_stacked()),
-        _vega_panel("kpi", 0, 22, 12, 10,
-                    "Outage KPIs", _spec_outage_kpi()),
+        _markdown_panel("kpi", 0, 22, 12, 10, _kpi_markdown(),
+                        "Outage KPIs"),
         _vega_panel("funnel", 12, 22, 36, 14,
                     "Funnel: abandonment vs payment success", _spec_funnel()),
         _markdown_panel("nar", 0, 36, 48, 10, md_followup,
