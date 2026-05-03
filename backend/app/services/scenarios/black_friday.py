@@ -1175,129 +1175,80 @@ def generate_documents(seed: int = _DEFAULT_SEED) -> Dict[str, List[Dict[str, An
 
 
 def _spec_p99_by_service() -> Dict[str, Any]:
-    """Top-N services by MAX p99 over the dashboard window, rendered as a
-    horizontal bar chart. We sidestep Vega-Lite's flatten transform entirely
-    by asking ES to bucket by service first; each datum already has key
-    (service name) and max_p99.value. This is a known-working shape for the
-    Kibana 9.3 Vega plugin."""
-    body = {
-        "size": 0,
-        "query": {"bool": {"filter": [{"match_all": {}}]}},
-        "aggs": {
-            "by_service": {
-                "terms": {
-                    "field": "service.name",
-                    "size": 10,
-                    "order": {"max_p99": "desc"},
-                },
-                "aggs": {
-                    "max_p99": {"max": {"field": "latency.p99_ms"}},
+    """Inline-data bar chart of peak p99 per service. Computed at seed time
+    by querying ES; results embedded as data.values so the Vega plugin in
+    Kibana never has to fetch anything (which is the failure mode that was
+    breaking every URL-based panel in 9.3)."""
+    values: List[Dict[str, Any]] = []
+    try:
+        es = get_client()
+        r = es.search(index=INDICES["metrics"], body={
+            "size": 0,
+            "query": {"bool": {"filter": [
+                {"range": {"@timestamp": {"gte": "now-7d", "lte": "now"}}},
+            ]}},
+            "aggs": {
+                "by_service": {
+                    "terms": {"field": "service.name", "size": 10,
+                               "order": {"max_p99": "desc"}},
+                    "aggs": {"max_p99": {"max": {"field": "latency.p99_ms"}}},
                 },
             },
-        },
-    }
+        })
+        for b in r["aggregations"]["by_service"]["buckets"]:
+            v = (b.get("max_p99") or {}).get("value")
+            if v is not None:
+                values.append({"service": b["key"], "peak_p99_ms": float(v)})
+    except Exception as exc:
+        log.warning("black_friday.spec_p99.compute.failed", error=str(exc))
 
     return {
         "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-        "title": {
-            "text": "Peak p99 latency by service (last 7d)",
-            "subtitle": "checkout-db is the villain. Healthy services stay flat.",
-        },
-        "data": {
-            "url": {
-                "%context%": True,
-                "%timefield%": "@timestamp",
-                "index": INDICES["metrics"],
-                "body": body,
-            },
-            "format": {"property": "aggregations.by_service.buckets"},
-        },
-        "mark": {"type": "bar", "tooltip": True},
+        "title": "Peak p99 latency by service (last 7d)",
+        "data": {"values": values},
+        "mark": "bar",
         "encoding": {
-            "y": {
-                "field": "key",
-                "type": "nominal",
-                "title": "service",
-                "sort": "-x",
-            },
-            "x": {
-                "field": "max_p99.value",
-                "type": "quantitative",
-                "title": "peak p99 (ms)",
-            },
-            "color": {
-                "field": "key",
-                "type": "nominal",
-                "legend": None,
-            },
-            "tooltip": [
-                {"field": "key", "type": "nominal", "title": "service"},
-                {"field": "max_p99.value", "type": "quantitative",
-                 "format": ".0f", "title": "peak p99 (ms)"},
-            ],
+            "y": {"field": "service", "type": "nominal", "sort": "-x", "title": "service"},
+            "x": {"field": "peak_p99_ms", "type": "quantitative", "title": "peak p99 (ms)"},
+            "color": {"field": "service", "type": "nominal", "legend": None},
         },
     }
 
 
 def _spec_errors_stacked() -> Dict[str, Any]:
-    """Top-N services by total error.count over the dashboard window. A flat
-    bar chart instead of stacked-by-time. Same business message (which
-    services light up), simpler render path, no flatten transform."""
-    body = {
-        "size": 0,
-        "query": {"bool": {"filter": [{"match_all": {}}]}},
-        "aggs": {
-            "by_service": {
-                "terms": {
-                    "field": "service.name",
-                    "size": 10,
-                    "order": {"errs": "desc"},
-                },
-                "aggs": {
-                    "errs": {"sum": {"field": "error.count"}},
+    """Inline-data bar chart of total errors per service over last 7d."""
+    values: List[Dict[str, Any]] = []
+    try:
+        es = get_client()
+        r = es.search(index=INDICES["metrics"], body={
+            "size": 0,
+            "query": {"bool": {"filter": [
+                {"range": {"@timestamp": {"gte": "now-7d", "lte": "now"}}},
+            ]}},
+            "aggs": {
+                "by_service": {
+                    "terms": {"field": "service.name", "size": 10,
+                               "order": {"errs": "desc"}},
+                    "aggs": {"errs": {"sum": {"field": "error.count"}}},
                 },
             },
-        },
-    }
+        })
+        for b in r["aggregations"]["by_service"]["buckets"]:
+            v = (b.get("errs") or {}).get("value")
+            if v is not None:
+                values.append({"service": b["key"], "errors": int(v)})
+    except Exception as exc:
+        log.warning("black_friday.spec_errors.compute.failed", error=str(exc))
 
     return {
         "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-        "title": {
-            "text": "Total errors by service (last 7d)",
-            "subtitle": "checkout-svc, payment-svc and checkout-db light up together.",
-        },
-        "data": {
-            "url": {
-                "%context%": True,
-                "%timefield%": "@timestamp",
-                "index": INDICES["metrics"],
-                "body": body,
-            },
-            "format": {"property": "aggregations.by_service.buckets"},
-        },
-        "mark": {"type": "bar", "tooltip": True},
+        "title": "Total errors by service (last 7d)",
+        "data": {"values": values},
+        "mark": "bar",
         "encoding": {
-            "y": {
-                "field": "key",
-                "type": "nominal",
-                "title": "service",
-                "sort": "-x",
-            },
-            "x": {
-                "field": "errs.value",
-                "type": "quantitative",
-                "title": "total errors",
-            },
-            "color": {
-                "field": "key",
-                "type": "nominal",
-                "legend": None,
-            },
-            "tooltip": [
-                {"field": "key", "type": "nominal", "title": "service"},
-                {"field": "errs.value", "type": "quantitative",
-                 "format": ",.0f", "title": "errors"},
-            ],
+            "y": {"field": "service", "type": "nominal", "sort": "-x", "title": "service"},
+            "x": {"field": "errors", "type": "quantitative", "title": "total errors"},
+            "color": {"field": "service", "type": "nominal", "legend": None},
         },
     }
 
@@ -1358,62 +1309,51 @@ def _kpi_markdown() -> str:
 
 
 def _spec_funnel() -> Dict[str, Any]:
-    """Cart abandonment rate vs payment success rate over time, dual-line.
-    Uses transform.fold to convert {abandon, success} columns into long
-    format and color by metric. No flatten, no nested aggs."""
-    body = {
-        "size": 0,
-        "query": {"bool": {"filter": [
-            {"term": {"service.name": "checkout-svc"}},
-        ]}},
-        "aggs": {
-            "time": {
-                "date_histogram": {
-                    "field": "@timestamp",
-                    "fixed_interval": "30m",
-                    "min_doc_count": 1,
-                },
-                "aggs": {
-                    "abandon": {"avg": {"field": "funnel.cart_abandonment_rate"}},
-                    "success": {"avg": {"field": "funnel.payment_success_rate"}},
+    """Inline-data dual-line of cart abandonment vs payment success. Buckets
+    pre-computed via ES at seed time, embedded as data.values pre-folded into
+    long format so Vega-Lite needs no transforms."""
+    values: List[Dict[str, Any]] = []
+    try:
+        es = get_client()
+        r = es.search(index=INDICES["metrics"], body={
+            "size": 0,
+            "query": {"bool": {"filter": [
+                {"term": {"service.name": "checkout-svc"}},
+                {"range": {"@timestamp": {"gte": "now-7d", "lte": "now"}}},
+            ]}},
+            "aggs": {
+                "time": {
+                    "date_histogram": {"field": "@timestamp",
+                                         "fixed_interval": "30m",
+                                         "min_doc_count": 1},
+                    "aggs": {
+                        "abandon": {"avg": {"field": "funnel.cart_abandonment_rate"}},
+                        "success": {"avg": {"field": "funnel.payment_success_rate"}},
+                    },
                 },
             },
-        },
-    }
+        })
+        for b in r["aggregations"]["time"]["buckets"]:
+            ts = b.get("key_as_string") or b.get("key")
+            ab = (b.get("abandon") or {}).get("value")
+            su = (b.get("success") or {}).get("value")
+            if ab is not None:
+                values.append({"time": ts, "metric": "abandonment_rate", "rate": float(ab)})
+            if su is not None:
+                values.append({"time": ts, "metric": "payment_success_rate", "rate": float(su)})
+    except Exception as exc:
+        log.warning("black_friday.spec_funnel.compute.failed", error=str(exc))
+
     return {
         "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-        "title": {
-            "text": "Customer-impact funnel: abandonment vs payment success",
-            "subtitle": "Abandonment spikes during the headliner. Payment success collapses.",
-        },
-        "data": {
-            "url": {
-                "%context%": True,
-                "%timefield%": "@timestamp",
-                "index": INDICES["metrics"],
-                "body": body,
-            },
-            "format": {"property": "aggregations.time.buckets"},
-        },
-        "transform": [
-            {"calculate": "datum.abandon.value", "as": "abandonment_rate"},
-            {"calculate": "datum.success.value", "as": "payment_success_rate"},
-            {"fold": ["abandonment_rate", "payment_success_rate"],
-             "as": ["metric", "rate"]},
-            {"filter": "datum.rate != null"},
-        ],
-        "mark": {"type": "line", "tooltip": True},
+        "title": "Funnel: abandonment vs payment success",
+        "data": {"values": values},
+        "mark": "line",
         "encoding": {
-            "x": {"field": "key", "type": "temporal", "title": "time"},
-            "y": {"field": "rate", "type": "quantitative",
-                  "title": "rate",
+            "x": {"field": "time", "type": "temporal", "title": "time"},
+            "y": {"field": "rate", "type": "quantitative", "title": "rate",
                   "axis": {"format": ".0%"}},
             "color": {"field": "metric", "type": "nominal", "title": "metric"},
-            "tooltip": [
-                {"field": "key", "type": "temporal", "title": "time"},
-                {"field": "metric", "type": "nominal"},
-                {"field": "rate", "type": "quantitative", "format": ".1%"},
-            ],
         },
     }
 
@@ -1479,7 +1419,7 @@ def get_dashboard_panels() -> List[Dict[str, Any]]:
         "**The story.** It is Black Friday at Lumen Apparel. Traffic is 3.4x normal. "
         "At **10:00am PT** the catalog page-size change shipped on Tuesday starts hammering "
         "`checkout-db` with a 12x query plan; the database falls into IO contention; p99 "
-        "latency on the DB jumps from **180ms baseline to 4–8 seconds**; `checkout-svc` "
+        "latency on the DB jumps from **180ms baseline to 4-8 seconds**; `checkout-svc` "
         "starts surfacing 5xx; `payment-svc` retries cascade. Cart abandonment doubles "
         "from 28% to 55%. **At 11:30am PT** SRE rolls back the catalog config and "
         "everything snaps back inside one bucket.\n\n"
