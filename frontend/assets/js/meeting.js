@@ -56,7 +56,101 @@ let MEETING_DATA = null;
   await renderJourneyHeader(c.id);
   await maybeAutoLoad();
   bindActions();
+  mountAgentBuilderMinis();
 })();
+
+// ============================================================ Agent Builder mini embeds
+function buildContextPreamble() {
+  // Compact (<800 chars) preamble that pre-loads the master agent with just enough context.
+  const c = MEETING_DATA.company || {};
+  const m = MEETING_DATA.meeting || {};
+  const stack = c.tech_stack || {};
+  const lines = [
+    `Meeting: ${m.title || "(untitled)"} · ${m.start_time ? fmtDate(m.start_time) : "no date"}`,
+    `Company: ${c.name || "?"}${c.industry ? ` · ${c.industry}` : ""}${c.size ? `, ${c.size}` : ""}`,
+  ];
+  if (c.description) lines.push(`Description: ${c.description.slice(0, 240)}`);
+  const stackParts = [];
+  if (stack.observability?.length) stackParts.push(`obs=${stack.observability.slice(0, 4).join(", ")}`);
+  if (stack.search?.length) stackParts.push(`search=${stack.search.slice(0, 4).join(", ")}`);
+  if (stack.cloud?.length) stackParts.push(`cloud=${stack.cloud.slice(0, 4).join(", ")}`);
+  if (stackParts.length) lines.push(`Stack: ${stackParts.join(" · ")}`);
+  return lines.join("\n");
+}
+
+function mountAgentBuilderMinis() {
+  if (!window.AgentBuilderMini) return;
+  const c = MEETING_DATA.company || {};
+  const m = MEETING_DATA.meeting || {};
+  const baseContext = buildContextPreamble();
+  const ctxLabel = `${c.name || "account"} · ${m.title?.slice(0, 28) || "meeting"}`;
+
+  // Brief tab: pre-meeting prep
+  const briefHost = document.getElementById("abm-brief");
+  if (briefHost) {
+    AgentBuilderMini.mount(briefHost, {
+      title: "Field Assistant · Pre-meeting",
+      contextLabel: ctxLabel,
+      contextPreamble: `${baseContext}\n\nYou are helping me prepare for this meeting. The Pre-Meeting brief above is from the FE Copilot pre-meeting agent. Use the seven FE Copilot tools when they help (POC plan, SPL→ES|QL, compliance, stack extract, code, cost, capacity).`,
+      storageKey: `fec.ab.brief.${meetingId}`,
+      suggestions: [
+        { label: "Top 5 questions to ask", prompt: "What are the top 5 discovery questions I should ask this account in the meeting? Anchor them to MEDDPICC." },
+        { label: "POV plan outline", prompt: "Sketch a 6-week Proof-of-Value plan tailored to this account, focused on observability + search." },
+        { label: "Compliance angle", prompt: "Which regulations matter most for this customer and how does Elastic map to them?" },
+        { label: "TCO at 200 GB/day", prompt: "Run a TCO comparison at 200 GB/day, 12 months retention, current spend $1.5M." },
+      ],
+    });
+  }
+
+  // Post tab: follow-up + chained tools
+  const postHost = document.getElementById("abm-post");
+  if (postHost) {
+    AgentBuilderMini.mount(postHost, {
+      title: "Field Assistant · Post-meeting",
+      contextLabel: ctxLabel,
+      contextPreamble: `${baseContext}\n\nThe meeting just ended. The post-meeting agent extracted MEDDPICC signals, action items, competitor mentions, and a follow-up email draft (visible above). Help me action those next steps. Use the FE Copilot tools where helpful.`,
+      storageKey: `fec.ab.post.${meetingId}`,
+      suggestions: [
+        { label: "POV plan from this meeting", prompt: `Build a Proof-of-Value plan based on the post-meeting record for meeting ${meetingId}. Use the fec_poc_plan tool.` },
+        { label: "Cost + capacity follow-up", prompt: "If the customer's workload is 150 GB/day at peak 30k EPS, run both the cost calculator and the capacity planner so I can include them in the follow-up email." },
+        { label: "Competitor counter-positioning", prompt: "For each competitor mentioned in this meeting, give me a one-paragraph counter-positioning anchored on Elastic strengths." },
+        { label: "Translate any SPL discussed", prompt: "If the customer mentioned any SPL queries during the meeting, translate them to ES|QL." },
+      ],
+    });
+  }
+
+  // Live tab: real-time helper
+  const liveHost = document.getElementById("abm-live");
+  if (liveHost) {
+    AgentBuilderMini.mount(liveHost, {
+      title: "Field Assistant · Live",
+      contextLabel: ctxLabel,
+      contextPreamble: `${baseContext}\n\nThe transcript above shows the live conversation. Help me think on my feet during the call. Be concise; the rep is in front of the customer.`,
+      storageKey: `fec.ab.live.${meetingId}`,
+      suggestions: [
+        { label: "What should I say next?", prompt: "Given the last 3 turns of the transcript, what is the strongest next question I can ask?" },
+        { label: "Pull a battlecard", prompt: "If a competitor was just mentioned, give me the 3-bullet counter for them." },
+        { label: "Quick cost ballpark", prompt: "Give me a quick Elastic vs Splunk cost ballpark at 100 GB/day, 6 months." },
+      ],
+    });
+  }
+
+  // Context tab: deeper research
+  const ctxHost = document.getElementById("abm-context");
+  if (ctxHost) {
+    AgentBuilderMini.mount(ctxHost, {
+      title: "Field Assistant · Context",
+      contextLabel: ctxLabel,
+      contextPreamble: `${baseContext}\n\nUse this thread to dig deeper into the account: industry trends, regulatory landscape, competitive context, technical fit.`,
+      storageKey: `fec.ab.context.${meetingId}`,
+      suggestions: [
+        { label: "Industry trends", prompt: "What are the top 3 trends in this customer's industry that should shape my Elastic pitch?" },
+        { label: "Stack extraction", prompt: `Extract this customer's tech stack into canonical buckets given what we know. Use fec_stack_extract.` },
+        { label: "Code sample", prompt: "Give me a Python code sample to bulk-index 1000 web logs into Elasticsearch using ES|QL semantics." },
+      ],
+    });
+  }
+}
 
 // Pre-render the transcript inside the Live tab so source-↗ links from any
 // signal/force/BANT chip can scroll-to-quote even before "Replay" is clicked.
@@ -534,7 +628,9 @@ function bindActions() {
     btn.innerHTML = '<span class="spinner"></span> Running Pre-Meeting...';
     showSkeleton("brief");
     try {
-      const brief = await apiPost(`/agents/pre-meeting/${meetingId}?language=${encodeURIComponent(claudeLanguageName())}`, {});
+      const model = encodeURIComponent(document.getElementById("pre-model")?.value || "");
+      const lang = encodeURIComponent(claudeLanguageName());
+      const brief = await apiPost(`/agents/pre-meeting/${meetingId}?language=${lang}&model=${model}`, {});
       renderBrief(brief);
       toast("Pre-Meeting brief generated", "ok");
     } catch (e) {
@@ -553,12 +649,35 @@ function bindActions() {
     btn.innerHTML = '<span class="spinner"></span> Running Post-Meeting...';
     showSkeleton("post");
     try {
-      const result = await apiPost(`/agents/post-meeting/${meetingId}?language=${encodeURIComponent(claudeLanguageName())}`, {});
+      const model = encodeURIComponent(document.getElementById("post-model")?.value || "");
+      const lang = encodeURIComponent(claudeLanguageName());
+      const result = await apiPost(`/agents/post-meeting/${meetingId}?language=${lang}&model=${model}`, {});
       renderPost(result);
       toast("Post-Meeting result generated", "ok");
     } catch (e) {
       toast(`Post-Meeting failed: ${e.message}`, "bad");
       document.getElementById("post").innerHTML = '<p class="muted">Run again to retry.</p>';
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = labelHTML;
+    }
+  });
+
+  document.getElementById("create-dashboard")?.addEventListener("click", async (ev) => {
+    const btn = ev.currentTarget;
+    const labelHTML = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Building dashboard...';
+    try {
+      const result = await apiPost(`/kibana/dashboard/${meetingId}`, {});
+      if (result && result.dashboard_url) {
+        window.open(result.dashboard_url, "_blank", "noreferrer");
+        toast(`Dashboard created with ${result.panels} panels — opening in Kibana`, "ok");
+      } else {
+        toast("Dashboard request returned no URL", "bad");
+      }
+    } catch (e) {
+      toast(`Dashboard creation failed: ${e.message}`, "bad");
     } finally {
       btn.disabled = false;
       btn.innerHTML = labelHTML;
@@ -1013,7 +1132,9 @@ async function replayTranscript() {
 
     let result;
     try {
-      result = await apiPost(`/agents/live-meeting/${meetingId}/turn/${i}?language=${encodeURIComponent(claudeLanguageName())}`, {});
+      const model = encodeURIComponent(document.getElementById("live-model")?.value || "");
+      const lang = encodeURIComponent(claudeLanguageName());
+      result = await apiPost(`/agents/live-meeting/${meetingId}/turn/${i}?language=${lang}&model=${model}`, {});
     } catch (e) {
       continue;
     }

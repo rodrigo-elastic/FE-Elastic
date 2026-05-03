@@ -29,12 +29,13 @@ class LiveMeetingAgent(Agent):
         log.info("live_meeting.turn", speaker=turn.get("speaker"))
 
         language = payload.get("language") or "English"
+        model = (payload.get("model") or "").strip() or settings.model_for("live_meeting")
         result: LiveAlertsOut = get_service().call_structured(
             system=prompt.SYSTEM,
             user=language_preamble(language) + prompt.render_user_prompt(turn, recent) + language_instruction(language),
             schema=prompt.OUTPUT_SCHEMA,
             output_model=LiveAlertsOut,
-            model=settings.model_for("live_meeting"),
+            model=model,
             max_tokens=512,
             mock_payload=prompt.mock_response_for(turn.get("text", "")),
             audit_meta={"agent": "live_meeting", "meeting_id": payload.get("meeting_id"), "speaker": turn.get("speaker")},

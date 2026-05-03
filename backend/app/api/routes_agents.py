@@ -107,7 +107,7 @@ async def run_post_meeting(meeting_id: str, language: str = "English", model: st
 
 
 @router.post("/live-meeting/{meeting_id}/turn/{turn_index}")
-async def run_live_turn(meeting_id: str, turn_index: int, language: str = "English") -> Dict[str, Any]:
+async def run_live_turn(meeting_id: str, turn_index: int, language: str = "English", model: str = "") -> Dict[str, Any]:
     """Demo helper: replay a single transcript turn and return alerts."""
     transcript = synthetic.transcript_for_meeting(meeting_id)
     if transcript is None:
@@ -121,5 +121,6 @@ async def run_live_turn(meeting_id: str, turn_index: int, language: str = "Engli
             "turn": turns[turn_index],
             "recent_context": transcript_parser.recent_context(transcript, turn_index),
             "language": language,
+            "model": model,
         }
     )

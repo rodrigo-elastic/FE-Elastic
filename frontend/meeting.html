@@ -11,6 +11,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>FE Copilot, Meeting</title>
   <link rel="stylesheet" href="/assets/css/styles.css" />
+  <link rel="stylesheet" href="/assets/css/agent-builder.css" />
   <link rel="icon" type="image/svg+xml" href="/assets/img/elastic/glyph-cluster-color.svg" />
 </head>
 <body>
@@ -67,10 +68,23 @@
     <section class="panel" id="panel-brief">
       <div class="row-between">
         <h2>Account brief</h2>
-        <div style="display:flex; gap:8px;">
+        <div style="display:flex; gap:8px; align-items:center;">
+          <label class="model-pick" title="Smaller models cost fewer tokens. Use Haiku for testing.">
+            <span class="model-pick-lbl">Model</span>
+            <select id="pre-model">
+              <option value="claude-haiku-4-5">Haiku 4.5 (cheap)</option>
+              <option value="" selected>Default</option>
+              <option value="claude-sonnet-4-6">Sonnet 4.6</option>
+              <option value="claude-opus-4-7">Opus 4.7</option>
+            </select>
+          </label>
           <button class="btn primary" id="run-pre">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             Run Pre-Meeting Agent
+          </button>
+          <button class="btn ghost" id="create-dashboard" title="Build a customer-fit dashboard in your Kibana.">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+            Create dashboard in Kibana
           </button>
           <a class="btn ghost" id="download-pdf" target="_blank" hidden>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
@@ -83,33 +97,58 @@
         </div>
       </div>
       <div id="brief"><p class="muted">Brief not generated yet. Click <em>Run Pre-Meeting Agent</em>.</p></div>
+      <div id="abm-brief"></div>
     </section>
 
     <section class="panel" id="panel-post" hidden>
       <div class="row-between">
         <h2>Post-meeting output</h2>
-        <button class="btn primary" id="run-post">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          Run Post-Meeting Agent
-        </button>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <label class="model-pick" title="Smaller models cost fewer tokens. Use Haiku for testing.">
+            <span class="model-pick-lbl">Model</span>
+            <select id="post-model">
+              <option value="claude-haiku-4-5">Haiku 4.5 (cheap)</option>
+              <option value="" selected>Default</option>
+              <option value="claude-sonnet-4-6">Sonnet 4.6</option>
+              <option value="claude-opus-4-7">Opus 4.7</option>
+            </select>
+          </label>
+          <button class="btn primary" id="run-post">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Run Post-Meeting Agent
+          </button>
+        </div>
       </div>
       <div id="post"><p class="muted">Run the agent to extract action items, MEDDPICC signals, competitor mentions, and the follow-up email draft.</p></div>
+      <div id="abm-post"></div>
     </section>
 
     <section class="panel" id="panel-live" hidden>
       <div class="row-between">
-        <h2>Live companion (Haiku)</h2>
-        <button class="btn primary" id="run-live">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          Replay transcript
-        </button>
+        <h2>Live companion</h2>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <label class="model-pick" title="Live runs once per turn — Haiku is plenty.">
+            <span class="model-pick-lbl">Model</span>
+            <select id="live-model">
+              <option value="claude-haiku-4-5" selected>Haiku 4.5 (cheap)</option>
+              <option value="">Default</option>
+              <option value="claude-sonnet-4-6">Sonnet 4.6</option>
+            </select>
+          </label>
+          <button class="btn primary" id="run-live">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Replay transcript
+          </button>
+        </div>
       </div>
       <div id="live"><p class="muted">Replay each transcript turn through Haiku 4.5; competitor and MEDDPICC signals surface as alerts inline.</p></div>
+      <div id="abm-live"></div>
     </section>
 
     <section class="panel" id="panel-context" hidden>
       <h2>Context for this account</h2>
       <div id="context" style="margin-top:12px;"></div>
+      <div id="abm-context"></div>
     </section>
 
     <section id="toast-host"></section>
@@ -119,6 +158,7 @@
   <script src="/assets/js/api.js"></script>
   <script src="/assets/js/ui.js"></script>
   <script src="/assets/js/viz.js"></script>
+  <script src="/assets/js/agent-builder-mini.js"></script>
   <script src="/assets/js/meeting.js"></script>
 </body>
 </html>
