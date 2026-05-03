@@ -174,26 +174,60 @@
     function buildExportRow(rawMarkdown, title) {
       const row = $el("div", { class: "abm-export-row" });
       const copyBtn = $el("button", { class: "abm-export-btn", type: "button", title: "Copy markdown to clipboard" }, "📋 Copy");
-      copyBtn.addEventListener("click", async () => {
-        try {
-          await navigator.clipboard.writeText(rawMarkdown);
-          copyBtn.textContent = "✓ Copied";
+      copyBtn.addEventListener("click", () => {
+        copyToClipboard(rawMarkdown).then((ok) => {
+          copyBtn.textContent = ok ? "✓ Copied" : "✗ Failed";
           setTimeout(() => (copyBtn.textContent = "📋 Copy"), 1200);
-        } catch (_) {
-          copyBtn.textContent = "✗ Failed";
-        }
+        });
       });
       const printBtn = $el("button", { class: "abm-export-btn", type: "button", title: "Print / save as PDF" }, "🖨 Print");
       printBtn.addEventListener("click", () => printResponse(title, rawMarkdown));
-      const driveBtn = $el("button", { class: "abm-export-btn", type: "button", title: "Copy markdown then open a new Google Doc" }, "📁 Open in Drive");
-      driveBtn.addEventListener("click", async () => {
-        try { await navigator.clipboard.writeText(rawMarkdown); } catch (_) {}
-        window.open("https://docs.google.com/document/create?usp=docs_home", "_blank", "noreferrer");
+      const driveBtn = $el("button", { class: "abm-export-btn", type: "button", title: "Copy markdown to clipboard, then opens a new Google Doc. Paste with Cmd/Ctrl+V." }, "📁 Open in Drive");
+      driveBtn.addEventListener("click", () => {
+        // Open the new Drive tab inside the user gesture (popup blocker safe).
+        const win = window.open("https://docs.google.com/document/create?usp=openurl", "_blank");
+        copyToClipboard(rawMarkdown).then((ok) => {
+          driveBtn.textContent = ok ? "✓ Copied. Paste in Drive." : "✗ Clipboard blocked";
+          setTimeout(() => (driveBtn.textContent = "📁 Open in Drive"), 2500);
+          if (!ok && win) {
+            // As a fallback, surface the markdown in the new tab so the user can copy by hand.
+            try {
+              win.document.open();
+              win.document.write(`<pre style="white-space:pre-wrap;font:14px monospace;padding:24px">${escapeHtml(rawMarkdown)}</pre>`);
+              win.document.close();
+            } catch (_) {}
+          }
+        });
       });
       row.appendChild(copyBtn);
       row.appendChild(printBtn);
       row.appendChild(driveBtn);
       return row;
+    }
+
+    async function copyToClipboard(text) {
+      // Try modern API first.
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+          await navigator.clipboard.writeText(text);
+          return true;
+        } catch (_) { /* fall through to legacy path */ }
+      }
+      // Fallback: hidden textarea + execCommand. Works inside user-gesture handlers.
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        const ok = document.execCommand("copy");
+        document.body.removeChild(ta);
+        return ok;
+      } catch (_) {
+        return false;
+      }
     }
 
     function printResponse(title, markdown) {

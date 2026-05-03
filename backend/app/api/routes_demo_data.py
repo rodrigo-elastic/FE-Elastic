@@ -12,6 +12,7 @@ from typing import Any, Dict, List
 
 from fastapi import APIRouter, HTTPException
 
+from app.config import settings
 from app.services.scenarios import black_friday, credential_stuffing, noisy_microservice
 from app.utils.logging import get_logger
 
@@ -55,4 +56,47 @@ def seed_scenario(scenario_id: str) -> Dict[str, Any]:
         log.warning("demo_data.seed.failed", scenario_id=scenario_id, error=str(exc))
         raise HTTPException(status_code=502, detail=f"seed failed: {exc}")
     log.info("demo_data.seed.ok", scenario_id=scenario_id, indices=result.get("indices"))
-    return {"ok": True, **_meta(mod), **result}
+
+    # Normalise the seed response into a stable shape for the UI:
+    # - dashboard_url:           the FE view (the legacy default)
+    # - dashboard_url_customer:  the paired customer view (constructed from a
+    #   convention-based id; not every scenario surfaces it explicitly)
+    # - doc_counts:              {index_name: count}
+    fe_url = (
+        result.get("dashboard_url")
+        or result.get("dashboard", {}).get("dashboard_url")
+        or result.get("fe_dashboard_url")
+    )
+    customer_url_from_result = (
+        result.get("dashboard_url_customer")
+        or result.get("customer_dashboard_url")
+        or (result.get("customer_dashboard") or {}).get("dashboard_url")
+        or (result.get("dashboard_customer") or {}).get("dashboard_url")
+    )
+    # Convention-based fallback: replace "-dashboard" suffix with "-customer-dashboard".
+    base_id = mod.DASHBOARD_ID
+    if base_id.endswith("-dashboard"):
+        customer_id = base_id[: -len("-dashboard")] + "-customer-dashboard"
+    elif base_id.endswith("-customer-dashboard"):
+        customer_id = base_id
+    else:
+        customer_id = f"{base_id}-customer-dashboard"
+    fallback_customer_url = settings.kibana_url.rstrip("/") + f"/app/dashboards#/view/{customer_id}"
+
+    counts = (
+        result.get("actual_doc_counts")
+        or result.get("indexed_doc_counts")
+        or (result.get("indices") if isinstance(result.get("indices"), dict)
+            and all(isinstance(v, int) for v in result.get("indices", {}).values())
+            else {})
+    )
+
+    return {
+        "ok": True,
+        **_meta(mod),
+        "dashboard_url": fe_url,
+        "dashboard_url_customer": customer_url_from_result or fallback_customer_url,
+        "doc_counts": counts,
+        # Keep the raw upstream response too for debugging / power users.
+        "raw": result,
+    }

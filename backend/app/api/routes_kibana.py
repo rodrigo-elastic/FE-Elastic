@@ -60,6 +60,33 @@ def _scale_defaults(company: Dict[str, Any]) -> Dict[str, Any]:
             "peak_eps": 15_000, "hot_gb": 1_500}
 
 
+def _parse_stack_notes(notes: str) -> Dict[str, List[str]]:
+    """Split a free-form stack-notes string from Quick Research into the canonical
+    bucket shape the markdown panels expect. Heuristic only - we just sort tokens
+    by keyword match into a few buckets and dump everything else into 'data'."""
+    if not notes:
+        return {}
+    tokens = [t.strip() for t in notes.replace(";", ",").replace("/", ",").split(",") if t.strip()]
+    buckets: Dict[str, List[str]] = {"observability": [], "search": [], "siem": [], "cloud": [], "data": []}
+    OBS = {"splunk", "datadog", "newrelic", "new relic", "dynatrace", "grafana", "appdynamics", "sumologic", "sumo logic"}
+    SRCH = {"elasticsearch", "elastic", "solr", "algolia", "opensearch"}
+    SIEM = {"splunk siem", "qradar", "sentinel", "chronicle", "exabeam"}
+    CLOUD = {"aws", "gcp", "azure", "alibaba", "oracle cloud"}
+    for t in tokens:
+        low = t.lower()
+        if any(k in low for k in OBS):
+            buckets["observability"].append(t)
+        elif any(k in low for k in SIEM):
+            buckets["siem"].append(t)
+        elif any(k in low for k in SRCH):
+            buckets["search"].append(t)
+        elif any(k in low for k in CLOUD):
+            buckets["cloud"].append(t)
+        else:
+            buckets["data"].append(t)
+    return {k: v for k, v in buckets.items() if v}
+
+
 def _industry_regulations(industry: str) -> List[str]:
     s = (industry or "").lower()
     if any(k in s for k in ["bank", "financ", "fintech", "fs", "insurance", "card"]):
@@ -304,13 +331,6 @@ def create_dashboard(meeting_id: str) -> Dict[str, Any]:
     if not settings.kibana_api_key:
         raise HTTPException(status_code=409, detail="KIBANA_API_KEY not configured")
 
-    meeting = synthetic.find_meeting(meeting_id)
-    if meeting is None:
-        raise HTTPException(status_code=404, detail=f"meeting {meeting_id} not found")
-    company = synthetic.find_company(meeting["company_id"])
-    if company is None:
-        raise HTTPException(status_code=404, detail=f"company {meeting['company_id']} not found")
-
     # Best-effort: load brief + post if they exist on disk.
     brief = None
     post = None
@@ -326,6 +346,35 @@ def create_dashboard(meeting_id: str) -> Dict[str, Any]:
             post = json.loads(post_path.read_text(encoding="utf-8"))
         except Exception:
             pass
+
+    # Resolve meeting + company. Synthetic meetings live in the JSON fixtures;
+    # ad-hoc meetings (Quick Research) only exist as a brief on disk, so we
+    # reconstruct the lightweight context from the brief itself.
+    meeting = synthetic.find_meeting(meeting_id)
+    company: Optional[Dict[str, Any]] = None
+    if meeting is not None:
+        company = synthetic.find_company(meeting["company_id"])
+    if company is None and brief is not None:
+        ui = (brief.get("sources_used") or {}).get("user_input") or {}
+        company = {
+            "id": brief.get("company_id") or meeting_id,
+            "name": brief.get("company_name") or ui.get("company_name") or "Customer",
+            "industry": ui.get("industry", ""),
+            "size": ui.get("size", ""),
+            "description": ui.get("notes", ""),
+            "tech_stack": _parse_stack_notes(ui.get("tech_stack_notes", "")),
+        }
+        meeting = meeting or {
+            "id": meeting_id,
+            "company_id": company["id"],
+            "title": ui.get("meeting_title") or brief.get("headline", "")[:80] or meeting_id,
+            "start_time": brief.get("generated_at"),
+        }
+    if company is None or meeting is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"meeting {meeting_id} not found - run the Pre-Meeting agent first so the brief lands on disk.",
+        )
 
     panels = build_panels(company, meeting, brief, post)
     panels_json = json.dumps(panels, ensure_ascii=False)

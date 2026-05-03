@@ -376,7 +376,14 @@ function bindQuickResearch() {
     const label = submit.innerHTML;
     submit.disabled = true;
     submit.innerHTML = '<span class="spinner"></span> Researching...';
-    statusEl.textContent = "Building dossier and calling Claude (Haiku 4.5 by default)...";
+    const MODEL_LABELS = {
+      "claude-haiku-4-5": "Haiku 4.5",
+      "claude-sonnet-4-6": "Sonnet 4.6",
+      "claude-opus-4-7": "Opus 4.7",
+      "": "Haiku 4.5 (default)",
+    };
+    const modelLabel = MODEL_LABELS[body.model] || body.model || "Haiku 4.5 (default)";
+    statusEl.textContent = `Building dossier and calling Claude (${modelLabel})...`;
     try {
       const result = await apiPost("/agents/pre-meeting/ad-hoc", body);
       toast(`Brief generated for ${name}`, "ok");

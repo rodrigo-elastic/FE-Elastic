@@ -53,24 +53,32 @@
 
     const status = el("div", { class: "dd-status" });
     const seedBtn = el("button", { class: "btn primary", type: "button" }, "Seed scenario");
-    const openBtn = el("a", { class: "btn ghost", target: "_blank", rel: "noreferrer", href: "#" }, "Open dashboard");
-    openBtn.style.display = "none";
+    const openFeBtn = el("a", { class: "btn ghost", target: "_blank", rel: "noreferrer", href: "#" }, "Open [FE] dashboard");
+    const openCustBtn = el("a", { class: "btn ghost", target: "_blank", rel: "noreferrer", href: "#" }, "Open [Customer] dashboard");
+    openFeBtn.style.display = "none";
+    openCustBtn.style.display = "none";
 
     seedBtn.addEventListener("click", async () => {
       const labelHTML = seedBtn.innerHTML;
       seedBtn.disabled = true;
       seedBtn.innerHTML = '<span class="spinner"></span> Seeding...';
-      status.textContent = "Indexing docs and creating Kibana dashboard...";
+      status.textContent = "Indexing docs and creating Kibana dashboards...";
       status.className = "dd-status running";
       try {
         const r = await apiPost(`/demo-data/${scenario.id}/seed`, {});
-        const counts = r.indices || {};
-        const total = Object.values(counts).reduce((a, b) => a + (b || 0), 0);
+        const counts = r.doc_counts || {};
+        const total = Object.values(counts).reduce((a, b) => a + (Number.isFinite(b) ? b : 0), 0);
         status.className = "dd-status ok";
-        status.textContent = `Indexed ${total} docs across ${Object.keys(counts).length} indices.`;
+        const idxStr = Object.keys(counts).length ? ` across ${Object.keys(counts).length} indices` : "";
+        status.textContent = total ? `Indexed ${total.toLocaleString()} docs${idxStr}. Both dashboards rebuilt.`
+                                    : "Dashboards rebuilt.";
         if (r.dashboard_url) {
-          openBtn.href = r.dashboard_url;
-          openBtn.style.display = "";
+          openFeBtn.href = r.dashboard_url;
+          openFeBtn.style.display = "";
+        }
+        if (r.dashboard_url_customer) {
+          openCustBtn.href = r.dashboard_url_customer;
+          openCustBtn.style.display = "";
         }
         toast(`Seeded ${scenario.title}`, "ok");
       } catch (e) {
@@ -83,7 +91,7 @@
       }
     });
 
-    root.appendChild(el("div", { class: "dd-actions" }, [seedBtn, openBtn]));
+    root.appendChild(el("div", { class: "dd-actions" }, [seedBtn, openFeBtn, openCustBtn]));
     root.appendChild(status);
     return root;
   }
