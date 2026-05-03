@@ -25,6 +25,12 @@ def _seed() -> int:
     print(json.dumps(result, indent=2, default=str))
     if result.get("dashboard_error"):
         print(f"WARNING: dashboard creation failed: {result['dashboard_error']}", file=sys.stderr)
+    fe = result.get("fe_dashboard") or {}
+    cu = result.get("customer_dashboard") or {}
+    if fe.get("dashboard_url"):
+        print(f"\n[FE]       {fe['dashboard_url']}  ({fe.get('panel_count', '?')} panels)")
+    if cu.get("dashboard_url"):
+        print(f"[Customer] {cu['dashboard_url']}  ({cu.get('panel_count', '?')} panels)")
     return 0
 
 
@@ -41,18 +47,20 @@ def _teardown() -> int:
         out["deleted_indices"].append(idx)
 
     if settings.kibana_api_key:
-        url = settings.kibana_url.rstrip("/") + f"/api/saved_objects/dashboard/{scenario.DASHBOARD_ID}"
         headers = {
             "Authorization": f"ApiKey {settings.kibana_api_key}",
             "kbn-xsrf": "fe-copilot",
         }
-        try:
-            with httpx.Client(timeout=20.0) as client:
-                resp = client.delete(url, headers=headers)
-            out["deleted_dashboard"] = resp.status_code in (200, 404)
-            out["status"] = resp.status_code
-        except Exception as exc:
-            out["dashboard_error"] = str(exc)
+        out["deleted_dashboards"] = {}
+        for dash_id in (scenario.DASHBOARD_ID, scenario.CUSTOMER_DASHBOARD_ID):
+            url = settings.kibana_url.rstrip("/") + f"/api/saved_objects/dashboard/{dash_id}"
+            try:
+                with httpx.Client(timeout=20.0) as client:
+                    resp = client.delete(url, headers=headers)
+                out["deleted_dashboards"][dash_id] = resp.status_code in (200, 404)
+            except Exception as exc:
+                out["deleted_dashboards"][dash_id] = f"error: {exc}"
+        out["deleted_dashboard"] = all(v is True for v in out["deleted_dashboards"].values())
     print(json.dumps(out, indent=2, default=str))
     return 0
 

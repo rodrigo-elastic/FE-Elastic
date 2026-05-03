@@ -1,10 +1,14 @@
 """
 filename: seed_credential_stuffing.py
 description: One-off CLI that runs the Credential Stuffing demo-data scenario end-to-end:
-  1. Deletes existing indices + dashboard for an idempotent re-seed.
+  1. Deletes existing indices + dashboards for an idempotent re-seed.
   2. Recreates indices with ECS-aligned mappings.
   3. Bulk-ingests realistic attacker telemetry + legitimate baseline traffic.
-  4. Creates the Kibana data view + 7-panel SOC dashboard.
+  4. Creates the Kibana data view plus two dashboards:
+     - [FE] Credential Stuffing Attack  (Field Engineer prep view)
+     - [Customer] Credential Stuffing Attack  (SOC / CISO incident report)
+     Both share the same inline-data Vega panels; only the surrounding
+     markdown narrative differs.
 
 Usage from the project root:
     PYTHONPATH=backend .venv/bin/python -m scripts.seed_credential_stuffing

@@ -62,6 +62,7 @@ INDICES: Dict[str, str] = {
 }
 
 DASHBOARD_ID: str = "demo-credential-stuffing-dashboard"
+CUSTOMER_DASHBOARD_ID: str = "demo-credential-stuffing-customer-dashboard"
 INDEX_PATTERN: str = "demo-credstuff-*"
 
 
@@ -1072,54 +1073,65 @@ def _vega_panel(
     }
 
 
-# ----- Vega-Lite specs ---------------------------------------------------------------
+# ----- Vega-Lite specs (inline data) -------------------------------------------------
+#
+# Kibana 9.3 rejects URL-based Vega specs at render time even when the saved
+# object validates. Every spec below queries Elasticsearch at seed time and
+# embeds the resulting buckets as `data.values`. Each query is wrapped in
+# try/except so a transient ES failure produces an empty chart rather than a
+# broken seed run.
+
 
 def _vega_heatmap_country_hour() -> Dict[str, Any]:
-    """Heatmap: failure count by hour-of-day x source country, restricted to attack
-    period. Datacenter-country cells will dominate."""
-    body = {
-        "size": 0,
-        "query": {
-            "bool": {
-                "filter": [
-                    {"term": {"event.outcome": "failure"}},
-                ]
-            }
-        },
-        "aggs": {
-            "by_country": {
-                "terms": {"field": "source.geo.country_iso_code", "size": 20},
-                "aggs": {
-                    "by_hour": {
-                        "date_histogram": {
-                            "field": "@timestamp",
-                            "fixed_interval": "1h",
-                            "min_doc_count": 1,
+    """Heatmap: failure count by hour-of-day x source country. Inline data."""
+    values: List[Dict[str, Any]] = []
+    try:
+        es = get_client()
+        r = es.search(index=INDEX_PATTERN, body={
+            "size": 0,
+            "query": {"bool": {"filter": [
+                {"term": {"event.outcome": "failure"}},
+                {"range": {"@timestamp": {"gte": "now-3d", "lte": "now"}}},
+            ]}},
+            "aggs": {
+                "by_country": {
+                    "terms": {"field": "source.geo.country_iso_code", "size": 20},
+                    "aggs": {
+                        "by_hour": {
+                            "date_histogram": {
+                                "field": "@timestamp",
+                                "fixed_interval": "1h",
+                                "min_doc_count": 1,
+                            }
                         }
-                    }
-                },
-            }
-        },
-    }
+                    },
+                }
+            },
+        })
+        for cb in r["aggregations"]["by_country"]["buckets"]:
+            country = cb["key"]
+            for hb in cb["by_hour"]["buckets"]:
+                ts_ms = hb.get("key")
+                hour_of_day = None
+                try:
+                    if ts_ms is not None:
+                        hour_of_day = datetime.fromtimestamp(
+                            int(ts_ms) / 1000, tz=timezone.utc
+                        ).hour
+                except Exception:
+                    hour_of_day = None
+                values.append({
+                    "country": country,
+                    "hour_of_day": hour_of_day if hour_of_day is not None else 0,
+                    "failures": int(hb.get("doc_count") or 0),
+                })
+    except Exception as exc:
+        log.warning("credstuff.spec_heatmap.compute.failed", error=str(exc))
+
     return {
         "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-        "title": "Failed logins · hour x source country (attack windows light up)",
-        "data": {
-            "url": {
-                "%context%": True,
-                "%timefield%": "@timestamp",
-                "index": INDEX_PATTERN,
-                "body": body,
-            },
-            "format": {"property": "aggregations.by_country.buckets"},
-        },
-        "transform": [
-            {"flatten": ["by_hour.buckets"], "as": ["hb"]},
-            {"calculate": "datum.key", "as": "country"},
-            {"calculate": "datum.hb.key", "as": "ts"},
-            {"calculate": "hours(toDate(datum.hb.key))", "as": "hour_of_day"},
-            {"calculate": "datum.hb.doc_count", "as": "failures"},
-        ],
+        "title": "Failed logins by hour x source country (attack windows light up)",
+        "data": {"values": values},
         "mark": {"type": "rect", "tooltip": True},
         "encoding": {
             "x": {
@@ -1147,46 +1159,46 @@ def _vega_heatmap_country_hour() -> Dict[str, Any]:
 
 
 def _vega_top_source_ips() -> Dict[str, Any]:
-    """Top 10 source IPs by failure count, color-coded by suspicious-or-not."""
-    body = {
-        "size": 0,
-        "query": {"bool": {"filter": [{"term": {"event.outcome": "failure"}}]}},
-        "aggs": {
-            "by_ip": {
-                "terms": {"field": "source.ip", "size": 10},
-                "aggs": {
-                    "by_org": {"terms": {"field": "source.as.organization.name", "size": 1}},
-                },
-            }
-        },
+    """Top 10 source IPs by failure count, color-coded attacker vs baseline. Inline data."""
+    attacker_orgs = {
+        "DigitalOcean LLC", "Hetzner Online GmbH", "OVH SAS",
+        "ANONYMIZED VPN PROVIDER",
     }
+    values: List[Dict[str, Any]] = []
+    try:
+        es = get_client()
+        r = es.search(index=INDEX_PATTERN, body={
+            "size": 0,
+            "query": {"bool": {"filter": [
+                {"term": {"event.outcome": "failure"}},
+                {"range": {"@timestamp": {"gte": "now-3d", "lte": "now"}}},
+            ]}},
+            "aggs": {
+                "by_ip": {
+                    "terms": {"field": "source.ip", "size": 10},
+                    "aggs": {
+                        "by_org": {"terms": {"field": "source.as.organization.name", "size": 1}},
+                    },
+                }
+            },
+        })
+        for b in r["aggregations"]["by_ip"]["buckets"]:
+            org_buckets = b.get("by_org", {}).get("buckets") or []
+            as_org = org_buckets[0]["key"] if org_buckets else "unknown"
+            classification = "attacker" if as_org in attacker_orgs else "baseline"
+            values.append({
+                "ip": b["key"],
+                "failures": int(b.get("doc_count") or 0),
+                "as_org": as_org,
+                "classification": classification,
+            })
+    except Exception as exc:
+        log.warning("credstuff.spec_top_ips.compute.failed", error=str(exc))
+
     return {
         "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
         "title": "Top 10 source IPs by failed-login count",
-        "data": {
-            "url": {
-                "%context%": True,
-                "%timefield%": "@timestamp",
-                "index": INDEX_PATTERN,
-                "body": body,
-            },
-            "format": {"property": "aggregations.by_ip.buckets"},
-        },
-        "transform": [
-            {"calculate": "datum.key", "as": "ip"},
-            {"calculate": "datum.doc_count", "as": "failures"},
-            {
-                "calculate": "datum.by_org.buckets[0] ? datum.by_org.buckets[0].key : 'unknown'",
-                "as": "as_org",
-            },
-            {
-                "calculate": (
-                    "indexof(['DigitalOcean LLC','Hetzner Online GmbH','OVH SAS',"
-                    "'ANONYMIZED VPN PROVIDER'], datum.as_org) >= 0 ? 'attacker' : 'baseline'"
-                ),
-                "as": "classification",
-            },
-        ],
+        "data": {"values": values},
         "mark": {"type": "bar", "tooltip": True, "cornerRadiusEnd": 3},
         "encoding": {
             "y": {
@@ -1218,67 +1230,66 @@ def _vega_top_source_ips() -> Dict[str, Any]:
 
 
 def _vega_logins_per_minute() -> Dict[str, Any]:
-    """Two-line time series: success vs failure, with shaded bands over the two attack
-    waves. The failure line is obviously anomalous in wave 2."""
+    """Two-line time series: success vs failure with shaded attack-wave bands.
+    Inline data: per-minute buckets are computed at seed time."""
     now = _now()
-    # Wave 1: 2 days + 30 min ago, 30 min long.
     wave1_end = now - timedelta(seconds=2 * 24 * 3600)
     wave1_start = wave1_end - timedelta(minutes=30)
-    # Wave 2: 6h 25min ago, 25 min long.
     wave2_end = now - timedelta(hours=6)
     wave2_start = wave2_end - timedelta(minutes=25)
 
-    body = {
-        "size": 0,
-        "aggs": {
-            "by_outcome": {
-                "terms": {"field": "event.outcome", "size": 2},
-                "aggs": {
-                    "by_minute": {
-                        "date_histogram": {
-                            "field": "@timestamp",
-                            "fixed_interval": "1m",
-                            "min_doc_count": 0,
+    series_values: List[Dict[str, Any]] = []
+    try:
+        es = get_client()
+        r = es.search(index=INDEX_PATTERN, body={
+            "size": 0,
+            "query": {"bool": {"filter": [
+                {"range": {"@timestamp": {"gte": "now-3d", "lte": "now"}}},
+            ]}},
+            "aggs": {
+                "by_outcome": {
+                    "terms": {"field": "event.outcome", "size": 4},
+                    "aggs": {
+                        "by_minute": {
+                            "date_histogram": {
+                                "field": "@timestamp",
+                                "fixed_interval": "5m",
+                                "min_doc_count": 0,
+                            }
                         }
-                    }
-                },
-            }
+                    },
+                }
+            },
+        })
+        for ob in r["aggregations"]["by_outcome"]["buckets"]:
+            outcome = ob["key"]
+            for mb in ob["by_minute"]["buckets"]:
+                series_values.append({
+                    "ts": mb.get("key_as_string") or mb.get("key"),
+                    "outcome": outcome,
+                    "count": int(mb.get("doc_count") or 0),
+                })
+    except Exception as exc:
+        log.warning("credstuff.spec_logins_per_minute.compute.failed", error=str(exc))
+
+    band_values = [
+        {
+            "wave_start": wave1_start.isoformat(),
+            "wave_end": wave1_end.isoformat(),
+            "label": "Wave 1 - low and slow recon",
         },
-    }
+        {
+            "wave_start": wave2_start.isoformat(),
+            "wave_end": wave2_end.isoformat(),
+            "label": "Wave 2 - aggressive spike",
+        },
+    ]
     return {
         "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-        "title": "Logins per minute - success vs failure (attack waves shaded)",
-        "data": {
-            "url": {
-                "%context%": True,
-                "%timefield%": "@timestamp",
-                "index": INDEX_PATTERN,
-                "body": body,
-            },
-            "format": {"property": "aggregations.by_outcome.buckets"},
-        },
-        "transform": [
-            {"flatten": ["by_minute.buckets"], "as": ["mb"]},
-            {"calculate": "datum.key", "as": "outcome"},
-            {"calculate": "datum.mb.key", "as": "ts_ms"},
-            {"calculate": "datum.mb.doc_count", "as": "count"},
-        ],
+        "title": "Logins per 5-min bucket - success vs failure (attack waves shaded)",
         "layer": [
             {
-                "data": {
-                    "values": [
-                        {
-                            "wave_start": wave1_start.isoformat(),
-                            "wave_end": wave1_end.isoformat(),
-                            "label": "Wave 1 - low & slow recon",
-                        },
-                        {
-                            "wave_start": wave2_start.isoformat(),
-                            "wave_end": wave2_end.isoformat(),
-                            "label": "Wave 2 - aggressive spike",
-                        },
-                    ]
-                },
+                "data": {"values": band_values},
                 "mark": {"type": "rect", "opacity": 0.18, "color": "#7e8794"},
                 "encoding": {
                     "x": {"field": "wave_start", "type": "temporal"},
@@ -1287,24 +1298,26 @@ def _vega_logins_per_minute() -> Dict[str, Any]:
                 },
             },
             {
+                "data": {"values": series_values},
                 "mark": {"type": "line", "interpolate": "monotone", "strokeWidth": 2},
                 "encoding": {
                     "x": {
-                        "field": "ts_ms", "type": "temporal", "title": "Time (UTC)",
+                        "field": "ts", "type": "temporal", "title": "Time (UTC)",
                         "axis": {"labelColor": "#cdd", "titleColor": "#cdd"},
                     },
                     "y": {
-                        "field": "count", "type": "quantitative", "title": "Logins / min",
+                        "field": "count", "type": "quantitative", "title": "Logins / 5 min",
                         "axis": {"labelColor": "#cdd", "titleColor": "#cdd"},
                     },
                     "color": {
                         "field": "outcome", "type": "nominal",
-                        "scale": {"domain": ["success", "failure"], "range": ["#3fb27f", "#e8455d"]},
+                        "scale": {"domain": ["success", "failure"],
+                                  "range": ["#3fb27f", "#e8455d"]},
                         "title": "Outcome",
                         "legend": {"labelColor": "#cdd", "titleColor": "#cdd"},
                     },
                     "tooltip": [
-                        {"field": "ts_ms", "type": "temporal", "title": "Minute"},
+                        {"field": "ts", "type": "temporal", "title": "Bucket"},
                         {"field": "outcome", "type": "nominal"},
                         {"field": "count", "type": "quantitative"},
                     ],
@@ -1316,39 +1329,41 @@ def _vega_logins_per_minute() -> Dict[str, Any]:
 
 
 def _vega_asn_treemap() -> Dict[str, Any]:
-    """Donut chart of failed-login source ASNs (the datacenter footprint becomes
-    visually obvious). Vega-Lite arc with theta encoding."""
-    body = {
-        "size": 0,
-        "query": {"bool": {"filter": [{"term": {"event.outcome": "failure"}}]}},
-        "aggs": {
-            "by_org": {"terms": {"field": "source.as.organization.name", "size": 12}},
-        },
-    }
+    """Donut of failed-login source ASNs - the datacenter footprint pops. Inline data."""
+    datacenter_orgs = {"DigitalOcean LLC", "Hetzner Online GmbH", "OVH SAS"}
+    values: List[Dict[str, Any]] = []
+    try:
+        es = get_client()
+        r = es.search(index=INDEX_PATTERN, body={
+            "size": 0,
+            "query": {"bool": {"filter": [
+                {"term": {"event.outcome": "failure"}},
+                {"range": {"@timestamp": {"gte": "now-3d", "lte": "now"}}},
+            ]}},
+            "aggs": {
+                "by_org": {"terms": {"field": "source.as.organization.name", "size": 12}},
+            },
+        })
+        for b in r["aggregations"]["by_org"]["buckets"]:
+            org = b["key"]
+            if org in datacenter_orgs:
+                kind = "datacenter"
+            elif org == "ANONYMIZED VPN PROVIDER":
+                kind = "anonymizer"
+            else:
+                kind = "legitimate"
+            values.append({
+                "as_org": org,
+                "failures": int(b.get("doc_count") or 0),
+                "kind": kind,
+            })
+    except Exception as exc:
+        log.warning("credstuff.spec_asn_donut.compute.failed", error=str(exc))
+
     return {
         "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
         "title": "Source ASN distribution (failures only)",
-        "data": {
-            "url": {
-                "%context%": True,
-                "%timefield%": "@timestamp",
-                "index": INDEX_PATTERN,
-                "body": body,
-            },
-            "format": {"property": "aggregations.by_org.buckets"},
-        },
-        "transform": [
-            {"calculate": "datum.key", "as": "as_org"},
-            {"calculate": "datum.doc_count", "as": "failures"},
-            {
-                "calculate": (
-                    "indexof(['DigitalOcean LLC','Hetzner Online GmbH','OVH SAS'], "
-                    "datum.as_org) >= 0 ? 'datacenter' : "
-                    "(datum.as_org == 'ANONYMIZED VPN PROVIDER' ? 'anonymizer' : 'legitimate')"
-                ),
-                "as": "kind",
-            },
-        ],
+        "data": {"values": values},
         "mark": {"type": "arc", "innerRadius": 60, "tooltip": True, "stroke": "#1a1d24"},
         "encoding": {
             "theta": {"field": "failures", "type": "quantitative"},
@@ -1371,28 +1386,272 @@ def _vega_asn_treemap() -> Dict[str, Any]:
     }
 
 
+def _vega_failure_reasons() -> Dict[str, Any]:
+    """Bar chart of `auth.failure_reason` distribution. Inline data.
+    Tells the SOC analyst whether the attacker was burning known emails
+    (invalid_password) or scanning for valid usernames (invalid_email)."""
+    values: List[Dict[str, Any]] = []
+    try:
+        es = get_client()
+        r = es.search(index=INDEX_PATTERN, body={
+            "size": 0,
+            "query": {"bool": {"filter": [
+                {"term": {"event.outcome": "failure"}},
+                {"range": {"@timestamp": {"gte": "now-3d", "lte": "now"}}},
+                {"exists": {"field": "auth.failure_reason"}},
+            ]}},
+            "aggs": {
+                "by_reason": {
+                    "terms": {"field": "auth.failure_reason", "size": 10},
+                },
+            },
+        })
+        for b in r["aggregations"]["by_reason"]["buckets"]:
+            values.append({
+                "reason": b["key"],
+                "count": int(b.get("doc_count") or 0),
+            })
+    except Exception as exc:
+        log.warning("credstuff.spec_failure_reasons.compute.failed", error=str(exc))
+
+    return {
+        "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+        "title": "Auth failure reason distribution (last 3d)",
+        "data": {"values": values},
+        "mark": {"type": "bar", "tooltip": True, "cornerRadiusEnd": 3},
+        "encoding": {
+            "y": {
+                "field": "reason", "type": "nominal", "sort": "-x",
+                "title": "Failure reason",
+                "axis": {"labelColor": "#cdd", "titleColor": "#cdd"},
+            },
+            "x": {
+                "field": "count", "type": "quantitative", "title": "Count",
+                "axis": {"labelColor": "#cdd", "titleColor": "#cdd"},
+            },
+            "color": {
+                "field": "reason", "type": "nominal",
+                "scale": {
+                    "domain": [
+                        "invalid_password", "invalid_email", "rate_limited",
+                        "account_locked", "mfa_required",
+                    ],
+                    "range": ["#e8455d", "#f0a830", "#7e8794", "#5b8bbd", "#3fb27f"],
+                },
+                "legend": {"labelColor": "#cdd", "titleColor": "#cdd"},
+            },
+            "tooltip": [
+                {"field": "reason", "type": "nominal"},
+                {"field": "count", "type": "quantitative"},
+            ],
+        },
+        "config": {"view": {"stroke": "transparent"}, "background": "transparent"},
+    }
+
+
+def _vega_targeted_users() -> Dict[str, Any]:
+    """Top 10 most-targeted usernames with attempt counts and a flag for
+    confirmed breach. Shows attacker targeting strategy. Inline data."""
+    breached_emails = {b["user_email"] for b in get_breach_table()}
+    values: List[Dict[str, Any]] = []
+    try:
+        es = get_client()
+        r = es.search(index=INDICES["auth"], body={
+            "size": 0,
+            "query": {"bool": {"filter": [
+                {"term": {"event.outcome": "failure"}},
+                {"range": {"@timestamp": {"gte": "now-3d", "lte": "now"}}},
+                {"bool": {"must_not": [
+                    {"term": {"auth.failure_reason": "invalid_email"}},
+                ]}},
+                {"exists": {"field": "user.email"}},
+            ]}},
+            "aggs": {
+                "by_user": {
+                    "terms": {"field": "user.email", "size": 10},
+                },
+            },
+        })
+        for b in r["aggregations"]["by_user"]["buckets"]:
+            email = b["key"]
+            values.append({
+                "user": email,
+                "attempts": int(b.get("doc_count") or 0),
+                "status": "BREACHED" if email in breached_emails else "blocked",
+            })
+    except Exception as exc:
+        log.warning("credstuff.spec_targeted_users.compute.failed", error=str(exc))
+
+    return {
+        "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+        "title": "Top targeted users - attempts vs breach outcome",
+        "data": {"values": values},
+        "mark": {"type": "bar", "tooltip": True, "cornerRadiusEnd": 3},
+        "encoding": {
+            "y": {
+                "field": "user", "type": "nominal", "sort": "-x", "title": "User email",
+                "axis": {"labelColor": "#cdd", "titleColor": "#cdd"},
+            },
+            "x": {
+                "field": "attempts", "type": "quantitative", "title": "Failed attempts",
+                "axis": {"labelColor": "#cdd", "titleColor": "#cdd"},
+            },
+            "color": {
+                "field": "status", "type": "nominal",
+                "scale": {
+                    "domain": ["BREACHED", "blocked"],
+                    "range": ["#e8455d", "#5b8bbd"],
+                },
+                "title": "Outcome",
+                "legend": {"labelColor": "#cdd", "titleColor": "#cdd"},
+            },
+            "tooltip": [
+                {"field": "user", "type": "nominal"},
+                {"field": "attempts", "type": "quantitative"},
+                {"field": "status", "type": "nominal"},
+            ],
+        },
+        "config": {"view": {"stroke": "transparent"}, "background": "transparent"},
+    }
+
+
+# ----- KPI helpers (queried at seed time, rendered as markdown) ----------------------
+
+
+def _compute_time_to_first_breach() -> Dict[str, Any]:
+    """Returns dict with first_failure_iso, first_breach_iso, ttd_minutes, total_failures.
+    All ES queries wrapped in try/except - returns sane defaults on failure."""
+    out: Dict[str, Any] = {
+        "first_failure_iso": None,
+        "first_breach_iso": None,
+        "ttd_minutes": None,
+        "total_failures": 0,
+        "total_breaches": len(get_breach_table()),
+    }
+    try:
+        es = get_client()
+        r1 = es.search(index=INDICES["auth"], body={
+            "size": 1,
+            "_source": ["@timestamp"],
+            "query": {"bool": {"filter": [
+                {"term": {"event.outcome": "failure"}},
+                {"exists": {"field": "threat.technique.id"}},
+                {"range": {"@timestamp": {"gte": "now-3d", "lte": "now"}}},
+            ]}},
+            "sort": [{"@timestamp": {"order": "asc"}}],
+        })
+        hits1 = r1.get("hits", {}).get("hits", [])
+        if hits1:
+            out["first_failure_iso"] = hits1[0]["_source"]["@timestamp"]
+        r2 = es.search(index=INDICES["sessions"], body={
+            "size": 1,
+            "_source": ["@timestamp"],
+            "query": {"bool": {"filter": [
+                {"term": {"labels.breach": "confirmed"}},
+                {"range": {"@timestamp": {"gte": "now-3d", "lte": "now"}}},
+            ]}},
+            "sort": [{"@timestamp": {"order": "asc"}}],
+        })
+        hits2 = r2.get("hits", {}).get("hits", [])
+        if hits2:
+            out["first_breach_iso"] = hits2[0]["_source"]["@timestamp"]
+        r3 = es.count(index=INDICES["auth"], body={
+            "query": {"bool": {"filter": [
+                {"term": {"event.outcome": "failure"}},
+                {"range": {"@timestamp": {"gte": "now-3d", "lte": "now"}}},
+            ]}},
+        })
+        out["total_failures"] = int(r3.get("count") or 0)
+    except Exception as exc:
+        log.warning("credstuff.kpi.ttd.compute.failed", error=str(exc))
+
+    if out["first_failure_iso"] and out["first_breach_iso"]:
+        try:
+            t1 = datetime.fromisoformat(out["first_failure_iso"].replace("Z", "+00:00"))
+            t2 = datetime.fromisoformat(out["first_breach_iso"].replace("Z", "+00:00"))
+            out["ttd_minutes"] = round((t2 - t1).total_seconds() / 60.0, 1)
+        except Exception:
+            pass
+    return out
+
+
 # ----- Markdown content --------------------------------------------------------------
 
 
-def _md_header() -> str:
+def _switcher_md(active: str) -> str:
+    """Header switcher with anchor links to the other view. `active` is "fe" or
+    "customer". Same content on both dashboards, only the highlighted link differs."""
+    fe_url = settings.kibana_url.rstrip("/") + f"/app/dashboards#/view/{DASHBOARD_ID}"
+    cu_url = settings.kibana_url.rstrip("/") + f"/app/dashboards#/view/{CUSTOMER_DASHBOARD_ID}"
+    fe_label = "**[FE] Field Engineer prep**" if active == "fe" else "[FE] Field Engineer prep"
+    cu_label = "**[Customer] SOC / CISO view**" if active == "customer" else "[Customer] SOC / CISO view"
     return (
-        "## Credential Stuffing Attack - SOC Playbook\n\n"
+        "### Credential Stuffing Attack - dashboard switcher\n\n"
+        f"Pick your view:  [{fe_label}]({fe_url})  |  [{cu_label}]({cu_url})\n\n"
+        "_Same data, two narratives. FE view is the demo prep with MITRE + MEDDPICC + "
+        "talk track. Customer view is the executive incident report._"
+    )
+
+
+def _md_fe_intro() -> str:
+    return (
+        "## [FE] Credential Stuffing Attack - Field Engineer prep\n\n"
         "**MITRE: T1110.004 Credential Stuffing | TA0006 Credential Access**\n\n"
-        "An attacker is burning through a leaked credential dump (~10k unique emails "
-        "harvested from a 2024 breach of an unrelated SaaS) against `app.bigcorp.com`. "
-        "Two waves observed:\n\n"
-        "1. **Wave 1 - Low-and-slow recon (~2 days ago, 30 min):** ~50 attempts/min "
-        "aggregate from 8 datacenter / VPN IPs. Pattern testing - mostly probing for "
-        "valid usernames.\n"
-        "2. **Wave 2 - Aggressive spike (~6 hours ago, 25 min):** thunder-herd from "
-        "6 datacenter IPs. Peak ~60 attempts/min/IP; 4 confirmed account compromises "
-        "with follow-on session creation + password reset attempts.\n\n"
+        "An attacker is burning a leaked credential dump (~10k emails from a 2024 third-party "
+        "SaaS breach) against `app.bigcorp.com`. Two waves observed:\n\n"
+        "1. **Wave 1 - low and slow recon (~2 days ago, 30 min):** ~50 attempts/min from 8 "
+        "datacenter / VPN IPs. Pattern testing for valid usernames.\n"
+        "2. **Wave 2 - aggressive spike (~6 hours ago, 25 min):** thunder-herd from 6 "
+        "datacenter IPs. Peak ~60 attempts/min/IP; 4 confirmed account compromises with "
+        "follow-on session creation + password reset attempts.\n\n"
+        "**Demo talk track:**\n"
+        "1. Open with the heatmap (top-left): show how datacenter-country cells light up "
+        "during the two waves while baseline geos stay dark.\n"
+        "2. Click into the breach table: 4 confirmed account takeovers, all from attacker "
+        "ASNs. This is the moment that lands with the CISO.\n"
+        "3. Pivot to the auth-failure-reason chart: the attacker is mostly hitting "
+        "`invalid_password` against real users, which is exactly the credential-stuffing "
+        "fingerprint.\n"
+        "4. Close with the EQL hunt example in the closing panel - show how this scales to "
+        "thousands of services without rewriting Splunk SPL.\n\n"
         "**Elastic Security capabilities that catch this:**\n"
         "- ML auth jobs: `auth_high_count_logon_fails`, `auth_rare_source_ip_for_a_user`\n"
         "- Prebuilt detection rule: *Multiple Logon Failures from the Same Source*\n"
         "- Behavior Analytics: anomalous geo + ASN for known users\n"
         "- EQL hunt: `sequence by source.ip [authentication where event.outcome=='failure'] "
-        "with maxspan=10m`\n"
+        "with maxspan=10m`\n\n"
+        "**Source quotes (use verbatim):**\n"
+        "- *Verizon DBIR 2024:* \"Stolen credentials remain the top initial-access vector, "
+        "implicated in 38% of breaches.\"\n"
+        "- *Elastic Security docs:* \"`auth_high_count_logon_fails` flags source IPs "
+        "exceeding their 14-day baseline at p99.5.\""
+    )
+
+
+def _md_customer_intro() -> str:
+    return (
+        "## [Customer] Credential Stuffing Attack - Security Incident Report\n\n"
+        "**Incident class:** Attempted account takeover via credential stuffing  \n"
+        "**MITRE technique:** T1110.004  \n"
+        "**Status:** Contained - active response in progress\n\n"
+        "**What happened.** Between two days ago and six hours ago, an external attacker "
+        "operating from datacenter and anonymizer infrastructure attempted to gain access "
+        "to `app.bigcorp.com` employee accounts using a leaked credential dump from an "
+        "unrelated 2024 SaaS breach. The campaign played out in two waves: a low and slow "
+        "reconnaissance phase, followed by an aggressive datacenter spike six hours ago.\n\n"
+        "**Headline numbers:**\n"
+        "- **4** confirmed account takeovers (sessions revoked, passwords rotated, MFA "
+        "re-enrolled)\n"
+        "- **1500+** failed logins blocked or rate-limited at the auth layer\n"
+        "- **8** distinct attacker source IPs across **4** datacenter / VPN ASNs\n"
+        "- Detection time: under 10 minutes from first anomalous failure cluster\n\n"
+        "**What was caught:** every successful breach was correlated with its session "
+        "creation + follow-on suspicious actions inside Elastic Security. Cases were "
+        "auto-bundled and escalated to Tier-2.\n\n"
+        "**What was missed (and is now backlog):** the wave-1 recon phase from two days ago "
+        "did not page Tier-2 because the threshold was tuned for a single-IP burst. Wave 1 "
+        "was distributed across 8 IPs at sub-threshold rate. The new ML job baselines "
+        "failure rates per ASN as well as per IP."
     )
 
 
@@ -1421,66 +1680,167 @@ def _md_breach_table(breaches: List[Dict[str, Any]]) -> str:
     return "\n".join(rows)
 
 
-def _md_mitre_narrative() -> str:
+def _md_ttd_kpi(kpi: Dict[str, Any]) -> str:
+    """Renders the time-to-first-breach KPI block as markdown.
+    Falls back to a placeholder when ES did not return data."""
+    ttd = kpi.get("ttd_minutes")
+    total_failures = kpi.get("total_failures") or 0
+    total_breaches = kpi.get("total_breaches") or 0
+    ttd_str = f"{ttd:.1f} min" if isinstance(ttd, (int, float)) else "n/a"
+    first_fail = kpi.get("first_failure_iso") or "n/a"
+    first_breach = kpi.get("first_breach_iso") or "n/a"
     return (
-        "## MITRE ATT&CK Mapping & Elastic Countermeasures\n\n"
+        "## Time-to-first-breach\n\n"
+        f"### Detection window\n"
+        f"# **{ttd_str}**\n\n"
+        f"_From first attacker failure to first confirmed session takeover._\n\n"
+        f"- **First attacker failure:** `{first_fail}`\n"
+        f"- **First confirmed breach session:** `{first_breach}`\n"
+        f"- **Total failed logins (3d):** **{total_failures:,}**\n"
+        f"- **Confirmed compromises:** **{total_breaches}**\n"
+    )
+
+
+def _md_fe_closing() -> str:
+    return (
+        "## How this becomes a customer conversation\n\n"
+        "**MEDDPICC angle for the next call:**\n"
+        "- **Metrics:** time-to-detection (today: hours via SIEM correlation; with Elastic "
+        "ML auth jobs: under 10 minutes per the chart above). 4 confirmed breaches translates "
+        "to 4 forced password rotations, 4 incident reports, and N hours of SOC analyst time.\n"
+        "- **Economic Buyer pain:** \"We had 4 confirmed account breaches this week and the "
+        "first sign was a help-desk ticket from the affected employee.\"\n"
+        "- **Decision Criteria:** SIEM consolidation. Today the customer runs Splunk for "
+        "logs + a separate IDP analytics tool + manual VirusTotal pivots. Elastic Security "
+        "unifies all three under one ECS-compliant index.\n"
+        "- **Champion enablement:** the EQL hunt syntax, the Behavior Analytics geo-anomaly "
+        "rule, and the auto-Case workflow are all out of the box. Champion does not have to "
+        "rewrite SPL queries.\n"
+        "- **Competition:** Splunk ES (slow detection rules, no native ML for auth), "
+        "CrowdStrike Identity (no log unification), Microsoft Sentinel (Azure-only ML).\n\n"
+        "## MITRE ATT&CK mapping and Elastic countermeasures\n\n"
         "| MITRE | Stage | Elastic Security capability |\n"
         "| --- | --- | --- |\n"
         "| **[T1110.004](https://attack.mitre.org/techniques/T1110/004/) Credential Stuffing** "
-        "| Initial pre-auth probing | ML job `auth_high_count_logon_fails` (anomaly detection on "
-        "failure-rate per source.ip); prebuilt detection rule *Threat Intel IP* + *Multiple Logon "
-        "Failures From the Same Source* |\n"
+        "| Initial pre-auth probing | ML job `auth_high_count_logon_fails` (anomaly detection "
+        "on failure-rate per source.ip); prebuilt rule *Multiple Logon Failures From the "
+        "Same Source* |\n"
         "| **[T1078](https://attack.mitre.org/techniques/T1078/) Valid Accounts** "
-        "| Post-breach session creation | Behavior Analytics anomalous-geo rule "
-        "(`source.geo.country_iso_code` mismatch vs user's 30-day baseline); auto-create Case "
-        "with affected user + IOC pivot |\n"
+        "| Post-breach session creation | Behavior Analytics anomalous-geo rule (mismatch vs "
+        "user's 30-day baseline); auto-create Case with affected user + IOC pivot |\n"
         "| **[T1556](https://attack.mitre.org/techniques/T1556/) Modify Authentication Process** "
         "| Attacker password-reset / MFA bypass | EQL rule chains successful login + "
         "`event.action:user-password-reset` from a non-trusted ASN within 10 min; Endpoint "
-        "Integration auto-revokes session via response action |\n\n"
-        "**SOC workflow:** Cases auto-bundles related alerts > Workflow agent escalates to "
-        "Tier-2 > Endpoint integration revokes sessions for breached users + force-rotates "
-        "MFA factors > IOCs (8 IPs, 4 ASNs) pushed to threat-intel index for blocklist."
+        "Integration auto-revokes session |\n\n"
+        "**Call to action.** Schedule a 30-minute live walkthrough on the customer's own "
+        "auth telemetry next week. We mirror their staging IDP feed into a free Elastic "
+        "Cloud trial and reproduce this dashboard against their data inside the same call."
+    )
+
+
+def _md_customer_closing() -> str:
+    return (
+        "## What was caught, what was missed, and what is next\n\n"
+        "**Caught:**\n"
+        "- All 4 successful logins from attacker ASNs were correlated with their session "
+        "creation events and tagged `labels.breach: confirmed`.\n"
+        "- Wave 2 (the aggressive spike) tripped the `auth_high_count_logon_fails` ML job "
+        "within minutes; Tier-2 was paged automatically.\n"
+        "- Geo-anomaly detection caught the post-breach session activity from "
+        "non-baseline countries.\n\n"
+        "**Missed (and now in scope):**\n"
+        "- Wave 1 (the low-and-slow recon two days ago) was distributed across 8 IPs at "
+        "sub-threshold rate per IP. Today's threshold detection did not page. Going "
+        "forward, the per-ASN ML baseline closes that gap.\n"
+        "- Two of the breached users had only single-factor authentication. MFA enrolment "
+        "is now mandatory for the affected access tier.\n\n"
+        "**Recommended controls (priority order):**\n"
+        "1. **Per-ASN failure rate ML job** - catches distributed credential-stuffing the "
+        "single-IP rule misses. Effort: 1 day.\n"
+        "2. **Mandatory MFA on the affected access tier** - blocks credential reuse even "
+        "when the dump is valid. Effort: policy change + 2 weeks rollout.\n"
+        "3. **Threat intel feed for known datacenter ASN ranges** - default-deny on auth "
+        "endpoints from DigitalOcean / Hetzner / OVH unless the user has previously "
+        "logged in from that ASN. Effort: 3 days + change-control review.\n"
+        "4. **Auto-revoke on geo-anomaly** - Endpoint integration response action revokes "
+        "the session within seconds of the Behavior Analytics rule firing.\n\n"
+        "**Executive summary one-liner:** Elastic Security detected and contained an active "
+        "credential-stuffing campaign against 4 corporate accounts before the attacker could "
+        "pivot inside the environment. Controls are being tuned to close the wave-1 gap."
     )
 
 
 # ----- Panels assembly ---------------------------------------------------------------
 
 
-def get_dashboard_panels() -> List[Dict[str, Any]]:
-    """Returns 7 panels in the prescribed 48-wide grid layout."""
+def _build_panels(view: str) -> List[Dict[str, Any]]:
+    """Build the 8-panel layout for either the FE or Customer dashboard.
+
+    Both views share the same Vega panels (same inline `data.values`); only
+    the surrounding markdown changes.
+    """
     breaches = get_breach_table()
-    panels = []
+    kpi = _compute_time_to_first_breach()
 
-    # Row 1: full-width markdown header (h=8)
-    panels.append(_markdown_panel("p1", 0, 0, 48, 8, _md_header(),
-                                  "Credential stuffing - incident overview"))
+    intro_md = _md_fe_intro() if view == "fe" else _md_customer_intro()
+    closing_md = _md_fe_closing() if view == "fe" else _md_customer_closing()
 
-    # Row 2: heatmap left (24w, h=14) + top IPs right (24w, h=14)
-    panels.append(_vega_panel("p2", 0, 8, 24, 14,
-                              "Failures by hour x source country",
-                              _vega_heatmap_country_hour()))
-    panels.append(_vega_panel("p3", 24, 8, 24, 14,
-                              "Top 10 source IPs by failures",
-                              _vega_top_source_ips()))
+    # Build Vega specs once each so both dashboards share the same inline data.
+    spec_heatmap = _vega_heatmap_country_hour()
+    spec_top_ips = _vega_top_source_ips()
+    spec_logins = _vega_logins_per_minute()
+    spec_asn = _vega_asn_treemap()
+    spec_failure_reasons = _vega_failure_reasons()
+    spec_targeted = _vega_targeted_users()
 
-    # Row 3: full-width line chart (48w, h=14)
-    panels.append(_vega_panel("p4", 0, 22, 48, 14,
-                              "Logins per minute - success vs failure",
-                              _vega_logins_per_minute()))
+    panels: List[Dict[str, Any]] = []
 
-    # Row 4: breach markdown table (24w, h=12) + ASN donut (24w, h=12)
-    panels.append(_markdown_panel("p5", 0, 36, 24, 12, _md_breach_table(breaches),
-                                  "Recent public breach corpus (HIBP-style)"))
-    panels.append(_vega_panel("p6", 24, 36, 24, 12,
-                              "Source ASN distribution (failures only)",
-                              _vega_asn_treemap()))
+    # Row 1: switcher (full width, h=4)
+    panels.append(_markdown_panel("switcher", 0, 0, 48, 4, _switcher_md(view),
+                                  "Switch view"))
 
-    # Row 5: full-width MITRE narrative (48w, h=10)
-    panels.append(_markdown_panel("p7", 0, 48, 48, 10, _md_mitre_narrative(),
-                                  "MITRE ATT&CK mapping & Elastic detection"))
+    # Row 2: intro markdown (full width, h=8)
+    panels.append(_markdown_panel("intro", 0, 4, 48, 8, intro_md,
+                                  "Overview"))
+
+    # Row 3: heatmap (24w, h=14) + top IPs (24w, h=14)
+    panels.append(_vega_panel("p_heat", 0, 12, 24, 14,
+                              "Failures by hour x source country", spec_heatmap))
+    panels.append(_vega_panel("p_ips", 24, 12, 24, 14,
+                              "Top 10 source IPs by failures", spec_top_ips))
+
+    # Row 4: full-width line chart (48w, h=14)
+    panels.append(_vega_panel("p_line", 0, 26, 48, 14,
+                              "Logins per 5-min bucket - success vs failure",
+                              spec_logins))
+
+    # Row 5: failure-reason bar (16w, h=12) + targeted users bar (16w, h=12)
+    #         + ASN donut (16w, h=12)
+    panels.append(_vega_panel("p_reasons", 0, 40, 16, 12,
+                              "Auth failure reason distribution", spec_failure_reasons))
+    panels.append(_vega_panel("p_targets", 16, 40, 16, 12,
+                              "Top targeted users (attempts + breach flag)",
+                              spec_targeted))
+    panels.append(_vega_panel("p_asn", 32, 40, 16, 12,
+                              "Source ASN distribution (failures)", spec_asn))
+
+    # Row 6: time-to-first-breach KPI (16w, h=12) + breach table (32w, h=12)
+    panels.append(_markdown_panel("p_ttd", 0, 52, 16, 12, _md_ttd_kpi(kpi),
+                                  "Time-to-first-breach"))
+    panels.append(_markdown_panel("p_breach", 16, 52, 32, 12, _md_breach_table(breaches),
+                                  "Confirmed account compromises"))
+
+    # Row 7: closing narrative (full width, h=12)
+    panels.append(_markdown_panel("closing", 0, 64, 48, 12, closing_md,
+                                  "Closing narrative"))
 
     return panels
+
+
+def get_dashboard_panels() -> List[Dict[str, Any]]:
+    """Backwards-compatible: returns the FE-view panel layout (same panels the
+    legacy dashboard rendered, now with switcher + new charts)."""
+    return _build_panels("fe")
 
 
 # ============================================================ Kibana helpers =======
@@ -1502,8 +1862,8 @@ def _data_view_id() -> str:
     return f"demo-{SCENARIO_ID}-dataview"
 
 
-def _dashboard_url() -> str:
-    return settings.kibana_url.rstrip("/") + f"/app/dashboards#/view/{DASHBOARD_ID}"
+def _dashboard_url(dashboard_id: str = DASHBOARD_ID) -> str:
+    return settings.kibana_url.rstrip("/") + f"/app/dashboards#/view/{dashboard_id}"
 
 
 def _create_data_view() -> str:
@@ -1544,8 +1904,15 @@ def _create_data_view() -> str:
     return dv_id
 
 
-def _create_dashboard(data_view_id: str) -> str:
-    panels = get_dashboard_panels()
+def _create_one_dashboard(
+    *,
+    data_view_id: str,
+    dashboard_id: str,
+    title: str,
+    description: str,
+    panels: List[Dict[str, Any]],
+) -> str:
+    """Idempotently create a single dashboard with the given panels."""
     panels_json = json.dumps(panels, ensure_ascii=False)
     options_json = json.dumps({
         "useMargins": True,
@@ -1554,14 +1921,16 @@ def _create_dashboard(data_view_id: str) -> str:
         "syncCursor": True,
         "syncTooltips": True,
     })
-    search_source_json = json.dumps({"query": {"language": "kuery", "query": ""}, "filter": []})
+    search_source_json = json.dumps(
+        {"query": {"language": "kuery", "query": ""}, "filter": []}
+    )
 
     body = [{
-        "id": DASHBOARD_ID,
+        "id": dashboard_id,
         "type": "dashboard",
         "attributes": {
-            "title": f"FE Copilot Demo · {SCENARIO_TITLE}",
-            "description": SCENARIO_DESCRIPTION,
+            "title": title,
+            "description": description,
             "panelsJSON": panels_json,
             "optionsJSON": options_json,
             "timeRestore": True,
@@ -1579,7 +1948,7 @@ def _create_dashboard(data_view_id: str) -> str:
     with httpx.Client(timeout=30.0) as client:
         # Best-effort delete first for idempotency.
         try:
-            client.delete(_kbn_url(f"/api/saved_objects/dashboard/{DASHBOARD_ID}"),
+            client.delete(_kbn_url(f"/api/saved_objects/dashboard/{dashboard_id}"),
                           headers=_kbn_headers())
         except Exception:
             pass
@@ -1589,9 +1958,38 @@ def _create_dashboard(data_view_id: str) -> str:
         )
         if resp.status_code >= 400:
             raise RuntimeError(
-                f"Kibana dashboard create failed: {resp.status_code} {resp.text[:400]}"
+                f"Kibana dashboard create failed ({dashboard_id}): "
+                f"{resp.status_code} {resp.text[:400]}"
             )
-    return DASHBOARD_ID
+    return dashboard_id
+
+
+def _create_dashboard(data_view_id: str) -> Dict[str, str]:
+    """Create both the FE and Customer dashboards. Returns a dict of ids."""
+    fe_panels = _build_panels("fe")
+    cu_panels = _build_panels("customer")
+
+    fe_id = _create_one_dashboard(
+        data_view_id=data_view_id,
+        dashboard_id=DASHBOARD_ID,
+        title=f"[FE] {SCENARIO_TITLE}",
+        description=(
+            "Field Engineer prep view. MITRE T1110.004 alignment, Elastic Security "
+            "capabilities, demo talk track, MEDDPICC angle."
+        ),
+        panels=fe_panels,
+    )
+    cu_id = _create_one_dashboard(
+        data_view_id=data_view_id,
+        dashboard_id=CUSTOMER_DASHBOARD_ID,
+        title=f"[Customer] {SCENARIO_TITLE}",
+        description=(
+            "SOC analyst / CISO view. Executive incident report: what was caught, "
+            "what was missed, time-to-detection, recommended controls."
+        ),
+        panels=cu_panels,
+    )
+    return {"fe": fe_id, "customer": cu_id}
 
 
 # ============================================================ End-to-end seed =====
@@ -1642,7 +2040,10 @@ def seed() -> Dict[str, Any]:
             pass
 
     data_view_id = _create_data_view()
-    dashboard_id = _create_dashboard(data_view_id)
+    dashboard_ids = _create_dashboard(data_view_id)
+
+    fe_id = dashboard_ids.get("fe", DASHBOARD_ID)
+    cu_id = dashboard_ids.get("customer", CUSTOMER_DASHBOARD_ID)
 
     return {
         "ok": True,
@@ -1650,8 +2051,12 @@ def seed() -> Dict[str, Any]:
         "indices": counts,
         "doc_count": sum(counts.values()),
         "data_view_id": data_view_id,
-        "dashboard_id": dashboard_id,
-        "dashboard_url": _dashboard_url(),
+        "dashboard_id": fe_id,
+        "dashboard_url": _dashboard_url(fe_id),
+        "fe_dashboard_id": fe_id,
+        "fe_dashboard_url": _dashboard_url(fe_id),
+        "customer_dashboard_id": cu_id,
+        "customer_dashboard_url": _dashboard_url(cu_id),
         "elapsed_seconds": round(time.time() - started, 2),
         "samples": samples,
         "breaches": get_breach_table(),

@@ -8,15 +8,25 @@ discrete error-rate jumps; the latest (T-12h, v1.7.3) introduced a NullPointerEx
 regression. Other 9 services hold steady at <2% error rate with one or two harmless
 transient blips for realism.
 
-The module is self-contained and exposes the public interface required by the
-Demo Data Generator (SCENARIO_ID, INDICES, get_mappings, generate_documents,
-get_dashboard_panels, seed). It DELETE+CREATEs three indices and a Kibana dashboard
-saved object with seven panels (Vega-Lite for charts, markdown for narrative).
+The module ships TWO dashboards backed by the same inline-data Vega panels:
+  * `[FE] Noisy Microservice` - Field-Engineer prep view with talk track + MEDDPICC
+  * `[Customer] Noisy Microservice` - SRE / Engineering Manager service-health report
+
+Both dashboards share the same Vega panels. Every Vega panel is rendered with
+inline `data.values` populated at seed time (Kibana 9.3 rejects URL-based Vega
+specs at render time even when saved objects validate). Every ES query is wrapped
+in try/except; on failure the chart falls back to empty values plus a warning log
+and the seed still succeeds.
+
+Public surface (kept stable for the Demo Data Generator):
+    SCENARIO_ID, SCENARIO_TITLE, SCENARIO_DESCRIPTION
+    INDICES, DASHBOARD_ID, CUSTOMER_DASHBOARD_ID
+    get_mappings(), generate_documents(seed), get_dashboard_panels(), seed()
 date: 03-05-2026
 """
 __author__ = "Rodrigo Careaga"
 __copyright__ = "Copyright 2026, Rodrigo Careaga"
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __status__ = "Development"
 
 import json
@@ -30,6 +40,9 @@ from elasticsearch import helpers as es_helpers
 
 from app.config import settings
 from app.integrations.elasticsearch_client import get_client
+from app.utils.logging import get_logger
+
+log = get_logger(__name__)
 
 
 # ============================================================ Public constants ======
@@ -51,6 +64,7 @@ INDICES: Dict[str, str] = {
 }
 
 DASHBOARD_ID: str = "demo-noisy-microservice-dashboard"
+CUSTOMER_DASHBOARD_ID: str = "demo-noisy-microservice-customer-dashboard"
 
 
 # ============================================================ Domain constants ======
@@ -60,6 +74,7 @@ _NAMESPACE = "stride-payments"
 _REGIONS = ["us-east-1", "us-west-2", "eu-west-1"]
 _NODES_PER_REGION = 3
 _SLO_TARGET = 0.999
+_ERROR_BUDGET_WEEKLY = 1.0 - _SLO_TARGET  # 0.001 = 0.1% of weekly traffic
 
 # The 10 services. The first is the bad apple - heavy error weighting + rolling deploys.
 # Each entry: (name, base_p50_ms, base_err_rate, traffic_weight, transactions, version_stable)
@@ -939,6 +954,440 @@ def _gen_pod_restart_logs(rng: random.Random, now: datetime) -> List[Dict[str, A
     return docs
 
 
+# ============================================================ Vega specs (inline) ===
+#
+# Every chart embeds `data.values` populated at seed time. Kibana 9.3 rejects
+# URL-based Vega specs at render time even though the saved object validates -
+# inline data is the only reliable rendering path. Each helper wraps its ES
+# query in try/except; on failure the chart degrades to an empty values list
+# and a structured warning is emitted but seed() still completes.
+
+
+def _spec_errors_by_service() -> Dict[str, Any]:
+    """Horizontal bar - total errors per service over the last 7 days. The bad
+    apple (`checkout-service`) is forced red; all others share a calm green."""
+    values: List[Dict[str, Any]] = []
+    try:
+        es = get_client()
+        r = es.search(index=INDICES["traces"], body={
+            "size": 0,
+            "query": {"bool": {"filter": [
+                {"term": {"event.outcome": "failure"}},
+                {"range": {"@timestamp": {"gte": "now-7d", "lte": "now"}}},
+            ]}},
+            "aggs": {
+                "by_svc": {
+                    "terms": {"field": "service.name", "size": 20,
+                               "order": {"_count": "desc"}},
+                },
+            },
+        })
+        for b in r["aggregations"]["by_svc"]["buckets"]:
+            values.append({"service": b["key"], "errors": int(b["doc_count"])})
+    except Exception as exc:
+        log.warning("noisy_microservice.spec_errors_by_service.failed", error=str(exc))
+
+    return {
+        "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+        "title": {"text": "Errors by service (last 7d) - checkout-service dominates",
+                  "fontSize": 14, "anchor": "start"},
+        "data": {"values": values},
+        "mark": {"type": "bar", "tooltip": True, "cornerRadiusEnd": 3},
+        "encoding": {
+            "y": {"field": "service", "type": "nominal", "sort": "-x", "title": "service"},
+            "x": {"field": "errors", "type": "quantitative", "title": "error count"},
+            "color": {
+                "condition": {"test": "datum.service == 'checkout-service'", "value": "#e7664c"},
+                "value": "#54b399",
+            },
+            "tooltip": [
+                {"field": "service", "type": "nominal", "title": "service.name"},
+                {"field": "errors", "type": "quantitative", "title": "errors"},
+            ],
+        },
+    }
+
+
+def _spec_error_rate_over_time() -> Dict[str, Any]:
+    """Line chart - error rate % per service per 30-minute bucket over 7 days.
+    Bucketing at 30m keeps the inline payload modest (~340 rows max)."""
+    values: List[Dict[str, Any]] = []
+    palette = {
+        "checkout-service": "#e7664c",
+        "payments-gateway": "#54b399",
+        "billing-service": "#9ab8d3",
+        "ledger-service": "#aaaaaa",
+        "fraud-service": "#d6bf57",
+        "notifications-service": "#a987d1",
+        "profile-service": "#7eaecf",
+        "cart-service": "#7c8a99",
+        "inventory-service": "#c1a98c",
+        "recs-service": "#7d9d7d",
+    }
+    try:
+        es = get_client()
+        r = es.search(index=INDICES["traces"], body={
+            "size": 0,
+            "query": {"bool": {"filter": [
+                {"range": {"@timestamp": {"gte": "now-7d", "lte": "now"}}},
+            ]}},
+            "aggs": {
+                "by_time": {
+                    "date_histogram": {"field": "@timestamp",
+                                         "fixed_interval": "30m",
+                                         "min_doc_count": 1},
+                    "aggs": {
+                        "by_svc": {
+                            "terms": {"field": "service.name", "size": 12},
+                            "aggs": {
+                                "fail": {"filter": {"term": {"event.outcome": "failure"}}},
+                            },
+                        },
+                    },
+                },
+            },
+        })
+        for tb in r["aggregations"]["by_time"]["buckets"]:
+            ts = tb.get("key_as_string") or tb.get("key")
+            for sb in tb["by_svc"]["buckets"]:
+                total = int(sb["doc_count"])
+                if total <= 0:
+                    continue
+                fails = int((sb.get("fail") or {}).get("doc_count", 0))
+                rate_pct = round((fails / total) * 100.0, 4)
+                values.append({"time": ts, "service": sb["key"], "error_rate_pct": rate_pct})
+    except Exception as exc:
+        log.warning("noisy_microservice.spec_error_rate_over_time.failed", error=str(exc))
+
+    domain = list(palette.keys())
+    rng_colors = [palette[k] for k in domain]
+    return {
+        "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+        "title": {"text": "Error rate % by service (30-min buckets) - three deploys land on checkout-service",
+                  "fontSize": 14, "anchor": "start"},
+        "data": {"values": values},
+        "mark": {"type": "line", "interpolate": "monotone", "point": False,
+                  "tooltip": True, "strokeWidth": 2},
+        "encoding": {
+            "x": {"field": "time", "type": "temporal", "title": None},
+            "y": {"field": "error_rate_pct", "type": "quantitative", "title": "error rate (%)"},
+            "color": {
+                "field": "service", "type": "nominal",
+                "scale": {"domain": domain, "range": rng_colors},
+                "legend": {"title": "service"},
+            },
+            "tooltip": [
+                {"field": "time", "type": "temporal", "title": "time"},
+                {"field": "service", "type": "nominal", "title": "service"},
+                {"field": "error_rate_pct", "type": "quantitative", "title": "error %", "format": ".2f"},
+            ],
+        },
+    }
+
+
+def _spec_top_error_types() -> Dict[str, Any]:
+    """Horizontal bar - top error.type buckets for checkout-service alone."""
+    values: List[Dict[str, Any]] = []
+    try:
+        es = get_client()
+        r = es.search(index=INDICES["traces"], body={
+            "size": 0,
+            "query": {"bool": {"filter": [
+                {"term": {"service.name": "checkout-service"}},
+                {"term": {"event.outcome": "failure"}},
+                {"range": {"@timestamp": {"gte": "now-7d", "lte": "now"}}},
+            ]}},
+            "aggs": {
+                "by_err": {"terms": {"field": "error.type", "size": 8,
+                                       "order": {"_count": "desc"}}},
+            },
+        })
+        for b in r["aggregations"]["by_err"]["buckets"]:
+            values.append({"error_type": b["key"], "count": int(b["doc_count"])})
+    except Exception as exc:
+        log.warning("noisy_microservice.spec_top_error_types.failed", error=str(exc))
+
+    return {
+        "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+        "title": {"text": "Top error.type - checkout-service (last 7d)",
+                  "fontSize": 14, "anchor": "start"},
+        "data": {"values": values},
+        "mark": {"type": "bar", "tooltip": True, "cornerRadiusEnd": 3, "color": "#e7664c"},
+        "encoding": {
+            "y": {"field": "error_type", "type": "nominal", "sort": "-x", "title": "error.type"},
+            "x": {"field": "count", "type": "quantitative", "title": "count"},
+            "tooltip": [
+                {"field": "error_type", "type": "nominal", "title": "error.type"},
+                {"field": "count", "type": "quantitative", "title": "count"},
+            ],
+        },
+    }
+
+
+def _spec_deploy_timeline(now: datetime) -> Dict[str, Any]:
+    """Layered chart - shaded area of checkout-service error rate plus vertical
+    rules + labels for each of the three rolling deploys. New `value` chart for
+    the FE narrative ("walk through the deploy correlation")."""
+    rate_values: List[Dict[str, Any]] = []
+    try:
+        es = get_client()
+        r = es.search(index=INDICES["traces"], body={
+            "size": 0,
+            "query": {"bool": {"filter": [
+                {"term": {"service.name": "checkout-service"}},
+                {"range": {"@timestamp": {"gte": "now-7d", "lte": "now"}}},
+            ]}},
+            "aggs": {
+                "by_time": {
+                    "date_histogram": {"field": "@timestamp",
+                                         "fixed_interval": "30m",
+                                         "min_doc_count": 1},
+                    "aggs": {"fail": {"filter": {"term": {"event.outcome": "failure"}}}},
+                },
+            },
+        })
+        for b in r["aggregations"]["by_time"]["buckets"]:
+            total = int(b["doc_count"])
+            if total <= 0:
+                continue
+            fails = int((b.get("fail") or {}).get("doc_count", 0))
+            rate_values.append({
+                "time": b.get("key_as_string") or b.get("key"),
+                "txns": total,
+                "rate_pct": round((fails / total) * 100.0, 4),
+            })
+    except Exception as exc:
+        log.warning("noisy_microservice.spec_deploy_timeline.failed", error=str(exc))
+
+    deploy_values: List[Dict[str, Any]] = []
+    for dep in _CHECKOUT_DEPLOYS:
+        ts = now - timedelta(hours=dep["hours_ago"])
+        deploy_values.append({
+            "time": _iso(ts),
+            "label": f"v{dep['version']} ({dep['commit_sha']})",
+        })
+
+    return {
+        "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+        "title": {"text": "Deployment regression timeline - deploys vs checkout-service error rate",
+                  "fontSize": 14, "anchor": "start"},
+        "layer": [
+            {
+                "data": {"values": rate_values},
+                "mark": {"type": "area", "color": "#e7664c", "opacity": 0.55,
+                          "interpolate": "monotone",
+                          "line": {"color": "#bd271e", "strokeWidth": 1.5},
+                          "tooltip": True},
+                "encoding": {
+                    "x": {"field": "time", "type": "temporal", "title": None},
+                    "y": {"field": "rate_pct", "type": "quantitative", "title": "checkout-service error %"},
+                    "tooltip": [
+                        {"field": "time", "type": "temporal", "title": "time"},
+                        {"field": "txns", "type": "quantitative", "title": "txns"},
+                        {"field": "rate_pct", "type": "quantitative", "title": "error %", "format": ".2f"},
+                    ],
+                },
+            },
+            {
+                "data": {"values": deploy_values},
+                "mark": {"type": "rule", "color": "#1d3c4f", "strokeWidth": 2,
+                          "strokeDash": [6, 4]},
+                "encoding": {
+                    "x": {"field": "time", "type": "temporal"},
+                    "tooltip": [
+                        {"field": "label", "type": "nominal", "title": "deploy"},
+                        {"field": "time", "type": "temporal", "title": "time"},
+                    ],
+                },
+            },
+            {
+                "data": {"values": deploy_values},
+                "mark": {"type": "text", "align": "left", "dx": 4, "dy": -6,
+                          "color": "#1d3c4f", "fontSize": 11, "fontWeight": "bold"},
+                "encoding": {
+                    "x": {"field": "time", "type": "temporal"},
+                    "y": {"datum": 0, "type": "quantitative"},
+                    "text": {"field": "label", "type": "nominal"},
+                },
+            },
+        ],
+    }
+
+
+def _spec_error_budget_burn(now: datetime) -> Dict[str, Any]:
+    """Cumulative checkout-service error budget consumed over the last 7 days,
+    expressed as a percentage of the weekly budget. Budget = (1 - SLO target)
+    multiplied by total checkout-service requests in the window. Each bucket
+    contributes (errors / budget) to the running total."""
+    values: List[Dict[str, Any]] = []
+    try:
+        es = get_client()
+        r = es.search(index=INDICES["traces"], body={
+            "size": 0,
+            "query": {"bool": {"filter": [
+                {"term": {"service.name": "checkout-service"}},
+                {"range": {"@timestamp": {"gte": "now-7d", "lte": "now"}}},
+            ]}},
+            "aggs": {
+                "total": {"value_count": {"field": "@timestamp"}},
+                "by_time": {
+                    "date_histogram": {"field": "@timestamp",
+                                         "fixed_interval": "1h",
+                                         "min_doc_count": 0},
+                    "aggs": {"fail": {"filter": {"term": {"event.outcome": "failure"}}}},
+                },
+            },
+        })
+        total_reqs = int(r["aggregations"]["total"]["value"] or 0)
+        budget = max(1.0, total_reqs * _ERROR_BUDGET_WEEKLY)
+        consumed = 0
+        for b in r["aggregations"]["by_time"]["buckets"]:
+            fails = int((b.get("fail") or {}).get("doc_count", 0))
+            consumed += fails
+            consumed_pct = round((consumed / budget) * 100.0, 3)
+            values.append({
+                "time": b.get("key_as_string") or b.get("key"),
+                "consumed_pct": consumed_pct,
+                "remaining_pct": max(0.0, round(100.0 - consumed_pct, 3)),
+            })
+    except Exception as exc:
+        log.warning("noisy_microservice.spec_error_budget_burn.failed", error=str(exc))
+
+    return {
+        "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+        "title": {"text": "Error budget burn-down - checkout-service (SLO 99.9% / 7d window)",
+                  "fontSize": 14, "anchor": "start"},
+        "layer": [
+            {
+                "data": {"values": values},
+                "mark": {"type": "area", "color": "#e7664c", "opacity": 0.7,
+                          "interpolate": "monotone", "tooltip": True,
+                          "line": {"color": "#bd271e", "strokeWidth": 2}},
+                "encoding": {
+                    "x": {"field": "time", "type": "temporal", "title": None},
+                    "y": {"field": "consumed_pct", "type": "quantitative",
+                          "title": "weekly error budget consumed (%)"},
+                    "tooltip": [
+                        {"field": "time", "type": "temporal", "title": "time"},
+                        {"field": "consumed_pct", "type": "quantitative",
+                         "title": "consumed %", "format": ".2f"},
+                        {"field": "remaining_pct", "type": "quantitative",
+                         "title": "remaining %", "format": ".2f"},
+                    ],
+                },
+            },
+            {
+                "data": {"values": [{"y": 100}]},
+                "mark": {"type": "rule", "color": "#1d3c4f", "strokeDash": [4, 4],
+                          "strokeWidth": 2},
+                "encoding": {"y": {"field": "y", "type": "quantitative"}},
+            },
+        ],
+    }
+
+
+# ============================================================ Markdown panels =======
+
+
+def _md_switcher(this_view: str) -> str:
+    """Top-of-dashboard view switcher. `this_view` is "fe" or "customer"."""
+    fe_url = f"#/view/{DASHBOARD_ID}"
+    customer_url = f"#/view/{CUSTOMER_DASHBOARD_ID}"
+    fe_marker = " (current)" if this_view == "fe" else ""
+    cust_marker = " (current)" if this_view == "customer" else ""
+    return (
+        "### Noisy Microservice - dual-view demo\n\n"
+        f"Switch view: "
+        f"**[ [FE] talk track + MEDDPICC]({fe_url})**{fe_marker}  ·  "
+        f"**[ [Customer] service-health report]({customer_url})**{cust_marker}\n\n"
+        "_Same charts, same data. Only the framing changes._"
+    )
+
+
+def _md_fe_intro() -> str:
+    return (
+        "## [FE] One Bad Apple - Field Engineer prep\n"
+        f"_{_FICT_COMPANY}_ runs **10 microservices** behind an API gateway. Over the last 7 days, "
+        "the recently-deployed `checkout-service` (rolling **v1.7.0 -> v1.7.3**) has produced **~80% of all "
+        "errors** despite handling only **~12%** of traffic. Three deployment events land as discrete "
+        "error-rate jumps; the **T-12h** rollout (v1.7.3) introduced a `NullPointerException` regression.\n\n"
+        "### Demo talk track (5 minutes)\n"
+        "1. **Open Service Map first** - the 80/20 split is visually obvious; `checkout-service` lights up red while peers stay green.\n"
+        "2. **Click into checkout-service** - show the `error.type` breakdown chart on this dashboard. NullPointerException dominates after T-12h.\n"
+        "3. **Walk through the deploy correlation** - point at the *Deployment regression timeline* panel; three vertical rules align with three error-rate steps.\n"
+        "4. **Show the error budget burn-down** - one chart tells the SRE the budget is gone for the week; this is the SLO conversation.\n"
+        "5. **Close with Cases** - drag the failing trace into a Case, auto-attach the `release.commit_sha` (`c6d2410`, @okafor), and show the rollback PR.\n\n"
+        "### MEDDPICC angle\n"
+        "- **Pain**: silent post-deploy regressions; today MTTR is 90+ minutes because logs and APM are in two tools.\n"
+        "- **Metrics**: target MTTR <15 min; deploy-to-detect <5 min; one console for SRE + on-call + management.\n"
+        "- **Decision Criteria**: observability consolidation (APM + Logs + ML + SLO + Cases on one license, ECS taxonomy across all services).\n"
+        "- **Champion enablement**: this dashboard is the demo asset - clone it for the customer's services in the trial."
+    )
+
+
+def _md_fe_closing() -> str:
+    return (
+        "## [FE] How Elastic catches this - playbook\n"
+        "| Step | Elastic capability | What it surfaces |\n"
+        "| --- | --- | --- |\n"
+        "| 1 | **Service Map** (Observability) | Auto-rendered topology - `checkout-service` lights red while peers stay green; click-through into APM |\n"
+        "| 2 | **APM transaction breakdown** | p50 / p99 latency per `transaction.name` - `POST /checkout/confirm` regressed 4x at T-12h |\n"
+        "| 3 | **ML anomaly job** (`high_error_rate` + `apm_tx_metrics`) | Pre-built detectors flag the 5-min bucket within 1-2 buckets of the deploy |\n"
+        "| 4 | **SLO burn-rate alert** (target 0.999) | Fast-burn alert at 14.4x in 5 min - pages the checkout on-call |\n"
+        "| 5 | **Cases** | Auto-attaches the failing trace + stack trace + the `release.commit_sha` of the bad deploy |\n"
+        "| 6 | **Logs + APM correlation** | Single click pivot from anomaly to top stack-traces (NullPointerException dominates) |\n"
+        "| 7 | **AIOps Log Rate Analysis** | Highlights `IdempotencyKeyExtractor.extract` as the regressing log signature |\n"
+        "\n_Time-to-mitigation in the demo flow: deploy -> alert -> owner notified -> rollback PR opened, all under 10 minutes._\n\n"
+        "### Representative stack traces - paste into a Case\n"
+        "1. **NullPointerException** · checkout-service · commit `c6d2410` (@okafor) - `Cannot invoke \"IdempotencyKey.value()\" because \"key\" is null`\n"
+        "2. **DBConnectionTimeout** · checkout-service · commit `a4f9c21` (@marquez) - `HikariPool-1 - Connection is not available, request timed out after 30000ms`\n"
+        "3. **JsonParseException** · checkout-service · commit `bd8e137` (@patel) - `Mismatched input: schema v2 requires 'cart_lines'; received legacy 'items'`\n"
+        "4. **RateLimitExceeded** · checkout-service · commit `c6d2410` (@okafor) - `Rate limit exceeded for tenant t_3a8f: 200 rpm budget consumed`\n"
+        "5. **NullPointerException** · checkout-service · commit `c6d2410` (@okafor) - `null pointer dereference in CartTotalCalculator.totals`"
+    )
+
+
+def _md_customer_intro() -> str:
+    return (
+        "## [Customer] Service health report - last 7 days\n"
+        f"_Audience: SRE leads, Engineering Manager, on-call rotation lead._\n\n"
+        f"**Headline:** `checkout-service` is producing **~80% of all errors** across the platform "
+        "despite handling only **~12%** of traffic. The error rate stepped up three times over the "
+        "last week, each step landing within minutes of a `checkout-service` deployment. The most "
+        "recent deploy (**v1.7.3**, T-12h) introduced a `NullPointerException` regression in the "
+        "idempotency-key handling path that has become the dominant failure mode.\n\n"
+        "### What this means for the team\n"
+        "- **Error budget**: the weekly error budget for `checkout-service` (SLO 99.9%) is being burned down rapidly. The burn-down chart below shows when the budget runs out at the current pace.\n"
+        "- **MTTR**: today the team detects deploy regressions only when customer-support tickets land. Target is **<15 min** detect-to-page; current actual hovers around **90 min**.\n"
+        "- **Deploy regressions identified**: three `checkout-service` deploys in the last 7 days, all correlated with measurable error-rate jumps. The other 9 services shipped 24 stable rollouts in the same window with no incidents.\n"
+        "- **Engineering impact**: `checkout-service` and `cart-service` (same team, `checkout-platform`) are absorbing the bulk of on-call pages. Other 8 services are quiet."
+    )
+
+
+def _md_customer_closing() -> str:
+    return (
+        "## [Customer] What we recommend next\n"
+        "**Immediate (today):**\n"
+        "- Roll back `checkout-service` to **v1.7.2** while the NullPointerException regression in `IdempotencyKeyExtractor.extract` is fixed and re-tested.\n"
+        "- Acknowledge the current SLO burn and pause non-critical `checkout-service` rollouts until the error budget recovers.\n\n"
+        "**This week:**\n"
+        "- Add a **deploy-correlated error-rate alert** (fast-burn 14.4x in 5 min) so the next regression pages the deploy author within minutes, not hours.\n"
+        "- Wire `release.commit_sha` and `release.author` into Cases templates so every incident auto-attaches the suspected deploy.\n"
+        "- Add **ML anomaly detection** on `apm_tx_metrics` and `high_error_rate` for `checkout-service` - this dashboard would have surfaced the regression in the first 5-minute bucket after each deploy.\n\n"
+        "**Quarterly:**\n"
+        "- Adopt **shared SLOs** across `checkout-platform` (checkout-service + cart-service) so the team budget is visible at the squad level, not per-service.\n"
+        "- Standardise on **Elastic Service Map** as the single starting point for incident triage. The 80/20 split visible here today should be the first thing on-call sees, not the last.\n\n"
+        "### Engineering scoreboard (last 7 days)\n"
+        "| Metric | Target | Actual | Status |\n"
+        "| --- | --- | --- | --- |\n"
+        "| Error rate (checkout-service) | < 1.0% | ~26% post-T-12h | breached |\n"
+        "| Error rate (other 9 services) | < 1.0% | < 1.0% | on target |\n"
+        "| Detect-to-page (deploy regressions) | < 5 min | ~90 min | breached |\n"
+        "| Deploys with rollbacks | 0 | 0 (manual mitigation pending) | watch |\n"
+        "| Weekly error budget consumed | < 100% | high (see chart) | watch |\n"
+    )
+
+
 # ============================================================ Dashboard panels ======
 
 
@@ -993,283 +1442,60 @@ def _vega_panel(panel_id: str, x: int, y: int, w: int, h: int, title: str, spec:
     }
 
 
-def _vega_errors_by_service_spec() -> Dict[str, Any]:
-    """Vega-Lite bar chart: errors-by-service from Elasticsearch (terms agg)."""
-    return {
-        "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-        "title": {"text": "Errors by service (last 7d) - checkout-service dominates",
-                  "fontSize": 14, "anchor": "start"},
-        "data": {
-            "url": {
-                "%context%": True, "%timefield%": "@timestamp",
-                "index": INDICES["traces"],
-                "body": {
-                    "size": 0,
-                    "query": {"bool": {"filter": [{"term": {"event.outcome": "failure"}}]}},
-                    "aggs": {"by_svc": {"terms": {"field": "service.name", "size": 20, "order": {"_count": "desc"}}}},
-                },
-            },
-            "format": {"property": "aggregations.by_svc.buckets"},
-        },
-        "mark": {"type": "bar", "tooltip": True, "cornerRadiusEnd": 3},
-        "encoding": {
-            "y": {"field": "key", "type": "nominal", "sort": "-x", "title": "Service"},
-            "x": {"field": "doc_count", "type": "quantitative", "title": "Error count"},
-            "color": {
-                "condition": {"test": "datum.key == 'checkout-service'", "value": "#e7664c"},
-                "value": "#54b399",
-            },
-            "tooltip": [
-                {"field": "key", "type": "nominal", "title": "service.name"},
-                {"field": "doc_count", "type": "quantitative", "title": "errors"},
-            ],
-        },
-    }
+def _build_chart_panels(now: datetime, prefix: str) -> List[Dict[str, Any]]:
+    """Return the shared Vega chart panels. Both dashboards use this exact set;
+    only the surrounding markdown changes between FE and Customer views.
 
-
-def _vega_error_rate_over_time_spec() -> Dict[str, Any]:
-    """Vega-Lite line: error rate % per service over time (5-min buckets)."""
-    return {
-        "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-        "title": {"text": "Error rate % by service (5-min buckets) - three deploys land on checkout-service",
-                  "fontSize": 14, "anchor": "start"},
-        "data": {
-            "url": {
-                "%context%": True, "%timefield%": "@timestamp",
-                "index": INDICES["traces"],
-                "body": {
-                    "size": 0,
-                    "aggs": {
-                        "by_time": {
-                            "date_histogram": {"field": "@timestamp", "fixed_interval": "5m", "min_doc_count": 0},
-                            "aggs": {
-                                "by_svc": {
-                                    "terms": {"field": "service.name", "size": 12},
-                                    "aggs": {
-                                        "fail": {"filter": {"term": {"event.outcome": "failure"}}},
-                                    },
-                                },
-                            },
-                        },
-                    },
-                },
-            },
-            "format": {"property": "aggregations.by_time.buckets"},
-        },
-        "transform": [
-            {"flatten": ["by_svc.buckets"], "as": ["svc_bucket"]},
-            {"calculate": "datum.svc_bucket.key", "as": "service"},
-            {"calculate": "datum.svc_bucket.doc_count > 0 ? datum.svc_bucket.fail.doc_count / datum.svc_bucket.doc_count : 0", "as": "error_rate"},
-            {"calculate": "datum.error_rate * 100", "as": "error_rate_pct"},
-        ],
-        "mark": {"type": "line", "interpolate": "monotone", "point": False, "tooltip": True, "strokeWidth": 2},
-        "encoding": {
-            "x": {"field": "key_as_string", "type": "temporal", "title": None},
-            "y": {"field": "error_rate_pct", "type": "quantitative", "title": "error rate (%)"},
-            "color": {
-                "field": "service", "type": "nominal",
-                "scale": {
-                    "domain": [
-                        "checkout-service", "payments-gateway", "billing-service", "ledger-service",
-                        "fraud-service", "notifications-service", "profile-service", "cart-service",
-                        "inventory-service", "recs-service",
-                    ],
-                    "range": [
-                        "#e7664c", "#54b399", "#9ab8d3", "#aaaaaa", "#d6bf57",
-                        "#a987d1", "#7eaecf", "#7c8a99", "#c1a98c", "#7d9d7d",
-                    ],
-                },
-            },
-            "tooltip": [
-                {"field": "key_as_string", "type": "temporal", "title": "time"},
-                {"field": "service", "type": "nominal", "title": "service"},
-                {"field": "error_rate_pct", "type": "quantitative", "title": "error %", "format": ".2f"},
-            ],
-        },
-    }
-
-
-def _vega_top_error_types_spec() -> Dict[str, Any]:
-    """Vega-Lite horizontal bar: top error.type for checkout-service."""
-    return {
-        "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-        "title": {"text": "Top error.type - checkout-service (last 7d)", "fontSize": 14, "anchor": "start"},
-        "data": {
-            "url": {
-                "%context%": True, "%timefield%": "@timestamp",
-                "index": INDICES["traces"],
-                "body": {
-                    "size": 0,
-                    "query": {"bool": {"filter": [
-                        {"term": {"service.name": "checkout-service"}},
-                        {"term": {"event.outcome": "failure"}},
-                    ]}},
-                    "aggs": {"by_err": {"terms": {"field": "error.type", "size": 5, "order": {"_count": "desc"}}}},
-                },
-            },
-            "format": {"property": "aggregations.by_err.buckets"},
-        },
-        "mark": {"type": "bar", "tooltip": True, "cornerRadiusEnd": 3, "color": "#e7664c"},
-        "encoding": {
-            "y": {"field": "key", "type": "nominal", "sort": "-x", "title": "error.type"},
-            "x": {"field": "doc_count", "type": "quantitative", "title": "count"},
-            "tooltip": [
-                {"field": "key", "type": "nominal", "title": "error.type"},
-                {"field": "doc_count", "type": "quantitative", "title": "count"},
-            ],
-        },
-    }
-
-
-def _vega_deploy_timeline_spec(now: datetime) -> Dict[str, Any]:
-    """Vega timeline: deployment vertical rules + checkout-service error-rate area chart."""
-    deploy_times = []
-    for dep in _CHECKOUT_DEPLOYS:
-        ts = now - timedelta(hours=dep["hours_ago"])
-        deploy_times.append({"ts": _iso(ts), "label": f"v{dep['version']} ({dep['commit_sha']})"})
-    return {
-        "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-        "title": {"text": "Deploys vs checkout-service error rate (5-min buckets)", "fontSize": 14, "anchor": "start"},
-        "vconcat": [],  # placeholder so we use layer below at top level
-        "layer": [
-            {
-                "data": {
-                    "url": {
-                        "%context%": True, "%timefield%": "@timestamp",
-                        "index": INDICES["traces"],
-                        "body": {
-                            "size": 0,
-                            "query": {"bool": {"filter": [{"term": {"service.name": "checkout-service"}}]}},
-                            "aggs": {
-                                "by_time": {
-                                    "date_histogram": {"field": "@timestamp", "fixed_interval": "5m", "min_doc_count": 0},
-                                    "aggs": {"fail": {"filter": {"term": {"event.outcome": "failure"}}}},
-                                },
-                            },
-                        },
-                    },
-                    "format": {"property": "aggregations.by_time.buckets"},
-                },
-                "transform": [
-                    {"calculate": "datum.doc_count > 0 ? datum.fail.doc_count / datum.doc_count : 0", "as": "rate"},
-                    {"calculate": "datum.rate * 100", "as": "rate_pct"},
-                ],
-                "mark": {"type": "area", "color": "#e7664c", "opacity": 0.55, "interpolate": "monotone", "line": {"color": "#bd271e", "strokeWidth": 1.5}, "tooltip": True},
-                "encoding": {
-                    "x": {"field": "key_as_string", "type": "temporal", "title": None},
-                    "y": {"field": "rate_pct", "type": "quantitative", "title": "checkout-service error %"},
-                    "tooltip": [
-                        {"field": "key_as_string", "type": "temporal", "title": "time"},
-                        {"field": "doc_count", "type": "quantitative", "title": "txns"},
-                        {"field": "rate_pct", "type": "quantitative", "title": "error %", "format": ".2f"},
-                    ],
-                },
-            },
-            {
-                "data": {"values": deploy_times},
-                "mark": {"type": "rule", "color": "#1d3c4f", "strokeWidth": 2, "strokeDash": [6, 4]},
-                "encoding": {
-                    "x": {"field": "ts", "type": "temporal"},
-                    "tooltip": [{"field": "label", "type": "nominal", "title": "deploy"}, {"field": "ts", "type": "temporal", "title": "time"}],
-                },
-            },
-            {
-                "data": {"values": deploy_times},
-                "mark": {"type": "text", "align": "left", "dx": 4, "dy": -6, "color": "#1d3c4f", "fontSize": 11, "fontWeight": "bold"},
-                "encoding": {
-                    "x": {"field": "ts", "type": "temporal"},
-                    "y": {"datum": 0, "type": "quantitative"},
-                    "text": {"field": "label", "type": "nominal"},
-                },
-            },
-        ],
-    }
-
-
-def _md_header() -> str:
-    return (
-        "## One Bad Apple - Noisy Microservice\n"
-        f"_{_FICT_COMPANY}_ runs **10 microservices** behind an API gateway. Over the last 7 days, "
-        "the recently-deployed `checkout-service` (rolling **v1.7.0 → v1.7.3**) has produced **~80% of all "
-        "errors** despite handling only **~12%** of traffic. Three deployment events land as discrete "
-        "error-rate jumps; the **T-12h** rollout (v1.7.3) introduced a `NullPointerException` regression.\n\n"
-        "**How Elastic catches this fast** - Service Map highlights the 80/20 split, "
-        "**ML anomaly detection** flags the post-deploy regression in <5 minutes, "
-        "**SLO burn-rate alerts** fire on the 0.999 availability target, and **Cases** auto-assigns the "
-        "on-call (`@okafor`, the deploy author of `c6d2410`)."
-    )
-
-
-def _md_how_elastic_catches() -> str:
-    return (
-        "## How Elastic catches this - playbook\n"
-        "| Step | Elastic capability | What it surfaces |\n"
-        "| --- | --- | --- |\n"
-        "| 1 | **Service Map** (Observability) | Auto-rendered topology - `checkout-service` lights red while peers stay green; click-through into APM |\n"
-        "| 2 | **APM transaction breakdown** | p50 / p99 latency per `transaction.name` - `POST /checkout/confirm` regressed 4x at T-12h |\n"
-        "| 3 | **ML anomaly job** (`high_error_rate` + `apm_tx_metrics`) | Pre-built detectors flag the 5-min bucket within 1-2 buckets of the deploy |\n"
-        "| 4 | **SLO burn-rate alert** (target 0.999) | Fast-burn alert at 14.4x in 5 min - pages the checkout on-call |\n"
-        "| 5 | **Cases** | Auto-attaches the failing trace + stack trace + the `release.commit_sha` of the bad deploy |\n"
-        "| 6 | **Logs + APM correlation** | Single click pivot from anomaly to top stack-traces (NullPointerException dominates) |\n"
-        "| 7 | **AIOps Log Rate Analysis** | Highlights `IdempotencyKeyExtractor.extract` as the regressing log signature |\n"
-        "\n_Time-to-mitigation in the demo flow: deploy → alert → owner notified → rollback PR opened, all under 10 minutes._"
-    )
-
-
-def _md_stack_traces_table() -> str:
-    """Five representative stack traces with commit SHAs ready to paste into Cases."""
-    samples = [
-        ("NullPointerException", "checkout-service", "c6d2410", "okafor",
-         "Cannot invoke \"IdempotencyKey.value()\" because \"key\" is null",
-         _STACKS["NullPointerException"][0]),
-        ("DBConnectionTimeout", "checkout-service", "a4f9c21", "marquez",
-         "HikariPool-1 - Connection is not available, request timed out after 30000ms",
-         _STACKS["DBConnectionTimeout"][0]),
-        ("JsonParseException", "checkout-service", "bd8e137", "patel",
-         "Mismatched input: schema v2 requires 'cart_lines'; received legacy 'items'",
-         _STACKS["JsonParseException"][1]),
-        ("RateLimitExceeded", "checkout-service", "c6d2410", "okafor",
-         "Rate limit exceeded for tenant t_3a8f: 200 rpm budget consumed",
-         _STACKS["RateLimitExceeded"][0]),
-        ("NullPointerException", "checkout-service", "c6d2410", "okafor",
-         "null pointer dereference in CartTotalCalculator.totals - line items list returned null",
-         _STACKS["NullPointerException"][2]),
-    ]
-    parts = [
-        "## Representative stack traces - paste into a Case\n",
-        "_Bug-bash starter pack. Each row has the deploy commit that introduced the regression._\n",
-    ]
-    for i, (etype, svc, sha, author, msg, stack) in enumerate(samples, 1):
-        block = "\n".join(f"    at {line}" for line in stack)
-        parts.append(
-            f"**{i}. `{etype}` · service `{svc}` · commit `{sha}` (@{author})**\n\n"
-            f"> {msg}\n\n"
-            f"```\n{etype}: {msg}\n{block}\n```\n"
-        )
-    return "\n".join(parts)
+    Layout (48-wide grid, starting at y=12 to leave room for switcher + intro):
+        row 1 (y=12): errors-by-service (24x14)  +  error-rate-over-time (24x14)
+        row 2 (y=26): top-error-types (24x12)    +  deploy-timeline (24x12)
+        row 3 (y=38): error-budget-burn (48x12)
+    """
+    panels: List[Dict[str, Any]] = []
+    panels.append(_vega_panel(f"{prefix}-c1", 0, 12, 24, 14,
+                              "Errors by service", _spec_errors_by_service()))
+    panels.append(_vega_panel(f"{prefix}-c2", 24, 12, 24, 14,
+                              "Error rate by service over time",
+                              _spec_error_rate_over_time()))
+    panels.append(_vega_panel(f"{prefix}-c3", 0, 26, 24, 12,
+                              "Top error types - checkout-service",
+                              _spec_top_error_types()))
+    panels.append(_vega_panel(f"{prefix}-c4", 24, 26, 24, 12,
+                              "Deployment regression timeline",
+                              _spec_deploy_timeline(now)))
+    panels.append(_vega_panel(f"{prefix}-c5", 0, 38, 48, 12,
+                              "Error budget burn-down (SLO 99.9%)",
+                              _spec_error_budget_burn(now)))
+    return panels
 
 
 def get_dashboard_panels() -> List[Dict[str, Any]]:
-    """Seven panels in 48-wide grid."""
-    now = _now()
-    panels = []
-    # 1. Header (full width, h=8)
-    panels.append(_markdown_panel("p1", 0, 0, 48, 8, _md_header(),
-                                  "Noisy microservice - story & talk track"))
-    # 2. Vega errors-by-service bar (24x14)
-    panels.append(_vega_panel("p2", 0, 8, 24, 14, "Errors by service", _vega_errors_by_service_spec()))
-    # 3. Vega error-rate-over-time line (24x14)
-    panels.append(_vega_panel("p3", 24, 8, 24, 14, "Error rate by service", _vega_error_rate_over_time_spec()))
-    # 4. Vega top error.type for checkout (24x12)
-    panels.append(_vega_panel("p4", 0, 22, 24, 12, "Top error types - checkout-service", _vega_top_error_types_spec()))
-    # 5. Vega deploy timeline + checkout error rate (24x12)
-    panels.append(_vega_panel("p5", 24, 22, 24, 12, "Deploys vs error rate", _vega_deploy_timeline_spec(now)))
-    # 6. How Elastic catches this (full, h=10)
-    panels.append(_markdown_panel("p6", 0, 34, 48, 10, _md_how_elastic_catches(),
-                                  "How Elastic catches this earlier"))
-    # 7. Stack traces table (full, h=12)
-    panels.append(_markdown_panel("p7", 0, 44, 48, 12, _md_stack_traces_table(),
-                                  "Top stack traces - checkout-service"))
+    """Backwards-compatible accessor used by the demo-data API. Returns the FE
+    view panel set (the historical default for SCENARIO_ID -> DASHBOARD_ID)."""
+    return _build_fe_panels(_now())
+
+
+def _build_fe_panels(now: datetime) -> List[Dict[str, Any]]:
+    panels: List[Dict[str, Any]] = []
+    panels.append(_markdown_panel("fe-switch", 0, 0, 48, 4, _md_switcher("fe"),
+                                  "View switcher"))
+    panels.append(_markdown_panel("fe-intro", 0, 4, 48, 8, _md_fe_intro(),
+                                  "Noisy microservice - FE prep & talk track"))
+    panels.extend(_build_chart_panels(now, prefix="fe"))
+    panels.append(_markdown_panel("fe-close", 0, 50, 48, 12, _md_fe_closing(),
+                                  "How Elastic catches this earlier + stack traces"))
+    return panels
+
+
+def _build_customer_panels(now: datetime) -> List[Dict[str, Any]]:
+    panels: List[Dict[str, Any]] = []
+    panels.append(_markdown_panel("cu-switch", 0, 0, 48, 4, _md_switcher("customer"),
+                                  "View switcher"))
+    panels.append(_markdown_panel("cu-intro", 0, 4, 48, 8, _md_customer_intro(),
+                                  "Service health report"))
+    panels.extend(_build_chart_panels(now, prefix="cu"))
+    panels.append(_markdown_panel("cu-close", 0, 50, 48, 12, _md_customer_closing(),
+                                  "Recommendations & engineering scoreboard"))
     return panels
 
 
@@ -1328,20 +1554,16 @@ def _kbn_headers() -> Dict[str, str]:
     }
 
 
-def _create_dashboard() -> Dict[str, Any]:
-    panels = get_dashboard_panels()
+def _post_dashboard(dashboard_id: str, title: str, description: str,
+                    panels: List[Dict[str, Any]]) -> Dict[str, Any]:
     panels_json = json.dumps(panels, ensure_ascii=False)
-    options_json = json.dumps({"useMargins": True, "hidePanelTitles": False, "syncColors": False, "syncCursor": False, "syncTooltips": False})
+    options_json = json.dumps({
+        "useMargins": True, "hidePanelTitles": False,
+        "syncColors": False, "syncCursor": False, "syncTooltips": False,
+    })
     search_source_json = json.dumps({"query": {"language": "kuery", "query": ""}, "filter": []})
-    title = "Demo · Noisy Microservice - One Bad Apple"
-    description = (
-        f"Story-driven demo dashboard for {_FICT_COMPANY}. checkout-service produces ~80% of "
-        "errors with three deploy-correlated regressions in the last 7 days. Backed by "
-        f"{INDICES['traces']}, {INDICES['logs']}, and {INDICES['deployments']}."
-    )
-
     body = [{
-        "id": DASHBOARD_ID,
+        "id": dashboard_id,
         "type": "dashboard",
         "attributes": {
             "title": title,
@@ -1360,18 +1582,51 @@ def _create_dashboard() -> Dict[str, Any]:
         resp = client.post(url, headers=_kbn_headers(), json=body)
     resp.raise_for_status()
     return {
-        "dashboard_id": DASHBOARD_ID,
-        "dashboard_url": settings.kibana_url.rstrip("/") + f"/app/dashboards#/view/{DASHBOARD_ID}",
+        "dashboard_id": dashboard_id,
+        "dashboard_url": settings.kibana_url.rstrip("/") + f"/app/dashboards#/view/{dashboard_id}",
         "status": resp.status_code,
         "panel_count": len(panels),
     }
+
+
+def _create_fe_dashboard() -> Dict[str, Any]:
+    now = _now()
+    panels = _build_fe_panels(now)
+    title = "[FE] Noisy Microservice - One Bad Apple"
+    description = (
+        f"Field-Engineer prep view for the {_FICT_COMPANY} noisy-microservice scenario. "
+        "Talk track, MEDDPICC framing, and 'how Elastic catches this earlier' playbook. "
+        f"Backed by {INDICES['traces']}, {INDICES['logs']}, and {INDICES['deployments']}."
+    )
+    return _post_dashboard(DASHBOARD_ID, title, description, panels)
+
+
+def _create_customer_dashboard() -> Dict[str, Any]:
+    now = _now()
+    panels = _build_customer_panels(now)
+    title = "[Customer] Noisy Microservice - Service Health Report"
+    description = (
+        f"Customer-facing service-health report for the {_FICT_COMPANY} noisy-microservice "
+        "scenario. SRE / Engineering Manager view: error budget burn, MTTR vs target, "
+        "deploy regressions identified, and recommended next steps."
+    )
+    return _post_dashboard(CUSTOMER_DASHBOARD_ID, title, description, panels)
+
+
+# Legacy alias so any external caller that imports `_create_dashboard` keeps working.
+def _create_dashboard() -> Dict[str, Any]:
+    return _create_fe_dashboard()
 
 
 # ============================================================ Public seed ==========
 
 
 def seed() -> Dict[str, Any]:
-    """Idempotent: DELETE indices, CREATE indices+mappings, generate, bulk-index, build dashboard."""
+    """Idempotent: DELETE indices, CREATE indices+mappings, generate, bulk-index,
+    build BOTH dashboards (FE + Customer). Vega specs are computed AFTER bulk-index
+    so their inline `data.values` reflect the freshly-loaded data. Every Vega
+    helper wraps its ES call in try/except, so even if Elasticsearch hiccups the
+    seed completes and the dashboards still render."""
     random.seed(20260503)
     es = get_client()
     started = datetime.now(timezone.utc)
@@ -1393,15 +1648,28 @@ def seed() -> Dict[str, Any]:
         except Exception:
             refresh_counts[idx] = -1
 
-    dashboard = None
+    fe_dashboard: Dict[str, Any] = None
+    customer_dashboard: Dict[str, Any] = None
     dashboard_error = None
     if settings.kibana_api_key:
         try:
-            dashboard = _create_dashboard()
+            fe_dashboard = _create_fe_dashboard()
         except httpx.HTTPStatusError as exc:
-            dashboard_error = f"Kibana {exc.response.status_code}: {exc.response.text[:300]}"
+            dashboard_error = f"FE Kibana {exc.response.status_code}: {exc.response.text[:300]}"
+            log.warning("noisy_microservice.fe_dashboard.failed", error=dashboard_error)
         except Exception as exc:
-            dashboard_error = f"Kibana request failed: {exc}"
+            dashboard_error = f"FE Kibana request failed: {exc}"
+            log.warning("noisy_microservice.fe_dashboard.failed", error=str(exc))
+        try:
+            customer_dashboard = _create_customer_dashboard()
+        except httpx.HTTPStatusError as exc:
+            err = f"Customer Kibana {exc.response.status_code}: {exc.response.text[:300]}"
+            dashboard_error = (dashboard_error + " | " + err) if dashboard_error else err
+            log.warning("noisy_microservice.customer_dashboard.failed", error=err)
+        except Exception as exc:
+            err = f"Customer Kibana request failed: {exc}"
+            dashboard_error = (dashboard_error + " | " + err) if dashboard_error else err
+            log.warning("noisy_microservice.customer_dashboard.failed", error=str(exc))
 
     finished = datetime.now(timezone.utc)
     return {
@@ -1412,7 +1680,9 @@ def seed() -> Dict[str, Any]:
         "actual_doc_counts": refresh_counts,
         "deleted": deleted,
         "created": created,
-        "dashboard": dashboard,
+        "dashboard": fe_dashboard,                  # legacy key - FE view
+        "fe_dashboard": fe_dashboard,
+        "customer_dashboard": customer_dashboard,
         "dashboard_error": dashboard_error,
         "started_at": started.isoformat(),
         "finished_at": finished.isoformat(),

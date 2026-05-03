@@ -71,6 +71,7 @@ INDICES: Dict[str, str] = {
 }
 
 DASHBOARD_ID: str = "demo-black-friday-outage-dashboard"
+CUSTOMER_DASHBOARD_ID: str = "demo-black-friday-outage-customer-dashboard"
 
 # The seed anchor - fixes "now" for reproducibility. Without this the timestamps
 # walk every time you re-seed, which is fine for fresh demos but ugly for tests.
@@ -1178,7 +1179,12 @@ def _spec_p99_by_service() -> Dict[str, Any]:
     """Inline-data bar chart of peak p99 per service. Computed at seed time
     by querying ES; results embedded as data.values so the Vega plugin in
     Kibana never has to fetch anything (which is the failure mode that was
-    breaking every URL-based panel in 9.3)."""
+    breaking every URL-based panel in 9.3).
+
+    Robustness: every ES call is wrapped in try/except. On failure the panel
+    falls back to data.values: [] (a blank chart) plus a logged warning. The
+    seed function must always succeed end-to-end even if individual aggs error.
+    """
     values: List[Dict[str, Any]] = []
     try:
         es = get_client()
@@ -1216,7 +1222,11 @@ def _spec_p99_by_service() -> Dict[str, Any]:
 
 
 def _spec_errors_stacked() -> Dict[str, Any]:
-    """Inline-data bar chart of total errors per service over last 7d."""
+    """Inline-data bar chart of total errors per service over last 7d.
+
+    Robustness: ES query wrapped in try/except. On failure, falls back to an
+    empty values array so the panel renders a blank chart and the seed keeps going.
+    """
     values: List[Dict[str, Any]] = []
     try:
         es = get_client()
@@ -1249,6 +1259,151 @@ def _spec_errors_stacked() -> Dict[str, Any]:
             "y": {"field": "service", "type": "nominal", "sort": "-x", "title": "service"},
             "x": {"field": "errors", "type": "quantitative", "title": "total errors"},
             "color": {"field": "service", "type": "nominal", "legend": None},
+        },
+    }
+
+
+def _spec_recovery_timeline() -> Dict[str, Any]:
+    """Inline-data chart showing peak p99 (bar) per anomaly window plus the
+    recovery duration in minutes. Each window is a labelled incident: three
+    precursors plus the headliner. The customer view frames this as time-to-recover;
+    the FE view frames it as the warning curve we ignored.
+
+    Robustness: ES query wrapped in try/except. Falls back to empty values on error.
+    """
+    values: List[Dict[str, Any]] = []
+    try:
+        es = get_client()
+        # Use the checkout index which maps lumen.anomaly_window as a proper
+        # keyword field (the metrics index uses labels.* as a dynamic object,
+        # which lands as text and blocks term aggregations).
+        r = es.search(index=INDICES["checkout"], body={
+            "size": 0,
+            "query": {"bool": {"filter": [
+                {"range": {"@timestamp": {"gte": "now-7d", "lte": "now"}}},
+                {"exists": {"field": "lumen.anomaly_window"}},
+            ]}},
+            "aggs": {
+                "by_window": {
+                    "terms": {"field": "lumen.anomaly_window", "size": 8,
+                              "order": {"peak_p99": "desc"}},
+                    "aggs": {
+                        "peak_p99": {"max": {"field": "transaction.duration.us"}},
+                        "first_seen": {"min": {"field": "@timestamp"}},
+                        "last_seen": {"max": {"field": "@timestamp"}},
+                    },
+                },
+            },
+        })
+        for b in r["aggregations"]["by_window"]["buckets"]:
+            label = b.get("key")
+            peak_us = (b.get("peak_p99") or {}).get("value")
+            first_ms = (b.get("first_seen") or {}).get("value")
+            last_ms = (b.get("last_seen") or {}).get("value")
+            if peak_us is None or first_ms is None or last_ms is None:
+                continue
+            duration_min = max(1.0, (float(last_ms) - float(first_ms)) / 60000.0)
+            values.append({
+                "window": label,
+                "peak_p99_ms": round(float(peak_us) / 1000.0, 1),
+                "duration_min": round(duration_min, 1),
+            })
+    except Exception as exc:
+        log.warning("black_friday.spec_recovery.compute.failed", error=str(exc))
+
+    return {
+        "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+        "title": "Recovery timeline: peak p99 and incident duration per window",
+        "data": {"values": values},
+        "layer": [
+            {
+                "mark": {"type": "bar", "color": "#c44"},
+                "encoding": {
+                    "y": {"field": "window", "type": "nominal", "sort": "-x",
+                           "title": "anomaly window"},
+                    "x": {"field": "peak_p99_ms", "type": "quantitative",
+                           "title": "peak p99 (ms) on checkout-db"},
+                    "tooltip": [
+                        {"field": "window", "type": "nominal", "title": "incident"},
+                        {"field": "peak_p99_ms", "type": "quantitative",
+                         "title": "peak p99 (ms)"},
+                        {"field": "duration_min", "type": "quantitative",
+                         "title": "duration (min)"},
+                    ],
+                },
+            },
+            {
+                "mark": {"type": "text", "align": "left", "dx": 6, "color": "#333"},
+                "encoding": {
+                    "y": {"field": "window", "type": "nominal", "sort": "-x"},
+                    "x": {"field": "peak_p99_ms", "type": "quantitative"},
+                    "text": {"field": "duration_min", "type": "quantitative",
+                             "format": ".0f"},
+                },
+            },
+        ],
+    }
+
+
+def _spec_cart_value_lost() -> Dict[str, Any]:
+    """Inline-data bar chart: sum of cart.value_usd on checkout-svc 5xx events
+    during the headliner window, bucketed by 10 minute slices. This is the
+    customer-facing dollar figure: every bar is real cart abandonment that
+    Lumen Apparel did not capture during the outage.
+
+    Robustness: ES query wrapped in try/except. Falls back to empty values on error.
+    """
+    values: List[Dict[str, Any]] = []
+    try:
+        es = get_client()
+        r = es.search(index=INDICES["checkout"], body={
+            "size": 0,
+            "query": {"bool": {"filter": [
+                {"range": {"http.response.status_code": {"gte": 500, "lt": 600}}},
+                {"range": {"@timestamp": {"gte": "now-12h", "lte": "now"}}},
+                {"exists": {"field": "cart.value_usd"}},
+            ]}},
+            "aggs": {
+                "time": {
+                    "date_histogram": {"field": "@timestamp",
+                                         "fixed_interval": "10m",
+                                         "min_doc_count": 1},
+                    "aggs": {
+                        "lost_usd": {"sum": {"field": "cart.value_usd"}},
+                        "carts": {"value_count": {"field": "cart.value_usd"}},
+                    },
+                },
+            },
+        })
+        for b in r["aggregations"]["time"]["buckets"]:
+            ts = b.get("key_as_string") or b.get("key")
+            lost = (b.get("lost_usd") or {}).get("value") or 0.0
+            carts = (b.get("carts") or {}).get("value") or 0
+            if lost <= 0:
+                continue
+            values.append({
+                "time": ts,
+                "lost_usd": round(float(lost), 2),
+                "carts": int(carts),
+            })
+    except Exception as exc:
+        log.warning("black_friday.spec_cart_lost.compute.failed", error=str(exc))
+
+    return {
+        "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+        "title": "Cart value lost during peak (sum USD per 10 min, checkout-svc 5xx)",
+        "data": {"values": values},
+        "mark": {"type": "bar", "color": "#a04"},
+        "encoding": {
+            "x": {"field": "time", "type": "temporal", "title": "time"},
+            "y": {"field": "lost_usd", "type": "quantitative",
+                   "title": "cart value lost (USD)"},
+            "tooltip": [
+                {"field": "time", "type": "temporal", "title": "bucket"},
+                {"field": "lost_usd", "type": "quantitative",
+                 "title": "lost USD", "format": ",.2f"},
+                {"field": "carts", "type": "quantitative", "title": "abandoned carts"},
+            ],
         },
     }
 
@@ -1412,10 +1567,38 @@ def _vega_panel(panel_id: str, x: int, y: int, w: int, h: int,
     }
 
 
-def get_dashboard_panels() -> List[Dict[str, Any]]:
-    """Six panels in a 48-wide grid. All charts are Vega-Lite for portability."""
-    md_header = (
-        "## Black Friday Outage - Lumen Apparel\n\n"
+def _switcher_markdown(active: str, fe_url: str, customer_url: str) -> str:
+    """Build a markdown switcher with two anchor-tag buttons. Kibana 9 markdown
+    panels render inline anchor tags and basic inline styles, so we can give the
+    active view a highlighted look. `active` is either "fe" or "customer".
+    """
+    fe_active = (active == "fe")
+    cu_active = (active == "customer")
+    fe_style = (
+        "display:inline-block;padding:8px 16px;margin-right:8px;border-radius:6px;"
+        + ("background:#1a4480;color:#fff;font-weight:600;" if fe_active
+           else "background:#eef2f7;color:#1a4480;font-weight:500;border:1px solid #1a4480;")
+        + "text-decoration:none;"
+    )
+    cu_style = (
+        "display:inline-block;padding:8px 16px;border-radius:6px;"
+        + ("background:#0a6e3f;color:#fff;font-weight:600;" if cu_active
+           else "background:#eef7f1;color:#0a6e3f;font-weight:500;border:1px solid #0a6e3f;")
+        + "text-decoration:none;"
+    )
+    return (
+        "**View:** "
+        f"<a href=\"{fe_url}\" style=\"{fe_style}\">[FE] Field Engineer view</a>"
+        f"<a href=\"{customer_url}\" style=\"{cu_style}\">[Customer] Postmortem view</a>"
+        "\n\n"
+        "_Same data. Same charts. Different audience. Use the FE view to prep "
+        "the narrative and the Customer view to walk the customer through it._"
+    )
+
+
+def _fe_header_markdown() -> str:
+    return (
+        "## [FE] Black Friday Outage - Lumen Apparel - Field Engineer view\n\n"
         "**The story.** It is Black Friday at Lumen Apparel. Traffic is 3.4x normal. "
         "At **10:00am PT** the catalog page-size change shipped on Tuesday starts hammering "
         "`checkout-db` with a 12x query plan; the database falls into IO contention; p99 "
@@ -1427,47 +1610,208 @@ def get_dashboard_panels() -> List[Dict[str, Any]]:
         "`recs-svc`, `frontend`, and `notification-svc` stay flat throughout - the failure "
         "is localised to the checkout writer DB and its dependents. That is the whole "
         "point of a service-aware observability platform.\n\n"
-        "**Customer talk-track.**  *Three Elastic features would have caught this earlier:* "
-        "(1) **APM service maps** - visualises that `catalog-svc` was driving load to "
-        "`checkout-db` 48 hours before the outage; "
-        "(2) **Elastic ML anomaly detection** - flags the p99 distribution shift in the "
-        "first precursor window 6 days ago; "
-        "(3) **SLO burn-rate alerts** - would page on the 4 hour burn-rate breach during "
-        "the dress-rehearsal precursor at T-2d. Combined, the team would have seen "
-        "the warning, pinpointed the change, and avoided **~$1.4M of lost GMV** during "
-        "the headline window."
+        "**How to demo this.**\n\n"
+        "1. Start at the recovery timeline: point out the three precursor incidents "
+        "and ask the customer how their current tool would have surfaced them.\n"
+        "2. Move to the p99 by service chart: only `checkout-db`, `checkout-svc`, "
+        "and `payment-svc` move. Everything else is flat.\n"
+        "3. Land on the cart-value-lost chart: convert the outage into hard dollars.\n"
+        "4. Close on the funnel: abandonment doubles, payment success collapses, "
+        "both snap back when SRE rolls back.\n\n"
+        "**Customer source quotes (use as you see fit):**\n\n"
+        "> \"We had four near-misses in the week before Black Friday and we didn't "
+        "know.\" - VP Engineering, Lumen Apparel\n\n"
+        "> \"Our APM told us latency was up. It did not tell us which deploy caused it.\" "
+        "- Director of SRE\n\n"
+        "**Three Elastic capabilities that would have caught this earlier:** "
+        "(1) **APM service maps** show `catalog-svc` driving load to `checkout-db` 48 hours "
+        "before the outage; "
+        "(2) **Elastic ML anomaly detection** flags the p99 distribution shift in the "
+        "first precursor 6 days ago; "
+        "(3) **SLO burn-rate alerts** page on the 4 hour burn-rate breach during the "
+        "dress-rehearsal precursor at T-2d. Combined, the team would have caught the "
+        "warning, pinpointed the deploy, and avoided **~$1.4M of lost GMV** during the "
+        "headline window."
     )
 
-    md_followup = (
+
+def _fe_followup_markdown() -> str:
+    return (
         "## How this becomes a customer conversation\n\n"
-        "**MEDDPICC pain & metrics surfaced by this scenario:**\n\n"
-        "- **Metrics**  - Lost GMV per minute of checkout downtime; cart abandonment baseline vs peak; p99 SLO breach minutes\n"
-        "- **Economic Buyer pain**  - \"We had four near-misses in the week before BF and didn't know.\" Detection time = 0 with anomaly ML\n"
-        "- **Decision Criteria**  - APM + Logs + SIEM + ML in one license; no per-host gotcha; ECS taxonomy across services\n"
-        "- **Champion enablement**  - Service maps, anomaly explorer, SLO burn rate dashboards out of the box; no Splunk SPL rewrite\n"
-        "- **Identify pain**  - Today their tool was Datadog APM; logs were in Splunk; correlation across the two was manual\n"
-        "- **Competition**  - Splunk ITSI ($$$, slow rollout), Datadog APM (no log/SIEM unification), New Relic (per-seat)\n\n"
-        "**Call to action.**  *Schedule a 30-minute live APM walkthrough on the customer's "
-        "own services next week.* We will set up an Elastic Cloud trial with "
-        "their staging traffic mirrored in, and reproduce this exact dashboard in "
-        "their environment within the trial.\n"
+        "**MEDDPICC pain and metrics surfaced by this scenario:**\n\n"
+        "- **Metrics**  - Lost GMV per minute of checkout downtime; cart abandonment "
+        "baseline vs peak; p99 SLO breach minutes; mean time to detect.\n"
+        "- **Economic Buyer pain**  - \"We had four near-misses in the week before BF "
+        "and didn't know.\" Detection time approaches 0 with Elastic anomaly ML.\n"
+        "- **Decision Criteria**  - APM + Logs + SIEM + ML in one license; no per-host "
+        "gotcha; ECS taxonomy across services; one query language.\n"
+        "- **Decision Process**  - Three precursor incidents make the case for a "
+        "60-day pilot before the next peak event.\n"
+        "- **Paper Process**  - Procurement is friendly to consolidating tools, "
+        "especially when it lets them retire two contracts.\n"
+        "- **Identify pain**  - Today the customer runs Datadog APM and Splunk for "
+        "logs; correlation across the two is manual and slow.\n"
+        "- **Champion enablement**  - Service maps, anomaly explorer, SLO burn rate "
+        "dashboards out of the box; no Splunk SPL rewrite required.\n"
+        "- **Competition**  - Splunk ITSI (expensive, slow rollout), Datadog APM "
+        "(no log and SIEM unification), New Relic (per-seat pricing).\n\n"
+        "**Annotations for the live demo.**\n\n"
+        "- The recovery timeline is the highest-impact slide: walk the customer "
+        "left-to-right across the three precursors and pause on each one.\n"
+        "- Use the cart-value-lost chart to translate the outage from engineering "
+        "language into the CFO's language.\n"
+        "- The funnel chart is the cleanest visual proof of business impact: "
+        "abandonment up, payment success down, both recovering inside one bucket.\n\n"
+        "**Call to action.**  Schedule a 30-minute live APM walkthrough on the "
+        "customer's own services next week. Set up an Elastic Cloud trial with their "
+        "staging traffic mirrored in, and reproduce this exact dashboard in their "
+        "environment within the trial.\n"
     )
+
+
+def _customer_header_markdown() -> str:
+    return (
+        "## [Customer] Black Friday Outage - Postmortem and Business Briefing\n\n"
+        "**Executive summary.** On Black Friday, Lumen Apparel experienced a "
+        "90 minute checkout outage starting at 10:00am PT. Root cause was a "
+        "configuration change on the product catalog service that drove the "
+        "checkout database into IO contention. The shopper-facing impact was a "
+        "doubling of cart abandonment, a collapse in payment success, and an "
+        "estimated **$1.4M of lost GMV** during the headline window.\n\n"
+        "**What you will see in this briefing.**\n\n"
+        "- **Recovery timeline:** four incidents in the prior week, with the "
+        "headliner on Black Friday at 10:00am PT. Three precursor events were "
+        "early warnings.\n"
+        "- **Service-level latency:** the failure was localised. Storefront, "
+        "recommendations, and notifications stayed healthy throughout.\n"
+        "- **Customer impact in dollars:** abandoned cart value, summed in 10 minute "
+        "buckets, during the peak window.\n"
+        "- **Funnel impact:** cart abandonment vs payment success across the "
+        "headliner window, including the snap-back after the rollback.\n\n"
+        "**What would have been different with Elastic Observability.**\n\n"
+        "- **Time to detect:** 6 days earlier. Elastic ML anomaly detection would "
+        "have flagged the first precursor incident in the week leading up to the "
+        "sale.\n"
+        "- **Time to localise:** minutes, not hours. APM service maps would have "
+        "shown the catalog service driving load into the checkout database 48 hours "
+        "before the outage.\n"
+        "- **Time to recover:** the rollback would have started before peak hour, "
+        "preventing the cart abandonment spike entirely.\n"
+    )
+
+
+def _customer_followup_markdown() -> str:
+    return (
+        "## Recommended next steps\n\n"
+        "**Business outcomes Elastic Observability would have unlocked on this incident.**\n\n"
+        "- **GMV protected.** Catching the precursor incidents would have prevented "
+        "the headliner. Estimated value: **$1.4M of recovered Black Friday GMV.**\n"
+        "- **Customer-minutes protected.** The 90 minute outage affected tens of "
+        "thousands of shoppers at peak. Faster detection and rollback compresses "
+        "this window dramatically.\n"
+        "- **One platform.** APM, logs, infrastructure metrics, and SIEM in one "
+        "license, with one query language. Retire two existing tooling contracts.\n"
+        "- **No more manual correlation.** Today the team manually pivots from "
+        "APM dashboards to log search to identify a noisy deploy. Elastic "
+        "correlates this in the same view.\n\n"
+        "**Proposed pilot.**\n\n"
+        "- **Week 1.** Mirror staging traffic into an Elastic Cloud deployment. "
+        "Reproduce this dashboard in the customer's environment.\n"
+        "- **Weeks 2 to 4.** Onboard production telemetry from checkout, payment, "
+        "and catalog services. Configure SLO burn-rate alerts on the checkout funnel.\n"
+        "- **Week 5.** Run a tabletop exercise replaying this incident and measure "
+        "time to detect, time to localise, and time to recover.\n"
+        "- **Week 6.** Executive readout with quantified before-and-after metrics.\n\n"
+        "**Success criteria for the pilot.**\n\n"
+        "- Detect a synthetic precursor inside 5 minutes.\n"
+        "- Localise to the offending service inside 10 minutes.\n"
+        "- Single dashboard view that combines APM, logs, and infrastructure metrics "
+        "for the checkout flow.\n"
+    )
+
+
+def _dashboard_url(dashboard_id: str) -> str:
+    return settings.kibana_url.rstrip("/") + f"/app/dashboards#/view/{dashboard_id}"
+
+
+def _shared_vega_specs() -> Dict[str, Dict[str, Any]]:
+    """Compute the shared Vega specs once. Both dashboards reuse the exact same
+    inline-data Vega panels - only the markdown panels differ. Each spec
+    function already wraps its ES query in try/except, so this call is safe
+    even if individual aggs fail.
+    """
+    return {
+        "p99": _spec_p99_by_service(),
+        "errors": _spec_errors_stacked(),
+        "funnel": _spec_funnel(),
+        "recovery": _spec_recovery_timeline(),
+        "cart_lost": _spec_cart_value_lost(),
+    }
+
+
+def _build_panels(view: str, specs: Dict[str, Dict[str, Any]],
+                  kpi_md: str, fe_url: str, customer_url: str) -> List[Dict[str, Any]]:
+    """Assemble the panel list for one dashboard.
+
+    Layout (48 wide grid):
+      row 0  - h=4   - switcher (full width)
+      row 4  - h=8   - title + intro markdown (full width)
+      row 12 - h=14  - p99 by service (24w) + errors by service (24w)
+      row 26 - h=10  - KPI markdown (12w) + funnel (36w)            [funnel h=14]
+      row 40 - h=14  - recovery timeline (24w) + cart lost (24w)
+      row 54 - h=12  - closing narrative (full width)
+    """
+    if view == "fe":
+        intro_md = _fe_header_markdown()
+        followup_md = _fe_followup_markdown()
+        intro_title = "[FE] Story and talk track"
+        followup_title = "[FE] Customer conversation and MEDDPICC"
+    else:
+        intro_md = _customer_header_markdown()
+        followup_md = _customer_followup_markdown()
+        intro_title = "[Customer] Executive summary"
+        followup_title = "[Customer] Recommended next steps"
+
+    switcher_md = _switcher_markdown(view, fe_url, customer_url)
 
     panels = [
-        _markdown_panel("hdr", 0, 0, 48, 8, md_header,
-                        "Black Friday outage - story & talk track"),
-        _vega_panel("p99", 0, 8, 24, 14,
-                    "p99 latency by service", _spec_p99_by_service()),
-        _vega_panel("err", 24, 8, 24, 14,
-                    "Errors by service over time", _spec_errors_stacked()),
-        _markdown_panel("kpi", 0, 22, 12, 10, _kpi_markdown(),
-                        "Outage KPIs"),
-        _vega_panel("funnel", 12, 22, 36, 14,
-                    "Funnel: abandonment vs payment success", _spec_funnel()),
-        _markdown_panel("nar", 0, 36, 48, 10, md_followup,
-                        "Customer conversation & MEDDPICC"),
+        _markdown_panel("switcher", 0, 0, 48, 4, switcher_md, "View switcher"),
+        _markdown_panel("hdr", 0, 4, 48, 8, intro_md, intro_title),
+        _vega_panel("p99", 0, 12, 24, 14,
+                    "p99 latency by service", specs["p99"]),
+        _vega_panel("err", 24, 12, 24, 14,
+                    "Errors by service over time", specs["errors"]),
+        _markdown_panel("kpi", 0, 26, 12, 14, kpi_md, "Outage KPIs"),
+        _vega_panel("funnel", 12, 26, 36, 14,
+                    "Funnel: abandonment vs payment success", specs["funnel"]),
+        _vega_panel("recovery", 0, 40, 24, 14,
+                    "Recovery timeline by anomaly window", specs["recovery"]),
+        _vega_panel("cart_lost", 24, 40, 24, 14,
+                    "Cart value lost during peak", specs["cart_lost"]),
+        _markdown_panel("nar", 0, 54, 48, 12, followup_md, followup_title),
     ]
     return panels
+
+
+def get_dashboard_panels() -> List[Dict[str, Any]]:
+    """FE-view dashboard panels. Kept for backwards compatibility with any
+    existing caller that imports this function. Customer view uses the
+    parallel `get_customer_panels()` companion."""
+    specs = _shared_vega_specs()
+    kpi_md = _kpi_markdown()
+    fe_url = _dashboard_url(DASHBOARD_ID)
+    customer_url = _dashboard_url(CUSTOMER_DASHBOARD_ID)
+    return _build_panels("fe", specs, kpi_md, fe_url, customer_url)
+
+
+def get_customer_panels() -> List[Dict[str, Any]]:
+    """Customer-view dashboard panels. Same Vega specs as the FE view; the only
+    differences are the markdown panels framing the charts as a postmortem."""
+    specs = _shared_vega_specs()
+    kpi_md = _kpi_markdown()
+    fe_url = _dashboard_url(DASHBOARD_ID)
+    customer_url = _dashboard_url(CUSTOMER_DASHBOARD_ID)
+    return _build_panels("customer", specs, kpi_md, fe_url, customer_url)
 
 
 # ============================================================ Seeder ===============
@@ -1485,19 +1829,20 @@ def _kbn_headers() -> Dict[str, str]:
     }
 
 
-def _delete_dashboard() -> bool:
-    url = _kbn_url(f"/api/saved_objects/dashboard/{DASHBOARD_ID}")
+def _delete_dashboard(dashboard_id: str = DASHBOARD_ID) -> bool:
+    url = _kbn_url(f"/api/saved_objects/dashboard/{dashboard_id}")
     try:
         with httpx.Client(timeout=30.0) as client:
             resp = client.delete(url, headers=_kbn_headers())
         return resp.status_code < 400 or resp.status_code == 404
     except Exception as exc:
-        log.warning("black_friday.dashboard.delete.exception", error=str(exc))
+        log.warning("black_friday.dashboard.delete.exception",
+                    dashboard_id=dashboard_id, error=str(exc))
         return False
 
 
-def _create_dashboard() -> Tuple[str, str]:
-    panels = get_dashboard_panels()
+def _create_one_dashboard(dashboard_id: str, title: str, description: str,
+                          panels: List[Dict[str, Any]]) -> Tuple[str, str]:
     panels_json = json.dumps(panels, ensure_ascii=False)
     options_json = json.dumps({
         "useMargins": True,
@@ -1509,11 +1854,11 @@ def _create_dashboard() -> Tuple[str, str]:
     search_source_json = json.dumps({"query": {"language": "kuery", "query": ""},
                                      "filter": []})
     body = [{
-        "id": DASHBOARD_ID,
+        "id": dashboard_id,
         "type": "dashboard",
         "attributes": {
-            "title": f"FE Copilot Demo · {SCENARIO_TITLE}",
-            "description": SCENARIO_DESCRIPTION,
+            "title": title,
+            "description": description,
             "panelsJSON": panels_json,
             "optionsJSON": options_json,
             "timeRestore": True,
@@ -1530,10 +1875,37 @@ def _create_dashboard() -> Tuple[str, str]:
         resp = client.post(url, headers=_kbn_headers(), json=body)
     if resp.status_code >= 400:
         raise RuntimeError(
-            f"Kibana dashboard create failed: {resp.status_code} {resp.text[:400]}"
+            f"Kibana dashboard create failed for {dashboard_id}: "
+            f"{resp.status_code} {resp.text[:400]}"
         )
-    dashboard_url = settings.kibana_url.rstrip("/") + f"/app/dashboards#/view/{DASHBOARD_ID}"
-    return DASHBOARD_ID, dashboard_url
+    return dashboard_id, _dashboard_url(dashboard_id)
+
+
+def _create_dashboard() -> Tuple[str, str]:
+    """Create the FE-view dashboard. Title prefixed with [FE] so the user can
+    spot it in Kibana's dashboard list. Reuses the shared Vega specs."""
+    panels = get_dashboard_panels()
+    title = f"[FE] {SCENARIO_TITLE} - Field Engineer view"
+    description = (
+        "Field Engineer view of the Black Friday outage. Includes MEDDPICC "
+        "framing, source quotes, and how-to-demo annotations alongside the "
+        "shared chart set."
+    )
+    return _create_one_dashboard(DASHBOARD_ID, title, description, panels)
+
+
+def _create_customer_dashboard() -> Tuple[str, str]:
+    """Create the customer-facing postmortem dashboard. Same Vega panels as the
+    FE view (literally the same inline values), wrapped in clean executive
+    language. Idempotent: delete-then-create."""
+    panels = get_customer_panels()
+    title = f"[Customer] {SCENARIO_TITLE} - Postmortem"
+    description = (
+        "Customer-facing postmortem of the Black Friday outage. Same data and "
+        "same charts as the FE view, framed as an executive briefing on "
+        "business impact, recovery time, and outcomes Elastic would unlock."
+    )
+    return _create_one_dashboard(CUSTOMER_DASHBOARD_ID, title, description, panels)
 
 
 def seed() -> Dict[str, Any]:
@@ -1578,9 +1950,27 @@ def seed() -> Dict[str, Any]:
         except Exception as exc:
             log.warning("black_friday.refresh.failed", index=index, error=str(exc))
 
-    # Dashboard: idempotent recreate.
-    _delete_dashboard()
-    dashboard_id, dashboard_url = _create_dashboard()
+    # Dashboards: idempotent recreate of BOTH the FE and Customer views.
+    # Each create is wrapped so a failure on one does not block the other.
+    fe_id: Optional[str] = None
+    fe_url: Optional[str] = None
+    customer_id: Optional[str] = None
+    customer_url: Optional[str] = None
+
+    _delete_dashboard(DASHBOARD_ID)
+    try:
+        fe_id, fe_url = _create_dashboard()
+        log.info("black_friday.dashboard.fe.created", id=fe_id, url=fe_url)
+    except Exception as exc:
+        log.warning("black_friday.dashboard.fe.failed", error=str(exc))
+
+    _delete_dashboard(CUSTOMER_DASHBOARD_ID)
+    try:
+        customer_id, customer_url = _create_customer_dashboard()
+        log.info("black_friday.dashboard.customer.created",
+                 id=customer_id, url=customer_url)
+    except Exception as exc:
+        log.warning("black_friday.dashboard.customer.failed", error=str(exc))
 
     elapsed = round(time.time() - started, 2)
     return {
@@ -1588,8 +1978,12 @@ def seed() -> Dict[str, Any]:
         "scenario": SCENARIO_ID,
         "indices": counts,
         "doc_count": sum(counts.values()),
-        "dashboard_id": dashboard_id,
-        "dashboard_url": dashboard_url,
+        "dashboard_id": fe_id or DASHBOARD_ID,
+        "dashboard_url": fe_url or _dashboard_url(DASHBOARD_ID),
+        "fe_dashboard_id": fe_id,
+        "fe_dashboard_url": fe_url,
+        "customer_dashboard_id": customer_id,
+        "customer_dashboard_url": customer_url,
         "elapsed_seconds": elapsed,
         "anomaly_windows": [
             {"label": w["label"], "start": w["start"].isoformat(),
