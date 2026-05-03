@@ -1,0 +1,77 @@
+<!--
+  filename: agent-builder.html
+  description: FE Copilot - Agent Builder chat panel. Talks to Elastic Agent Builder via the FastAPI converse passthrough; renders reasoning + tool-call steps in line.
+  Author: Rodrigo Careaga
+  Date: 03-05-2026
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FE Copilot — Agent Builder</title>
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+  <link rel="stylesheet" href="/assets/css/agent-builder.css" />
+  <link rel="icon" type="image/svg+xml" href="/assets/img/elastic/glyph-cluster-color.svg" />
+</head>
+<body class="agent-builder-page">
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="FE Copilot home">
+      <img class="logo-elastic" src="/assets/img/elastic/logo-horizontal-white.svg" alt="Elastic" />
+      <span class="brand-sep">/</span>
+      <span class="name">FE <span class="accent">Copilot</span></span>
+      <span class="tag">Agent Builder</span>
+    </a>
+    <div class="right">
+      <div class="lang-host" id="lang-host"></div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <h1>Agent Builder <span class="grad">live in your Elastic cluster.</span></h1>
+      <p class="lede">
+        FE Copilot talks to Elastic Agent Builder over MCP. The master agent <code>fec_field_assistant</code>
+        owns the seven FE Copilot tools and decides which ones to chain for each request. Every response
+        is generated server-side in your own Kibana, with the steps and tool calls captured below.
+      </p>
+      <div class="ab-meta" id="ab-meta">
+        <span class="ab-pill ab-pill-muted" id="ab-pill-status">Connecting…</span>
+        <span class="ab-pill ab-pill-muted" id="ab-pill-agent">agent: fec_field_assistant</span>
+        <span class="ab-pill ab-pill-muted" id="ab-pill-tools">7 MCP tools</span>
+        <a class="ab-pill ab-pill-link" id="ab-pill-kibana" href="#" target="_blank" rel="noreferrer">Open in Kibana</a>
+      </div>
+    </section>
+
+    <section class="ab-suggested" aria-label="Suggested prompts">
+      <button class="ab-chip" data-prompt='Translate this SPL: index=web | stats count by host'>Translate SPL → ES|QL</button>
+      <button class="ab-chip" data-prompt='Calculate Elastic vs Splunk cost at 200 GB/day, 12 months retention, current spend $1.5M'>TCO at 200 GB/day</button>
+      <button class="ab-chip" data-prompt='Plan a cluster for 50000 EPS peak indexing and 5TB hot data'>Cluster sizing</button>
+      <button class="ab-chip" data-prompt='Translate this SPL: index=web | stats count by host. THEN tell me the Elastic cost at 200GB/day for 12 months.'>Chain: SPL + cost</button>
+      <button class="ab-chip" data-prompt='Map DORA and PCI DSS to Elastic native controls for a UK retail bank'>Compliance mapping</button>
+      <button class="ab-chip" data-prompt='Generate a Python code sample to bulk-index 1000 documents into Elastic'>Code sample</button>
+    </section>
+
+    <section class="ab-chat" id="ab-chat" aria-live="polite"></section>
+
+    <form id="ab-form" class="ab-composer" onsubmit="return false">
+      <label class="ab-input-wrap">
+        <textarea id="ab-input" rows="2" placeholder="Ask the Field Engineering Assistant…"></textarea>
+      </label>
+      <div class="ab-actions">
+        <button type="button" class="btn ghost" id="ab-reset" title="Start a new conversation">New thread</button>
+        <button type="submit" class="btn primary" id="ab-send">Send</button>
+      </div>
+      <p class="ab-hint" id="ab-hint">Cmd/Ctrl + Enter to send. Conversation persists in this browser only.</p>
+    </form>
+
+    <section id="toast-host"></section>
+  </main>
+
+  <script src="/assets/js/i18n.js"></script>
+  <script src="/assets/js/api.js"></script>
+  <script src="/assets/js/ui.js"></script>
+  <script src="/assets/js/tools-rail.js"></script>
+  <script src="/assets/js/agent-builder.js"></script>
+</body>
+</html>

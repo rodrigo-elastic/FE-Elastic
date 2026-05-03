@@ -14,6 +14,10 @@ from app.config import settings
 
 
 def get_client() -> Elasticsearch:
+    """Return an Elasticsearch client. Prefers API key auth when configured (Elastic Cloud),
+    falls back to basic auth, then to anonymous."""
+    if settings.elasticsearch_api_key:
+        return Elasticsearch(settings.elasticsearch_url, api_key=settings.elasticsearch_api_key)
     if settings.elasticsearch_password:
         return Elasticsearch(
             settings.elasticsearch_url,

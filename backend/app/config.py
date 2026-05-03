@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     elasticsearch_url: str = Field("http://localhost:9200", alias="ELASTICSEARCH_URL")
     elasticsearch_username: str = Field("elastic", alias="ELASTICSEARCH_USERNAME")
     elasticsearch_password: str = Field("", alias="ELASTICSEARCH_PASSWORD")
+    elasticsearch_api_key: str = Field("", alias="ELASTICSEARCH_API_KEY")
     kibana_url: str = Field("http://localhost:5601", alias="KIBANA_URL")
     kibana_api_key: str = Field("", alias="KIBANA_API_KEY")
 

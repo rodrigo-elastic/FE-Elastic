@@ -42,8 +42,10 @@ def _request(method: str, path: str, body: Optional[Dict[str, Any]] = None) -> D
     if not is_live():
         log.info("agent_builder.dry_run", method=method, url=url, body=body)
         return {"dry_run": True, "method": method, "url": url, "body": body}
+    # Converse calls invoke Claude through Kibana and may chain multiple tools, so allow up to 3 minutes.
+    timeout = 180.0 if "/converse" in path else 30.0
     try:
-        with httpx.Client(timeout=20.0) as client:
+        with httpx.Client(timeout=timeout) as client:
             resp = client.request(method, url, headers=_headers(), json=body)
         if resp.status_code >= 400:
             log.warning(

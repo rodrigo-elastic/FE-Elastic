@@ -13,6 +13,13 @@
       icon:
         '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h14V10"/></svg>',
     },
+    {
+      id: "agent-builder",
+      label: "Agent Builder",
+      href: "/agent-builder.html",
+      icon:
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="M5 7h14l-1 13H6Z"/><circle cx="9" cy="13" r="1"/><circle cx="15" cy="13" r="1"/><path d="M9 17h6"/></svg>',
+    },
   ];
 
   const TOOLS = [
@@ -30,6 +37,9 @@
   }
   function isDashboardPage() {
     return location.pathname === "/" || /\/index(\.html)?$/.test(location.pathname);
+  }
+  function isAgentBuilderPage() {
+    return /\/agent-builder(\.html)?$/.test(location.pathname) || document.body.classList.contains("agent-builder-page");
   }
 
   function ensureBodyClass() {
@@ -61,6 +71,7 @@
     a.className = "tools-nav-pill page-link";
     a.href = p.href;
     if (p.id === "dashboard" && isDashboardPage()) a.classList.add("active");
+    if (p.id === "agent-builder" && isAgentBuilderPage()) a.classList.add("active");
     const ico = document.createElement("span");
     ico.className = "tools-nav-icon";
     ico.innerHTML = p.icon;
