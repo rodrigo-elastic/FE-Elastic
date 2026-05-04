@@ -631,6 +631,7 @@
       });
       head.appendChild(selectAll);
       sectionEl.appendChild(head);
+      const rows = el("div", { class: "ab-tool-section-rows" });
       section.items.forEach((it) => {
         const id = "tool-" + it.id;
         const row = el("label", {
@@ -653,8 +654,9 @@
           main.appendChild(el("div", { class: "ab-tool-row-desc", title: it.description }, it.short));
         }
         row.appendChild(main);
-        sectionEl.appendChild(row);
+        rows.appendChild(row);
       });
+      sectionEl.appendChild(rows);
       grid.appendChild(sectionEl);
     });
     updateToolCounter();

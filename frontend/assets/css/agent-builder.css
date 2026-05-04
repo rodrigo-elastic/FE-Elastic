@@ -665,15 +665,18 @@
 }
 .ab-modal-card {
   position: relative;
-  width: min(680px, 100%);
+  width: min(1080px, 95vw);
   max-height: calc(100vh - 48px);
   overflow-y: auto;
+  overflow-x: hidden;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 14px;
-  padding: 22px 22px 18px;
+  padding: 26px 28px 20px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
 }
+.ab-modal-card * { box-sizing: border-box; }
+.ab-modal-card textarea, .ab-modal-card input { max-width: 100%; }
 .ab-modal-head {
   display: flex;
   align-items: center;
@@ -700,6 +703,14 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+.ab-modal-form .ab-field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+@media (max-width: 700px) {
+  .ab-modal-form .ab-field-row { grid-template-columns: 1fr; }
 }
 .ab-field {
   display: flex;
@@ -850,13 +861,22 @@
 .ab-tools-grid {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  max-height: 320px;
+  gap: 12px;
+  max-height: 460px;
   overflow-y: auto;
-  padding: 10px;
+  overflow-x: hidden;
+  padding: 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--panel-2);
+}
+.ab-tool-section-rows {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  gap: 8px;
+}
+@media (max-width: 720px) {
+  .ab-tool-section-rows { grid-template-columns: 1fr; }
 }
 
 /* Section: header with title, count, and a Select all link. */
@@ -959,12 +979,14 @@
 }
 [data-theme="dark"] .ab-tool-row-pill { color: var(--white); }
 .ab-tool-row-desc {
-  font-size: 11.5px;
-  line-height: 1.4;
+  font-size: 12px;
+  line-height: 1.45;
   color: var(--ink-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  word-break: break-word;
 }
 
 /* Sticky bottom counter: how many tools the user has selected. */

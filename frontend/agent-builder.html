@@ -89,19 +89,21 @@
         <button type="button" class="ab-modal-close" data-ab-close aria-label="Close">x</button>
       </header>
       <form id="ab-modal-form" class="ab-modal-form" onsubmit="return false">
-        <label class="ab-field">
-          <span class="ab-field-label" data-i18n="ab.modal.name">Name</span>
-          <input type="text" id="ab-f-name" maxlength="80" minlength="3" required autocomplete="off" />
-          <span class="ab-field-error" data-error-for="name"></span>
-        </label>
-        <label class="ab-field">
-          <span class="ab-field-label" data-i18n="ab.modal.slug">Slug</span>
-          <span class="ab-slug-row">
-            <span class="ab-slug-prefix">fec_user_</span>
-            <input type="text" id="ab-f-slug" maxlength="40" minlength="3" pattern="[a-z0-9_]{3,40}" required autocomplete="off" />
-          </span>
-          <span class="ab-field-error" data-error-for="slug"></span>
-        </label>
+        <div class="ab-field-row">
+          <label class="ab-field">
+            <span class="ab-field-label" data-i18n="ab.modal.name">Name</span>
+            <input type="text" id="ab-f-name" maxlength="80" minlength="3" required autocomplete="off" />
+            <span class="ab-field-error" data-error-for="name"></span>
+          </label>
+          <label class="ab-field">
+            <span class="ab-field-label" data-i18n="ab.modal.slug">Slug</span>
+            <span class="ab-slug-row">
+              <span class="ab-slug-prefix">fec_user_</span>
+              <input type="text" id="ab-f-slug" maxlength="40" minlength="3" pattern="[a-z0-9_]{3,40}" required autocomplete="off" />
+            </span>
+            <span class="ab-field-error" data-error-for="slug"></span>
+          </label>
+        </div>
         <label class="ab-field">
           <span class="ab-field-label" data-i18n="ab.modal.description">Description</span>
           <textarea id="ab-f-description" maxlength="400" minlength="10" rows="2" required></textarea>
