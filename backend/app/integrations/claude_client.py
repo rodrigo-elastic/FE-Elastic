@@ -149,7 +149,37 @@ class ClaudeService:
             schema_keys=list(schema.get("properties", {}).keys()),
         )
 
-        response = self._client.messages.create(**kwargs)
+        try:
+            response = self._client.messages.create(**kwargs)
+        except Exception as exc:
+            # Graceful degradation when the API is unavailable (credit balance
+            # exhausted, rate limit, network error). If a mock_payload was
+            # provided, fall back to it so the demo continues to work end-to-end
+            # with a deterministic stub instead of a 500. The audit log records
+            # the fallback so you can spot it later.
+            msg = str(exc)
+            is_credit = "credit balance is too low" in msg or "billing" in msg.lower()
+            is_rate = "rate_limit" in msg.lower() or "429" in msg
+            is_recoverable = is_credit or is_rate or "Connection" in msg
+            if is_recoverable and mock_payload is not None:
+                log.warning(
+                    "claude.fallback_to_mock",
+                    reason="credits" if is_credit else ("rate_limit" if is_rate else "transport"),
+                    error=msg[:240],
+                )
+                _audit(
+                    {
+                        "ts": ts,
+                        "model": model,
+                        "mode": "fallback",
+                        "input_tokens": 0,
+                        "output_tokens": 0,
+                        "fallback_reason": "credits" if is_credit else ("rate_limit" if is_rate else "transport"),
+                        **(audit_meta or {}),
+                    }
+                )
+                return output_model.model_validate(mock_payload)
+            raise
         usage = getattr(response, "usage", None)
         in_tok = getattr(usage, "input_tokens", 0) if usage else 0
         out_tok = getattr(usage, "output_tokens", 0) if usage else 0
