@@ -105,9 +105,14 @@
   transform: translate(-50%, 0);
   pointer-events: auto;
 }
+.ap-caption-bar .ap-cap-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
 .ap-caption-bar .ap-cap-step {
-  display: inline-block;
-  margin-right: 10px;
+  flex: 0 0 auto;
   padding: 2px 9px;
   border-radius: 999px;
   background: linear-gradient(135deg, #00BFB3, #1BA9F5);
@@ -115,7 +120,38 @@
   letter-spacing: 0.4px;
   text-transform: uppercase;
 }
-.ap-caption-bar .ap-cap-text { vertical-align: middle; }
+.ap-caption-bar .ap-cap-text { flex: 1; min-width: 0; }
+.ap-caption-bar .ap-cap-stop {
+  flex: 0 0 auto;
+  appearance: none;
+  border: 1px solid rgba(255, 100, 100, 0.45);
+  background: rgba(220, 38, 38, 0.18);
+  color: #fecaca;
+  font: 600 11px/1 "Inter", sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background .12s, color .12s;
+}
+.ap-caption-bar .ap-cap-stop:hover {
+  background: rgba(220, 38, 38, 0.32);
+  color: #ffffff;
+}
+.ap-caption-bar .ap-cap-sub {
+  display: none;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font: 400 12.5px/1.5 "Inter", sans-serif;
+  color: rgba(255, 255, 255, 0.85);
+  text-align: center;
+  max-width: 720px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.ap-caption-bar .ap-cap-sub.is-visible { display: block; }
 
 /* ============================================================ Progress dock */
 .ap-progress-dock {
@@ -255,6 +291,8 @@
   transition: opacity 320ms var(--easing), transform 320ms var(--easing);
 }
 .ap-panel.is-visible { opacity: 1; transform: scale(1) translateY(0); }
+.ap-panel.is-dragging { transition: none; user-select: none; }
+.ap-panel.is-dragging iframe { pointer-events: none; }
 
 .ap-panel-head {
   display: flex;
@@ -265,7 +303,25 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   font: 600 12px/1 "Inter", sans-serif;
   color: var(--ink-soft);
+  cursor: move;
+  user-select: none;
 }
+.ap-panel-head .title { font-weight: 700; }
+.ap-panel-head .url { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ap-panel-reset {
+  flex: 0 0 auto;
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ink-soft);
+  font: 600 10.5px/1 "Inter", sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.ap-panel-reset:hover { background: rgba(255, 255, 255, 0.14); color: #fff; }
 .ap-panel-head .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 8px var(--teal); }
 .ap-panel-head .url { color: var(--muted); font-family: ui-monospace, monospace; font-size: 11.5px; }
 .ap-panel iframe {

@@ -2494,6 +2494,23 @@ body.printing #panel-brief { display: block !important; }
 
 /* ============================================================ Tools page */
 
+/* Embed mode: when a page is loaded in an iframe with ?embed=1 (autopilot
+   stage, demo embeds), suppress the topbar, banners and global left rail
+   so the content fills the frame cleanly. */
+body.is-embedded .topbar,
+body.is-embedded .tools-sidebar,
+body.is-embedded .demo-banner,
+body.is-embedded .sko-banner,
+body.is-embedded .sko-event,
+body.is-embedded .skip-to-main,
+body.is-embedded #fec-demo-banner { display: none !important; }
+body.is-embedded { padding: 0 !important; }
+body.is-embedded .container {
+  margin: 16px auto !important;
+  padding: 0 24px !important;
+  max-width: 1180px !important;
+}
+
 /* When the persistent tools rail is visible, push every page's main container right of it.
    Topbar stays full-width above the sidebar (sidebar starts at top: 84px). */
 body.has-tools-rail .container {

@@ -107,21 +107,28 @@
     stage.appendChild(topProgress);
 
     const panel = el("div", { class: "ap-panel" }, [
-      el("div", { class: "ap-panel-head" }, [
+      el("div", { class: "ap-panel-head", id: "ap-panel-head", title: "Drag to move" }, [
         el("span", { class: "dot" }),
         el("span", { class: "title", text: "FE Copilot" }),
         el("span", { class: "url", id: "ap-panel-url", text: "" }),
+        el("button", { class: "ap-panel-reset", id: "ap-panel-reset", type: "button", title: "Reset position", "aria-label": "Reset panel position", text: "Reset" }),
       ]),
       el("iframe", { id: "ap-panel-iframe", title: "Autopilot panel", "aria-label": "Autopilot panel" }),
     ]);
     stage.appendChild(panel);
     document.body.appendChild(stage);
+    enablePanelDrag(panel);
 
     const captionBar = el("div", { class: "ap-caption-bar", role: "status", "aria-live": "polite", "aria-atomic": "true" }, [
-      el("span", { class: "ap-cap-step", id: "ap-cap-step", text: `1 / ${AP.steps.length}` }),
-      el("span", { class: "ap-cap-text", id: "ap-cap-text", text: "Starting..." }),
+      el("div", { class: "ap-cap-row" }, [
+        el("span", { class: "ap-cap-step", id: "ap-cap-step", text: `1 / ${AP.steps.length}` }),
+        el("span", { class: "ap-cap-text", id: "ap-cap-text", text: "Starting..." }),
+        el("button", { class: "ap-cap-stop", id: "ap-cap-stop", type: "button", "aria-label": "Stop autopilot", title: "Stop (Esc)", text: "Stop" }),
+      ]),
+      el("div", { class: "ap-cap-sub", id: "ap-cap-sub", text: "" }),
     ]);
     document.body.appendChild(captionBar);
+    captionBar.querySelector("#ap-cap-stop").addEventListener("click", () => stop("user"));
 
     const dock = el("div", { class: "ap-progress-dock", role: "region", "aria-label": "Autopilot progress" }, [
       el("div", { class: "ap-dock-title" }, [
@@ -157,6 +164,7 @@
     state.nodes.captionBar = captionBar;
     state.nodes.captionStep = captionBar.querySelector("#ap-cap-step");
     state.nodes.captionText = captionBar.querySelector("#ap-cap-text");
+    state.nodes.captionSub = captionBar.querySelector("#ap-cap-sub");
     state.nodes.dock = dock;
     state.nodes.dockCount = dock.querySelector("#ap-dock-count");
     state.nodes.confettiHost = confettiHost;
@@ -233,10 +241,14 @@
     state.nodes.dock.classList.toggle("is-visible", !!show);
   }
 
-  function setCaption(stepIdx, text) {
+  function setCaption(stepIdx, title, sub) {
     if (!state.nodes.captionStep) return;
     state.nodes.captionStep.textContent = `${stepIdx + 1} / ${AP.steps.length}`;
-    state.nodes.captionText.textContent = text;
+    state.nodes.captionText.textContent = title || "";
+    if (state.nodes.captionSub) {
+      state.nodes.captionSub.textContent = sub || "";
+      state.nodes.captionSub.classList.toggle("is-visible", !!sub);
+    }
   }
 
   function markStep(idx, status) {
@@ -253,8 +265,69 @@
   function showPanel(url) {
     if (!state.nodes.panel) return;
     state.nodes.panelUrl.textContent = url || "";
-    if (url) state.nodes.iframe.src = url;
+    if (url) {
+      // Tag every embed so the inner page can hide its own left rail and
+      // any other chrome that competes with the autopilot stage.
+      const [path, hash] = url.split("#");
+      const sep = path.includes("?") ? "&" : "?";
+      const tagged = path.includes("embed=1") ? url : `${path}${sep}embed=1${hash ? "#" + hash : ""}`;
+      state.nodes.iframe.src = tagged;
+    }
     state.nodes.panel.classList.add("is-visible");
+  }
+
+  // ============================================================ Panel drag
+  // The judge can grab the iframe header and drag it. Reset button restores
+  // position. State is local to this run; not persisted.
+  function enablePanelDrag(panel) {
+    const head = panel.querySelector("#ap-panel-head");
+    const reset = panel.querySelector("#ap-panel-reset");
+    let dragging = false, startX = 0, startY = 0, baseLeft = 0, baseTop = 0;
+    function onDown(ev) {
+      if (ev.target.closest(".ap-panel-reset")) return;
+      const rect = panel.getBoundingClientRect();
+      // Pin to current rect so left/top can take over from CSS top/left/right/bottom.
+      panel.style.left = rect.left + "px";
+      panel.style.top = rect.top + "px";
+      panel.style.right = "auto";
+      panel.style.bottom = "auto";
+      panel.style.width = rect.width + "px";
+      panel.style.height = rect.height + "px";
+      dragging = true;
+      startX = ev.clientX;
+      startY = ev.clientY;
+      baseLeft = rect.left;
+      baseTop = rect.top;
+      panel.classList.add("is-dragging");
+      ev.preventDefault();
+    }
+    function onMove(ev) {
+      if (!dragging) return;
+      const dx = ev.clientX - startX;
+      const dy = ev.clientY - startY;
+      const nextLeft = Math.max(0, Math.min(window.innerWidth - 100, baseLeft + dx));
+      const nextTop = Math.max(0, Math.min(window.innerHeight - 60, baseTop + dy));
+      panel.style.left = nextLeft + "px";
+      panel.style.top = nextTop + "px";
+    }
+    function onUp() {
+      dragging = false;
+      panel.classList.remove("is-dragging");
+    }
+    head.addEventListener("mousedown", onDown);
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+    if (reset) {
+      reset.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        panel.style.left = "";
+        panel.style.top = "";
+        panel.style.right = "";
+        panel.style.bottom = "";
+        panel.style.width = "";
+        panel.style.height = "";
+      });
+    }
   }
 
   function hidePanel() {
@@ -314,7 +387,8 @@
   // replaced with deterministic page tours.
 
   async function stepIntro(signal) {
-    setCaption(0, "FE Copilot. Twelve tools. Thirty one battlecards. Twenty industries. Forty five seconds.");
+    setCaption(0, "FE Copilot autopilot",
+      "Forty five seconds. Twelve MCP tools, thirty one battlecards, twenty industries, eight demo scenarios. No typing.");
     fireConfetti(80);
     const btn = state.nodes.cta;
     if (btn) btn.classList.add("is-running");
@@ -322,49 +396,57 @@
   }
 
   async function stepDashboard(signal) {
-    setCaption(1, "Dashboard with FE Brain, Quick Research, and a live calendar inbox.");
-    showPanel("/?autopilot=1");
+    setCaption(1, "Dashboard",
+      "Quick Research, calendar inbox with smart customer resolver, recent briefs, audit trail.");
+    showPanel("/");
     await sleep(3700, signal);
   }
 
   async function stepIndustries(signal) {
-    setCaption(2, "Twenty industries cover eighty percent of customers. Banco Atlántico in Banking.");
-    showPanel("/industries.html?industry=fsi-banking");
+    setCaption(2, "Twenty industries",
+      "FSI, Government, Healthcare, Retail, Telco, Manufacturing and more. Each card has personas, regulations, top competitors.");
+    showPanel("/industries.html");
     await sleep(5700, signal);
   }
 
   async function stepBattlecards(signal) {
-    setCaption(3, "Thirty one battlecards. Click Splunk: TCO, gaps, talking points, all cited.");
-    showPanel("/battlecards.html#splunk");
+    setCaption(3, "Thirty one battlecards, sorted by marketshare",
+      "Filter by vertical or industry. Click Splunk for full TCO comparison, talking points, honest gaps, objection handlers.");
+    showPanel("/battlecards.html");
     await sleep(5700, signal);
   }
 
   async function stepFeBrain(signal) {
-    setCaption(4, "FE Brain: hybrid retrieval over 1300 doc chunks. Cited answers in seconds.");
+    setCaption(4, "FE Brain hybrid retrieval",
+      "BM25 plus ELSER plus Reciprocal Rank Fusion plus Haiku rerank over 1300 Elastic doc chunks. Cited answers in ten seconds.");
     showPanel("/fe-brain.html");
     await sleep(4700, signal);
   }
 
   async function stepAgentBuilder(signal) {
-    setCaption(5, "Agent Builder: master agent plus three specialists you can build in your Kibana.");
+    setCaption(5, "Agent Builder, real persistence",
+      "Master agent plus three pre seeded specialists. Build your own from the modal. Persisted in your Kibana cluster, not in this app.");
     showPanel("/agent-builder.html");
     await sleep(5700, signal);
   }
 
   async function stepDemoData(signal) {
-    setCaption(6, "Eight demo scenarios with paired FE plus Customer dashboards. Fifteen seconds, not half a day.");
+    setCaption(6, "Eight demo scenarios",
+      "Black Friday outage, credential stuffing, GDPR audit, supply chain attack, FSI banking fraud, HIPAA audit, CDM compliance, noisy microservice. Each ships paired FE and Customer dashboards.");
     showPanel("/demo-data.html");
     await sleep(4700, signal);
   }
 
   async function stepHealth(signal) {
-    setCaption(7, "Live health: twelve tools, two workflows, eight scenarios, all green.");
+    setCaption(7, "Live health",
+      "Twelve MCP tools, two Kibana workflows, twenty battlecards by vertical, FE Brain corpus size, last sync, cluster ping. All green.");
     showPanel("/health.html");
     await sleep(4700, signal);
   }
 
   async function stepRecap(signal) {
-    setCaption(8, "Six hours per Field Engineer per week back. Apache 2.0. Zero typing.");
+    setCaption(8, "Six hours per FE per week back",
+      "Apache 2.0. Eleven personas. Two workflows. Built on Anthropic Claude and Elastic Cloud. Take it home, build your own agents.");
     fireConfetti(140);
     hidePanel();
     await sleep(4700, signal);

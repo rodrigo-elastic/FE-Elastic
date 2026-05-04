@@ -427,6 +427,19 @@
   }
 
   function init() {
+    // Embed mode: when this page is loaded inside the autopilot iframe (or any
+    // other parent that adds ?embed=1), suppress the left rail entirely so it
+    // does not cover the framed content.
+    try {
+      const params = new URLSearchParams(location.search);
+      if (params.get("embed") === "1") {
+        document.body.classList.add("is-embedded");
+        // Also hide the topbar when embedded; the autopilot already shows
+        // its own panel header and SKO/demo banners are not needed inside
+        // the framed view.
+        return;
+      }
+    } catch (_e) { /* ignore */ }
     ensureBodyClass();
     let aside = document.querySelector(".tools-sidebar");
     if (!aside) aside = buildRail();
