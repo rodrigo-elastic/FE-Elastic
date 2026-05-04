@@ -488,6 +488,23 @@ function bindQuickResearch() {
   if (!form) return;
   const submit = document.getElementById("qr-submit");
   const statusEl = document.getElementById("qr-status");
+  const progressHost = document.getElementById("qr-progress-host");
+  const progressBar = document.getElementById("qr-progress");
+  const etaText = document.getElementById("qr-eta");
+
+  function showProgress() {
+    if (!progressHost || !progressBar) return;
+    if (etaText && typeof t === "function") {
+      etaText.textContent = t("qr.eta", "Typically 15 to 25 seconds. The first run is the slowest.");
+    }
+    progressHost.removeAttribute("hidden");
+    progressBar.removeAttribute("hidden");
+  }
+  function hideProgress() {
+    if (!progressHost || !progressBar) return;
+    progressHost.setAttribute("hidden", "");
+    progressBar.setAttribute("hidden", "");
+  }
 
   form.addEventListener("submit", async () => {
     const name = document.getElementById("qr-name").value.trim();
@@ -516,13 +533,16 @@ function bindQuickResearch() {
     };
     const modelLabel = MODEL_LABELS[body.model] || body.model || "Haiku 4.5 (default)";
     statusEl.textContent = `Building dossier and calling Claude (${modelLabel})...`;
+    showProgress();
     try {
       const result = await apiPost("/agents/pre-meeting/ad-hoc", body);
       toast(`Brief generated for ${name}`, "ok");
+      hideProgress();
       window.location.href = `/meeting.html?id=${encodeURIComponent(result.meeting_id)}&adhoc=1`;
     } catch (e) {
       toast(`Quick Research failed: ${e.message}`, "bad");
       statusEl.textContent = "";
+      hideProgress();
     } finally {
       submit.disabled = false;
       submit.innerHTML = label;

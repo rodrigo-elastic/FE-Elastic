@@ -47,6 +47,7 @@ const I18N_STRINGS = {
     "qr.placeholder.notes": "What do you want to discuss? Recent signal? Blocker?",
     "qr.submit": "Generate brief",
     "qr.status": "Building dossier and calling Claude...",
+    "qr.eta": "Typically 15 to 25 seconds. The first run is the slowest.",
 
     "tpl.label": "Start from a template",
     "tpl.hint": "Pre-fills industry, size, stack notes, context, and model. Just add the company name.",
@@ -123,6 +124,8 @@ const I18N_STRINGS = {
     "panel.collapse": "Collapse all",
 
     "lang.label": "Language",
+    "theme.toggle.toLight": "Switch to light theme",
+    "theme.toggle.toDark": "Switch to dark theme",
 
     "topbar.tag.demo": "Demo Data",
     "topbar.tag.workflow": "Workflow",
@@ -232,6 +235,7 @@ const I18N_STRINGS = {
     "qr.placeholder.notes": "¿Qué querés discutir? ¿Señal reciente? ¿Bloqueo?",
     "qr.submit": "Generar brief",
     "qr.status": "Armando dossier y llamando a Claude...",
+    "qr.eta": "Suele tardar entre 15 y 25 segundos. La primera ejecución es la más lenta.",
 
     "tpl.label": "Empezá desde una plantilla",
     "tpl.hint": "Pre-llena industria, tamaño, notas de stack, contexto y modelo. Vos solo agregás el nombre de la empresa.",
@@ -308,6 +312,8 @@ const I18N_STRINGS = {
     "panel.collapse": "Colapsar todo",
 
     "lang.label": "Idioma",
+    "theme.toggle.toLight": "Cambiar a tema claro",
+    "theme.toggle.toDark": "Cambiar a tema oscuro",
 
     "topbar.tag.demo": "Demo Data",
     "topbar.tag.workflow": "Workflow",
@@ -417,6 +423,7 @@ const I18N_STRINGS = {
     "qr.placeholder.notes": "何を議論したいですか? 最近のシグナル? ブロッカー?",
     "qr.submit": "ブリーフを生成",
     "qr.status": "ドシエ作成中、Claude呼び出し中...",
+    "qr.eta": "通常15〜25秒かかります。初回実行が最も時間を要します。",
 
     "tpl.label": "テンプレートから始める",
     "tpl.hint": "業界、規模、スタックメモ、文脈、モデルを自動入力。会社名だけ追加してください。",
@@ -493,6 +500,8 @@ const I18N_STRINGS = {
     "panel.collapse": "すべて折りたたみ",
 
     "lang.label": "言語",
+    "theme.toggle.toLight": "ライトテーマに切り替える",
+    "theme.toggle.toDark": "ダークテーマに切り替える",
 
     "topbar.tag.demo": "デモデータ",
     "topbar.tag.workflow": "ワークフロー",
@@ -602,6 +611,7 @@ const I18N_STRINGS = {
     "qr.placeholder.notes": "Worüber willst du sprechen? Aktuelles Signal? Blocker?",
     "qr.submit": "Brief erstellen",
     "qr.status": "Erstelle Dossier und rufe Claude auf...",
+    "qr.eta": "Typischerweise 15 bis 25 Sekunden. Der erste Lauf ist am langsamsten.",
 
     "tpl.label": "Mit einer Vorlage starten",
     "tpl.hint": "Füllt Branche, Größe, Stack-Notizen, Kontext und Modell vor. Sie ergänzen nur den Firmennamen.",
@@ -678,6 +688,8 @@ const I18N_STRINGS = {
     "panel.collapse": "Alle einklappen",
 
     "lang.label": "Sprache",
+    "theme.toggle.toLight": "Zum hellen Thema wechseln",
+    "theme.toggle.toDark": "Zum dunklen Thema wechseln",
 
     "topbar.tag.demo": "Demo Data",
     "topbar.tag.workflow": "Workflow",
@@ -787,6 +799,7 @@ const I18N_STRINGS = {
     "qr.placeholder.notes": "De quoi voulez-vous discuter? Signal récent? Blocage?",
     "qr.submit": "Générer le brief",
     "qr.status": "Construction du dossier et appel à Claude...",
+    "qr.eta": "Généralement 15 à 25 secondes. La première exécution est la plus lente.",
 
     "tpl.label": "Partir d'un modèle",
     "tpl.hint": "Pré-remplit secteur, taille, notes de stack, contexte et modèle. Vous n'ajoutez que le nom de l'entreprise.",
@@ -863,6 +876,8 @@ const I18N_STRINGS = {
     "panel.collapse": "Tout replier",
 
     "lang.label": "Langue",
+    "theme.toggle.toLight": "Passer au theme clair",
+    "theme.toggle.toDark": "Passer au theme sombre",
 
     "topbar.tag.demo": "Demo Data",
     "topbar.tag.workflow": "Workflow",

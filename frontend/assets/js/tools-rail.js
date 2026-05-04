@@ -5,6 +5,34 @@
   Date: 03-05-2026
 */
 (function () {
+  // ============================================================
+  // Theme bootstrap (runs before any rail render to avoid FOUC).
+  // Order of precedence: localStorage.fec.theme -> prefers-color-scheme.
+  // The data-theme attribute lives on <html> so deeply nested elements
+  // (Vega charts, markdown blocks, iframes) inherit the right tokens.
+  // ============================================================
+  const THEME_KEY = "fec.theme";
+  function readSystemTheme() {
+    try {
+      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    } catch (_e) {
+      return "dark";
+    }
+  }
+  function readStoredTheme() {
+    try { return localStorage.getItem(THEME_KEY); } catch (_e) { return null; }
+  }
+  function writeStoredTheme(value) {
+    try { localStorage.setItem(THEME_KEY, value); } catch (_e) { /* private mode */ }
+  }
+  function applyTheme(theme) {
+    const next = theme === "light" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    return next;
+  }
+  // Apply immediately so the first paint already matches the user choice.
+  const __initialTheme = applyTheme(readStoredTheme() || readSystemTheme());
+
   const PAGES = [
     {
       id: "dashboard",
@@ -290,6 +318,92 @@
     }
   }
 
+  // ============================================================
+  // Theme toggle button (topbar right side).
+  // We show the icon for the OPPOSITE state so the button reads as
+  // "click to switch to X". The aria-label and title also update so
+  // screen readers and tooltips stay accurate.
+  // ============================================================
+  const SUN_SVG =
+    '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m4.93 19.07 1.41-1.41"/><path d="m17.66 6.34 1.41-1.41"/></svg>';
+  const MOON_SVG =
+    '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>';
+
+  function themeI18n(key, fallback) {
+    if (typeof window !== "undefined" && typeof window.t === "function") {
+      const out = window.t(key, fallback);
+      if (out) return out;
+    }
+    return fallback;
+  }
+  function describeToggle(theme) {
+    // theme = current theme; the button switches to the OTHER one.
+    if (theme === "dark") {
+      return {
+        icon: SUN_SVG,
+        label: themeI18n("theme.toggle.toLight", "Switch to light theme"),
+      };
+    }
+    return {
+      icon: MOON_SVG,
+      label: themeI18n("theme.toggle.toDark", "Switch to dark theme"),
+    };
+  }
+  function refreshThemeToggleButton(btn) {
+    const cur = document.documentElement.getAttribute("data-theme") || "dark";
+    const meta = describeToggle(cur);
+    btn.innerHTML = meta.icon;
+    btn.setAttribute("aria-label", meta.label);
+    btn.title = meta.label;
+    btn.setAttribute("data-current-theme", cur);
+    btn.setAttribute("aria-pressed", cur === "light" ? "true" : "false");
+  }
+  function buildThemeToggle() {
+    if (document.querySelector(".theme-toggle")) return;
+    const topbar = document.querySelector(".topbar");
+    if (!topbar) return;
+    const right = topbar.querySelector(".right");
+    if (!right) return;
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "theme-toggle";
+    refreshThemeToggleButton(btn);
+
+    btn.addEventListener("click", function (ev) {
+      ev.preventDefault();
+      const cur = document.documentElement.getAttribute("data-theme") || "dark";
+      const next = cur === "dark" ? "light" : "dark";
+      applyTheme(next);
+      writeStoredTheme(next);
+      refreshThemeToggleButton(btn);
+      // Notify other modules that may want to redraw (audit charts, etc.).
+      try {
+        window.dispatchEvent(new CustomEvent("fec:themechange", { detail: { theme: next } }));
+      } catch (_e) { /* ignore */ }
+    });
+
+    // Insert before the language picker host, falling back to the end.
+    const langHost = right.querySelector(".lang-host");
+    if (langHost && langHost.parentNode === right) {
+      right.insertBefore(btn, langHost);
+    } else {
+      right.appendChild(btn);
+    }
+
+    // Track OS preference: only follow it while the user has not set a manual choice.
+    try {
+      const mq = window.matchMedia("(prefers-color-scheme: dark)");
+      const onChange = (e) => {
+        if (readStoredTheme()) return; // user override wins
+        applyTheme(e.matches ? "dark" : "light");
+        refreshThemeToggleButton(btn);
+      };
+      if (typeof mq.addEventListener === "function") mq.addEventListener("change", onChange);
+      else if (typeof mq.addListener === "function") mq.addListener(onChange);
+    } catch (_e) { /* ignore */ }
+  }
+
   function init() {
     ensureBodyClass();
     let aside = document.querySelector(".tools-sidebar");
@@ -297,6 +411,7 @@
     if (!aside) return;
     render(aside);
     buildSidebarToggle(aside);
+    buildThemeToggle();
   }
 
   if (document.readyState === "loading") {

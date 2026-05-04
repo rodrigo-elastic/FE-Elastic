@@ -29,8 +29,15 @@
     failures: [],
     captured: { meetingId: null, briefMs: 0, abMs: 0, wfMs: 0 },
     countdownTimer: null,
+    _progressInterval: null,
+    expectedTotalMs: 0,
     nodes: {},
   };
+
+  // Sum of per-step expected durations. This is the denominator the determinate
+  // top-progress bar uses to estimate ETA. Equals AP.totalSeconds * 1000 (~30s)
+  // by construction; timeouts are worst-case fallbacks and would overstate the bar.
+  AP.expectedTotalMs = AP.steps.reduce((acc, s) => acc + (s.duration || 0), 0);
 
   // ============================================================ Utils
   function el(tag, attrs, children) {
@@ -82,6 +89,21 @@
     if (state.nodes.stage) return;
 
     const stage = el("div", { class: "ap-stage", "aria-hidden": "true" });
+
+    const topProgress = el("div", {
+      class: "progress-bar progress-bar-thin progress-bar-determinate ap-top-progress",
+      id: "ap-top-progress",
+      role: "progressbar",
+      "aria-label": "Autopilot progress",
+      "aria-valuemin": "0",
+      "aria-valuemax": "100",
+      "aria-valuenow": "0",
+      hidden: "",
+    }, [
+      el("span", { class: "progress-bar-fill" }),
+    ]);
+    stage.appendChild(topProgress);
+
     const panel = el("div", { class: "ap-panel" }, [
       el("div", { class: "ap-panel-head" }, [
         el("span", { class: "dot" }),
@@ -136,6 +158,70 @@
     state.nodes.dock = dock;
     state.nodes.dockCount = dock.querySelector("#ap-dock-count");
     state.nodes.confettiHost = confettiHost;
+    state.nodes.topProgress = topProgress;
+    state.nodes.topProgressFill = topProgress.querySelector(".progress-bar-fill");
+  }
+
+  // ============================================================ Top progress bar
+  function setProgressRatio(ratio) {
+    const fill = state.nodes.topProgressFill;
+    const bar = state.nodes.topProgress;
+    if (!fill || !bar) return;
+    const r = Math.max(0, Math.min(1, ratio));
+    fill.style.transform = `scaleX(${r})`;
+    bar.setAttribute("aria-valuenow", String(Math.round(r * 100)));
+  }
+
+  function showTopProgress() {
+    const bar = state.nodes.topProgress;
+    if (!bar) return;
+    setProgressRatio(0);
+    bar.removeAttribute("hidden");
+  }
+
+  function hideTopProgress() {
+    const bar = state.nodes.topProgress;
+    if (!bar) return;
+    bar.setAttribute("hidden", "");
+    setProgressRatio(0);
+  }
+
+  function startProgressTicker() {
+    stopProgressTicker();
+    const reduced =
+      window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduced) {
+      // Static partial fill instead of animated tick.
+      setProgressRatio(0.4);
+      return;
+    }
+    state._progressInterval = setInterval(() => {
+      const elapsed = performance.now() - state.startedAt;
+      const ratio = Math.min(0.99, elapsed / Math.max(1, AP.expectedTotalMs));
+      setProgressRatio(ratio);
+    }, 100);
+  }
+
+  function stopProgressTicker() {
+    if (state._progressInterval) {
+      clearInterval(state._progressInterval);
+      state._progressInterval = null;
+    }
+  }
+
+  function pulseProgress() {
+    const bar = state.nodes.topProgress;
+    if (!bar) return;
+    const reduced =
+      window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduced) return;
+    bar.classList.remove("is-pulsing");
+    // Force reflow so the animation restarts even on rapid step transitions.
+    void bar.offsetWidth;
+    bar.classList.add("is-pulsing");
+    setTimeout(() => bar.classList.remove("is-pulsing"), 220);
   }
 
   function showOverlay(show) {
@@ -334,6 +420,7 @@
     const s = AP.steps[idx];
     state.currentStep = idx;
     markStep(idx, "active");
+    pulseProgress();
     try {
       await STEP_FNS[idx](signal);
       markStep(idx, "done");
@@ -360,6 +447,8 @@
     state.abortCtrl = new AbortController();
     ensureOverlay();
     showOverlay(true);
+    showTopProgress();
+    startProgressTicker();
 
     const cta = state.nodes.cta;
     if (cta) {
@@ -418,6 +507,7 @@
   function finish(reason) {
     state.running = false;
     if (state.countdownTimer) { clearInterval(state.countdownTimer); state.countdownTimer = null; }
+    stopProgressTicker();
     document.removeEventListener("keydown", onEscDown);
 
     const cta = state.nodes.cta;
@@ -438,9 +528,14 @@
     });
 
     if (reason === "complete") {
+      // Ease the bar from its current ratio to 100%, then hide so it does not
+      // consume layout while the completion card is up.
+      setProgressRatio(1);
+      setTimeout(() => hideTopProgress(), 320);
       showCompletion(elapsedMs);
     } else {
-      // dismiss overlay quickly on cancel
+      // Dismiss overlay quickly on cancel or error.
+      hideTopProgress();
       setTimeout(() => {
         showOverlay(false);
         hidePanel();
