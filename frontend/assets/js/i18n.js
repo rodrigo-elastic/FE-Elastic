@@ -409,6 +409,8 @@ const I18N_STRINGS = {
     "portal.secondary.health.body": "Live system status",
     "portal.secondary.audit.label": "Audit log",
     "portal.secondary.audit.body": "Token usage and tool calls",
+    "portal.tools.title": "FE Tools",
+    "portal.tools.subtitle": "Twelve MCP tools registered in your Kibana cluster. Click any to open it.",
     "portal.power_user": "Power user view: Quick Research form, calendar inbox, history",
   },
 
@@ -807,6 +809,8 @@ const I18N_STRINGS = {
     "portal.secondary.health.body": "Estado del sistema en vivo",
     "portal.secondary.audit.label": "Auditoría",
     "portal.secondary.audit.body": "Uso de tokens y llamadas a tools",
+    "portal.tools.title": "Herramientas FE",
+    "portal.tools.subtitle": "Doce tools MCP registradas en tu cluster de Kibana. Click en cualquiera para abrirla.",
     "portal.power_user": "Vista power user: Quick Research, calendar inbox, historial",
   },
 
@@ -1205,6 +1209,8 @@ const I18N_STRINGS = {
     "portal.secondary.health.body": "ライブシステムステータス",
     "portal.secondary.audit.label": "監査ログ",
     "portal.secondary.audit.body": "トークン使用量とツール呼び出し",
+    "portal.tools.title": "FEツール",
+    "portal.tools.subtitle": "Kibanaクラスターに登録された12個のMCPツール。クリックして開きます。",
     "portal.power_user": "パワーユーザー ビュー: クイックリサーチ、カレンダー、履歴",
   },
 
@@ -1603,6 +1609,8 @@ const I18N_STRINGS = {
     "portal.secondary.health.body": "Live-Systemstatus",
     "portal.secondary.audit.label": "Audit-Log",
     "portal.secondary.audit.body": "Token-Nutzung und Tool-Aufrufe",
+    "portal.tools.title": "FE-Tools",
+    "portal.tools.subtitle": "Zwoelf MCP-Tools in deinem Kibana-Cluster registriert. Klicke ein beliebiges Tool an, um es zu oeffnen.",
     "portal.power_user": "Power-User-Sicht: Quick Research, Kalender, Verlauf",
   },
 
@@ -2001,6 +2009,8 @@ const I18N_STRINGS = {
     "portal.secondary.health.body": "État système en direct",
     "portal.secondary.audit.label": "Journal d audit",
     "portal.secondary.audit.body": "Usage de tokens et appels d outils",
+    "portal.tools.title": "Outils FE",
+    "portal.tools.subtitle": "Douze outils MCP enregistres dans votre cluster Kibana. Cliquez sur l un pour l ouvrir.",
     "portal.power_user": "Vue power user: Quick Research, calendrier, historique",
   },
 };
