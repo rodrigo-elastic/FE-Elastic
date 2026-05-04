@@ -95,6 +95,12 @@ const I18N_STRINGS = {
     "tr.submit": "Analyze transcript",
     "tr.status": "Running post-meeting agent...",
 
+    "customers.transcript.cta": "Analyze transcript",
+    "customers.transcript.cta_open": "Hide form",
+    "customers.transcript.title": "Analyze a meeting transcript",
+    "customers.transcript.subtitle": "Paste a Zoom .vtt, Gong export, or any 'Speaker: text' transcript. The Post-Meeting agent extracts action items, MEDDPICC signals, and competitor mentions, then drops the result into the Transcript column below.",
+    "customers.transcript.toast_ok": "Transcript analyzed. Post-meeting record added.",
+
     "qr.filter.search": "Search",
     "qr.filter.search_placeholder": "Search customer, title, industry, attendee...",
     "qr.filter.stage.all": "All",
@@ -501,6 +507,12 @@ const I18N_STRINGS = {
     "tr.hint": "Pegá desde Gong, Zoom o cualquier export 'Hablante: texto'. Mín. 20 caracteres.",
     "tr.submit": "Analizar transcripción",
     "tr.status": "Corriendo el agente Post-Meeting...",
+
+    "customers.transcript.cta": "Analizar transcripción",
+    "customers.transcript.cta_open": "Ocultar formulario",
+    "customers.transcript.title": "Analizar una transcripción de reunión",
+    "customers.transcript.subtitle": "Pegá un .vtt de Zoom, export de Gong, o cualquier transcripción 'Hablante: texto'. El agente Post-Meeting extrae action items, señales MEDDPICC y menciones de competidores, y deja el resultado en la columna Transcripción de abajo.",
+    "customers.transcript.toast_ok": "Transcripción analizada. Registro post-meeting agregado.",
 
     "qr.filter.search": "Buscar",
     "qr.filter.search_placeholder": "Buscar cliente, título, industria, asistente...",
@@ -909,6 +921,12 @@ const I18N_STRINGS = {
     "tr.submit": "トランスクリプトを分析",
     "tr.status": "Post-Meetingエージェントを実行中...",
 
+    "customers.transcript.cta": "トランスクリプトを分析",
+    "customers.transcript.cta_open": "フォームを閉じる",
+    "customers.transcript.title": "ミーティングのトランスクリプトを分析",
+    "customers.transcript.subtitle": "Zoom .vtt、Gongエクスポート、または「話者: テキスト」形式のトランスクリプトを貼り付けてください。Post-Meetingエージェントがアクション項目、MEDDPICCシグナル、競合言及を抽出し、下のトランスクリプト列に結果を追加します。",
+    "customers.transcript.toast_ok": "トランスクリプト分析完了。Post-Meetingレコードを追加しました。",
+
     "qr.filter.search": "検索",
     "qr.filter.search_placeholder": "顧客、タイトル、業界、参加者で検索...",
     "qr.filter.stage.all": "すべて",
@@ -1316,6 +1334,12 @@ const I18N_STRINGS = {
     "tr.submit": "Transkript analysieren",
     "tr.status": "Post-Meeting-Agent läuft...",
 
+    "customers.transcript.cta": "Transkript analysieren",
+    "customers.transcript.cta_open": "Formular ausblenden",
+    "customers.transcript.title": "Ein Meeting-Transkript analysieren",
+    "customers.transcript.subtitle": "Füge ein Zoom .vtt, Gong-Export oder beliebiges 'Sprecher: Text'-Transkript ein. Der Post-Meeting-Agent extrahiert Action Items, MEDDPICC-Signale und Wettbewerber-Erwähnungen und legt das Ergebnis in der Transkript-Spalte unten ab.",
+    "customers.transcript.toast_ok": "Transkript analysiert. Post-Meeting-Datensatz hinzugefügt.",
+
     "qr.filter.search": "Suche",
     "qr.filter.search_placeholder": "Kunde, Titel, Branche, Teilnehmer suchen...",
     "qr.filter.stage.all": "Alle",
@@ -1722,6 +1746,12 @@ const I18N_STRINGS = {
     "tr.hint": "Collez depuis Gong, Zoom ou tout export 'Locuteur: texte'. Min. 20 caractères.",
     "tr.submit": "Analyser le transcript",
     "tr.status": "Exécution de l'agent Post-Meeting...",
+
+    "customers.transcript.cta": "Analyser un transcript",
+    "customers.transcript.cta_open": "Masquer le formulaire",
+    "customers.transcript.title": "Analyser un transcript de réunion",
+    "customers.transcript.subtitle": "Collez un .vtt Zoom, un export Gong, ou tout transcript 'Locuteur: texte'. L'agent Post-Meeting extrait les actions, signaux MEDDPICC et mentions de concurrents, puis dépose le résultat dans la colonne Transcript ci-dessous.",
+    "customers.transcript.toast_ok": "Transcript analysé. Enregistrement post-meeting ajouté.",
 
     "qr.filter.search": "Rechercher",
     "qr.filter.search_placeholder": "Rechercher client, titre, secteur, participant...",

@@ -166,13 +166,16 @@ function renderCalendarRow(ev) {
 
 function bindEntryTabs() {
   const tabs = document.querySelectorAll(".entry-tab");
+  if (!tabs || tabs.length === 0) return;
   tabs.forEach((t) =>
     t.addEventListener("click", () => {
       tabs.forEach((x) => x.classList.remove("active"));
       t.classList.add("active");
       const mode = t.dataset.mode;
-      document.getElementById("entry-qr").hidden = mode !== "qr";
-      document.getElementById("entry-tr").hidden = mode !== "tr";
+      const qrHost = document.getElementById("entry-qr");
+      const trHost = document.getElementById("entry-tr");
+      if (qrHost) qrHost.hidden = mode !== "qr";
+      if (trHost) trHost.hidden = mode !== "tr";
     })
   );
 }
@@ -296,6 +299,11 @@ function bindTranscriptUpload() {
       }
       toast(`Post-meeting analysis ready for ${name}`, "ok");
       statusEl.textContent = "Done. Opening meeting view...";
+      try {
+        document.dispatchEvent(
+          new CustomEvent("fec.transcript.analyzed", { detail: { meeting_id: mid, company_name: name } })
+        );
+      } catch (_) {}
       window.location.href = `/meeting.html?id=${encodeURIComponent(mid)}&post=1&adhoc=1`;
     } catch (e) {
       const msg = (e && e.message) || "Unknown error";

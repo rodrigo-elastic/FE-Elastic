@@ -22,6 +22,19 @@
     .demo-banner-text { flex: 1; max-width: 1100px; }
     .demo-banner-close { background: transparent; border: 0; color: #856404; font-size: 14px; cursor: pointer; padding: 2px 6px; line-height: 1; border-radius: 3px; }
     .demo-banner-close:hover { background: rgba(133, 100, 4, 0.12); }
+    .tr-collapsible { border: 1px solid var(--border, #e6e8ef); border-radius: 12px; background: var(--card, #fff); overflow: hidden; }
+    .tr-collapsible > summary { list-style: none; cursor: pointer; padding: 14px 18px; display: flex; align-items: center; gap: 10px; font-weight: 600; color: var(--text, #0b0d12); user-select: none; }
+    .tr-collapsible > summary::-webkit-details-marker { display: none; }
+    .tr-collapsible > summary::marker { content: ""; }
+    .tr-collapsible > summary:hover { background: rgba(0, 119, 204, 0.04); }
+    .tr-collapsible[open] > summary { border-bottom: 1px solid var(--border, #e6e8ef); }
+    .tr-cta-icon { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 6px; background: rgba(0, 119, 204, 0.1); color: #0077cc; flex: 0 0 24px; transition: transform 0.18s ease; }
+    .tr-collapsible[open] .tr-cta-icon { transform: rotate(45deg); background: rgba(220, 53, 69, 0.1); color: #b02a37; }
+    .tr-cta-label { flex: 1; font-size: 14px; }
+    .tr-cta-hint { font-size: 12px; color: var(--muted, #6a7080); display: none; }
+    .tr-collapsible[open] .tr-cta-hint { display: inline; }
+    .tr-collapsible #tr-form, .tr-collapsible .qr-head { padding: 0 18px; }
+    .tr-collapsible[open] #tr-form { padding-bottom: 18px; }
   </style>
 </head>
 <body class="customers-page">
@@ -58,6 +71,89 @@
         <div class="hero-stat blue"><div class="num" id="stat-past">-</div><div class="lbl" data-i18n="stats.past">Past meetings</div></div>
         <div class="hero-stat pink"><div class="num" id="stat-briefs">-</div><div class="lbl" data-i18n="stats.briefs">Briefs generated</div></div>
       </div>
+    </section>
+
+    <section class="quick-research transcript-card" id="entry-tr" aria-labelledby="tr-heading" style="margin: 0 0 18px 0">
+      <details class="tr-collapsible" id="tr-collapsible">
+        <summary class="tr-cta">
+          <span class="tr-cta-icon" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" focusable="false"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </span>
+          <span class="tr-cta-label" data-i18n="customers.transcript.cta">Analyze transcript</span>
+          <span class="tr-cta-hint" data-i18n="customers.transcript.cta_open">Hide form</span>
+        </summary>
+        <div class="qr-head" style="margin-top: 14px">
+          <div>
+            <h2 id="tr-heading" data-i18n="customers.transcript.title">Analyze a meeting transcript</h2>
+            <p class="muted small" style="margin: 4px 0 0 0" data-i18n="customers.transcript.subtitle">Paste a Zoom .vtt, Gong export, or any "Speaker: text" transcript. The Post-Meeting agent extracts action items, MEDDPICC signals, and competitor mentions, then drops the result into the Transcript column below.</p>
+          </div>
+        </div>
+        <form id="tr-form" class="qr-form tr-form" onsubmit="return false;" novalidate>
+          <div class="qr-row">
+            <div class="qr-field grow">
+              <label class="qr-lbl" for="tr-name" data-i18n="tr.field.company">Company</label>
+              <input type="text" id="tr-name" name="company_name" autocomplete="organization" required minlength="1" maxlength="120" data-i18n-placeholder="tr.placeholder.company" placeholder="e.g. Northwind Pay, Mercado Atlas, Banco Atlántico" aria-required="true" />
+            </div>
+            <div class="qr-field">
+              <label class="qr-lbl" for="tr-title" data-i18n="tr.field.title">Meeting title</label>
+              <input type="text" id="tr-title" name="meeting_title" maxlength="160" data-i18n-placeholder="tr.placeholder.title" placeholder="Discovery, QBR, technical follow-up..." />
+            </div>
+            <div class="qr-field">
+              <label class="qr-lbl" for="tr-source" data-i18n="tr.field.source">Source</label>
+              <select id="tr-source" name="transcript_source">
+                <option value="zoom" data-i18n="tr.source.zoom">Zoom (.vtt)</option>
+                <option value="gong" data-i18n="tr.source.gong">Gong export</option>
+                <option value="manual" data-i18n="tr.source.manual">Manual paste</option>
+              </select>
+            </div>
+          </div>
+          <div class="qr-row">
+            <div class="qr-field">
+              <label class="qr-lbl" for="tr-industry" data-i18n="tr.field.industry">Industry (optional)</label>
+              <input type="text" id="tr-industry" name="industry" maxlength="80" data-i18n-placeholder="tr.placeholder.industry" placeholder="Fintech, Retail, Public sector..." />
+            </div>
+            <div class="qr-field">
+              <label class="qr-lbl" for="tr-size" data-i18n="tr.field.size">Size (optional)</label>
+              <input type="text" id="tr-size" name="size" maxlength="80" data-i18n-placeholder="tr.placeholder.size" placeholder="Mid-market, Enterprise..." />
+            </div>
+          </div>
+          <div class="qr-field">
+            <label class="qr-lbl" for="tr-notes" data-i18n="tr.field.notes">Notes (optional)</label>
+            <textarea id="tr-notes" name="notes" rows="2" maxlength="2000" data-i18n-placeholder="tr.placeholder.notes" placeholder="Anything the agent should know: deal stage, blockers, attendees..."></textarea>
+          </div>
+          <div class="qr-field">
+            <div class="tr-text-head">
+              <label class="qr-lbl" for="tr-text" data-i18n="tr.field.text">Transcript</label>
+              <span class="muted small tr-hint" data-i18n="tr.hint">Paste from Gong, Zoom, or any "Speaker: text" export. Min 20 characters.</span>
+            </div>
+            <textarea id="tr-text" name="transcript_text" rows="14" required minlength="20" maxlength="200000" spellcheck="false" data-i18n-placeholder="tr.placeholder.text" placeholder="WEBVTT&#10;&#10;00:00:01.000 --> 00:00:05.000&#10;Alice (Customer): We saw a 30% spike in p99 latency last week.&#10;&#10;00:00:05.500 --> 00:00:09.000&#10;Bob (Elastic FE): Got it. Walk me through the alerting setup..."></textarea>
+            <div class="tr-meta">
+              <span class="muted small" id="tr-charcount" aria-live="polite">0 chars</span>
+              <span class="dot">·</span>
+              <label class="tr-file-pick">
+                <span data-i18n="tr.field.file">Or upload a .vtt / .txt</span>
+                <input type="file" id="tr-file" accept=".vtt,.txt,.srt" />
+              </label>
+            </div>
+          </div>
+          <div class="qr-actions">
+            <button type="submit" class="btn primary" id="tr-submit">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              <span data-i18n="tr.submit">Analyze transcript</span>
+            </button>
+            <div class="qr-model">
+              <label class="qr-model-lbl" for="tr-model" data-i18n="tr.field.model">Model</label>
+              <select id="tr-model" name="model">
+                <option value="">Haiku 4.5 (default)</option>
+                <option value="claude-haiku-4-5">Haiku 4.5 (fastest, cheapest)</option>
+                <option value="claude-sonnet-4-6">Sonnet 4.6 (balanced)</option>
+                <option value="claude-opus-4-7">Opus 4.7 (deepest analysis)</option>
+              </select>
+            </div>
+            <span class="muted small tr-status" id="tr-status" role="status" aria-live="polite"></span>
+          </div>
+        </form>
+      </details>
     </section>
 
     <section class="qr-filter-bar" aria-label="Filter and group records">
@@ -175,5 +271,14 @@
   <script src="/assets/js/app.js"></script>
   <script defer src="/assets/js/quick-research-filter.js"></script>
   <script src="/assets/js/command-palette.js"></script>
+  <script>
+    (function () {
+      document.addEventListener("fec.transcript.analyzed", function () {
+        if (window.QRFilter && typeof window.QRFilter.refresh === "function") {
+          try { window.QRFilter.refresh(); } catch (e) {}
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
