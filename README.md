@@ -181,6 +181,47 @@ FE-Elastic/
   LICENSE                 Apache 2.0
 ```
 
+## Roadmap
+
+What ships in this hackathon submission is opinionated and complete enough to use day-to-day, but the project is built so the same patterns extend further. The roadmap below is grouped by time horizon. Each item lists the value it unlocks, not just the feature.
+
+### Near term (weeks 1 to 4 after submission)
+
+- **Production deploy on Fly.io**: Dockerfile, fly.toml, secrets list, and the seven-step playbook all live in `docs/deploy.md`. Replaces the ngrok dependency with a persistent URL the Kibana connector can target. Estimated effort: 2 hours including the Kibana re-sync. Cost: $0 on the free tier with cold-start trade-off, $5 to $10 per month on a small machine for warm.
+- **Salesforce live integration**: replace the SFDC mock with a real OAuth2 connection to a sandbox org. Map the existing six writes (Opportunity MEDDPICC fields, ContentNote, ContentDocumentLink, Competitor update, Deal_Health update, Slack post) to live calls. The mock surface stays as a fallback for offline demos. Estimated effort: 1 day for the OAuth flow, 1 day per object for field mapping.
+- **Real Slack integration**: replace the Slack mock with a real workspace bot. Adds a `/fec` slash command so a FE can invoke the master agent without leaving Slack. Estimated effort: half a day for the bot scaffold, two days for the slash command persona work.
+- **FE Brain corpus expansion to 1000+ chunks**: add the Elastic Security detection rules repo, the EDOT (Elastic Distribution of OpenTelemetry) reference, the Cases workflow guide, and the Lens visualisation cookbook. Estimated effort: half a day to curate URLs, half a day to re-run the ingest.
+- **Twelfth MCP tool: `fec_proposal`**: takes a meeting record plus a customer-fit dashboard and emits a one-page proposal PDF using the existing weasyprint pipeline. Persona: Carmen, Senior Pursuit Lead, fifteen years of competitive proposals. Estimated effort: 1 day.
+
+### Medium term (months 1 to 3)
+
+- **Multi-tenant**: the current backend assumes a single FE. Add user accounts, per-FE storage namespacing, per-FE Anthropic API key on the request, per-FE token quota. Same instance can host an entire FE community. Estimated effort: 2 weeks including auth, storage migration, and quota plumbing.
+- **Email digest before meetings**: a scheduled job reads the calendar and emails the FE a one-page brief 60 minutes before each customer call. Reduces the "I forgot to prep" failure mode that the integration smoke runner cannot catch. Estimated effort: 3 days.
+- **Active learning loop**: every Field Assistant response gets a thumbs-up / thumbs-down. Negative ratings feed a synthetic Q+A dataset that re-tunes the persona prompts on a weekly cadence. Closes the gap between the static personas and the user's specific style. Estimated effort: 1 week for the rating UI, 2 weeks for the eval harness, 1 week for the prompt-rewrite agent.
+- **Voice input on Field Assistant**: browser Speech API for real-time dictation. Useful during a customer call when the FE wants to ask the master agent something without typing. Falls back gracefully if the browser does not support it. Estimated effort: 2 days.
+- **Slack bot front door**: same nine-tool master agent, accessible from any Slack channel via `@FECopilot`. Replaces the standalone webapp for FEs who already live in Slack. Estimated effort: 4 days.
+- **Custom branding per FE region**: logo upload, colour overrides, default language per region. Lets the EMEA team have their own variant of the chat UI without forking the codebase. Estimated effort: 3 days.
+
+### Long term (months 3 to 6)
+
+- **RAG over internal Elastic knowledge**: extend the FE Brain corpus to include Confluence, Slack archives, recorded enablement videos transcribed with Whisper. Switch from semantic search to hybrid retrieval with re-ranking, exactly the pattern proven in `KnowledgeRepo`. Adds the most asked questions inside Elastic that are NOT on the public docs site.
+- **Customer-direct UX**: a sandboxed view where the customer can ask the master agent questions during a co-discovery session. Read-only on customer data, write-only on a separate audit trail. Lets a CISO type "show me PCI mappings" without a FE driving the keyboard.
+- **Salesforce CTI integration**: detect when a FE is on a customer call, auto-launch the live companion, auto-fill the post-meeting record from the call transcript. Closes the "manually start the live mode" friction.
+- **More demo data scenarios**: search relevance regression, vector search quality decay, multi-tenant noisy neighbour, regional failover replay, identity provider migration. Each scenario is a story that maps a customer pain to the corresponding Elastic capability.
+- **Active monitoring of the FE Copilot itself**: `fec-audit` already feeds the self-observability dashboard. Add SLO burn alerts on token spend per FE, anomaly detection on tool failure rates, weekly cost reports per region. Closes the meta loop: Elastic monitors Elastic monitoring Elastic.
+- **Open-sourcing the persona pack**: extract the persona prompts (Marta, Diego, Priya, Aiko, Kenji, Mei, Ravi, Auro, Sloane, Carmen, plus the future ones) into a separate repo so other companies can adapt them. Each persona becomes a community-maintained YAML with versioning.
+
+### Stretch ideas (parking lot, not committed)
+
+- Native iOS and Android wrappers for the standalone webapp
+- Real-time meeting transcription via Whisper running locally in the browser
+- A "demo data marketplace" where FEs share scenarios across Elastic
+- A "FE Copilot for Partners" white-label fork
+- Generative dashboard layouts: the master agent designs and ships a Lens dashboard layout from a natural-language prompt
+- A reinforcement-learning loop that re-orders the master agent's tool catalog based on what has been useful for the user
+
+The roadmap is intentionally honest: every item lists effort and value, and nothing here is a commitment outside this hackathon. The only commitment in this repository is the code that ships today.
+
 ## Acknowledgements
 
 - The Elastic FE community for fifteen years of pattern matching that this project tries to encode.
