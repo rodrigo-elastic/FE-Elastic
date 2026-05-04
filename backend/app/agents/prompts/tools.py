@@ -1350,3 +1350,214 @@ def render_orchestrator_synthesis_prompt(
         "Never use the em dash or the en dash character."
     )
     return "\n".join(parts)
+
+
+# ============================================================ PROPOSAL (Carmen) ======
+
+PROPOSAL_SYSTEM = """You are Carmen, a Senior Pursuit Lead at Elastic with 15 years of competitive proposal writing.
+
+# Your background and skills
+- You have authored or co-authored 200+ winning proposals for Elastic competitive replacements (Splunk, Datadog, Sumo Logic, QRadar, New Relic) across banking, retail, telco, public sector, and SaaS.
+- You have sat in CFO and CIO procurement reviews. You know what survives a procurement red-team and what gets cut.
+- You write proposals customers actually read. They are scannable in 90 seconds and survive a closer read for an hour.
+- You never lead with technology features. You lead with the customer's named pain plus a quantified outcome they can hold you to.
+- You include honest out-of-scope items so the customer trusts your scoping. Every senior buyer recognizes "everything is in scope" as a red flag.
+- You always include a free 60-hour Proof-of-Value as the standard Elastic offer. The number is sixty hours, not fifty, not a hundred.
+
+# How a great one-page proposal looks (your method)
+1. Title: "Proposal for <Customer Name>". No clever subtitles, no marketing slogans.
+2. Executive summary: 3 to 4 short sentences. Customer-facing prose. Anchor on the customer's named outcome (renewal date, regulator deadline, cost target, performance KPI). No buzzwords, no Elastic feature names in this paragraph.
+3. Three value pillars. Each pillar is tied to a specific named pain from the post-meeting record. Each pillar carries 2 to 3 quantified metrics (percent reductions, time-to-value, cost saved, queries-per-second targets). If you cannot quantify it, drop the pillar.
+4. Scope: what is in, and 3 to 5 things explicitly NOT in scope. Honest scoping wins trust. Examples of typical out-of-scope items: production migration cutover, custom Kibana plugin development, ML model fine-tuning beyond stock detection rules, multi-region disaster recovery automation, legacy data backfill beyond 90 days.
+5. Timeline: 2 to 4 phases, each 2 to 4 weeks. The first checkable deliverable lands by Week 2 always. Each phase lists 2 to 4 deliverables.
+6. Investment block: indicative Elastic Cloud annual USD when the meeting record gives you ingest volume; otherwise null. Professional Services hours when the engagement is large enough to need them; otherwise null. Always include free_pov_hours = 60. Notes carry caveats (e.g., "subject to procurement review", "assumes 12-month term").
+7. Risks: 2 to 3 honest risks with concrete mitigations. The mitigation must be a real action, not a slogan.
+8. Next steps: 3 to 5 concrete next actions with implied owners (FE, customer, or joint).
+
+# Hard rules
+- Never use the em dash character. Never use the en dash character. Use commas, colons, or periods.
+- No buzzwords. Banned words include: synergy, leverage, paradigm, disruptive, best-of-breed, world-class, cutting-edge, next-generation, holistic, robust, seamless, enterprise-grade.
+- Never quote Elastic product features in the executive summary. Save feature names for value pillars and scope.
+- Never invent customer-specific facts. If the meeting record does not name a number, do not put a number in the proposal.
+- The 60-hour Proof-of-Value figure is fixed. Do not invent a different number.
+- Hard caps: exactly 3 value pillars, at most 4 timeline phases, exactly 3 risks (or 2 if 3 cannot be honestly grounded), 3 to 5 next steps, 3 to 5 explicit out-of-scope items.
+- Write in the customer's language as instructed by the user prompt.
+- Output via the json_schema response format only."""
+
+
+PROPOSAL_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "meeting_id": {"type": "string"},
+        "title": {"type": "string"},
+        "executive_summary": {"type": "string"},
+        "value_pillars": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+                    "name": {"type": "string"},
+                    "headline": {"type": "string"},
+                    "metrics": {"type": "array", "items": {"type": "string"}},
+                },
+                "required": ["name", "headline", "metrics"],
+            },
+        },
+        "scope": {
+            "type": "object",
+            "additionalProperties": False,
+            "properties": {
+                "in_scope": {"type": "array", "items": {"type": "string"}},
+                "out_of_scope": {"type": "array", "items": {"type": "string"}},
+            },
+            "required": ["in_scope", "out_of_scope"],
+        },
+        "timeline": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+                    "phase": {"type": "string"},
+                    "weeks": {"type": "string"},
+                    "deliverables": {"type": "array", "items": {"type": "string"}},
+                },
+                "required": ["phase", "weeks", "deliverables"],
+            },
+        },
+        "investment": {
+            "type": "object",
+            "additionalProperties": False,
+            "properties": {
+                "elastic_cloud_annual_usd": {"type": ["number", "null"]},
+                "professional_services_hours": {"type": ["integer", "null"]},
+                "free_pov_hours": {"type": "integer"},
+                "notes": {"type": "array", "items": {"type": "string"}},
+            },
+            "required": [
+                "elastic_cloud_annual_usd",
+                "professional_services_hours",
+                "free_pov_hours",
+                "notes",
+            ],
+        },
+        "risks": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+                    "risk": {"type": "string"},
+                    "mitigation": {"type": "string"},
+                },
+                "required": ["risk", "mitigation"],
+            },
+        },
+        "next_steps": {"type": "array", "items": {"type": "string"}},
+    },
+    "required": [
+        "meeting_id",
+        "title",
+        "executive_summary",
+        "value_pillars",
+        "scope",
+        "timeline",
+        "investment",
+        "risks",
+        "next_steps",
+    ],
+}
+
+
+def render_proposal_prompt(
+    company: dict,
+    meeting: dict,
+    post: dict,
+    brief: dict,
+    executive_summary_override: str = "",
+    dashboard_url: str = "",
+    language: str = "English",
+) -> str:
+    """Render the user prompt for Carmen with the customer's full context."""
+    parts: list = [
+        "# Customer dossier",
+        f"- Name: {company.get('name', '')}",
+        f"- Industry: {company.get('industry', '')}",
+        f"- Size: {company.get('size', '')}",
+        f"- Headquarters: {company.get('headquarters', '')}",
+        f"- Description: {company.get('description', '')}",
+        "",
+        "# Meeting context",
+        f"- Meeting id: {meeting.get('id', '')}",
+        f"- Title: {meeting.get('title', '')}",
+        f"- When: {meeting.get('start_time', '')}",
+        f"- Attendees: {', '.join(meeting.get('attendees', []) or [])}",
+        "",
+    ]
+
+    if post:
+        parts.append("# Post-meeting summary (verbatim)")
+        parts.append(post.get("summary", ""))
+        parts.append("")
+        parts.append("# MEDDPICC signals captured (verbatim quotes anchor every pillar)")
+        for s in post.get("meddpicc_signals") or []:
+            parts.append(f"- [{s.get('category', '')}] \"{s.get('quote', '')}\"")
+            note = s.get("note") or ""
+            if note:
+                parts.append(f"    note: {note}")
+        parts.append("")
+        parts.append("# Competitor mentions (the competitive landscape this proposal must answer)")
+        for c in post.get("competitor_mentions") or []:
+            parts.append(f"- {c.get('competitor', '')}: {c.get('context', '')}")
+        parts.append("")
+        parts.append("# Action items already agreed (do not re-propose these as next steps; build on them)")
+        for a in post.get("action_items") or []:
+            parts.append(
+                f"- {a.get('title', '')} (owner: {a.get('owner_name', 'TBD')}, due: {a.get('due_date') or 'TBD'})"
+            )
+        parts.append("")
+
+    if brief:
+        parts.append("# Pre-meeting brief headline")
+        parts.append(brief.get("headline", ""))
+        parts.append("")
+        parts.append("# Pre-meeting brief sections (skim for pain language and quantified targets)")
+        for sec in brief.get("sections") or []:
+            parts.append(f"## {sec.get('heading', '')}")
+            for b in sec.get("bullets") or []:
+                parts.append(f"- {b}")
+        parts.append("")
+
+    if executive_summary_override:
+        parts.append("# Field Engineer override for executive_summary (use this verbatim)")
+        parts.append(executive_summary_override.strip())
+        parts.append("")
+
+    if dashboard_url:
+        parts.append("# Customer-fit Kibana dashboard URL")
+        parts.append(dashboard_url.strip())
+        parts.append(
+            "Mention nothing about this URL in the prose; it will be rendered as a QR code in the PDF footer."
+        )
+        parts.append("")
+
+    parts.append("# Output language")
+    parts.append(language or "English")
+    parts.append("")
+    parts.append(
+        "Now produce the one-page proposal. Title format: 'Proposal for "
+        + (company.get("name") or "Customer")
+        + "'. The meeting_id field in your output must be exactly: "
+        + (meeting.get("id") or "")
+        + ". Hard caps: exactly 3 value pillars, at most 4 timeline phases, 2 or 3 risks, 3 to 5 next steps, "
+        "3 to 5 out-of-scope items. Always set investment.free_pov_hours = 60. "
+        "Anchor every pillar to a verbatim MEDDPICC quote above. Never use the em dash or en dash."
+    )
+    if executive_summary_override:
+        parts.append(
+            "Use the FE override exactly for executive_summary; do not rephrase it."
+        )
+    return "\n".join(parts)
+

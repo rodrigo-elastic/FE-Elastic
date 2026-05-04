@@ -7,7 +7,7 @@
 
 ---
 
-## B0 — Title slate (0:00 to 0:08)
+## B0. Title slate (0:00 to 0:08)
 
 [Hover hero on dashboard tab]
 
@@ -18,7 +18,7 @@ FE Copilot gives that time back.
 
 ---
 
-## B1 — Autopilot (0:08 to 0:35)
+## B1. Autopilot (0:08 to 0:35)
 
 [Click "Show me the magic" hero button]
 
@@ -30,7 +30,7 @@ FE Copilot gives that time back.
 
 ---
 
-## B2 — FE Brain (0:35 to 0:55)
+## B2. FE Brain (0:35 to 0:55)
 
 [Switch to FE Brain tab. Click chip "Set up semantic_text with ELSER on Elastic Cloud"]
 
@@ -46,7 +46,7 @@ Five out of five on the audit.
 
 ---
 
-## B3 — Auro orchestrator (0:55 to 1:25)
+## B3. Auro orchestrator (0:55 to 1:25)
 
 [Switch to meeting tab. Scroll to Field Assistant. Click "POV plan plus TCO" chip]
 
@@ -56,7 +56,7 @@ Auro picks two specialists in parallel.
 
 P O V plan plus T C O.
 
-[PAUSE — let the tool calls render]
+[PAUSE. let the tool calls render]
 
 One question.
 
@@ -66,7 +66,7 @@ One coherent answer.
 
 ---
 
-## B4 — Battlecards plus Sloane (1:25 to 1:55)
+## B4. Battlecards plus Sloane (1:25 to 1:55)
 
 [Switch to battlecards tab. Click Splunk card. Click "TCO at 200 GB per day" chip]
 
@@ -78,7 +78,7 @@ Eight seconds.
 
 Seventy four percent savings.
 
-[PAUSE — let the comparison table render]
+[PAUSE. let the comparison table render]
 
 Honest gaps named.
 
@@ -86,7 +86,7 @@ Ten technical dimensions.
 
 ---
 
-## B5 — Demo Data plus dashboards (1:55 to 2:25)
+## B5. Demo Data plus dashboards (1:55 to 2:25)
 
 [Switch to demo-data tab. Click "Open F E dashboard" on Black Friday. Switch to Customer view]
 
@@ -96,13 +96,13 @@ Five scenarios.
 
 Ten paired dashboards.
 
-[PAUSE — switch FE to Customer view]
+[PAUSE. switch FE to Customer view]
 
 Same data, two audiences.
 
 ---
 
-## B6 — Two workflows (2:25 to 2:50)
+## B6. Two workflows (2:25 to 2:50)
 
 [Switch to workflow-demo tab. Click "Fire demo transcript". Then switch to terminal pane]
 
@@ -116,7 +116,7 @@ Rule fires.
 
 Agent runs.
 
-[PAUSE — switch to terminal showing salesforce.log]
+[PAUSE. switch to terminal showing salesforce.log]
 
 Agents trigger workflows.
 
@@ -124,7 +124,7 @@ Workflows trigger agents.
 
 ---
 
-## B7 — Outro (2:50 to 3:00)
+## B7. Outro (2:50 to 3:00)
 
 [Switch back to dashboard tab]
 

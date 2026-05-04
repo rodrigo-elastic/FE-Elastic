@@ -255,3 +255,49 @@ class OrchestratorOut(BaseModel):
     tools_invoked: List[OrchestratorInvocation]
     synthesis: str
     follow_ups: List[str]
+
+
+# ============================================================ PROPOSAL (Carmen) ========
+
+
+class ProposalValuePillar(BaseModel):
+    name: str
+    headline: str
+    metrics: List[str]
+
+
+class ProposalScope(BaseModel):
+    in_scope: List[str]
+    out_of_scope: List[str]
+
+
+class ProposalTimelinePhase(BaseModel):
+    phase: str
+    weeks: str
+    deliverables: List[str]
+
+
+class ProposalInvestment(BaseModel):
+    elastic_cloud_annual_usd: Optional[float] = None
+    professional_services_hours: Optional[int] = None
+    free_pov_hours: int = 60
+    notes: List[str] = Field(default_factory=list)
+
+
+class ProposalRisk(BaseModel):
+    risk: str
+    mitigation: str
+
+
+class ProposalOut(BaseModel):
+    """Carmen's one-page proposal output. The pdf_path is filled in server-side after rendering."""
+    meeting_id: str
+    title: str
+    executive_summary: str
+    value_pillars: List[ProposalValuePillar]
+    scope: ProposalScope
+    timeline: List[ProposalTimelinePhase]
+    investment: ProposalInvestment
+    risks: List[ProposalRisk]
+    next_steps: List[str]
+    pdf_path: str = ""

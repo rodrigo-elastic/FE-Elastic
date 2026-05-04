@@ -1,6 +1,6 @@
 """
 filename: routes_mcp.py
-description: MCP Streamable HTTP server exposing the eleven FE Copilot tools (nine specialists, the Sloane competitive comparison tool, and the Auro orchestrator) to Elastic Agent Builder. Speaks JSON-RPC over a single POST endpoint per the MCP 2025-03-26 spec; each tool delegates to the existing FastAPI tool route.
+description: MCP Streamable HTTP server exposing the twelve FE Copilot tools (nine specialists, the Sloane competitive comparison tool, the Auro orchestrator, and the Carmen one-page proposal generator) to Elastic Agent Builder. Speaks JSON-RPC over a single POST endpoint per the MCP 2025-03-26 spec; each tool delegates to the existing FastAPI tool route.
 date: 03-05-2026
 """
 __author__ = "Rodrigo Careaga"
@@ -23,6 +23,7 @@ from app.api.routes_tools import (
     KnowledgeSearchRequest,
     OrchestratorRequest,
     POCPlanRequest,
+    ProposalRequest,
     SPLToESQLRequest,
     StackExtractRequest,
     TroubleshootRequest,
@@ -34,6 +35,7 @@ from app.api.routes_tools import (
     run_knowledge_search,
     run_orchestrator,
     run_poc_plan,
+    run_proposal,
     run_spl_to_esql,
     run_stack_extract,
     run_troubleshoot,
@@ -198,6 +200,20 @@ TOOLS = [
             "required": ["query"],
         },
     },
+    {
+        "name": "fec_proposal",
+        "description": "Generate a one-page customer-facing proposal (executive summary, 3 value pillars, scope with honest out-of-scope items, 2-4 phase timeline, investment block including the standard 60-hour free POV, risks with mitigations, and 3-5 next steps) and render it as a printable PDF the FE can attach to a Salesforce opportunity. Persona: Carmen, Senior Pursuit Lead at Elastic with 15 years of competitive proposal writing.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "meeting_id": {"type": "string", "description": "FE Copilot meeting id (synthetic fixture or ad-hoc brief on disk)."},
+                "executive_summary_override": {"type": "string", "description": "Optional FE override used verbatim as the executive summary."},
+                "dashboard_url": {"type": "string", "description": "Optional customer-fit Kibana dashboard URL referenced in the PDF footer."},
+                "language": {"type": "string", "default": "English"},
+            },
+            "required": ["meeting_id"],
+        },
+    },
 ]
 
 
@@ -227,6 +243,8 @@ async def _invoke_tool(name: str, args: Dict[str, Any]) -> Any:
         return await run_compare(CompareRequest(**args))
     if name == "fec_orchestrator":
         return await run_orchestrator(OrchestratorRequest(**args))
+    if name == "fec_proposal":
+        return await run_proposal(ProposalRequest(**args))
     raise ValueError(f"unknown tool: {name}")
 
 

@@ -28,6 +28,7 @@ from app.agents.schemas import (
     OrchestratorPlanOut,
     OrchestratorSynthesisOut,
     POCPlanOut,
+    ProposalOut,
     SPLToESQLOut,
     StackExtractOut,
     TroubleshootOut,
@@ -1161,3 +1162,250 @@ async def run_orchestrator(payload: OrchestratorRequest) -> Dict[str, Any]:
 async def orchestrator_endpoint(payload: OrchestratorRequest) -> Dict[str, Any]:
     """Auro (FE conductor) plans, fan-outs to 1-3 of the other 9 tools, and synthesizes a unified answer."""
     return await run_orchestrator(payload)
+
+
+# ============================================================ Proposal (Carmen) ======
+
+
+class ProposalRequest(BaseModel):
+    meeting_id: str = Field(..., min_length=1, max_length=200)
+    executive_summary_override: Optional[str] = Field("", max_length=4000)
+    dashboard_url: Optional[str] = Field("", max_length=2000)
+    language: Optional[str] = Field("English", max_length=40)
+    model: Optional[str] = Field("", max_length=60)
+
+
+_PROPOSAL_MOCK: Dict[str, Any] = {
+    "meeting_id": "mock-meeting",
+    "title": "Proposal for Mock Customer",
+    "executive_summary": (
+        "Mock fallback proposal generated without Anthropic credentials. Configure "
+        "ANTHROPIC_API_KEY to get a real Carmen-authored proposal anchored to the "
+        "customer's named pain and renewal date."
+    ),
+    "value_pillars": [
+        {
+            "name": "Observability consolidation",
+            "headline": "Replace fragmented monitoring with one Elastic data plane.",
+            "metrics": [
+                "30 percent reduction in observability tooling spend in year one",
+                "Single audit trail across logs, metrics, and traces",
+            ],
+        }
+    ],
+    "scope": {
+        "in_scope": [
+            "Elastic Cloud deployment with hot, warm, and frozen tiers",
+            "Migration of one priority Splunk app to ES|QL",
+        ],
+        "out_of_scope": [
+            "Production cutover of remaining Splunk apps",
+            "Custom Kibana plugin development",
+            "Legacy data backfill beyond 90 days",
+        ],
+    },
+    "timeline": [
+        {
+            "phase": "Phase 1, Foundation",
+            "weeks": "Week 1-2",
+            "deliverables": ["Provision Elastic Cloud", "Ingest first data source"],
+        }
+    ],
+    "investment": {
+        "elastic_cloud_annual_usd": None,
+        "professional_services_hours": None,
+        "free_pov_hours": 60,
+        "notes": ["Mock mode active; configure ANTHROPIC_API_KEY for a real quote."],
+    },
+    "risks": [
+        {
+            "risk": "Schema drift between current pipelines and Elastic Common Schema",
+            "mitigation": "Phase 1 includes an ECS mapping workshop with the customer platform lead.",
+        }
+    ],
+    "next_steps": [
+        "Confirm POV start date with Carlos and Marina.",
+        "Share the ECS mapping pre-read by end of week.",
+        "Schedule architecture council review for Q4 decision gate.",
+    ],
+    "pdf_path": "",
+}
+
+
+def _brief_path(meeting_id: str) -> "Any":
+    return settings.runtime_dir / "briefs" / f"{meeting_id}.json"
+
+
+def _resolve_proposal_meeting(meeting_id: str) -> Dict[str, Any]:
+    """Resolve a meeting record + company using the same fallback chain as routes_kibana.
+
+    Order: synthetic fixtures, then a runtime brief on disk (ad-hoc meetings).
+    Raises HTTPException(404) when neither path yields a meeting.
+    """
+    meeting = synthetic.find_meeting(meeting_id)
+    company: Optional[Dict[str, Any]] = None
+    if meeting is not None:
+        company = synthetic.find_company(meeting["company_id"])
+    if meeting is None or company is None:
+        bp = _brief_path(meeting_id)
+        if bp.exists():
+            try:
+                brief = json.loads(bp.read_text(encoding="utf-8"))
+            except Exception:
+                brief = None
+            if brief:
+                ui = (brief.get("sources_used") or {}).get("user_input") or {}
+                company = company or {
+                    "id": brief.get("company_id") or meeting_id,
+                    "name": brief.get("company_name") or ui.get("company_name") or "Customer",
+                    "industry": ui.get("industry", ""),
+                    "size": ui.get("size", ""),
+                    "headquarters": ui.get("headquarters", ""),
+                    "description": ui.get("notes", ""),
+                }
+                meeting = meeting or {
+                    "id": meeting_id,
+                    "company_id": company["id"],
+                    "title": ui.get("meeting_title") or (brief.get("headline") or "")[:80] or meeting_id,
+                    "start_time": brief.get("generated_at"),
+                    "attendees": [],
+                }
+    if meeting is None or company is None:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"meeting {meeting_id} not found in synthetic fixtures or runtime briefs. "
+                "Run the pre-meeting agent or seed the meeting first."
+            ),
+        )
+    return {"meeting": meeting, "company": company}
+
+
+def _enforce_proposal_caps(data: Dict[str, Any]) -> Dict[str, Any]:
+    """Hard caps spec: 3 pillars, 4 phases, 3 risks, 5 next steps, 5 out-of-scope."""
+    if isinstance(data.get("value_pillars"), list):
+        data["value_pillars"] = data["value_pillars"][:3]
+    if isinstance(data.get("timeline"), list):
+        data["timeline"] = data["timeline"][:4]
+    if isinstance(data.get("risks"), list):
+        data["risks"] = data["risks"][:3]
+    if isinstance(data.get("next_steps"), list):
+        data["next_steps"] = data["next_steps"][:5]
+    scope = data.get("scope") or {}
+    if isinstance(scope.get("in_scope"), list):
+        scope["in_scope"] = scope["in_scope"][:8]
+    if isinstance(scope.get("out_of_scope"), list):
+        scope["out_of_scope"] = scope["out_of_scope"][:5]
+    data["scope"] = scope
+    # Always pin the standard Elastic POV offer at 60 hours.
+    invest = data.get("investment") or {}
+    invest["free_pov_hours"] = 60
+    data["investment"] = invest
+    return data
+
+
+async def run_proposal(payload: ProposalRequest) -> Dict[str, Any]:
+    """Carmen (Senior Pursuit Lead, 15y) writes a one-page proposal grounded in the meeting record."""
+    meeting_id = payload.meeting_id.strip()
+    log.info("tool.proposal.start", meeting_id=meeting_id, language=payload.language)
+
+    resolved = _resolve_proposal_meeting(meeting_id)
+    meeting = resolved["meeting"]
+    company = resolved["company"]
+
+    # Best-effort: load post-meeting record + brief if they exist on disk.
+    post: Dict[str, Any] = {}
+    post_path = _post_meeting_path(meeting_id)
+    if post_path.exists():
+        try:
+            post = json.loads(post_path.read_text(encoding="utf-8"))
+        except Exception as exc:
+            log.warning("tool.proposal.post_load_failed", reason=str(exc))
+            post = {}
+
+    brief: Dict[str, Any] = {}
+    bp = _brief_path(meeting_id)
+    if bp.exists():
+        try:
+            brief = json.loads(bp.read_text(encoding="utf-8"))
+        except Exception as exc:
+            log.warning("tool.proposal.brief_load_failed", reason=str(exc))
+            brief = {}
+
+    language = payload.language or "English"
+    dashboard_url = (payload.dashboard_url or "").strip()
+    override = (payload.executive_summary_override or "").strip()
+
+    user_prompt = (
+        language_preamble(language)
+        + tool_prompts.render_proposal_prompt(
+            company=company,
+            meeting=meeting,
+            post=post,
+            brief=brief,
+            executive_summary_override=override,
+            dashboard_url=dashboard_url,
+            language=language,
+        )
+        + language_instruction(language)
+    )
+
+    # Build a customer-aware mock payload so offline runs still produce a recognizable proposal.
+    mock_payload = dict(_PROPOSAL_MOCK)
+    mock_payload["meeting_id"] = meeting_id
+    mock_payload["title"] = f"Proposal for {company.get('name', 'Customer')}"
+    if override:
+        mock_payload["executive_summary"] = override
+
+    result: ProposalOut = get_service().call_structured(
+        system=tool_prompts.PROPOSAL_SYSTEM,
+        user=user_prompt,
+        schema=tool_prompts.PROPOSAL_SCHEMA,
+        output_model=ProposalOut,
+        model=_resolve_model(payload.model),
+        max_tokens=8192,
+        effort="high",
+        mock_payload=mock_payload,
+        audit_meta={
+            "agent": "tool_proposal",
+            "tool": "proposal",
+            "meeting_id": meeting_id,
+            "company_id": company.get("id"),
+        },
+    )
+
+    data = result.model_dump()
+    # Server-side truth wins on the meeting_id, the standard offer, and an FE override.
+    data["meeting_id"] = meeting_id
+    if override:
+        data["executive_summary"] = override
+    data = _enforce_proposal_caps(data)
+
+    # Render the PDF (or HTML fallback) and persist the artifact path.
+    try:
+        from app.services.proposal_pdf import render_proposal_pdf
+
+        artifact_path = render_proposal_pdf(
+            meeting_id=meeting_id,
+            proposal=data,
+            dashboard_url=dashboard_url,
+        )
+        data["pdf_path"] = str(artifact_path.resolve())
+    except Exception as exc:
+        log.warning("tool.proposal.render_failed", reason=str(exc))
+        data["pdf_path"] = ""
+
+    log.info(
+        "tool.proposal.complete",
+        meeting_id=meeting_id,
+        pillars=len(data.get("value_pillars") or []),
+        phases=len(data.get("timeline") or []),
+        pdf_path=data.get("pdf_path", ""),
+    )
+    return data
+
+
+@router.post("/proposal")
+async def proposal_endpoint(payload: ProposalRequest) -> Dict[str, Any]:
+    """Carmen (Senior Pursuit Lead, 15y) emits a one-page customer proposal as JSON plus a rendered PDF."""
+    return await run_proposal(payload)

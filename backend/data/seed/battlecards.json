@@ -780,5 +780,280 @@
       "What is your typical query latency at peak ingest?",
       "Is your team feeling the limits of Sumo's CSE customization?"
     ]
+  },
+  {
+    "id": "cisco-appd-splunk-bundle",
+    "competitor": "Cisco AppDynamics + Splunk bundle",
+    "competitor_slug": "cisco-bundle",
+    "tagline": "One data plane today versus a Cisco bundle that is still three products on three bills",
+    "key_pain": "After Cisco closed the Splunk acquisition, the field pitch is 'AppDynamics for APM, ThousandEyes for network, Splunk for logs and SIEM, all under Cisco.' In reality the three platforms still have separate data stores, separate agents, separate billing models (DDU-style for AppD, ingest-based for Splunk Cloud, subscription for ThousandEyes) and the integration roadmap is public-but-vague. Customers buying the bundle today are buying a roadmap, not a unified product.",
+    "talking_points": [
+      {
+        "angle": "Bundle reality versus marketing",
+        "claim": "The Cisco bundle is three products with shared logos, not a shared data plane.",
+        "proof": "AppDynamics data lives in the AppD controller. Splunk data lives in Splunk indexers or Splunk Cloud. ThousandEyes data lives in the ThousandEyes SaaS. Cross-product correlation today goes through dashboard links and a planned 'unified experience,' not a shared store. Elastic has logs, metrics, APM, RUM, synthetics and Security on one cluster today."
+      },
+      {
+        "angle": "Pricing is a maze",
+        "claim": "Three pricing models stack instead of simplify.",
+        "proof": "AppDynamics is per-agent or DDU-equivalent; Splunk Cloud is workload pricing or ingest-based; ThousandEyes is per-test subscription. A typical enterprise bundle quote contains all three SKUs plus Cisco services attach. Elastic ships per-GB ingest plus storage tiers, one line item, frozen tier on object storage included."
+      },
+      {
+        "angle": "Migration leverage",
+        "claim": "Renewal cycles for AppD and Splunk now align under Cisco; that is the moment to evaluate.",
+        "proof": "Cisco is consolidating renewal calendars to make the bundle stickier. Customers who do not evaluate at this renewal will be locked in for another multi-year cycle. Run a focused POV on the highest-cost line (usually Splunk ingest or AppD agent count) before signing the bundle."
+      }
+    ],
+    "elastic_advantages": [
+      "Single cluster for logs, metrics, APM, RUM, synthetics and Security",
+      "One per-GB ingest line plus storage tiers, no DDU or workload-pricing translation",
+      "OTel-native via EDOT; no proprietary agent stack to maintain",
+      "Frozen tier on object storage for compliance retention without bundle add-ons",
+      "Detection rules open-source on GitHub; not tied to Splunk ES or AppD content"
+    ],
+    "common_objections": [
+      {
+        "q": "Cisco gave us a 30 percent bundle discount; the math is hard to beat.",
+        "a": "The discount is real but applied to three list prices that grew first. Build the comparison against actual usage, not list. In most deals we see, the bundle discount restores the price to roughly what each product cost separately two renewals ago."
+      },
+      {
+        "q": "We are a Cisco networking shop; one throat to choke is valuable.",
+        "a": "True for support escalations. Less true for product roadmap: AppD, Splunk and ThousandEyes still have separate engineering orgs and separate release cycles. The single-vendor argument is operational, not technical."
+      },
+      {
+        "q": "Splunk under Cisco will get cheaper over time.",
+        "a": "Possibly. The post-acquisition pattern across the industry is that prices flatten for two years and then resume the previous trajectory. Elastic gives you a real alternative now, not a hope on a roadmap."
+      },
+      {
+        "q": "We need APM, network and logs; Elastic does not do network paths.",
+        "a": "Honest scope: ThousandEyes path-level network telemetry is its own niche. Most customers who buy the bundle use ThousandEyes for 5 to 10 critical paths. Keep ThousandEyes if it earns its keep; consolidate the rest to Elastic. Bundle pricing usually depends on all three products being on the contract, so this changes the negotiation."
+      }
+    ],
+    "discovery_questions": [
+      "Are AppDynamics, Splunk and ThousandEyes on aligned renewal dates yet?",
+      "How is cross-product correlation working today: shared data, dashboard links, or manual?",
+      "What is the bundle uplift versus paying for each product separately?",
+      "Which of the three products would you keep if you could only keep one?"
+    ]
+  },
+  {
+    "id": "dragos",
+    "competitor": "Dragos",
+    "competitor_slug": "dragos",
+    "tagline": "Dragos owns OT depth; Elastic is the SOC layer that surfaces OT signals to the business",
+    "key_pain": "Dragos is genuinely best-in-class for OT and ICS threat detection: protocol-aware (Modbus, DNP3, IEC-61850, OPC-UA), industry-tuned threat groups (XENOTIME, ELECTRUM, CHRYSENE) and an air-gap-friendly deployment model. Elastic does not pretend to match Dragos at the OT-protocol depth layer. The real customer pain is that Dragos is OT-only: it does not cover IT, cloud, identity, endpoint or business systems. Customers running Dragos still need a SIEM for the rest of the enterprise, and OT alerts that never reach the IT SOC die in a separate console.",
+    "talking_points": [
+      {
+        "angle": "Complementary, not adversarial",
+        "claim": "Elastic does not replace Dragos in the OT zone; Elastic is the SIEM that ingests Dragos alerts and correlates them with IT, identity and cloud telemetry.",
+        "proof": "Dragos exposes alerts and asset inventory via syslog, REST API and STIX/TAXII. Elastic Security ingests all three. The result: a converged IT/OT SOC view where an OT alert can be pivoted against the engineer's identity, the jump-host logs and the cloud control-plane events, all in one Timeline."
+      },
+      {
+        "angle": "Cost and scope",
+        "claim": "Dragos pricing scales with monitored assets and is rich for the depth it provides; layering Elastic underneath avoids paying Dragos prices for non-OT data.",
+        "proof": "Customers who try to use Dragos as their enterprise SIEM (because it is the security tool they have) end up overpaying for IT logs that do not need OT-protocol decoders. Elastic ingest economics on per-GB plus frozen tier are designed for the high-volume IT log layer."
+      },
+      {
+        "angle": "Detection engineering reach",
+        "claim": "Open detection rules on GitHub plus ML anomaly detection across IT and OT data.",
+        "proof": "Dragos detections are Dragos-authored and Dragos-distributed; that is fine for the OT zone. For the IT-OT correlation layer (where the breach actually moves) Elastic detection rules are open, version-controlled and auditable."
+      }
+    ],
+    "elastic_advantages": [
+      "Full IT plus identity plus cloud plus endpoint coverage that Dragos does not attempt",
+      "Native ingest of Dragos alerts via syslog, REST and STIX/TAXII",
+      "Per-GB plus frozen tier economics for high-volume IT log retention",
+      "Open detection rules and ML anomaly detection across the converged dataset",
+      "Single SOC console for IT and OT analysts, with role-based access on the OT slice"
+    ],
+    "common_objections": [
+      {
+        "q": "Dragos is the only platform that understands our OT protocols at depth.",
+        "a": "Agreed. Keep Dragos in the OT zone. The conversation is not Dragos versus Elastic; it is whether OT alerts ever reach the IT SOC. Today, in most plants, they do not. Elastic is the layer that closes that gap."
+      },
+      {
+        "q": "We have an air-gapped OT network; cross-domain integration is hard.",
+        "a": "Common pattern: a one-way diode or guarded relay forwards Dragos alerts and asset inventory to the IT side. Elastic ingests on the IT side. The OT zone stays air-gapped; only the alert metadata crosses."
+      },
+      {
+        "q": "Dragos has a SOC service offering too.",
+        "a": "Dragos OT Watch is for OT analysts. Most customers still need an enterprise SOC for IT and cloud. Elastic is the platform that SOC runs on; the two services are complementary."
+      },
+      {
+        "q": "We do not want a second console for our OT team.",
+        "a": "OT analysts can stay in the Dragos console. The Elastic value is for the IT SOC and for IT-OT bridge investigations. Most plants we work with have separate analyst pools; the second console question only applies if the same analyst covers both."
+      }
+    ],
+    "discovery_questions": [
+      "Where do Dragos alerts go today, and does the IT SOC see them?",
+      "What percentage of incidents started in IT and pivoted into OT, or the reverse?",
+      "Are you paying Dragos for asset coverage that is actually IT, not OT?",
+      "Who owns the IT-OT bridge: plant security, corporate SOC, or neither?"
+    ]
+  },
+  {
+    "id": "servicenow-itom",
+    "competitor": "ServiceNow ITOM",
+    "competitor_slug": "servicenow-itom",
+    "tagline": "ServiceNow wins the SNOW-centric shop; Elastic wins on sovereignty, cost and ML",
+    "key_pain": "ServiceNow ITOM (Discovery, Event Management, Health Log Analytics, Cloud Observability) is a credible observability and ITSM-adjacent monitoring story for customers who already run ServiceNow as their system of record. The honest tradeoff: data lives in the ServiceNow instance, pricing is subscription plus per-source plus per-event, log analytics depth is well behind purpose-built tools, and ML capabilities are early. Customers who are not already SNOW-centric pay a premium for the ITSM tie-in.",
+    "talking_points": [
+      {
+        "angle": "Where SNOW genuinely wins",
+        "claim": "If the customer runs CMDB, change, incident and problem on ServiceNow, ITOM closes the loop on event-to-incident automation in a way no third party can.",
+        "proof": "Event Management plus the SNOW CMDB plus Flow Designer is genuinely the shortest path from alert to ticket to runbook for a SNOW-first shop. Elastic does not own the system of record; we integrate with it via the ServiceNow connector for cases and incidents."
+      },
+      {
+        "angle": "Where Elastic wins",
+        "claim": "Data sovereignty, cost at log scale, and ML maturity favour Elastic.",
+        "proof": "ITOM data lives in the ServiceNow instance with limited residency choice; Elastic deploys self-hosted, AWS/GCP/Azure marketplace or air-gapped. Health Log Analytics pricing scales with events; Elastic is per-GB plus frozen tier. Elastic ML anomaly detection and ELSER are GA; ServiceNow Predictive AIOps is newer and narrower."
+      },
+      {
+        "angle": "Co-existence pattern",
+        "claim": "Most enterprises end up running both: Elastic for the data plane, ServiceNow for the ITSM workflow.",
+        "proof": "Elastic Cases integrate with ServiceNow incidents bidirectionally. The customer keeps SNOW for change and incident; Elastic owns logs, metrics, APM and Security. This is the dominant pattern in regulated and multi-cloud accounts."
+      }
+    ],
+    "elastic_advantages": [
+      "Self-hosted, multi-cloud or air-gapped deployment versus SNOW-instance-only",
+      "Per-GB plus frozen tier economics at log retention scale",
+      "Mature ML anomaly detection and ELSER inference in the platform",
+      "Open detection rules and Security workspace on the same cluster",
+      "Bidirectional ServiceNow connector preserves the ITSM workflow"
+    ],
+    "common_objections": [
+      {
+        "q": "ITOM Visibility plus the CMDB is unmatched for ITSM-driven ops.",
+        "a": "Agreed for the ITSM workflow. The question is whether ITOM is the right place to store the underlying telemetry. Most customers we work with keep SNOW as the system of record and put the data plane elsewhere; the integrations are mature."
+      },
+      {
+        "q": "Health Log Analytics gives us logs inside ServiceNow.",
+        "a": "It does, at SNOW pricing and with SNOW search depth. For a few-hundred-GB-per-day shop it works. Past 1 TB per day or with deep ad-hoc query needs, the economics and the query latency push customers to a purpose-built log platform."
+      },
+      {
+        "q": "We want one vendor for ITSM and observability.",
+        "a": "Reasonable goal. The single-vendor argument trades flexibility for simplicity. Worth modelling cost at the customer's actual ingest and the analyst experience for log search; the gap is wider than the marketing suggests."
+      },
+      {
+        "q": "Predictive AIOps will catch up to Elastic ML.",
+        "a": "Possibly over time. Today, Elastic ML jobs cover anomaly detection on any field, support forecasting, and feed Security UEBA on the same engine. Predictive AIOps is event-clustering-first and narrower. Build the comparison on real customer data."
+      }
+    ],
+    "discovery_questions": [
+      "Is ServiceNow your system of record for incident and change today?",
+      "What is your daily log ingest, and is Health Log Analytics handling all of it?",
+      "Do you have data residency or air-gap requirements that the ServiceNow instance complicates?",
+      "Where does Security telemetry live, and is it in scope for ITOM?"
+    ]
+  },
+  {
+    "id": "splunk-cloud",
+    "competitor": "Splunk Cloud",
+    "competitor_slug": "splunk-cloud",
+    "tagline": "Workload pricing plus egress: Splunk Cloud trades one cost surprise for another",
+    "key_pain": "Splunk Cloud is not just hosted Splunk Enterprise; it is a different commercial and operational model. Workload pricing (SVC) replaces ingest-based pricing for most new customers, which can be friendlier for predictable workloads and punishing for spiky ones. Data lives in AWS or GCP regions chosen by Splunk, and querying from outside that region surfaces egress and latency costs the customer did not have on-prem. Long retention still pushes customers to SmartStore plus a separate object-storage bill, and the Splunk Cloud admin surface is narrower than Splunk Enterprise.",
+    "talking_points": [
+      {
+        "angle": "Workload pricing is not a free lunch",
+        "claim": "SVC pricing is good for steady-state ingest and bad for spike-heavy workloads.",
+        "proof": "Splunk SVC is sized to peak compute. A monthly close, a holiday traffic surge or an incident-driven query burst forces a higher SVC tier for a year. Elastic per-GB ingest plus auto-scaling on Elastic Cloud handles spikes without re-tiering the contract."
+      },
+      {
+        "angle": "Data residency and egress",
+        "claim": "Splunk Cloud regions are limited; querying across regions or pulling data out incurs cost and latency.",
+        "proof": "Splunk Cloud Platform has a fixed regional footprint per cloud. Cross-region search is constrained. Elastic Cloud runs in 50+ regions on AWS, GCP and Azure with PrivateLink and VPC peering on each."
+      },
+      {
+        "angle": "Long retention still costs",
+        "claim": "Splunk Cloud SmartStore puts cold data on S3, but the warm-tier SVC still drives the bill.",
+        "proof": "Frozen tier on Elastic uses object storage and remains queryable in place via searchable snapshots. The economics for 12 to 24 month retention are typically 50 to 70 percent lower than the equivalent Splunk Cloud SVC plus storage line."
+      }
+    ],
+    "elastic_advantages": [
+      "Per-GB ingest plus elastic auto-scaling handles spikes without re-tiering",
+      "Multi-cloud regional footprint with native PrivateLink and VPC peering",
+      "Frozen tier on object storage at retention scale",
+      "ES|QL and SPL-to-ES|QL conversion docs lower migration friction",
+      "Same platform owns logs, metrics, APM and Security on one license"
+    ],
+    "common_objections": [
+      {
+        "q": "Splunk Cloud is fully managed; we have no ops overhead.",
+        "a": "Elastic Cloud is fully managed too: hosted, patched, auto-scaled. Same operational profile, broader regional choice, and per-GB pricing instead of SVC."
+      },
+      {
+        "q": "SVC pricing is finally predictable; we know the bill.",
+        "a": "Predictable until a spike forces a tier change at renewal. SVC is right-sized to peak, so the bill reflects the worst week, not the average. Elastic ingest economics track usage."
+      },
+      {
+        "q": "Our data has to stay in a specific region; Splunk Cloud covers it.",
+        "a": "Confirm the exact region. Splunk Cloud regional coverage is narrower than the hyperscalers. Elastic Cloud usually has more options, including air-gapped self-hosted on FedRAMP or sovereign clouds."
+      },
+      {
+        "q": "We have years of SPL and dashboards; rewriting is a non-starter.",
+        "a": "ES|QL went GA in 8.13 with a documented SPL-to-ES|QL conversion path. Most queries port mechanically; dashboards are rebuilt in Lens with Vega for the complex cases. POV scope: rebuild the top 20 dashboards and 50 detections, validate parity, then commit."
+      }
+    ],
+    "discovery_questions": [
+      "Are you on workload (SVC) pricing or legacy ingest-based pricing?",
+      "How spiky is your ingest pattern, and how does that interact with SVC sizing?",
+      "Are your analyst and ingest regions aligned with the Splunk Cloud regions you can choose?",
+      "What is your retention requirement, and how is SmartStore plus warm-tier costed today?"
+    ]
+  },
+  {
+    "id": "wiz",
+    "competitor": "Wiz",
+    "competitor_slug": "wiz",
+    "tagline": "Wiz owns CSPM and cloud config-vuln graph; Elastic is the SIEM beneath it",
+    "key_pain": "Wiz is genuinely best-in-class for cloud security posture management, agentless cloud workload scanning, and the graph-based correlation of misconfigurations, vulnerabilities, identities and exposed assets across AWS, Azure, GCP and Kubernetes. Elastic does not match Wiz at the cloud-config-and-vuln correlation layer and should not pretend to. The customer pain is that Wiz is a posture and findings platform, not a SIEM: it does not store endpoint logs, identity logs, network logs at SOC retention, and alerting on Wiz findings still needs a SIEM to drive incident workflow and long retention.",
+    "talking_points": [
+      {
+        "angle": "Complementary positioning",
+        "claim": "Wiz finds cloud posture risk; Elastic Security is the SIEM that ingests Wiz findings, correlates them with runtime signals, and runs the SOC workflow.",
+        "proof": "Wiz exposes findings via webhook, REST API and the Wiz Issues integration. Elastic ingests all three and runs detection rules that correlate Wiz issues with CloudTrail, GuardDuty, EDR and identity logs. The combined pattern (Wiz plus Elastic) is the dominant deployment for cloud-mature customers we see."
+      },
+      {
+        "angle": "Where Elastic genuinely wins",
+        "claim": "Long retention, SIEM-tier correlation across non-cloud data, and open detection engineering.",
+        "proof": "Wiz retains findings for the policy window; SOC investigation needs months of raw log retention which Wiz does not store. Elastic frozen tier keeps full logs queryable for 12+ months. Elastic detection rules cover identity, endpoint, network and cloud, not just cloud posture."
+      },
+      {
+        "angle": "Where Wiz genuinely wins",
+        "claim": "Agentless cloud scanning and graph-based blast-radius analysis are Wiz strengths.",
+        "proof": "Wiz Security Graph correlates misconfig plus vuln plus identity plus exposure in a way that is purpose-built and well-tuned. Elastic does not replace this layer; we integrate with it. Honest scoping wins more deals than feature parity claims."
+      }
+    ],
+    "elastic_advantages": [
+      "SIEM-tier log retention and correlation that Wiz does not provide",
+      "Native ingest of Wiz findings via webhook and REST API",
+      "Detection rules across identity, endpoint, network and cloud, not posture-only",
+      "Frozen tier on object storage for 12+ months of queryable retention",
+      "Same platform owns logs, metrics, APM and Security on one license"
+    ],
+    "common_objections": [
+      {
+        "q": "Wiz already gives us a security view; do we need a SIEM?",
+        "a": "Wiz gives you a posture view. A SIEM gives you the runtime view, the long-retention investigation surface, and the cross-domain correlation. Most customers buy both; the question is which SIEM, not whether to have one."
+      },
+      {
+        "q": "Wiz Defend is becoming a runtime detection platform too.",
+        "a": "Wiz Defend is real and growing; it focuses on cloud-runtime detection. It is not a general-purpose SIEM and does not own identity, endpoint or network telemetry at scale. The boundary is moving but the SIEM gap remains for now."
+      },
+      {
+        "q": "We are buying SIEM-tier; can Elastic do CSPM too?",
+        "a": "Honest answer: Elastic has cloud security posture features through the Cloud Security integration, but Wiz is deeper at the graph correlation layer. If the customer is buying SIEM-tier and accepts good-enough CSPM, Elastic alone can fit. If the customer wants best-in-class CSPM, Wiz plus Elastic is the right pattern."
+      },
+      {
+        "q": "Two vendors means two consoles for the SOC.",
+        "a": "Wiz issues land in Elastic Cases; analysts work the case in Elastic with full enrichment and retention. Wiz remains the source of truth for posture; Elastic is the workflow surface. Most SOCs prefer this split."
+      }
+    ],
+    "discovery_questions": [
+      "Where do Wiz findings go today: ticketing, SIEM, email?",
+      "What is your SOC log retention requirement, and is Wiz storing that data?",
+      "Are you buying SIEM-tier, posture-tier, or both?",
+      "How are runtime cloud detections handled today: Wiz Defend, GuardDuty, EDR, or SIEM rules?"
+    ]
   }
 ]

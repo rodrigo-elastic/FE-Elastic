@@ -129,6 +129,9 @@ EXPECTED_FEC_TOOLS: List[str] = [
     "fec_capacity",
     "fec_knowledge_search",
     "fec_troubleshoot",
+    "fec_compare",
+    "fec_orchestrator",
+    "fec_proposal",
 ]
 
 EXPECTED_MASTER_AGENT_ID = "fec_field_assistant"
@@ -488,7 +491,7 @@ def step_3_kibana_saved_objects(client: httpx.Client) -> StepResult:
         f"dashboards={detail.get('dashboard_total', 0)} "
         f"(demo {len(EXPECTED_DEMO_DASHBOARDS) - len(missing_dash)}/{len(EXPECTED_DEMO_DASHBOARDS)}, "
         f"customer-fit={detail['customer_fit_dashboards']}), "
-        f"fec-tools={detail['fec_tools_present']}/9, "
+        f"fec-tools={detail['fec_tools_present']}/12, "
         f"agent={'yes' if EXPECTED_MASTER_AGENT_ID in agent_ids else 'no'}, "
         f"mcp={detail['mcp_connectors']}, rule={detail['alerting_rules']}"
     )
@@ -503,7 +506,7 @@ def step_3_kibana_saved_objects(client: httpx.Client) -> StepResult:
 
 
 def step_4_mcp_server(client: httpx.Client) -> StepResult:
-    name = "MCP server (tools/list = 9, fec_cost_calc tool/call)"
+    name = "MCP server (tools/list = 12, fec_cost_calc tool/call)"
     t0 = time.monotonic()
     detail: Dict[str, Any] = {}
     mcp_url = f"{API_BASE}/mcp"
@@ -526,11 +529,11 @@ def step_4_mcp_server(client: httpx.Client) -> StepResult:
     tool_names = [t.get("name") for t in tools]
     detail["tool_count"] = len(tools)
     detail["tools"] = tool_names
-    if len(tools) != 9:
+    if len(tools) != 12:
         return StepResult(
             4, name, "FAIL",
             int((time.monotonic() - t0) * 1000),
-            f"expected 9 MCP tools, got {len(tools)}: {tool_names}",
+            f"expected 12 MCP tools, got {len(tools)}: {tool_names}",
             detail,
         )
     missing = [t for t in EXPECTED_FEC_TOOLS if t not in tool_names]
@@ -604,7 +607,7 @@ def step_4_mcp_server(client: httpx.Client) -> StepResult:
     return StepResult(
         4, name, "PASS",
         int((time.monotonic() - t0) * 1000),
-        f"tools/list=9, fec_cost_calc OK (elastic ${parsed['elastic']['total_annual_usd']:,.0f})",
+        f"tools/list=12, fec_cost_calc OK (elastic ${parsed['elastic']['total_annual_usd']:,.0f})",
         detail,
     )
 

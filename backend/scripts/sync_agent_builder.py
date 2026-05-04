@@ -1,6 +1,6 @@
 """
 filename: sync_agent_builder.py
-description: Idempotent sync of FE Copilot's MCP server, eleven tools, and master agent into Elastic Agent Builder. Creates a .mcp connector pointing at the FE Copilot MCP endpoint, registers eleven Agent Builder tools (nine specialist tools, the Sloane competitive comparison tool, plus the Auro orchestrator) referencing that connector, then creates the master agent that orchestrates them. Reads KIBANA_URL and KIBANA_API_KEY from settings; runs in dry-run mode (logs payloads only) when no key is configured. Override the public backend URL with BACKEND_BASE_URL (e.g., an ngrok forwarding URL) when Kibana is remote. Run with: PYTHONPATH=backend python -m scripts.sync_agent_builder.
+description: Idempotent sync of FE Copilot's MCP server, twelve tools, and master agent into Elastic Agent Builder. Creates a .mcp connector pointing at the FE Copilot MCP endpoint, registers twelve Agent Builder tools (nine specialist tools, the Sloane competitive comparison tool, the Auro orchestrator, and the Carmen one-page proposal generator) referencing that connector, then creates the master agent that orchestrates them. Reads KIBANA_URL and KIBANA_API_KEY from settings; runs in dry-run mode (logs payloads only) when no key is configured. Override the public backend URL with BACKEND_BASE_URL (e.g., an ngrok forwarding URL) when Kibana is remote. Run with: PYTHONPATH=backend python -m scripts.sync_agent_builder.
 date: 03-05-2026
 """
 __author__ = "Rodrigo Careaga"
@@ -102,8 +102,13 @@ MCP_TOOLS: List[Dict[str, str]] = [
         "name": "FE Copilot - Elastic vs competitor comparison (Sloane)",
         "description": "Structured technical and cost comparison between Elastic and a named competitor (Splunk, Datadog, Sumo Logic, AppDynamics, Chronicle, Cribl, Dynatrace, Exabeam, Grafana, Graylog, Honeycomb, Loki, Microsoft Sentinel, New Relic, QRadar). Returns a 6 to 10 axis technical table, an honest gaps list, a cost section grounded in the FE Copilot calculator, and 4 to 6 customer discovery questions. Persona: Sloane, Senior Competitive Architect (15y competitive intelligence at Elastic).",
     },
+    {
+        "id": "fec_proposal",
+        "name": "FE Copilot - One-page proposal generator (Carmen)",
+        "description": "Generate a one-page customer-facing proposal grounded in a meeting record (executive summary, 3 value pillars tied to named pain, in/out of scope, 2-4 phase timeline, investment block with the standard 60-hour free POV, risks with mitigations, and 3-5 next steps) and render it as a printable PDF the FE can attach to a Salesforce opportunity. Persona: Carmen, Senior Pursuit Lead at Elastic (15 years of competitive proposal writing).",
+    },
 ]
-# Master agent instructions below now reference the Auro orchestrator, Sloane, and the eleven-tool catalogue.
+# Master agent instructions below now reference the Auro orchestrator, Sloane, Carmen, and the twelve-tool catalogue.
 
 
 # ============================================================ Connectors =============
@@ -119,21 +124,40 @@ def find_mcp_connector(client: httpx.Client) -> Optional[Dict[str, Any]]:
     return None
 
 
-def upsert_mcp_connector(client: httpx.Client) -> Dict[str, Any]:
-    """Create the FE Copilot MCP connector if missing, otherwise update its serverUrl."""
-    existing = find_mcp_connector(client)
-    body = {"name": CONNECTOR_NAME, "config": {"serverUrl": MCP_ENDPOINT}, "secrets": {}}
-    if existing:
-        # PUT update keeps the same UUID
-        body_update = {"name": CONNECTOR_NAME, "config": {"serverUrl": MCP_ENDPOINT}, "secrets": {}}
-        resp = client.put(
-            _kbn_url(f"/api/actions/connector/{existing['id']}"),
+def _delete_connector(client: httpx.Client, connector_id: str) -> None:
+    """Delete a connector by id. Best-effort; logs but does not raise."""
+    try:
+        resp = client.delete(
+            _kbn_url(f"/api/actions/connector/{connector_id}"),
             headers=_kbn_headers(),
-            json=body_update,
         )
-        resp.raise_for_status()
-        return resp.json()
-    body_create = {**body, "connector_type_id": ".mcp"}
+        if resp.status_code not in (200, 204):
+            print(
+                f"warning: connector delete returned {resp.status_code}: {resp.text[:200]}",
+                file=sys.stderr,
+            )
+    except Exception as exc:
+        print(f"warning: connector delete failed: {exc}", file=sys.stderr)
+
+
+def upsert_mcp_connector(client: httpx.Client) -> Dict[str, Any]:
+    """Create the FE Copilot MCP connector if missing, otherwise refresh it.
+
+    Kibana caches the MCP tool list per connector instance and a same-config PUT
+    does not invalidate that cache. To pick up newly added MCP tools (e.g.,
+    fec_proposal as the twelfth tool), we delete the existing connector and
+    recreate it. The Agent Builder tool upsert step that follows immediately
+    re-binds every tool to the fresh connector_id, so this is self-healing.
+    """
+    existing = find_mcp_connector(client)
+    body_create: Dict[str, Any] = {
+        "name": CONNECTOR_NAME,
+        "config": {"serverUrl": MCP_ENDPOINT},
+        "secrets": {},
+        "connector_type_id": ".mcp",
+    }
+    if existing:
+        _delete_connector(client, existing["id"])
     resp = client.post(_kbn_url("/api/actions/connector"), headers=_kbn_headers(), json=body_create)
     resp.raise_for_status()
     return resp.json()
@@ -162,7 +186,7 @@ def upsert_mcp_tool(connector_id: str, tool: Dict[str, str]) -> Dict[str, Any]:
 
 MASTER_AGENT_INSTRUCTIONS = """You are FE Copilot, an Elastic Field Engineering Assistant. You help Elastic Field Engineers prep for customer meetings, recap conversations, and run technical analysis on demand.
 
-You have eleven specialized tools, each backed by a dedicated expert persona or pure-compute helper:
+You have twelve specialized tools, each backed by a dedicated expert persona or pure-compute helper:
 - fec_poc_plan: build a Proof-of-Value plan from a customer meeting record (Marta, Sr Solutions Architect).
 - fec_spl_to_esql: translate Splunk SPL to Elastic ES|QL (Diego, ex-Splunk consultant).
 - fec_compliance: map regulations to native Elastic controls (Priya, ex-PwC compliance auditor).
@@ -174,15 +198,16 @@ You have eleven specialized tools, each backed by a dedicated expert persona or 
 - fec_troubleshoot: diagnose an Elastic stack error or log snippet, propose 3 ES|QL diagnostic queries plus quick remediations (Ravi, ex-Elastic support engineer with 1000+ resolved tickets).
 - fec_compare: produce a structured technical and cost comparison between Elastic and a named competitor, grounded in the fec-battlecards index and the cost calculator (Sloane, Senior Competitive Architect with 15 years competitive intelligence at Elastic).
 - fec_orchestrator: Auro (senior FE conductor, 12y orchestrating multi-tool responses) plans, picks 2-3 of the other tools, runs them in parallel, and synthesizes a unified answer with follow-up suggestions.
+- fec_proposal: Carmen (Senior Pursuit Lead at Elastic, 15y of competitive proposal writing) generates a one-page customer-facing proposal grounded in a meeting record and renders it as a printable PDF (executive summary, 3 value pillars, scope with honest out-of-scope items, 2-4 phase timeline, investment with the standard 60-hour free POV, risks, next steps).
 
-Pick the right tool for each request. Use fec_compare when the user asks about Elastic vs a specific competitor for either technical or pricing comparison. Use fec_orchestrator when the user asks something that requires 2-3 tools chained, OR when you would otherwise call more than 2 tools yourself; let Auro plan it. Combine tools yourself only for simple two-tool combinations (e.g., compliance + cost calc for a security POV; knowledge search to ground a POC plan in current docs; troubleshoot then knowledge search to confirm a remediation). Use fec_knowledge_search whenever the user asks a product-specific question that the public Elastic docs would answer (sizing, ILM, ES|QL syntax, semantic_text setup, detection rules). Use fec_troubleshoot when the user pastes an error message, log snippet, or describes a stack issue that needs diagnosis. Always be honest about gaps, never invent customer-specific details. Never use the em dash character."""
+Pick the right tool for each request. Use fec_compare when the user asks about Elastic vs a specific competitor for either technical or pricing comparison. Use fec_proposal when the user asks for a proposal, customer-facing one-pager, or wants to attach a deliverable to a Salesforce opportunity. Use fec_orchestrator when the user asks something that requires 2-3 tools chained, OR when you would otherwise call more than 2 tools yourself; let Auro plan it. Combine tools yourself only for simple two-tool combinations (e.g., compliance + cost calc for a security POV; knowledge search to ground a POC plan in current docs; troubleshoot then knowledge search to confirm a remediation). Use fec_knowledge_search whenever the user asks a product-specific question that the public Elastic docs would answer (sizing, ILM, ES|QL syntax, semantic_text setup, detection rules). Use fec_troubleshoot when the user pastes an error message, log snippet, or describes a stack issue that needs diagnosis. Always be honest about gaps, never invent customer-specific details. Never use the em dash character."""
 
 
 def build_agent_payload() -> Dict[str, Any]:
     return {
         "id": "fec_field_assistant",
         "name": "FE Copilot - Field Assistant",
-        "description": "Elastic Field Engineering Assistant. Wraps the eleven FE Copilot tools (POC plan, SPL to ES|QL, compliance mapping, stack extract, code sample, cost calc, capacity planner, docs knowledge search, troubleshooter, Sloane competitive comparison, Auro orchestrator).",
+        "description": "Elastic Field Engineering Assistant. Wraps the twelve FE Copilot tools (POC plan, SPL to ES|QL, compliance mapping, stack extract, code sample, cost calc, capacity planner, docs knowledge search, troubleshooter, Sloane competitive comparison, Auro orchestrator, Carmen one-page proposal generator).",
         "configuration": {
             "instructions": MASTER_AGENT_INSTRUCTIONS,
             "tools": [{"tool_ids": [t["id"] for t in MCP_TOOLS]}],
