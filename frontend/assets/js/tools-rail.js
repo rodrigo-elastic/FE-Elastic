@@ -48,6 +48,13 @@
       icon:
         '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="13" height="15" rx="2"/><path d="M8 5V3h6v2"/><path d="M16 8h4a1 1 0 0 1 1 1v10a2 2 0 0 1-2 2h-3"/><path d="M7 10h5"/><path d="M7 14h5"/></svg>',
     },
+    {
+      id: "audit",
+      label: "Audit",
+      href: "/audit.html",
+      icon:
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/><circle cx="19" cy="6" r="1.4"/></svg>',
+    },
   ];
 
   const TOOLS = [
@@ -81,6 +88,9 @@
   }
   function isBattlecardsPage() {
     return /\/battlecards(\.html)?$/.test(location.pathname) || document.body.classList.contains("battlecards-page");
+  }
+  function isAuditPage() {
+    return /\/audit(\.html)?$/.test(location.pathname) || document.body.classList.contains("audit-page");
   }
 
   function ensureBodyClass() {
@@ -119,6 +129,7 @@
     if (p.id === "workflow" && isWorkflowPage()) { a.classList.add("active"); isActive = true; }
     if (p.id === "demo-data" && isDemoDataPage()) { a.classList.add("active"); isActive = true; }
     if (p.id === "battlecards" && isBattlecardsPage()) { a.classList.add("active"); isActive = true; }
+    if (p.id === "audit" && isAuditPage()) { a.classList.add("active"); isActive = true; }
     if (isActive) a.setAttribute("aria-current", "page");
     const ico = document.createElement("span");
     ico.className = "tools-nav-icon";

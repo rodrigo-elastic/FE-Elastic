@@ -1,0 +1,170 @@
+<!--
+  filename: audit.html
+  description: FE Copilot self-observability page. Mirrors the Kibana audit dashboard inside the webapp: KPIs, calls-over-time, tokens-by-model, top tools, per-agent rollup, and a recent fires list. Reads from /api/v1/audit and aggregates client-side.
+  Author: Rodrigo Careaga
+  Date: 03-05-2026
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FE Copilot - Self Observability</title>
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+  <link rel="stylesheet" href="/assets/css/agent-builder.css" />
+  <link rel="stylesheet" href="/assets/css/audit.css" />
+  <link rel="icon" type="image/svg+xml" href="/assets/img/elastic/glyph-cluster-color.svg" />
+</head>
+<body class="audit-page">
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="FE Copilot home">
+      <img class="logo-elastic" src="/assets/img/elastic/logo-horizontal-white.svg" alt="Elastic" />
+      <span class="brand-sep">/</span>
+      <span class="name">FE <span class="accent">Copilot</span></span>
+      <span class="tag">Audit</span>
+    </a>
+    <div class="right">
+      <div class="lang-host" id="lang-host"></div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <h1>FE Copilot <span class="grad">self-observability.</span></h1>
+      <p class="lede">
+        Every Claude call FE Copilot makes is appended to <code>fec-audit</code>. This page is the
+        same dashboard you would build in Kibana, rendered inline so you never lose your place.
+        Elastic monitors Elastic.
+      </p>
+      <div class="audit-pill-row" id="audit-pill-row" aria-live="polite">
+        <span class="ab-pill ab-pill-muted" id="audit-pill-status">
+          <span class="audit-dot" aria-hidden="true"></span>
+          <span>Connecting...</span>
+        </span>
+        <span class="ab-pill ab-pill-muted" id="audit-pill-calls">- calls last 7d</span>
+        <span class="ab-pill ab-pill-muted" id="audit-pill-tokens">- tokens last 7d</span>
+        <span class="ab-pill ab-pill-muted" id="audit-pill-mock">- % mock</span>
+        <a class="ab-pill ab-pill-link"
+           id="audit-pill-kibana"
+           href="/app/dashboards#/view/fec-audit-self-observability"
+           target="_blank"
+           rel="noopener noreferrer"
+           aria-label="Open the equivalent dashboard in Kibana">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 4h6v6"/><path d="M20 4 10 14"/><path d="M20 14v6H4V4h6"/></svg>
+          Open in Kibana
+        </a>
+      </div>
+    </section>
+
+    <section class="audit-kpis" aria-label="Key performance indicators">
+      <article class="audit-kpi" aria-labelledby="kpi-calls-lbl">
+        <div class="audit-kpi-lbl" id="kpi-calls-lbl">Total calls (7d)</div>
+        <div class="audit-kpi-val" id="kpi-calls"><span class="skel skel-num"></span></div>
+        <div class="audit-kpi-sub" id="kpi-calls-sub">across all agents</div>
+      </article>
+      <article class="audit-kpi" aria-labelledby="kpi-tokens-lbl">
+        <div class="audit-kpi-lbl" id="kpi-tokens-lbl">Total tokens (7d)</div>
+        <div class="audit-kpi-val" id="kpi-tokens"><span class="skel skel-num"></span></div>
+        <div class="audit-kpi-sub" id="kpi-tokens-sub">input + output</div>
+      </article>
+      <article class="audit-kpi" aria-labelledby="kpi-mock-lbl">
+        <div class="audit-kpi-lbl" id="kpi-mock-lbl">Mock-mode share</div>
+        <div class="audit-kpi-val" id="kpi-mock"><span class="skel skel-num"></span></div>
+        <div class="audit-kpi-sub" id="kpi-mock-sub">live vs. cached fixtures</div>
+      </article>
+    </section>
+
+    <section class="audit-charts" aria-label="Charts">
+      <article class="audit-card" aria-labelledby="chart-calls-lbl">
+        <header class="audit-card-head">
+          <h2 id="chart-calls-lbl">Calls over time</h2>
+          <span class="audit-card-meta" id="chart-calls-meta">last 7d, hourly buckets</span>
+        </header>
+        <div class="audit-chart-wrap">
+          <svg id="chart-calls" class="audit-svg" role="img"
+               aria-label="Line chart of Claude calls over the last 7 days, hourly buckets"
+               viewBox="0 0 720 220" preserveAspectRatio="none">
+            <title>Calls over time</title>
+            <desc id="chart-calls-desc">Line chart, last 7 days, hourly buckets.</desc>
+          </svg>
+          <p class="audit-chart-alt visually-hidden" id="chart-calls-alt"></p>
+        </div>
+      </article>
+
+      <article class="audit-card" aria-labelledby="chart-models-lbl">
+        <header class="audit-card-head">
+          <h2 id="chart-models-lbl">Tokens by model</h2>
+          <span class="audit-card-meta">stacked input + output</span>
+        </header>
+        <div class="audit-chart-wrap">
+          <svg id="chart-models" class="audit-svg" role="img"
+               aria-label="Stacked bar chart of token usage by model (Haiku, Sonnet, Opus)"
+               viewBox="0 0 720 220" preserveAspectRatio="none">
+            <title>Tokens by model</title>
+            <desc id="chart-models-desc">Stacked bar of input and output tokens per model.</desc>
+          </svg>
+          <p class="audit-chart-alt visually-hidden" id="chart-models-alt"></p>
+        </div>
+        <div class="audit-legend" id="legend-models" aria-hidden="true"></div>
+      </article>
+
+      <article class="audit-card audit-card-wide" aria-labelledby="chart-top-lbl">
+        <header class="audit-card-head">
+          <h2 id="chart-top-lbl">Top 10 agents and tools</h2>
+          <span class="audit-card-meta">by call count</span>
+        </header>
+        <div class="audit-chart-wrap">
+          <svg id="chart-top" class="audit-svg" role="img"
+               aria-label="Horizontal bar chart of the top 10 agents and tools by call count"
+               viewBox="0 0 720 320" preserveAspectRatio="none">
+            <title>Top 10 agents and tools</title>
+            <desc id="chart-top-desc">Horizontal bars, top 10 agents and tools.</desc>
+          </svg>
+          <p class="audit-chart-alt visually-hidden" id="chart-top-alt"></p>
+        </div>
+      </article>
+    </section>
+
+    <section class="audit-card" aria-labelledby="rollup-lbl">
+      <header class="audit-card-head">
+        <h2 id="rollup-lbl">Per-agent rollup</h2>
+        <span class="audit-card-meta">calls, avg tokens, total tokens, last seen</span>
+      </header>
+      <div class="audit-table-scroll">
+        <table class="audit-table" id="audit-rollup">
+          <thead>
+            <tr>
+              <th scope="col">Agent</th>
+              <th scope="col" class="num">Calls</th>
+              <th scope="col" class="num">Avg tokens</th>
+              <th scope="col" class="num">Total tokens</th>
+              <th scope="col">Last seen</th>
+            </tr>
+          </thead>
+          <tbody id="audit-rollup-body">
+            <tr><td colspan="5" class="audit-empty">Loading rollup...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="audit-card" aria-labelledby="recent-lbl">
+      <header class="audit-card-head">
+        <h2 id="recent-lbl">Recent fires</h2>
+        <span class="audit-card-meta">last 10 events</span>
+      </header>
+      <ol class="audit-recent" id="audit-recent" aria-live="polite">
+        <li class="audit-recent-empty">Loading events...</li>
+      </ol>
+    </section>
+
+    <section id="toast-host"></section>
+  </main>
+
+  <script src="/assets/js/i18n.js"></script>
+  <script src="/assets/js/api.js"></script>
+  <script src="/assets/js/ui.js"></script>
+  <script src="/assets/js/tools-rail.js"></script>
+  <script src="/assets/js/audit.js"></script>
+</body>
+</html>

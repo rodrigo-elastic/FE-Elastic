@@ -1,5 +1,691 @@
 [
   {
+    "id": "battlecard-appdynamics",
+    "competitor": "AppDynamics",
+    "competitor_slug": "appdynamics",
+    "tagline": "Open telemetry plus logs and security on one data store, not three Cisco SKUs",
+    "key_pain": "AppDynamics is APM-only; customers still need Splunk or another tool for logs and SIEM. Cisco's portfolio (AppD, ThousandEyes, Splunk) is being stitched together but is not a single data plane today.",
+    "talking_points": [
+      {
+        "angle": "Single data plane",
+        "claim": "APM, logs, infra metrics, RUM and synthetics in one cluster, one query language.",
+        "proof": "Elastic APM ships service maps, distributed traces, RUM and synthetics natively. AppD requires bolt-ons (AppD plus Splunk plus ThousandEyes) for the equivalent footprint."
+      },
+      {
+        "angle": "OpenTelemetry first",
+        "claim": "Native OTLP ingest plus the Elastic Distribution of OpenTelemetry Collector (EDOT).",
+        "proof": "AppD agents are proprietary; OTel support is partial and lags upstream. Customers re-instrumenting will not have to redo the work to leave Elastic."
+      },
+      {
+        "angle": "Agent footprint",
+        "claim": "One Elastic Agent ships logs, metrics, traces, security telemetry and endpoint signals.",
+        "proof": "AppD's Java/.NET/Node agents are application-only; you still need a separate log shipper and a separate SIEM agent."
+      }
+    ],
+    "elastic_advantages": [
+      "OTel-native APM with no agent rewrite when tooling changes",
+      "Logs, metrics, APM, RUM, synthetics and Security in one license",
+      "Frozen tier on object storage for long traces and log retention",
+      "Self-hosted, Elastic Cloud, or hyperscaler marketplace deployment",
+      "Open ECS schema; no proprietary trace format lock-in"
+    ],
+    "common_objections": [
+      {
+        "q": "AppDynamics Business iQ ties APM to revenue better than anything else.",
+        "a": "Business transactions can be modelled with Elastic APM custom labels plus Lens dashboards. Most customers we have migrated rebuild the 5 to 10 transactions that actually matter; the long tail of BiQ widgets goes unused."
+      },
+      {
+        "q": "We are a Cisco shop; Splunk and AppD are now under one roof.",
+        "a": "They are under one roof on the org chart, not in the data plane. AppD and Splunk still bill separately, store data separately and require separate tooling. Elastic gives you one cluster today."
+      },
+      {
+        "q": "AppD's auto-baselining and AI engine is more mature.",
+        "a": "Elastic ML jobs run unsupervised anomaly detection on any field, not just APM signals. Same engine works for log anomalies and security UEBA, which AppD does not cover."
+      },
+      {
+        "q": "Migration risk on a tier-1 production application.",
+        "a": "Run AppD and Elastic APM agents in parallel on a single service; compare service maps and latency histograms; cut over by service, not by app."
+      }
+    ],
+    "discovery_questions": [
+      "Where do your APM signals end and your logs/SIEM signals begin today, and how often do you need to pivot between them?",
+      "Are you on the Cisco bundle path or paying separately for AppD, ThousandEyes and Splunk?",
+      "How much of your APM agent footprint is OpenTelemetry today versus AppD proprietary?",
+      "What does your AppD renewal look like in the next 12 months?"
+    ]
+  },
+  {
+    "id": "battlecard-chronicle",
+    "competitor": "Chronicle",
+    "competitor_slug": "chronicle",
+    "tagline": "Detection engineering depth and deployment flexibility Chronicle cannot match",
+    "key_pain": "Chronicle (now Google Security Operations) is GCP-only at the data layer, has a closed UDM schema, and YARA-L is a steeper learning curve than customers expect. Hard to use outside Google Cloud.",
+    "talking_points": [
+      {
+        "angle": "Deployment flexibility",
+        "claim": "Self-hosted, Elastic Cloud on AWS/GCP/Azure, or air-gapped on-prem.",
+        "proof": "Chronicle data lives in Google's tenant on GCP only. Regulated and multi-cloud customers (defence, healthcare, EU sovereignty) often disqualify it on residency alone."
+      },
+      {
+        "angle": "Detection engineering",
+        "claim": "Detection rules in KQL, EQL, ES|QL or Lucene; full Git-backed CI workflow via the detection engine API.",
+        "proof": "Chronicle's YARA-L 2.0 is powerful but proprietary; rule portability outside Chronicle is limited. Elastic detection rules are open-sourced in elastic/detection-rules on GitHub."
+      },
+      {
+        "angle": "Open data schema",
+        "claim": "ECS is open and used by Beats, Agent and the wider OTel community.",
+        "proof": "Chronicle's UDM is proprietary and normalising third-party feeds requires Google parsers. ECS field mappings are public and editable."
+      }
+    ],
+    "elastic_advantages": [
+      "Multi-cloud and on-prem deployment, not GCP-only",
+      "Open detection rule format with public Git repo",
+      "MITRE ATT&CK coverage with prebuilt detections plus a hunting workspace",
+      "Logs, observability and security on the same cluster",
+      "ELSER and inference API for semantic search on alerts and cases"
+    ],
+    "common_objections": [
+      {
+        "q": "Chronicle's flat-rate ingest pricing is unbeatable for high-volume telemetry.",
+        "a": "True at the headline. The hidden costs are GCP egress when you query, parser engineering for non-Google sources, and the cost of being locked to GCP. Frozen tier on object storage closes most of the price gap on long retention."
+      },
+      {
+        "q": "We already standardise on Google Cloud; Chronicle is the path of least resistance.",
+        "a": "Elastic Cloud runs on GCP with marketplace billing and PrivateLink equivalents. You keep the GCP relationship and gain multi-cloud optionality if the strategy ever changes."
+      },
+      {
+        "q": "Chronicle's threat intel from VirusTotal is a real differentiator.",
+        "a": "Elastic's Threat Intel framework ingests VirusTotal, MISP, AlienVault OTX and any STIX/TAXII feed; enrichment runs at ingest or query time. Same intel, broader sourcing."
+      },
+      {
+        "q": "The 12-month hot retention is a hard requirement we get for free in Chronicle.",
+        "a": "Elastic frozen tier on object storage gives 12+ months of searchable retention at object-storage prices. We can build the cost comparison side-by-side in the POV."
+      }
+    ],
+    "discovery_questions": [
+      "Are any of your data sources outside GCP, and what does egress look like when SOC analysts query them?",
+      "How many of your detections are written in YARA-L versus inherited from Google curated rules?",
+      "Do you have any data residency or air-gap requirements that GCP-only deployment complicates?",
+      "How is Chronicle handling your non-security telemetry (observability, app logs)?"
+    ]
+  },
+  {
+    "id": "battlecard-cribl",
+    "competitor": "Cribl",
+    "competitor_slug": "cribl",
+    "tagline": "Cribl is a pipeline, not a destination. Elastic is the destination Cribl routes to.",
+    "key_pain": "Cribl markets itself as 'reduce your SIEM bill 40 to 60 percent' by trimming low-value logs before they hit Splunk. The pitch only works because the destination is expensive. With Elastic, the storage economics make the pipeline savings less compelling, and Cribl adds another vendor and rule surface to maintain.",
+    "talking_points": [
+      {
+        "angle": "Reframe the problem",
+        "claim": "Cribl reduces ingest only because Splunk's ingest is expensive. Elastic's frozen tier removes the underlying cost driver, not the symptom.",
+        "proof": "If a customer is paying Cribl plus Splunk, they are paying twice to fix one pricing model. Elastic warm/cold/frozen tiers achieve similar TCO without an inline pipeline."
+      },
+      {
+        "angle": "Elastic Agent + Logstash + ingest pipelines",
+        "claim": "Routing, parsing, sampling and enrichment ship in the box.",
+        "proof": "Logstash filters, ingest node pipelines and Elastic Agent integrations cover route-to-multiple, drop, redact and sample. No separate Cribl Stream license required."
+      },
+      {
+        "angle": "Co-existence stance",
+        "claim": "If the customer already runs Cribl, Elastic is happy to be a destination.",
+        "proof": "Cribl Stream has a native Elasticsearch destination; we recommend it for customers in mid-migration. The Cribl-versus-Elastic framing is not adversarial; we win the destination."
+      }
+    ],
+    "elastic_advantages": [
+      "Frozen tier removes the cost driver Cribl was sold to fix",
+      "Ingest pipelines, Logstash and Elastic Agent processors cover most Cribl Stream use cases",
+      "Single vendor for collection, routing, storage and analytics",
+      "OTel Collector is the industry-direction pipeline; Elastic ships EDOT",
+      "Cribl Stream still works as a front-end if the customer prefers"
+    ],
+    "common_objections": [
+      {
+        "q": "Cribl's routing UI is friendlier than YAML pipelines.",
+        "a": "Elastic Agent integrations are point-and-click in Fleet UI; Logstash pipelines are YAML but managed centrally. Most customers do not author new routing logic weekly; the UI gap is overstated."
+      },
+      {
+        "q": "We already saved 40 percent on Splunk with Cribl. Why change?",
+        "a": "You can stack the savings: keep Cribl in front, migrate the destination to Elastic, and the frozen-tier economics compound. Or remove Cribl and go direct; both paths have a TCO model."
+      },
+      {
+        "q": "Cribl Edge gives us OS-level collection without an agent footprint debate.",
+        "a": "Elastic Agent ships from a single binary across logs, metrics and security; footprint is well-documented. Cribl Edge is an alternative collector but not a meaningful differentiator on resource use."
+      }
+    ],
+    "discovery_questions": [
+      "What is Cribl saving you against, in dollars, today?",
+      "If the destination cost dropped 60 percent, would the Cribl bill still be worth it?",
+      "Are you running Cribl Stream, Edge, or both, and who maintains the routing rules?",
+      "What is Cribl's renewal date and ARR?"
+    ]
+  },
+  {
+    "id": "battlecard-datadog",
+    "competitor": "Datadog",
+    "competitor_slug": "datadog",
+    "tagline": "Predictable storage economics plus open data for the AWS-heavy customer",
+    "key_pain": "Per-host pricing plus index-rate ingest cost surprises. Vendor lock-in on the agent stack.",
+    "talking_points": [
+      {
+        "angle": "Predictable cost",
+        "claim": "Pay for ingest plus storage tiers, not per-host. Frozen tier removes the index-rate trap.",
+        "proof": "Detailed cost calculator inline in our brief. Common 60 to 70 percent reduction at 18+ month retention."
+      },
+      {
+        "angle": "Native AWS integration",
+        "claim": "First-party AWS marketplace billing, AWS PrivateLink ingest, IoT Core integration.",
+        "proof": "Same data plane handles factory edge telemetry plus cloud-native; Datadog requires separate IoT/Splunk-edge integration."
+      },
+      {
+        "angle": "Cross-stack correlation",
+        "claim": "Logs, metrics, traces, and synthetics in one query language (ES|QL) and one data store.",
+        "proof": "Removes the Datadog notebook plus dashboard split that the customer is fighting today."
+      }
+    ],
+    "elastic_advantages": [
+      "Storage cost predictability via warm/cold/frozen tiers",
+      "Open agent (Elastic Agent) avoids dd-agent vendor lock",
+      "OpenTelemetry-first; OTel Collector is GA",
+      "Native AWS Marketplace plus PrivateLink",
+      "Full-text search on logs (Datadog charges separately)"
+    ],
+    "common_objections": [
+      {
+        "q": "Datadog APM is more refined for application teams.",
+        "a": "Elastic APM ships service maps, distributed traces, RUM, and synthetics. OTel-first means no agent rewrite when tooling changes."
+      },
+      {
+        "q": "Datadog dashboards are easier to build.",
+        "a": "Kibana Lens is drag-and-drop; pre-built dashboards ship for common stacks (AWS, Kubernetes, Postgres). Vega for power users."
+      },
+      {
+        "q": "Switching agents is too risky.",
+        "a": "Run dd-agent and Elastic Agent side-by-side during the POV. Cut over per service, not big-bang."
+      }
+    ],
+    "discovery_questions": [
+      "What is your Datadog renewal date and current ARR with them?",
+      "Where does the ingest cost spike most: logs, traces, or custom metrics?",
+      "Have you hit the 'we cannot afford to keep more history' moment yet?"
+    ]
+  },
+  {
+    "id": "battlecard-dynatrace",
+    "competitor": "Dynatrace",
+    "competitor_slug": "dynatrace",
+    "tagline": "Open ecosystem and per-GB economics versus Dynatrace's DDU model",
+    "key_pain": "Davis AI is genuinely strong on root-cause for traces, but DDU (Davis Data Unit) and DPS (Dynatrace Platform Subscription) pricing is opaque, and OneAgent is a heavyweight closed-source binary on every host.",
+    "talking_points": [
+      {
+        "angle": "Pricing transparency",
+        "claim": "Per-GB ingest plus storage tiering. No DDU/DPS unit translation.",
+        "proof": "Dynatrace customers consistently report DDU usage spikes after a major release; Elastic ingest cost is a flat $/GB and tiered storage is documented."
+      },
+      {
+        "angle": "OpenTelemetry strategy",
+        "claim": "Elastic publishes EDOT (Elastic Distribution of OTel Collector) as a first-class agent.",
+        "proof": "Dynatrace OneAgent is closed-source. Their OTel ingest is supported but secondary; Davis only fully reasons over OneAgent data."
+      },
+      {
+        "angle": "Logs at scale",
+        "claim": "Lucene-backed log search on the same cluster as APM and metrics.",
+        "proof": "Dynatrace logs (Grail) is a separate data layer; query language (DQL) is Dynatrace-specific. Elastic uses ES|QL across all signals."
+      }
+    ],
+    "elastic_advantages": [
+      "OTel-native; no proprietary agent lock-in",
+      "Logs, metrics, traces, RUM and synthetics on one cluster",
+      "Frozen tier for trace and log retention at object-storage prices",
+      "Self-hosted, Elastic Cloud, or hyperscaler marketplace",
+      "ML anomaly detection and ELSER included, not a separate SKU"
+    ],
+    "common_objections": [
+      {
+        "q": "Davis AI's root-cause analysis is genuinely the best in APM.",
+        "a": "Davis is strong on traces; we will not pretend otherwise. Elastic ML covers anomaly detection across logs, metrics, traces and security signals; the wider scope wins for SecOps and platform teams. For pure APM RCA, scope the POV to that workflow specifically."
+      },
+      {
+        "q": "OneAgent is install-once and discovers everything; Elastic Agent feels more manual.",
+        "a": "Elastic Agent has auto-discovery via Fleet integrations for Kubernetes, AWS services and 200+ sources. The gap exists but is narrow on common stacks."
+      },
+      {
+        "q": "Dynatrace SaaS-only is fine, we are cloud-first.",
+        "a": "Elastic Cloud is fully managed too. The difference matters when a regulated workload, a new region, or an air-gap requirement appears later. Dynatrace Managed exists but is a separate product line."
+      },
+      {
+        "q": "We have invested heavily in OneAgent rollout.",
+        "a": "Run EDOT/Elastic Agent on a subset of services first; OneAgent and OTel can co-exist on the same host. Migrate when the value is proven, not before."
+      }
+    ],
+    "discovery_questions": [
+      "Where is your DDU consumption growing fastest, and is it predictable month over month?",
+      "How much of your instrumentation is OpenTelemetry today?",
+      "Are you using Dynatrace logs (Grail) or shipping logs elsewhere?",
+      "What is your Dynatrace renewal date and the current DPS commit?"
+    ]
+  },
+  {
+    "id": "battlecard-exabeam",
+    "competitor": "Exabeam",
+    "competitor_slug": "exabeam",
+    "tagline": "UEBA without forcing a separate SIEM, plus open detection engineering",
+    "key_pain": "Exabeam's UEBA is strong but the New-Scale platform consolidation has been rocky; many customers run Exabeam Fusion on top of another log source and pay twice. Smart Timelines are useful but proprietary.",
+    "talking_points": [
+      {
+        "angle": "Single platform",
+        "claim": "Detection, investigation, response, UEBA and threat hunting on one cluster.",
+        "proof": "Elastic Security ships entity analytics (UEBA equivalent) plus the Timeline workspace, MITRE coverage and prebuilt detections. No separate UEBA SKU."
+      },
+      {
+        "angle": "Detection portability",
+        "claim": "All detections are open-format; rules live in elastic/detection-rules on GitHub with full CI.",
+        "proof": "Exabeam detection content is proprietary; rule export is limited. Customers building a detection engineering practice keep ownership of their IP with Elastic."
+      },
+      {
+        "angle": "Storage economics",
+        "claim": "Frozen tier on object storage at compliance-grade retention.",
+        "proof": "Exabeam Data Lake pricing scales with ingest; long retention is a recurring sore point. Elastic decouples ingest from storage cost via tiers."
+      }
+    ],
+    "elastic_advantages": [
+      "Built-in entity analytics; no separate UEBA license",
+      "Open detection rule format on GitHub",
+      "MITRE ATT&CK navigator built into Kibana",
+      "Same platform serves observability use cases",
+      "Self-hosted, cloud, or air-gapped deployment"
+    ],
+    "common_objections": [
+      {
+        "q": "Exabeam's Smart Timelines are unmatched for analyst experience.",
+        "a": "Elastic Timeline workspace gives analysts a similar pivoting experience with entity, host and process context. Worth scoping a side-by-side investigation in the POV; the gap is narrower than the marketing suggests."
+      },
+      {
+        "q": "We have hundreds of Exabeam-tuned UEBA models.",
+        "a": "Elastic ML jobs cover the common UEBA patterns (rare process, unusual login geo, peer-group deviation) and are tunable per data view. Most customers consolidate to 20 to 30 high-signal models when migrating."
+      },
+      {
+        "q": "Exabeam Fusion ingests our data already; switching disrupts SOC operations.",
+        "a": "Run dual-ingest during the POV; analysts work in both consoles for a month. Most decide based on case throughput, not theoretical features."
+      }
+    ],
+    "discovery_questions": [
+      "Are you on classic Exabeam, Fusion, or the New-Scale platform, and how is the migration going?",
+      "How many of your detections are vendor-supplied versus authored by your team?",
+      "What is the ratio of UEBA license cost to total Exabeam ARR?",
+      "How is long-term retention handled today?"
+    ]
+  },
+  {
+    "id": "battlecard-grafana",
+    "competitor": "Grafana",
+    "competitor_slug": "grafana",
+    "tagline": "Co-exist on dashboards; win on the data layer",
+    "key_pain": "Grafana the dashboard is loved by ops teams. Grafana the stack (Mimir, Loki, Tempo, Pyroscope) means three to four separate datastores to operate, and Grafana Cloud's pricing is metric-cardinality and active-series sensitive.",
+    "talking_points": [
+      {
+        "angle": "One datastore versus four",
+        "claim": "Mimir for metrics, Loki for logs, Tempo for traces, Pyroscope for profiling. Elastic does all four in one cluster.",
+        "proof": "Operating LGTM stack at scale requires four separate operational practices; Elastic consolidates to one cluster, one query language, one alerting layer."
+      },
+      {
+        "angle": "Grafana co-exists",
+        "claim": "Grafana is a great visualisation tool against Elasticsearch.",
+        "proof": "Elasticsearch is a first-class Grafana datasource. Customers who want Grafana dashboards keep them; Elastic wins the storage and query layer."
+      },
+      {
+        "angle": "Logs at production scale",
+        "claim": "Loki's index-light design degrades on free-text search at scale.",
+        "proof": "Loki is optimised for label-based queries; ad-hoc investigations across TB/day datasets are slow. Lucene + ES|QL keep low-latency at production volumes."
+      }
+    ],
+    "elastic_advantages": [
+      "Logs, metrics, traces and profiling on one cluster",
+      "Full-text search on logs without label engineering",
+      "MITRE ATT&CK Security workspace (Grafana stack has no SIEM)",
+      "Grafana datasource plugin keeps existing dashboards",
+      "Frozen tier for retention without sharding pain"
+    ],
+    "common_objections": [
+      {
+        "q": "Grafana is open source; Elastic changed its license.",
+        "a": "Elastic moved core back to AGPLv3 in 2024 alongside ELv2; the OSS conversation has shifted. Both are usable in the OSI sense for the workloads our customers run. Worth grounding the conversation in the specific use case rather than the philosophical one."
+      },
+      {
+        "q": "Loki's label model is cheap to operate.",
+        "a": "Cheap on storage, expensive on query when you need free-text or grep-equivalent search. Elastic's frozen tier matches Loki's storage model while keeping query depth."
+      },
+      {
+        "q": "Mimir scales horizontally better than Elasticsearch for metrics.",
+        "a": "Elasticsearch metric ingest scales linearly with shards; downsampling and rollups close the gap on long retention. Mimir is genuinely strong for cardinality-heavy Prometheus, but most customers do not hit the crossover."
+      },
+      {
+        "q": "We already have Grafana Cloud and a small platform team.",
+        "a": "Elastic Cloud is the parallel; same managed-service profile. The platform-team argument supports consolidation, not divergence."
+      }
+    ],
+    "discovery_questions": [
+      "How many distinct Grafana data sources do you operate today, and who owns each?",
+      "Have you hit Loki's free-text search wall yet?",
+      "What is your active-series count on Mimir/Grafana Cloud?",
+      "Where does security telemetry live in the LGTM stack?"
+    ]
+  },
+  {
+    "id": "battlecard-graylog",
+    "competitor": "Graylog",
+    "competitor_slug": "graylog",
+    "tagline": "Same Lucene foundation, deeper analytics, real Security and ML",
+    "key_pain": "Graylog runs on Elasticsearch or OpenSearch under the hood. Customers get a friendlier UI but inherit storage costs without warm/cold/frozen tiering, and Graylog's ML and SIEM features lag well behind Elastic Security.",
+    "talking_points": [
+      {
+        "angle": "Same engine, more capability",
+        "claim": "Graylog is a UI on top of Elasticsearch/OpenSearch.",
+        "proof": "Going to Elastic directly removes a layer, unlocks frozen tier, native ML, ELSER and Elastic Security; Graylog Operations and Security plus Illuminate add cost without matching depth."
+      },
+      {
+        "angle": "Frozen tier",
+        "claim": "Object-storage retention without re-indexing.",
+        "proof": "Graylog requires manual archive/restore for old data; searchable snapshots in Elastic are queryable in place."
+      },
+      {
+        "angle": "Detection content",
+        "claim": "Public detection rules repo with hundreds of MITRE-mapped detections.",
+        "proof": "Graylog Illuminate content packs are smaller and updated less frequently. Detection engineering is an active discipline at Elastic."
+      }
+    ],
+    "elastic_advantages": [
+      "Frozen tier on object storage",
+      "Native ML anomaly detection (no separate license)",
+      "Elastic Security with MITRE coverage",
+      "ELSER and inference API for semantic search",
+      "Open detection rules on GitHub"
+    ],
+    "common_objections": [
+      {
+        "q": "Graylog is significantly cheaper.",
+        "a": "Headline-cheaper, especially in open core. Once Operations, Security and Illuminate licenses are added and you still need archive tooling, the gap narrows. Build the comparison at the customer's actual retention and feature footprint."
+      },
+      {
+        "q": "Graylog's UI is simpler for our junior analysts.",
+        "a": "Kibana Discover and Lens are point-and-click. Where Graylog wins on simplicity it loses on depth (ML, Security workflows, ES|QL). Worth a hands-on with both."
+      },
+      {
+        "q": "We already run Graylog on OpenSearch; switching is migration risk.",
+        "a": "OpenSearch and Elasticsearch share heritage but have diverged. A reindex from OpenSearch to Elasticsearch is documented; the bigger lift is rebuilding Graylog content packs as Elastic detections."
+      }
+    ],
+    "discovery_questions": [
+      "Is your Graylog backed by Elasticsearch, OpenSearch, or MongoDB-only metadata?",
+      "How are you handling retention beyond 90 days today?",
+      "Which Graylog Enterprise modules (Operations, Security, Illuminate) are you paying for?",
+      "How much custom detection content has your team authored?"
+    ]
+  },
+  {
+    "id": "battlecard-honeycomb",
+    "competitor": "Honeycomb",
+    "competitor_slug": "honeycomb",
+    "tagline": "Wide-event observability with logs, metrics and security on the same cluster",
+    "key_pain": "Honeycomb's event model and BubbleUp are excellent for high-cardinality debugging, but the platform is traces and events only. No logs, no metrics-as-first-class, no security. Customers buy Honeycomb plus another tool.",
+    "talking_points": [
+      {
+        "angle": "Scope of platform",
+        "claim": "Honeycomb is APM-adjacent; Elastic covers logs, metrics, APM, RUM and Security.",
+        "proof": "Customers running Honeycomb almost always pair it with a separate log tool (Datadog, Splunk, or Elastic). Consolidating reduces the bill and the context-switch cost."
+      },
+      {
+        "angle": "OpenTelemetry parity",
+        "claim": "Both Honeycomb and Elastic are OTel-native; no instrumentation rewrite required.",
+        "proof": "Customers can ship OTel data to Elastic via OTLP; the EDOT distribution adds value-add processors. Same data, more destinations."
+      },
+      {
+        "angle": "BubbleUp equivalent",
+        "claim": "Elastic ML anomaly detection plus Lens 'top contributors' covers the high-cardinality slice analysis.",
+        "proof": "The workflow is different but the outcome is the same: identify which dimensions explain the anomaly. Worth a hands-on side-by-side."
+      }
+    ],
+    "elastic_advantages": [
+      "Logs, metrics, APM and security on one cluster",
+      "OTel-native ingest with EDOT",
+      "Frozen tier for long event retention",
+      "ML anomaly detection across all signals",
+      "Self-hosted, cloud or air-gapped"
+    ],
+    "common_objections": [
+      {
+        "q": "Honeycomb's BubbleUp is faster than anything else for high-cardinality root cause.",
+        "a": "On their core workflow, true. The question is whether the rest of the stack (logs, metrics, security) is worth the second tool. For pure SRE/dev teams that already have logs covered, Honeycomb may stay; for platform consolidation, Elastic wins."
+      },
+      {
+        "q": "Honeycomb's query latency on wide events is sub-second.",
+        "a": "Elastic with hot-tier nodes hits sub-second on similar workloads. Worth benchmarking with the customer's actual queries during the POV."
+      },
+      {
+        "q": "Our team likes the tracing-first mental model.",
+        "a": "Elastic APM has the same trace-first views (service map, distributed traces, dependencies). Discover and Lens are available when the team needs to leave the trace context."
+      }
+    ],
+    "discovery_questions": [
+      "What other observability tools sit alongside Honeycomb today?",
+      "Is your team primarily SRE/dev or does Platform/Security need access too?",
+      "How are you handling logs and what is that bill?",
+      "How much of your Honeycomb spend is event volume versus retention?"
+    ]
+  },
+  {
+    "id": "battlecard-loki",
+    "competitor": "Loki",
+    "competitor_slug": "loki",
+    "tagline": "Loki is cheap until you need to actually search",
+    "key_pain": "Loki's index-light design (label index only, full-text grep at query time) is great for cost but punishing for ad-hoc investigations on TB/day workloads. LogQL is label-first; free-text and complex aggregations get slow.",
+    "talking_points": [
+      {
+        "angle": "Query depth at scale",
+        "claim": "Lucene + ES|QL maintain low-latency on free-text and aggregation queries at TB/day.",
+        "proof": "Loki regex queries scan all matching streams; performance degrades non-linearly with volume. Elastic's inverted index keeps median query latency in the hundreds of milliseconds at the same scale."
+      },
+      {
+        "angle": "Storage parity",
+        "claim": "Frozen tier on object storage matches Loki's storage economics.",
+        "proof": "The Loki argument is 'cheap object-storage logs.' Elastic frozen tier is also S3/GCS/Azure Blob. The cost gap is smaller than positioning suggests; the query-quality gap is wider."
+      },
+      {
+        "angle": "Beyond logs",
+        "claim": "Same cluster handles metrics, traces, APM and Security.",
+        "proof": "Loki is logs-only by design; the LGTM stack stitches four products. Elastic consolidates."
+      }
+    ],
+    "elastic_advantages": [
+      "Inverted index for low-latency free-text search",
+      "ES|QL aggregations across logs, metrics and traces",
+      "Frozen tier matches Loki's storage cost",
+      "ML anomaly detection on log fields",
+      "Security workspace on the same data"
+    ],
+    "common_objections": [
+      {
+        "q": "Loki is the cheapest log store on the market.",
+        "a": "On ingest, often true. On total cost of ownership including the LGTM stack operations, search performance and the second tool needed for security, the gap narrows or inverts. Build the cost model at production scale, not pilot scale."
+      },
+      {
+        "q": "We use LogQL because it matches PromQL; team mental model is consistent.",
+        "a": "ES|QL pipe syntax is similar to LogQL. The learning curve is one to two days for an engineer comfortable with LogQL."
+      },
+      {
+        "q": "Loki labels keep our storage tiny.",
+        "a": "Until label cardinality explodes and Loki performance falls off. ECS plus Elastic's index-time mappings give predictable performance regardless of cardinality."
+      }
+    ],
+    "discovery_questions": [
+      "What is your median and p95 query latency on Loki at peak ingest?",
+      "How often do analysts hit the 'this query timed out' wall?",
+      "What is the operational footprint of running Loki, Mimir, Tempo and Pyroscope?",
+      "Where does security telemetry live today?"
+    ]
+  },
+  {
+    "id": "battlecard-microsoft-sentinel",
+    "competitor": "Microsoft Sentinel",
+    "competitor_slug": "microsoft sentinel",
+    "tagline": "Cloud-flexible SIEM without Azure lock-in or Log Analytics tax",
+    "key_pain": "Sentinel's per-GB ingest pricing on Log Analytics is high once non-Microsoft sources arrive; data residency is Azure-only; KQL is Azure-specific; and the recent Defender XDR/Sentinel UI consolidation has been bumpy.",
+    "talking_points": [
+      {
+        "angle": "Data residency and cloud choice",
+        "claim": "Self-hosted, AWS/GCP/Azure marketplace, or air-gapped.",
+        "proof": "Sentinel data lives in a Log Analytics workspace on Azure only; egress and cross-cloud customers pay heavily. Elastic Cloud runs on AWS, GCP and Azure with PrivateLink equivalents on each."
+      },
+      {
+        "angle": "Ingest cost on third-party data",
+        "claim": "Sentinel pricing is friendly on Microsoft data, expensive on everything else.",
+        "proof": "Customers consistently report Sentinel costs spike when they add AWS CloudTrail, Okta, Crowdstrike or other non-Microsoft sources. Elastic per-GB pricing is uniform plus frozen tier removes long retention pain."
+      },
+      {
+        "angle": "Detection portability",
+        "claim": "Detection rules are open and Git-managed; KQL detections are Azure-shaped.",
+        "proof": "Sentinel detections written in KQL bind the customer to Sentinel. Elastic detection rules are open-source on GitHub and portable."
+      }
+    ],
+    "elastic_advantages": [
+      "Multi-cloud and on-prem deployment",
+      "Per-GB ingest with no Azure-source preference",
+      "Frozen tier on object storage at audit retention",
+      "Open detection rules on GitHub",
+      "Same platform handles observability, not just SIEM"
+    ],
+    "common_objections": [
+      {
+        "q": "We are an E5 customer; Sentinel comes with the bundle.",
+        "a": "E5 includes Sentinel data benefits up to a cap, then it is per-GB. Most customers blow through the included allotment within the first non-Microsoft source. Worth modelling actual ingest, not list."
+      },
+      {
+        "q": "Defender XDR + Sentinel covers identity, endpoint and SIEM in one Microsoft story.",
+        "a": "It does for an all-Microsoft estate. The moment AWS, Okta, GCP, third-party endpoint or OT data arrives, the integration is shallower than the marketing suggests. Elastic Security handles the heterogeneous case."
+      },
+      {
+        "q": "KQL is well-known to our analysts.",
+        "a": "ES|QL syntax is similar; pipe-style; Elastic also supports KQL for Kibana queries. The retraining cost is one to two weeks for an experienced KQL author."
+      },
+      {
+        "q": "Microsoft has stronger threat intel from their telemetry.",
+        "a": "Microsoft's intel on Microsoft attack surface is genuinely strong. Elastic's Threat Intel framework integrates Microsoft, Mandiant, Recorded Future and any STIX/TAXII feed; you do not have to choose."
+      }
+    ],
+    "discovery_questions": [
+      "How much of your ingest is non-Microsoft (AWS, Okta, GCP, third-party endpoint)?",
+      "Have you hit the E5 included-data cap?",
+      "Are you running Sentinel and Defender XDR consolidated yet, and how is that going?",
+      "What is your retention requirement and how is it priced today?"
+    ]
+  },
+  {
+    "id": "battlecard-new-relic",
+    "competitor": "New Relic",
+    "competitor_slug": "new relic",
+    "tagline": "Predictable storage tiers versus New Relic's user-based plus ingest model",
+    "key_pain": "New Relic's user-based pricing plus per-GB ingest creates a two-axis cost surprise. NRQL is proprietary, and the platform's identity (APM-first versus full observability) has been in flux.",
+    "talking_points": [
+      {
+        "angle": "Pricing model",
+        "claim": "Per-GB ingest plus storage tiers, no user-count tax.",
+        "proof": "New Relic's full-platform users charge $349/user/month at list. Elastic charges no per-user platform fee; SSO and RBAC are included."
+      },
+      {
+        "angle": "OpenTelemetry stance",
+        "claim": "Elastic is OTel-native via EDOT.",
+        "proof": "New Relic supports OTel ingest but the differentiated experience still favours New Relic agents. Customers re-instrumenting on OTel keep optionality with Elastic."
+      },
+      {
+        "angle": "Logs as first-class",
+        "claim": "Logs on the same cluster as APM; no Log Analytics add-on tier.",
+        "proof": "New Relic Logs counts toward the same data ingest pool but the analyst experience is APM-first. Elastic Discover is purpose-built for log investigation."
+      }
+    ],
+    "elastic_advantages": [
+      "No per-user pricing on the platform",
+      "OTel-first via EDOT",
+      "Frozen tier for long retention",
+      "Security workspace on the same cluster",
+      "Open ECS schema, no NRQL lock-in"
+    ],
+    "common_objections": [
+      {
+        "q": "New Relic's pricing is simple now: ingest plus users.",
+        "a": "Simpler than legacy, still two axes that grow independently. As teams onboard, user cost grows. As ingest grows, GB cost grows. Elastic removes one axis."
+      },
+      {
+        "q": "Our team knows NRQL.",
+        "a": "ES|QL is similar in shape. NRQL-to-ES|QL conversion is mechanical for most queries; we can include a translation guide in the POV."
+      },
+      {
+        "q": "New Relic's free tier and per-user model is great for small teams.",
+        "a": "True for small teams. The economics invert above 20 to 30 platform users or once retention requirements grow. Build the model at the customer's actual size."
+      }
+    ],
+    "discovery_questions": [
+      "How many full-platform users versus core users do you pay for?",
+      "What is your monthly ingest and how much of that is logs versus APM?",
+      "How much of your instrumentation is OpenTelemetry today?",
+      "What is your New Relic renewal date and ARR?"
+    ]
+  },
+  {
+    "id": "battlecard-qradar",
+    "competitor": "QRadar",
+    "competitor_slug": "qradar",
+    "tagline": "Modern detection engineering and cloud deployment, not a 2010-era SIEM",
+    "key_pain": "QRadar's appliance-and-EPS pricing model is a generation behind; AQL is proprietary and limited; IBM's pivot to QRadar Suite (with Cloud Pak) plus the AWS migration story is still settling. Many QRadar customers are already evaluating replacement.",
+    "talking_points": [
+      {
+        "angle": "Cloud-native deployment",
+        "claim": "Elastic Cloud is GA on AWS, GCP and Azure with marketplace billing.",
+        "proof": "QRadar on Cloud is hosted, but the architecture is still appliance-derived. EPS-based pricing makes capacity planning painful."
+      },
+      {
+        "angle": "Detection engineering",
+        "claim": "Open detection rules on GitHub; KQL/EQL/ES|QL/Lucene flexibility.",
+        "proof": "AQL is QRadar-specific and the rule engine is less flexible. Elastic detection rules are version-controlled and open-source."
+      },
+      {
+        "angle": "Modern UI and hunting",
+        "claim": "Kibana plus the Security Solution workspace ship a modern hunting and investigation experience.",
+        "proof": "QRadar console is dated; pivot-to-context flows require multiple clicks. Elastic Timeline plus entity analytics consolidate the workflow."
+      }
+    ],
+    "elastic_advantages": [
+      "Cloud-native deployment without appliance heritage",
+      "Per-GB pricing instead of EPS",
+      "Open detection rules and detection engineering CI",
+      "Frozen tier for compliance retention",
+      "Same platform handles observability"
+    ],
+    "common_objections": [
+      {
+        "q": "QRadar is FedRAMP-authorised; we cannot move easily.",
+        "a": "Elastic Cloud has FedRAMP Moderate authorisation; self-managed Elastic in GovCloud also covers the workload. Check the customer's specific authority requirement."
+      },
+      {
+        "q": "We have years of QRadar offences and content; rebuild is non-trivial.",
+        "a": "True; we plan a migration in phases. Elastic Security ships hundreds of prebuilt detections that cover the QRadar default content; custom rules port mechanically. Most QRadar customers find their truly differentiated content is 50 to 100 rules, not thousands."
+      },
+      {
+        "q": "IBM is bundling QRadar Suite with Watson AI; that is a future bet worth waiting for.",
+        "a": "Possibly. The bet is unproven and the pricing is unclear. Elastic's ML and ELSER are GA today and included in the platform license."
+      },
+      {
+        "q": "EPS pricing is what we know; switching to per-GB feels risky.",
+        "a": "Most QRadar customers undersize EPS and suffer dropped events. Per-GB is closer to what is actually flowing through the platform; we can model the conversion in the POV."
+      }
+    ],
+    "discovery_questions": [
+      "Are you on QRadar appliance, on Cloud, or evaluating QRadar Suite?",
+      "What is your current EPS rating and how often do you hit it?",
+      "How many of your detections are IBM-supplied versus custom?",
+      "Is the IBM-to-Palo-Alto QRadar SaaS deal affecting your roadmap?"
+    ]
+  },
+  {
     "id": "battlecard-splunk",
     "competitor": "Splunk",
     "competitor_slug": "splunk",
@@ -47,56 +733,6 @@
       "What is your audit retention requirement and what does the storage cost line look like today?",
       "How many license tiers are you paying for across Splunk Core, Observability, and Enterprise Security?",
       "If you had to consolidate to one platform in 12 months, what's the blocker?"
-    ]
-  },
-  {
-    "id": "battlecard-datadog",
-    "competitor": "Datadog",
-    "competitor_slug": "datadog",
-    "tagline": "Predictable storage economics + open data for the AWS-heavy customer",
-    "key_pain": "Per-host pricing plus index-rate ingest cost surprises. Vendor lock-in on the agent stack.",
-    "talking_points": [
-      {
-        "angle": "Predictable cost",
-        "claim": "Pay for ingest plus storage tiers, not per-host. Frozen tier removes the index-rate trap.",
-        "proof": "Detailed cost calculator inline in our brief. Common 60 to 70 percent reduction at 18+ month retention."
-      },
-      {
-        "angle": "Native AWS integration",
-        "claim": "First-party AWS marketplace billing, AWS PrivateLink ingest, IoT Core integration.",
-        "proof": "Same data plane handles factory edge telemetry plus cloud-native; Datadog requires separate IoT/Splunk-edge integration."
-      },
-      {
-        "angle": "Cross-stack correlation",
-        "claim": "Logs, metrics, traces, and synthetics in one query language (ES|QL) and one data store.",
-        "proof": "Removes the Datadog notebook plus dashboard split that the customer is fighting today."
-      }
-    ],
-    "elastic_advantages": [
-      "Storage cost predictability via warm/cold/frozen tiers",
-      "Open agent (Elastic Agent) avoids dd-agent vendor lock",
-      "OpenTelemetry-first; OTel Collector is GA",
-      "Native AWS Marketplace plus PrivateLink",
-      "Full-text search on logs (Datadog charges separately)"
-    ],
-    "common_objections": [
-      {
-        "q": "Datadog APM is more refined for application teams.",
-        "a": "Elastic APM ships service maps, distributed traces, RUM, and synthetics. OTel-first means no agent rewrite when tooling changes."
-      },
-      {
-        "q": "Datadog dashboards are easier to build.",
-        "a": "Kibana Lens is drag-and-drop; pre-built dashboards ship for common stacks (AWS, Kubernetes, Postgres). Vega for power users."
-      },
-      {
-        "q": "Switching agents is too risky.",
-        "a": "Run dd-agent and Elastic Agent side-by-side during the POV. Cut over per service, not big-bang."
-      }
-    ],
-    "discovery_questions": [
-      "What is your Datadog renewal date and current ARR with them?",
-      "Where does the ingest cost spike most: logs, traces, or custom metrics?",
-      "Have you hit the 'we cannot afford to keep more history' moment yet?"
     ]
   },
   {

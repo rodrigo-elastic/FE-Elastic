@@ -69,3 +69,73 @@ https://www.elastic.co/docs/deploy-manage/production-guidance/optimize-performan
 https://www.elastic.co/docs/reference/ecs
 https://www.elastic.co/docs/reference/ecs/ecs-field-reference
 https://www.elastic.co/docs/reference/ecs/ecs-guidelines
+
+# === Corpus expansion v2 (W4D RAG audit gap fill) ===
+
+# --- Gap 1: ES|QL aggregation + grouping function reference ---
+https://www.elastic.co/docs/reference/query-languages/esql/functions-operators/aggregation-functions
+https://www.elastic.co/docs/reference/query-languages/esql/functions-operators/aggregation-functions/percentile
+https://www.elastic.co/docs/reference/query-languages/esql/functions-operators/aggregation-functions/median
+https://www.elastic.co/docs/reference/query-languages/esql/functions-operators/aggregation-functions/median_absolute_deviation
+https://www.elastic.co/docs/reference/query-languages/esql/functions-operators/aggregation-functions/count_distinct
+https://www.elastic.co/docs/reference/query-languages/esql/functions-operators/aggregation-functions/count
+https://www.elastic.co/docs/reference/query-languages/esql/functions-operators/aggregation-functions/top
+https://www.elastic.co/docs/reference/query-languages/esql/functions-operators/aggregation-functions/values
+https://www.elastic.co/docs/reference/query-languages/esql/functions-operators/aggregation-functions/std_dev
+https://www.elastic.co/docs/reference/query-languages/esql/functions-operators/grouping-functions
+https://www.elastic.co/docs/reference/query-languages/esql/functions-operators/grouping-functions/bucket
+https://www.elastic.co/docs/reference/query-languages/esql/commands/stats-by
+
+# --- Gap 2: OTel APM data model, ECS trace fields, agent autoinstrumentation ---
+https://www.elastic.co/docs/solutions/observability/apm/use-opentelemetry-with-apm
+https://www.elastic.co/docs/solutions/observability/apm/opentelemetry
+https://www.elastic.co/docs/solutions/observability/apm/opentelemetry/attributes
+https://www.elastic.co/docs/solutions/observability/apm/opentelemetry/data-stream-routing
+https://www.elastic.co/docs/solutions/observability/apm/opentelemetry-intake-api
+https://www.elastic.co/docs/solutions/observability/apm/data-types
+https://www.elastic.co/docs/solutions/observability/apm/traces
+https://www.elastic.co/docs/solutions/observability/apm/spans
+https://www.elastic.co/docs/solutions/observability/apm/transactions
+https://www.elastic.co/docs/solutions/observability/get-started/opentelemetry/quickstart
+https://www.elastic.co/docs/reference/ecs/ecs-opentelemetry
+https://www.elastic.co/docs/reference/ecs/ecs-tracing
+https://www.elastic.co/docs/reference/ecs/ecs-service
+
+# --- Gap 3: Service Map mechanics, dependencies, sampling ---
+https://www.elastic.co/docs/solutions/observability/apm/dependencies
+https://www.elastic.co/docs/solutions/observability/apm/trace-sample-timeline
+https://www.elastic.co/docs/solutions/observability/apm/discover-traces
+https://www.elastic.co/docs/solutions/observability/apm/traces-ui
+https://www.elastic.co/docs/solutions/observability/apm/transaction-sampling
+https://www.elastic.co/docs/solutions/observability/apm/tail-based-sampling
+
+# --- Gap 4: Security ML prebuilt jobs (SIEM catalog) + auth-anomaly use cases ---
+https://www.elastic.co/docs/explore-analyze/machine-learning/anomaly-detection/ootb-ml-jobs
+https://www.elastic.co/docs/reference/machine-learning/ootb-ml-jobs-siem
+https://www.elastic.co/docs/reference/machine-learning/ootb-ml-jobs-auditbeat
+https://www.elastic.co/docs/solutions/security/advanced-entity-analytics/anomaly-detection
+https://www.elastic.co/docs/solutions/security/advanced-entity-analytics/advanced-behavioral-detections
+https://www.elastic.co/docs/solutions/security/advanced-entity-analytics/behavioral-detection-use-cases
+https://www.elastic.co/docs/solutions/security/advanced-entity-analytics/machine-learning-job-rule-requirements
+https://www.elastic.co/docs/solutions/security/detect-and-alert/machine-learning
+https://www.elastic.co/docs/explore-analyze/machine-learning/anomaly-detection/ml-functions
+https://www.elastic.co/docs/explore-analyze/machine-learning/anomaly-detection/ml-anomaly-detection-job-types
+
+# --- Gap 5: EQL syntax, function reference, pipe reference, security rule type ---
+https://www.elastic.co/docs/reference/query-languages/eql
+https://www.elastic.co/docs/reference/query-languages/eql/eql-syntax
+https://www.elastic.co/docs/reference/query-languages/eql/eql-function-ref
+https://www.elastic.co/docs/reference/query-languages/eql/eql-pipe-ref
+https://www.elastic.co/docs/solutions/security/detect-and-alert/eql
+https://www.elastic.co/docs/solutions/security/detect-and-alert/esql
+https://www.elastic.co/docs/solutions/security/detect-and-alert/rule-types
+https://www.elastic.co/docs/solutions/security/detect-and-alert/choose-the-right-rule-type
+https://www.elastic.co/docs/solutions/security/detect-and-alert/detection-rule-concepts
+
+# --- Honourable mentions (snapshot SLM design, data streams) ---
+https://www.elastic.co/docs/manage-data/data-store/data-streams
+https://www.elastic.co/docs/manage-data/data-store/data-streams/set-up-data-stream
+https://www.elastic.co/docs/manage-data/data-store/data-streams/use-data-stream
+https://www.elastic.co/docs/deploy-manage/tools/snapshot-and-restore/manage-snapshot-repositories
+https://www.elastic.co/docs/deploy-manage/tools/snapshot-and-restore/restore-snapshot
+https://www.elastic.co/docs/deploy-manage/tools/snapshot-and-restore/searchable-snapshots

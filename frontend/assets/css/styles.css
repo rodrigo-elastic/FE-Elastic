@@ -3210,3 +3210,76 @@ body.has-tools-rail .container {
   .hero-stats { grid-template-columns: 1fr 1fr; }
   .topbar { padding: 8px 10px; }
 }
+
+/* ============================================================ Analyze transcript */
+.transcript-card .qr-head h2::before {
+  background: linear-gradient(180deg, var(--blue), var(--primary));
+}
+.tr-form .qr-row { flex-wrap: wrap; }
+.tr-form .qr-field input[type="file"] {
+  padding: 6px 8px;
+  font-size: 12.5px;
+}
+.tr-text-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.tr-hint {
+  font-size: 11.5px;
+  letter-spacing: 0.01em;
+}
+#tr-text {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 12.5px;
+  line-height: 1.5;
+  min-height: 280px;
+  resize: vertical;
+  tab-size: 2;
+}
+#tr-text.is-drop {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0, 119, 204, 0.22);
+  background: rgba(0, 119, 204, 0.04);
+}
+.tr-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+.tr-meta .dot { color: var(--muted-2); }
+#tr-charcount.ok { color: var(--primary); font-weight: 600; }
+#tr-charcount.bad { color: #FF8A95; font-weight: 600; }
+.tr-file-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.tr-file-pick input[type="file"] {
+  font-size: 12px;
+  color: var(--muted);
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+.tr-file-pick input[type="file"]:hover { border-color: var(--primary); color: var(--ink); }
+.tr-status:empty { display: none; }
+#tr-submit:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+@media (max-width: 760px) {
+  .tr-form .qr-row { flex-direction: column; gap: 10px; }
+  .tr-form .qr-field { flex: 1 1 100%; }
+  #tr-text { min-height: 220px; rows: 10; font-size: 12px; }
+  .qr-actions .qr-model { margin-left: 0; }
+  .tr-text-head { flex-direction: column; align-items: flex-start; gap: 2px; }
+}

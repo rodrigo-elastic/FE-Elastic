@@ -131,47 +131,126 @@ function bindTranscriptUpload() {
   const statusEl = document.getElementById("tr-status");
   const fileInput = document.getElementById("tr-file");
   const textarea = document.getElementById("tr-text");
+  const charCount = document.getElementById("tr-charcount");
+  const sourceSel = document.getElementById("tr-source");
 
-  // Auto-fill textarea from file pick
+  const TR_MODEL_LABELS = {
+    "claude-haiku-4-5": "Haiku 4.5",
+    "claude-sonnet-4-6": "Sonnet 4.6",
+    "claude-opus-4-7": "Opus 4.7",
+    "": "Haiku 4.5 (default)",
+  };
+
+  function updateCharCount() {
+    if (!charCount || !textarea) return;
+    const n = (textarea.value || "").length;
+    charCount.textContent = `${n.toLocaleString()} chars`;
+    charCount.classList.toggle("ok", n >= 20);
+    charCount.classList.toggle("bad", n > 0 && n < 20);
+  }
+  if (textarea) textarea.addEventListener("input", updateCharCount);
+  updateCharCount();
+
+  // Auto-fill textarea from file pick (also infer source from extension).
   if (fileInput) {
     fileInput.addEventListener("change", async () => {
       const f = fileInput.files && fileInput.files[0];
       if (!f) return;
-      const text = await f.text();
-      textarea.value = text;
-      statusEl.textContent = `Loaded ${f.name} (${Math.round(text.length / 1024)} KB)`;
+      try {
+        const text = await f.text();
+        textarea.value = text;
+        const ext = (f.name.split(".").pop() || "").toLowerCase();
+        if (sourceSel) {
+          if (ext === "vtt") sourceSel.value = "zoom";
+          else if (ext === "txt" || ext === "srt") sourceSel.value = "manual";
+        }
+        updateCharCount();
+        statusEl.textContent = `Loaded ${f.name} (${Math.round(text.length / 1024)} KB)`;
+      } catch (e) {
+        toast(`Could not read file: ${e.message}`, "bad");
+      }
     });
   }
 
-  form.addEventListener("submit", async () => {
-    const name = document.getElementById("tr-name").value.trim();
+  // Drag-and-drop onto the textarea.
+  if (textarea) {
+    textarea.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      textarea.classList.add("is-drop");
+    });
+    textarea.addEventListener("dragleave", () => textarea.classList.remove("is-drop"));
+    textarea.addEventListener("drop", async (e) => {
+      e.preventDefault();
+      textarea.classList.remove("is-drop");
+      const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (!f) return;
+      try {
+        const text = await f.text();
+        textarea.value = text;
+        updateCharCount();
+        statusEl.textContent = `Loaded ${f.name} (${Math.round(text.length / 1024)} KB)`;
+      } catch (err) {
+        toast(`Drop failed: ${err.message}`, "bad");
+      }
+    });
+  }
+
+  form.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const nameEl = document.getElementById("tr-name");
+    const name = nameEl.value.trim();
     const title = document.getElementById("tr-title").value.trim();
-    const source = document.getElementById("tr-source").value;
+    const source = sourceSel.value;
+    const industry = document.getElementById("tr-industry").value.trim();
+    const size = document.getElementById("tr-size").value.trim();
+    const notes = document.getElementById("tr-notes").value.trim();
     const text = textarea.value;
-    if (!name) return toast("Company name is required", "bad");
-    if (!text || text.trim().length < 20)
-      return toast("Transcript text is too short", "bad");
+    const model = document.getElementById("tr-model")?.value || "";
+
+    if (!name) {
+      toast("Company name is required", "bad");
+      nameEl.focus();
+      return;
+    }
+    if (!text || text.trim().length < 20) {
+      toast("Transcript needs at least 20 characters", "bad");
+      textarea.focus();
+      return;
+    }
 
     const labelHTML = submit.innerHTML;
     submit.disabled = true;
-    submit.innerHTML = '<span class="spinner"></span> Analyzing...';
-    statusEl.textContent = "Parsing transcript and calling Claude...";
+    submit.setAttribute("aria-busy", "true");
+    submit.innerHTML = '<span class="spinner" aria-hidden="true"></span> <span>Analyzing...</span>';
+    const modelLabel = TR_MODEL_LABELS[model] || model || "Haiku 4.5 (default)";
+    statusEl.textContent = `Running post-meeting agent (${modelLabel})...`;
+
     try {
       const res = await apiPost("/agents/post-meeting/from-transcript", {
         company_name: name,
         meeting_title: title,
+        industry,
+        size,
+        notes,
         transcript_text: text,
         transcript_source: source,
         language: claudeLanguageName(),
-        model: document.getElementById("tr-model")?.value || "",
+        model,
       });
-      toast(`Post-meeting result for ${name}`, "ok");
-      window.location.href = `/meeting.html?id=${encodeURIComponent(res.meeting_id)}&adhoc=1&post=1`;
+      const mid = res && res.meeting_id;
+      if (!mid) {
+        throw new Error("Backend did not return a meeting_id");
+      }
+      toast(`Post-meeting analysis ready for ${name}`, "ok");
+      statusEl.textContent = "Done. Opening meeting view...";
+      window.location.href = `/meeting.html?id=${encodeURIComponent(mid)}&post=1&adhoc=1`;
     } catch (e) {
-      toast(`Analyze failed: ${e.message}`, "bad");
-      statusEl.textContent = "";
+      const msg = (e && e.message) || "Unknown error";
+      toast(`Analyze transcript failed: ${msg}`, "bad");
+      statusEl.textContent = `Error: ${msg}`;
     } finally {
       submit.disabled = false;
+      submit.removeAttribute("aria-busy");
       submit.innerHTML = labelHTML;
     }
   });
