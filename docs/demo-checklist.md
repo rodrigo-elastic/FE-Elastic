@@ -25,6 +25,7 @@ Run in order. If any check fails, stop and fix.
 12. [ ] Autopilot dry-run: click "Show me the magic". The 7-step run completes inside 27 s with zero failed steps. Card reports a brief id and cost under ten cents. Refresh the homepage.
 13. [ ] Pre-prime Workflow 2: 90 s before recording, click "Fire demo transcript" once on `/workflow-demo.html` so the orphan `[Auto]` wave is in flight when B6 starts.
 14. [ ] Recording setup: 1080p / 30fps, mic green, captions on, click highlighting on, browser two thirds left, terminal one third right. Do Not Disturb on. Slack snoozed. Mail closed.
+15. [ ] Read the "Why this matters" section in `docs/demo-script.md` in your head before B0. Anchor each beat to its pain (prep, notes, Salesforce, TCO escalations, dashboards, compliance). The video lands harder when the presenter is thinking about the FE on the other side of the screen.
 
 ---
 
@@ -71,3 +72,15 @@ Per-beat rules:
 5. [ ] Post the Slack draft from `docs/announcements.md` to `#fy27-sko-fe-summit`. Include Drive link, GitHub URL, screenshot.
 6. [ ] Save the form's confirmation email to a `Hackathon FY27` Gmail label.
 7. [ ] Add a calendar reminder for 2026-05-15 09:00: "FE Copilot hackathon retro: what worked, what did not, what ships into v2."
+
+---
+
+## E. Q+A cheat sheet (5 likely judge questions)
+
+Read these before submitting. If a judge pings back, the answers are grounded and short.
+
+1. **"How does this scale beyond one FE?"** Eleven `fec_*` MCP tools live in Agent Builder inside Elastic Cloud. Any FE on the tenant gets the same eleven personas, five scenarios, two workflows on day one. Apache 2.0 means the field can fork it Monday.
+2. **"What about data privacy and customer info?"** Briefs cite SEC EDGAR, news, Wikipedia. No customer-private data leaves the tenant. Salesforce writes are sandboxed against `runtime/salesforce.log` for the demo; production swap is an env var.
+3. **"Is the cost calculator accurate?"** `fec_cost_calc` uses public Splunk Enterprise list pricing and Elastic Cloud rate cards at 200 GB/day. The 74 percent number is reproducible; numbers update as rate cards shift.
+4. **"Can a customer use this directly?"** The Customer view of the paired dashboards is built for that. Battlecards and SFDC writes are FE-internal. Easy to gate.
+5. **"What is the moat?"** ELSER hybrid retrieval over four hundred seven Elastic doc chunks plus eleven persona-shaped tools plus two Kibana workflow rules. The combination is the moat, not any single piece.
