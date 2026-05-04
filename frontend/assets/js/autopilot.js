@@ -584,27 +584,38 @@
 
   function showCompletion(elapsedMs) {
     if (state.nodes.complete) state.nodes.complete.remove();
+    const sectionsClean = AP.steps.length - state.failures.length;
+    const elapsedStr = `${(elapsedMs / 1000).toFixed(1)}s`;
     const card = el("div", { class: "ap-complete", role: "dialog", "aria-modal": "true", "aria-label": "Autopilot complete" }, [
-      el("h3", { text: "Demo complete." }),
-      el("p", { text: "All your tools, one assistant. Ready for the live walkthrough." }),
+      el("h3", { text: "Six hours per FE per week back." }),
+      el("p", { text: "Twelve MCP tools, thirty one battlecards, twenty industries, eight demo scenarios. All live in your Elastic cluster. Take it for a test drive or skip the autopilot and start with any tile on the home page." }),
       el("div", { class: "ap-stat-row" }, [
         el("div", { class: "ap-stat" }, [
-          el("strong", { text: `${(elapsedMs / 1000).toFixed(1)}s` }),
-          el("span", { text: "elapsed" }),
+          el("strong", { text: elapsedStr }),
+          el("span", { text: "tour duration" }),
         ]),
         el("div", { class: "ap-stat" }, [
-          el("strong", { text: `${AP.steps.length - state.failures.length} / ${AP.steps.length}` }),
-          el("span", { text: "steps clean" }),
+          el("strong", { text: `${sectionsClean} / ${AP.steps.length}` }),
+          el("span", { text: "sections covered" }),
         ]),
         el("div", { class: "ap-stat" }, [
-          el("strong", { text: state.captured.briefMs ? `${(state.captured.briefMs / 1000).toFixed(1)}s` : "n/a" }),
-          el("span", { text: "brief gen" }),
+          el("strong", { text: "12" }),
+          el("span", { text: "MCP tools live" }),
+        ]),
+        el("div", { class: "ap-stat" }, [
+          el("strong", { text: "31" }),
+          el("span", { text: "battlecards" }),
+        ]),
+        el("div", { class: "ap-stat" }, [
+          el("strong", { text: "20" }),
+          el("span", { text: "industries" }),
         ]),
       ]),
       el("div", { class: "ap-actions" }, [
-        el("button", { class: "ap-btn primary", type: "button", text: "Watch again", onclick: () => { card.remove(); state.nodes.complete = null; setTimeout(() => start(), 250); } }),
-        el("a", { class: "ap-btn", href: "https://www.youtube.com/", target: "_blank", rel: "noopener", text: "View video" }),
-        el("a", { class: "ap-btn", href: "/agent-builder.html", text: "Open Kibana" }),
+        el("button", { class: "ap-btn primary", type: "button", text: "Run again", onclick: () => { card.remove(); state.nodes.complete = null; setTimeout(() => start(), 250); } }),
+        el("a", { class: "ap-btn", href: "/quick-research.html", text: "Try Quick Research" }),
+        el("a", { class: "ap-btn", href: "/agent-builder.html", text: "Build an agent" }),
+        el("a", { class: "ap-btn", href: "/health.html", text: "Live health" }),
         el("button", { class: "ap-btn", type: "button", text: "Close", onclick: () => { card.remove(); state.nodes.complete = null; showOverlay(false); hidePanel(); } }),
       ]),
     ]);
