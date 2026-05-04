@@ -35,18 +35,18 @@
 
   const PAGES = [
     {
-      id: "dashboard",
-      label: "Dashboard",
+      id: "home",
+      label: "Home",
       href: "/",
       icon:
         '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h14V10"/></svg>',
     },
     {
-      id: "agent-builder",
-      label: "Agent Builder",
-      href: "/agent-builder.html",
+      id: "quick-research",
+      label: "Quick Research",
+      href: "/quick-research.html",
       icon:
-        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="M5 7h14l-1 13H6Z"/><circle cx="9" cy="13" r="1"/><circle cx="15" cy="13" r="1"/><path d="M9 17h6"/></svg>',
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
     },
     {
       id: "fe-brain",
@@ -56,25 +56,11 @@
         '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h10a2 2 0 0 1 2 2v10"/><path d="M5 4v14a2 2 0 0 0 2 2h7"/><path d="M5 4a2 2 0 0 0 2 2h10"/><circle cx="16.5" cy="17.5" r="3"/><path d="m21 22-2.4-2.4"/></svg>',
     },
     {
-      id: "workflow",
-      label: "Workflow",
-      href: "/workflow-demo.html",
+      id: "agent-builder",
+      label: "Agent Builder",
+      href: "/agent-builder.html",
       icon:
-        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M7 6h10"/><path d="M5 8v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><path d="M12 13v3"/></svg>',
-    },
-    {
-      id: "demo-data",
-      label: "Demo Data",
-      href: "/demo-data.html",
-      icon:
-        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 11v6c0 1.7 4 3 9 3s9-1.3 9-3v-6"/></svg>',
-    },
-    {
-      id: "industries",
-      label: "Industries",
-      href: "/industries.html",
-      icon:
-        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V8l4-3 4 3v13"/><path d="M13 21V12l4-2 4 2v9"/><path d="M9 12h.01"/><path d="M9 16h.01"/><path d="M17 14h.01"/><path d="M17 18h.01"/></svg>',
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="M5 7h14l-1 13H6Z"/><circle cx="9" cy="13" r="1"/><circle cx="15" cy="13" r="1"/><path d="M9 17h6"/></svg>',
     },
     {
       id: "battlecards",
@@ -84,11 +70,25 @@
         '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="13" height="15" rx="2"/><path d="M8 5V3h6v2"/><path d="M16 8h4a1 1 0 0 1 1 1v10a2 2 0 0 1-2 2h-3"/><path d="M7 10h5"/><path d="M7 14h5"/></svg>',
     },
     {
-      id: "audit",
-      label: "Audit",
-      href: "/audit.html",
+      id: "industries",
+      label: "Industries",
+      href: "/industries.html",
       icon:
-        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/><circle cx="19" cy="6" r="1.4"/></svg>',
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V8l4-3 4 3v13"/><path d="M13 21V12l4-2 4 2v9"/><path d="M9 12h.01"/><path d="M9 16h.01"/><path d="M17 14h.01"/><path d="M17 18h.01"/></svg>',
+    },
+    {
+      id: "demo-data",
+      label: "Demo Data",
+      href: "/demo-data.html",
+      icon:
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 11v6c0 1.7 4 3 9 3s9-1.3 9-3v-6"/></svg>',
+    },
+    {
+      id: "workflow",
+      label: "Workflow",
+      href: "/workflow-demo.html",
+      icon:
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M7 6h10"/><path d="M5 8v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><path d="M12 13v3"/></svg>',
     },
     {
       id: "health",
@@ -96,6 +96,13 @@
       href: "/health.html",
       icon:
         '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg>',
+    },
+    {
+      id: "audit",
+      label: "Audit",
+      href: "/audit.html",
+      icon:
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/><circle cx="19" cy="6" r="1.4"/></svg>',
     },
   ];
 
@@ -113,8 +120,11 @@
   function isToolsPage() {
     return /\/tools(\.html)?$/.test(location.pathname) || document.body.classList.contains("tools-page");
   }
-  function isDashboardPage() {
+  function isHomePage() {
     return location.pathname === "/" || /\/index(\.html)?$/.test(location.pathname);
+  }
+  function isQuickResearchPage() {
+    return /\/quick-research(\.html)?$/.test(location.pathname) || document.body.classList.contains("quick-research-page");
   }
   function isAgentBuilderPage() {
     return /\/agent-builder(\.html)?$/.test(location.pathname) || document.body.classList.contains("agent-builder-page");
@@ -171,7 +181,8 @@
     a.className = "tools-nav-pill page-link";
     a.href = p.href;
     let isActive = false;
-    if (p.id === "dashboard" && isDashboardPage()) { a.classList.add("active"); isActive = true; }
+    if (p.id === "home" && isHomePage()) { a.classList.add("active"); isActive = true; }
+    if (p.id === "quick-research" && isQuickResearchPage()) { a.classList.add("active"); isActive = true; }
     if (p.id === "agent-builder" && isAgentBuilderPage()) { a.classList.add("active"); isActive = true; }
     if (p.id === "fe-brain" && isFeBrainPage()) { a.classList.add("active"); isActive = true; }
     if (p.id === "workflow" && isWorkflowPage()) { a.classList.add("active"); isActive = true; }
