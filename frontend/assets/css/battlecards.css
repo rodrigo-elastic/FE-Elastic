@@ -850,6 +850,85 @@ body.bc-detail-open .container { display: none; }
   box-shadow: 0 0 0 2px rgba(0, 119, 204, 0.35);
 }
 
+/* ====================================================== Industry filter row */
+.bc-industry-filter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: -10px 0 22px;
+  padding: 10px 14px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.bc-industry-label {
+  font: 600 12.5px/1 Inter, system-ui, sans-serif;
+  letter-spacing: 0.01em;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 11px;
+  flex: 0 0 auto;
+}
+.bc-industry-select-wrap {
+  position: relative;
+  flex: 1 1 280px;
+  min-width: 220px;
+  max-width: 360px;
+}
+.bc-industry-select {
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  font: 600 13px/1 Inter, system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 9px 36px 9px 16px;
+  cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s, box-shadow .15s;
+}
+.bc-industry-select:hover {
+  border-color: var(--primary);
+}
+.bc-industry-select:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 119, 204, 0.35);
+  border-color: var(--primary);
+}
+.bc-industry-select:not([data-default]) {
+  /* harmless placeholder hook for future styling */
+}
+.bc-industry-caret {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ink-soft);
+  pointer-events: none;
+}
+.bc-industry-clear {
+  flex: 0 0 auto;
+  font: 600 12px/1 Inter, system-ui, sans-serif;
+  color: var(--primary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 7px 12px;
+  cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s;
+}
+.bc-industry-clear:hover {
+  background: rgba(0, 119, 204, 0.08);
+  border-color: rgba(0, 119, 204, 0.35);
+}
+.bc-industry-clear:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 119, 204, 0.35);
+}
+
 /* Vertical badge on grid card and detail hero */
 .bc-card-badges {
   display: flex;
@@ -938,4 +1017,7 @@ body.bc-detail-open .container { display: none; }
 @media (max-width: 768px) {
   .bc-vertical-bar { padding: 10px 12px; gap: 12px; }
   .bc-chip { padding: 7px 11px; font-size: 12px; }
+  .bc-industry-filter { padding: 10px 12px; gap: 10px; }
+  .bc-industry-select-wrap { flex: 1 1 100%; max-width: none; }
+  .bc-industry-select { padding: 8px 32px 8px 14px; font-size: 12.5px; }
 }

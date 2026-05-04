@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="/assets/css/command-palette.css" />
 </head>
 <body class="demo-data-page">
+  <a class="skip-to-main" href="#main-content" data-i18n="a11y.skip_to_main">Skip to main content</a>
   <header class="topbar">
     <a class="brand" href="/" aria-label="FE Copilot home">
       <img class="logo-elastic" src="/assets/img/elastic/logo-horizontal-white.svg" alt="Elastic" />
@@ -28,7 +29,7 @@
     </div>
   </header>
 
-  <main class="container">
+  <main class="container" id="main-content" tabindex="-1">
     <section class="hero">
       <h1><span data-i18n="dd.title.1">Realistic demo data</span> <span class="grad" data-i18n="dd.title.2">on demand.</span></h1>
       <p class="lede" data-i18n="dd.lede">
@@ -38,11 +39,11 @@
       </p>
     </section>
 
-    <section class="dd-grid" id="dd-grid">
+    <section class="dd-grid" id="dd-grid" aria-label="Demo scenarios" aria-live="polite" aria-busy="true">
       <p class="muted" data-i18n="dd.loading">Loading scenarios...</p>
     </section>
 
-    <section id="toast-host"></section>
+    <section id="toast-host" role="status" aria-live="polite" aria-atomic="false"></section>
   </main>
 
   <script src="/assets/js/i18n.js"></script>

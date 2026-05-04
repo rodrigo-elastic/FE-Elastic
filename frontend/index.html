@@ -61,6 +61,7 @@
   </style>
 </head>
 <body>
+  <a class="skip-to-main" href="#main-content" data-i18n="a11y.skip_to_main">Skip to main content</a>
   <header class="topbar">
     <a class="brand" href="/" aria-label="FE Copilot home">
       <img class="logo-elastic" src="/assets/img/elastic/logo-horizontal-white.svg" alt="Elastic" />
@@ -104,7 +105,7 @@
     })();
   </script>
 
-  <main class="container">
+  <main class="container" id="main-content" tabindex="-1">
     <section class="hero">
       <h1><span data-i18n="hero.title.1">Three agents.</span> <span class="grad" data-i18n="hero.title.2">One pre-meeting flow.</span></h1>
       <p class="lede" data-i18n="hero.lede">
@@ -120,17 +121,17 @@
     </section>
 
     <div class="entry-tabs" role="tablist" aria-label="Entry mode">
-      <button class="entry-tab active" data-mode="qr" type="button" role="tab" aria-selected="true">
+      <button class="entry-tab active" data-mode="qr" type="button" role="tab" id="tab-qr" aria-selected="true" aria-controls="entry-qr">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <span data-i18n="tab.qr">Pre-meeting research</span>
       </button>
-      <button class="entry-tab" data-mode="tr" type="button" role="tab" aria-selected="false">
+      <button class="entry-tab" data-mode="tr" type="button" role="tab" id="tab-tr" aria-selected="false" aria-controls="entry-tr">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
         <span data-i18n="tab.tr">Analyze transcript</span>
       </button>
     </div>
 
-    <section class="quick-research" id="entry-qr">
+    <section class="quick-research" id="entry-qr" role="tabpanel" aria-labelledby="tab-qr">
       <div class="qr-head">
         <div>
           <h2 data-i18n="qr.title">Quick research</h2>
@@ -173,16 +174,16 @@
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <span data-i18n="qr.submit">Generate brief</span>
           </button>
-          <label class="qr-model">
+          <label class="qr-model" for="qr-model">
             <span class="qr-model-lbl">Model</span>
-            <select id="qr-model">
+            <select id="qr-model" aria-label="Choose Claude model for pre-meeting research">
               <option value="">Haiku 4.5 (default)</option>
               <option value="claude-haiku-4-5">Haiku 4.5 (fastest, cheapest)</option>
               <option value="claude-sonnet-4-6">Sonnet 4.6 (balanced)</option>
               <option value="claude-opus-4-7">Opus 4.7 (deepest research)</option>
             </select>
           </label>
-          <span class="muted small" id="qr-status"></span>
+          <span class="muted small" id="qr-status" role="status" aria-live="polite"></span>
         </div>
         <div class="qr-progress-host" id="qr-progress-host" hidden>
           <div class="progress-bar" id="qr-progress" role="progressbar" aria-label="Researching" aria-valuemin="0" aria-valuemax="100" hidden>
@@ -193,7 +194,7 @@
       </form>
     </section>
 
-    <section class="quick-research transcript-card" id="entry-tr" hidden aria-labelledby="tr-heading">
+    <section class="quick-research transcript-card" id="entry-tr" role="tabpanel" hidden aria-labelledby="tab-tr">
       <div class="qr-head">
         <div>
           <h2 id="tr-heading" data-i18n="tr.title">Analyze transcript</h2>
@@ -310,7 +311,7 @@
       <ul id="history" class="history"></ul>
     </section>
 
-    <section id="toast-host"></section>
+    <section id="toast-host" role="status" aria-live="polite" aria-atomic="false"></section>
   </main>
 
   <footer class="footer">

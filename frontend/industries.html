@@ -1,0 +1,171 @@
+<!--
+  filename: industries.html
+  description: FE Copilot - Industries catalog. Renders the 20 industries that cover ~80% of the Elastic customer base. Each card opens a detail modal that deep-links into battlecards, demo scenarios, and FE Copilot tools so a Field Engineer never starts from a blank canvas.
+  Author: Rodrigo Careaga
+  Date: 04-05-2026
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FE Copilot - Industries</title>
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+  <link rel="stylesheet" href="/assets/css/agent-builder.css" />
+  <link rel="stylesheet" href="/assets/css/industries.css" />
+  <link rel="icon" type="image/svg+xml" href="/assets/img/elastic/glyph-cluster-color.svg" />
+  <link rel="stylesheet" href="/assets/css/command-palette.css" />
+  <style>
+    .demo-banner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 8px 16px;
+      background: #fff3cd;
+      color: #856404;
+      font-size: 12px;
+      line-height: 1.4;
+      border-bottom: 1px solid #f5e2a4;
+      text-align: center;
+    }
+    .demo-banner.is-hidden { display: none; }
+    .demo-banner-text { flex: 1; max-width: 1100px; }
+    .demo-banner-close {
+      background: transparent;
+      border: 0;
+      color: #856404;
+      font-size: 14px;
+      cursor: pointer;
+      padding: 2px 6px;
+      line-height: 1;
+      border-radius: 3px;
+    }
+    .demo-banner-close:hover { background: rgba(133, 100, 4, 0.12); }
+    .topbar { position: sticky; }
+    .sko-event {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+      color: var(--ink, #0f172a);
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0.85;
+    }
+    .sko-event .sep { opacity: 0.45; margin: 0 6px; }
+    .sko-event .meta { font-weight: 500; opacity: 0.85; }
+    @media (max-width: 900px) { .sko-event { display: none; } }
+  </style>
+</head>
+<body class="industries-page">
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="FE Copilot home">
+      <img class="logo-elastic" src="/assets/img/elastic/logo-horizontal-white.svg" alt="Elastic" />
+      <span class="brand-sep">/</span>
+      <span class="name">FE <span class="accent">Copilot</span></span>
+      <span class="tag" data-i18n="topbar.tag.industries">Industries</span>
+    </a>
+    <span class="sko-event" aria-hidden="true">
+      FY27 Sales Kickoff
+      <span class="sep">|</span>
+      <span class="meta">May 11 to 14, 2026 . Las Vegas, Nevada</span>
+    </span>
+    <div class="right">
+      <div class="lang-host" id="lang-host"></div>
+    </div>
+  </header>
+
+  <div class="demo-banner" id="fec-demo-banner" role="note">
+    <span class="demo-banner-text" data-i18n="banner.demo">Demo data only. All companies, employees, and financials shown are fictional. Public list pricing for Splunk and Datadog is real.</span>
+    <button type="button" class="demo-banner-close" id="fec-demo-banner-close" aria-label="Dismiss demo data notice" data-i18n-aria-label="banner.dismiss">&times;</button>
+  </div>
+  <script>
+    (function () {
+      try {
+        var banner = document.getElementById('fec-demo-banner');
+        if (!banner) return;
+        if (localStorage.getItem('fec.banner_dismissed') === '1') {
+          banner.classList.add('is-hidden');
+          return;
+        }
+        var btn = document.getElementById('fec-demo-banner-close');
+        if (btn) {
+          btn.addEventListener('click', function () {
+            banner.classList.add('is-hidden');
+            try { localStorage.setItem('fec.banner_dismissed', '1'); } catch (e) {}
+          });
+        }
+      } catch (e) {}
+    })();
+  </script>
+
+  <main class="container">
+    <section class="hero">
+      <h1>
+        <span data-i18n="industries.title.1">20 industries.</span>
+        <span class="grad" data-i18n="industries.title.2">80% of customers.</span>
+      </h1>
+      <p class="lede" data-i18n="industries.lede">
+        One Field Engineer who does not have to start from scratch. Every industry card chains the right
+        battlecards, demo scenarios, and FE Copilot tools so the first 10 minutes of a discovery call are pre-loaded.
+      </p>
+    </section>
+
+    <section class="ind-toolbar" aria-label="Industries filter">
+      <div class="ind-search-wrap" role="search">
+        <svg class="ind-search-ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <label for="ind-search" class="visually-hidden" data-i18n="industries.search_placeholder">Filter by industry, persona, regulation, or competitor...</label>
+        <input type="text" id="ind-search" data-i18n-placeholder="industries.search_placeholder" placeholder="Filter by industry, persona, regulation, or competitor..." aria-label="Filter industries" />
+      </div>
+      <span class="ind-count muted small" id="ind-count">-</span>
+    </section>
+
+    <section class="ind-grid" id="ind-grid" aria-live="polite">
+      <p class="muted" data-i18n="industries.loading">Loading industries...</p>
+    </section>
+
+    <section id="toast-host"></section>
+  </main>
+
+  <div class="ind-modal" id="ind-modal" hidden role="dialog" aria-modal="true" aria-labelledby="ind-modal-title">
+    <div class="ind-modal-backdrop" data-ind-close></div>
+    <div class="ind-modal-card" role="document">
+      <header class="ind-modal-head">
+        <div class="ind-modal-titlewrap">
+          <span class="ind-modal-icon" id="ind-modal-icon" aria-hidden="true"></span>
+          <div>
+            <h3 id="ind-modal-title">Industry</h3>
+            <p class="ind-modal-summary muted small" id="ind-modal-summary"></p>
+          </div>
+        </div>
+        <button type="button" class="ind-modal-close" data-ind-close aria-label="Close">x</button>
+      </header>
+      <div class="ind-modal-body" id="ind-modal-body"></div>
+    </div>
+  </div>
+
+  <script src="/assets/js/i18n.js"></script>
+  <script src="/assets/js/api.js"></script>
+  <script src="/assets/js/ui.js"></script>
+  <script src="/assets/js/tools-rail.js"></script>
+  <script src="/assets/js/industries.js"></script>
+  <script src="/assets/js/command-palette.js"></script>
+  <script>
+    (function () {
+      function boot() {
+        try { applyI18n(); } catch (e) {}
+        try { renderLangPicker(document.getElementById("lang-host")); } catch (e) {}
+      }
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", boot);
+      } else {
+        boot();
+      }
+    })();
+  </script>
+</body>
+</html>

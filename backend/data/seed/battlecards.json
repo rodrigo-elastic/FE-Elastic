@@ -54,6 +54,13 @@
       "What does your AppD renewal look like in the next 12 months?"
     ],
     "vertical": "observability_logs",
+    "industries": [
+      "fsi-banking",
+      "fsi-insurance",
+      "retail-ecommerce",
+      "telco",
+      "automotive"
+    ],
     "is_main_competitor": false
   },
   {
@@ -111,6 +118,12 @@
       "How is Chronicle handling your non-security telemetry (observability, app logs)?"
     ],
     "vertical": "security_siem_xdr",
+    "industries": [
+      "tech-saas",
+      "gov-federal",
+      "fsi-banking",
+      "retail-ecommerce"
+    ],
     "is_main_competitor": false
   },
   {
@@ -164,6 +177,12 @@
       "What is Cribl's renewal date and ARR?"
     ],
     "vertical": "observability_logs",
+    "industries": [
+      "fsi-banking",
+      "telco",
+      "media-streaming",
+      "tech-saas"
+    ],
     "is_main_competitor": false
   },
   {
@@ -216,6 +235,15 @@
       "Have you hit the 'we cannot afford to keep more history' moment yet?"
     ],
     "vertical": "observability_logs",
+    "industries": [
+      "tech-saas",
+      "retail-ecommerce",
+      "media-streaming",
+      "fsi-banking",
+      "healthcare-providers",
+      "telco",
+      "transportation-logistics"
+    ],
     "is_main_competitor": true
   },
   {
@@ -273,6 +301,14 @@
       "What is your Dynatrace renewal date and the current DPS commit?"
     ],
     "vertical": "observability_logs",
+    "industries": [
+      "fsi-banking",
+      "fsi-insurance",
+      "healthcare-providers",
+      "mfg-discrete",
+      "energy-utilities",
+      "automotive"
+    ],
     "is_main_competitor": true
   },
   {
@@ -326,6 +362,12 @@
       "How is long-term retention handled today?"
     ],
     "vertical": "security_siem_xdr",
+    "industries": [
+      "fsi-banking",
+      "fsi-insurance",
+      "healthcare-providers",
+      "gov-federal"
+    ],
     "is_main_competitor": false
   },
   {
@@ -383,6 +425,14 @@
       "Where does security telemetry live in the LGTM stack?"
     ],
     "vertical": "observability_logs",
+    "industries": [
+      "tech-saas",
+      "telco",
+      "energy-utilities",
+      "mfg-process",
+      "gov-federal",
+      "transportation-logistics"
+    ],
     "is_main_competitor": true
   },
   {
@@ -436,6 +486,11 @@
       "How much custom detection content has your team authored?"
     ],
     "vertical": "observability_logs",
+    "industries": [
+      "tech-saas",
+      "gov-state-local",
+      "mfg-discrete"
+    ],
     "is_main_competitor": false
   },
   {
@@ -489,6 +544,11 @@
       "How much of your Honeycomb spend is event volume versus retention?"
     ],
     "vertical": "observability_logs",
+    "industries": [
+      "tech-saas",
+      "retail-ecommerce",
+      "fsi-insurance"
+    ],
     "is_main_competitor": false
   },
   {
@@ -542,6 +602,12 @@
       "Where does security telemetry live today?"
     ],
     "vertical": "observability_logs",
+    "industries": [
+      "tech-saas",
+      "telco",
+      "media-streaming",
+      "energy-utilities"
+    ],
     "is_main_competitor": false
   },
   {
@@ -599,6 +665,13 @@
       "What is your retention requirement and how is it priced today?"
     ],
     "vertical": "security_siem_xdr",
+    "industries": [
+      "gov-federal",
+      "gov-state-local",
+      "fsi-insurance",
+      "healthcare-payers",
+      "retail-brick-mortar"
+    ],
     "is_main_competitor": false
   },
   {
@@ -652,6 +725,12 @@
       "What is your New Relic renewal date and ARR?"
     ],
     "vertical": "observability_logs",
+    "industries": [
+      "tech-saas",
+      "retail-ecommerce",
+      "fsi-insurance",
+      "telco"
+    ],
     "is_main_competitor": true
   },
   {
@@ -709,6 +788,13 @@
       "Is the IBM-to-Palo-Alto QRadar SaaS deal affecting your roadmap?"
     ],
     "vertical": "security_siem_xdr",
+    "industries": [
+      "fsi-banking",
+      "fsi-insurance",
+      "gov-federal",
+      "energy-utilities",
+      "telco"
+    ],
     "is_main_competitor": false
   },
   {
@@ -761,6 +847,18 @@
       "If you had to consolidate to one platform in 12 months, what's the blocker?"
     ],
     "vertical": "observability_logs",
+    "industries": [
+      "fsi-banking",
+      "fsi-insurance",
+      "fsi-capital-markets",
+      "gov-federal",
+      "gov-state-local",
+      "telco",
+      "media-streaming",
+      "tech-saas",
+      "energy-utilities",
+      "healthcare-payers"
+    ],
     "is_main_competitor": true
   },
   {
@@ -809,6 +907,12 @@
       "Is your team feeling the limits of Sumo's CSE customization?"
     ],
     "vertical": "security_siem_xdr",
+    "industries": [
+      "tech-saas",
+      "retail-ecommerce",
+      "fsi-insurance",
+      "telco"
+    ],
     "is_main_competitor": true
   },
   {
@@ -866,6 +970,12 @@
       "Which of the three products would you keep if you could only keep one?"
     ],
     "vertical": "observability_logs",
+    "industries": [
+      "fsi-banking",
+      "fsi-insurance",
+      "telco",
+      "gov-federal"
+    ],
     "is_main_competitor": false
   },
   {
@@ -923,6 +1033,13 @@
       "Who owns the IT-OT bridge: plant security, corporate SOC, or neither?"
     ],
     "vertical": "security_siem_xdr",
+    "industries": [
+      "energy-utilities",
+      "mfg-process",
+      "mfg-discrete",
+      "automotive",
+      "transportation-logistics"
+    ],
     "is_main_competitor": false
   },
   {
@@ -980,6 +1097,12 @@
       "Where does Security telemetry live, and is it in scope for ITOM?"
     ],
     "vertical": "observability_logs",
+    "industries": [
+      "fsi-insurance",
+      "healthcare-payers",
+      "gov-federal",
+      "retail-brick-mortar"
+    ],
     "is_main_competitor": false
   },
   {
@@ -1037,6 +1160,12 @@
       "What is your retention requirement, and how is SmartStore plus warm-tier costed today?"
     ],
     "vertical": "observability_logs",
+    "industries": [
+      "tech-saas",
+      "retail-ecommerce",
+      "healthcare-providers",
+      "media-streaming"
+    ],
     "is_main_competitor": false
   },
   {
@@ -1094,6 +1223,13 @@
       "How are runtime cloud detections handled today: Wiz Defend, GuardDuty, EDR, or SIEM rules?"
     ],
     "vertical": "security_siem_xdr",
+    "industries": [
+      "tech-saas",
+      "fsi-banking",
+      "healthcare-payers",
+      "retail-ecommerce",
+      "media-streaming"
+    ],
     "is_main_competitor": false
   },
   {
@@ -1101,6 +1237,12 @@
     "competitor": "AWS OpenSearch",
     "competitor_slug": "aws-opensearch",
     "vertical": "direct_search_vector",
+    "industries": [
+      "tech-saas",
+      "retail-ecommerce",
+      "gov-federal",
+      "media-streaming"
+    ],
     "is_main_competitor": true,
     "tagline": "Same Lucene roots, but Elastic ships the platform features OpenSearch lacks",
     "key_pain": "AWS OpenSearch is a 7.10 fork that has diverged on plugins, ML, vector and APM. Customers picking it for AWS-native billing inherit a slower release cadence, no semantic_text, and no first-party APM or SIEM workflow. The community is real but smaller and AWS-centric.",
@@ -1178,6 +1320,12 @@
     "competitor": "Pinecone",
     "competitor_slug": "pinecone",
     "vertical": "direct_search_vector",
+    "industries": [
+      "tech-saas",
+      "retail-ecommerce",
+      "healthcare-payers",
+      "pharma-life-sciences"
+    ],
     "is_main_competitor": true,
     "tagline": "Stop running two databases. BM25 plus dense plus ELSER under one query.",
     "key_pain": "Pinecone is a vector-only managed service. Customers pair it with Elastic, Postgres or another keyword store for hybrid search, then pay for both, sync data both ways and reconcile two ranking models at query time. The architecture is simple until you need filters, full text or audit retention.",
@@ -1255,6 +1403,12 @@
     "competitor": "Weaviate",
     "competitor_slug": "weaviate",
     "vertical": "direct_search_vector",
+    "industries": [
+      "tech-saas",
+      "gov-federal",
+      "pharma-life-sciences",
+      "automotive"
+    ],
     "is_main_competitor": true,
     "tagline": "Vector-native works until you need keyword, filters and security on one cluster",
     "key_pain": "Weaviate is a clean, vector-native open source database with strong GraphQL ergonomics. It is a great fit for greenfield RAG. Where it strains: enterprise auth, large filtered queries, hybrid scoring beyond a single index, and operational features that Elastic shipped a decade ago.",
@@ -1332,6 +1486,12 @@
     "competitor": "Milvus",
     "competitor_slug": "milvus",
     "vertical": "direct_search_vector",
+    "industries": [
+      "tech-saas",
+      "retail-ecommerce",
+      "telco",
+      "automotive"
+    ],
     "is_main_competitor": true,
     "tagline": "Billion-scale vectors are useful; the question is what else lives on the same cluster",
     "key_pain": "Milvus and Zilliz Cloud lead pure-vector benchmarks at billion-scale and offer GPU indexing. The tradeoff is operational complexity (etcd, Pulsar, MinIO components) and a narrow feature set: no first-class BM25, weak metadata filtering performance, no observability or security workloads on the same cluster.",
@@ -1409,6 +1569,11 @@
     "competitor": "Typesense",
     "competitor_slug": "typesense",
     "vertical": "direct_search_vector",
+    "industries": [
+      "retail-ecommerce",
+      "media-streaming",
+      "tech-saas"
+    ],
     "is_main_competitor": true,
     "tagline": "Great for one site search. Elastic is the platform for everything that comes after.",
     "key_pain": "Typesense is fast to install, has a clean API and a generous free tier, and makes site search trivial. The ceiling appears the moment you need: enterprise auth, multi-cluster, security analytics on the same data, log retention, or anything beyond product-search ranking.",
@@ -1486,6 +1651,11 @@
     "competitor": "Meilisearch",
     "competitor_slug": "meilisearch",
     "vertical": "direct_search_vector",
+    "industries": [
+      "retail-ecommerce",
+      "tech-saas",
+      "media-streaming"
+    ],
     "is_main_competitor": true,
     "tagline": "Developer-friendly is great until the security team and the SRE team show up",
     "key_pain": "Meilisearch is the most loved developer experience in the search space: a single binary, instant install, JS-first SDKs, prefix search and typo tolerance enabled by default. The ceiling appears around enterprise scale: limited multi-tenant security, no tiered storage, no first-party observability, no SIEM workflow.",
@@ -1563,6 +1733,12 @@
     "competitor": "Algolia",
     "competitor_slug": "algolia",
     "vertical": "ai_search_ecommerce",
+    "industries": [
+      "retail-ecommerce",
+      "travel-hospitality",
+      "media-streaming",
+      "tech-saas"
+    ],
     "is_main_competitor": true,
     "tagline": "Algolia is rented relevance. Elastic is owned relevance plus the platform around it.",
     "key_pain": "Algolia ships fast, ranks well and has the best-in-class merchandising UI for product search. The cost shows up in three places: per-record-per-month pricing that punishes large catalogs, no data residency control beyond a few regions, and a ceiling at search-only when the team needs RAG, observability or security on the same data.",
@@ -1640,6 +1816,12 @@
     "competitor": "Coveo",
     "competitor_slug": "coveo",
     "vertical": "ai_search_ecommerce",
+    "industries": [
+      "tech-saas",
+      "fsi-insurance",
+      "retail-brick-mortar",
+      "travel-hospitality"
+    ],
     "is_main_competitor": true,
     "tagline": "Open relevance plus open data, on the same platform that runs your logs and SIEM",
     "key_pain": "Coveo's enterprise relevance and recommendations are mature and well-tuned for Salesforce and ServiceNow shops. The cost: a closed ML stack, indexed-document pricing, and a single-purpose footprint that does not extend to RAG, log analytics, observability or security.",
@@ -1717,6 +1899,12 @@
     "competitor": "Lucidworks",
     "competitor_slug": "lucidworks",
     "vertical": "ai_search_ecommerce",
+    "industries": [
+      "retail-ecommerce",
+      "tech-saas",
+      "fsi-insurance",
+      "gov-federal"
+    ],
     "is_main_competitor": true,
     "tagline": "Elastic shipped the platform features Solr-based Fusion is still chasing",
     "key_pain": "Lucidworks Fusion is the commercial wrapper around Apache Solr, with strong relevance heritage and a deep services practice. The cost: Solr's release cadence, a smaller community than Elastic, fewer first-party integrations, and no observability or security workloads on the same data plane.",
@@ -1794,6 +1982,14 @@
     "competitor": "CrowdStrike",
     "competitor_slug": "crowdstrike",
     "vertical": "security_siem_xdr",
+    "industries": [
+      "gov-federal",
+      "fsi-banking",
+      "healthcare-providers",
+      "energy-utilities",
+      "mfg-discrete",
+      "aerospace-defense"
+    ],
     "is_main_competitor": true,
     "tagline": "Falcon catches the endpoint. Elastic catches the rest and keeps the history.",
     "key_pain": "CrowdStrike Falcon dominates endpoint detection and response. Where it strains as a platform: long-retention SIEM-class storage gets expensive on Falcon LogScale, detection content outside the endpoint is thinner, and Next-Gen SIEM is a newer product that customers are still proving in. Most CrowdStrike shops keep a separate SIEM.",
@@ -1871,6 +2067,12 @@
     "competitor": "SentinelOne",
     "competitor_slug": "sentinelone",
     "vertical": "security_siem_xdr",
+    "industries": [
+      "tech-saas",
+      "retail-ecommerce",
+      "healthcare-providers",
+      "gov-state-local"
+    ],
     "is_main_competitor": true,
     "tagline": "S1 stops the host. Elastic is the open SIEM that hunts across everything else.",
     "key_pain": "SentinelOne Singularity is a strong autonomous EDR with mature one-click rollback. Its SIEM and data lake story (Singularity Data Lake, ex-Scalyr) is newer; long retention and broad detection content outside the endpoint are less mature than the established SIEM market.",

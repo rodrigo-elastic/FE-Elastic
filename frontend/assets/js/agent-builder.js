@@ -691,9 +691,65 @@
     });
   }
 
+  // ============================================================ Modal focus trap (WCAG 2.4.3 / 2.1.2)
+  // When the create-agent modal opens we (a) remember the element that triggered it so we can
+  // restore focus on close, (b) move focus to the first input, and (c) trap Tab / Shift+Tab
+  // inside the dialog. Esc-to-close is wired separately below.
+  let _abModalLastFocus = null;
+  function _abFocusableInModal() {
+    const modal = $("#ab-modal");
+    if (!modal) return [];
+    const sel = [
+      'a[href]',
+      'button:not([disabled])',
+      'input:not([disabled]):not([type="hidden"])',
+      'select:not([disabled])',
+      'textarea:not([disabled])',
+      '[tabindex]:not([tabindex="-1"])',
+    ].join(',');
+    return Array.from(modal.querySelectorAll(sel)).filter((n) => {
+      if (n.hasAttribute('disabled')) return false;
+      if (n.getAttribute('aria-hidden') === 'true') return false;
+      if (n.hidden) return false;
+      // Skip elements inside elements that are display:none via [hidden].
+      let p = n.parentElement;
+      while (p && p !== modal) {
+        if (p.hidden) return false;
+        p = p.parentElement;
+      }
+      return true;
+    });
+  }
+  function _abModalKeyTrap(ev) {
+    if (ev.key !== 'Tab') return;
+    const modal = $("#ab-modal");
+    if (!modal || modal.hidden) return;
+    const focusables = _abFocusableInModal();
+    if (focusables.length === 0) {
+      ev.preventDefault();
+      return;
+    }
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    const active = document.activeElement;
+    if (ev.shiftKey) {
+      if (active === first || !modal.contains(active)) {
+        ev.preventDefault();
+        last.focus();
+      }
+    } else {
+      if (active === last || !modal.contains(active)) {
+        ev.preventDefault();
+        first.focus();
+      }
+    }
+  }
+
   function openModal() {
     const modal = $("#ab-modal");
     if (!modal) return;
+    // Remember the trigger so we can restore focus to it after close.
+    _abModalLastFocus = (document.activeElement instanceof HTMLElement) ? document.activeElement : null;
     clearFieldErrors();
     $("#ab-f-name").value = "";
     $("#ab-f-slug").value = "";
@@ -710,17 +766,26 @@
       applyToolFilter("");
     }
     modal.hidden = false;
-    // Focus the search input first so the user can filter tools immediately. The name field
-    // is still there; users can tab to it. This matches the modal's primary friction point.
+    // Focus the first input (Name) so the form reads top-to-bottom for keyboard and AT users.
+    // This satisfies WCAG 2.4.3 Focus Order for the dialog flow.
     setTimeout(() => {
-      const target = $("#ab-f-tools-search") || $("#ab-f-name");
+      const target = $("#ab-f-name");
       if (target) target.focus();
     }, 30);
+    // Activate the focus trap.
+    document.addEventListener('keydown', _abModalKeyTrap, true);
   }
 
   function closeModal() {
     const modal = $("#ab-modal");
     if (modal) modal.hidden = true;
+    document.removeEventListener('keydown', _abModalKeyTrap, true);
+    // Restore focus to the element that opened the modal so screen-reader users do not lose
+    // their place. WCAG 2.4.3 Focus Order.
+    if (_abModalLastFocus && typeof _abModalLastFocus.focus === 'function') {
+      try { _abModalLastFocus.focus({ preventScroll: true }); } catch (_) { try { _abModalLastFocus.focus(); } catch (__) {} }
+    }
+    _abModalLastFocus = null;
   }
 
   async function submitModal() {

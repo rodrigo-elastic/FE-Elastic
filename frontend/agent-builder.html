@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="/assets/css/command-palette.css" />
 </head>
 <body class="agent-builder-page">
+  <a class="skip-to-main" href="#main-content" data-i18n="a11y.skip_to_main">Skip to main content</a>
   <header class="topbar">
     <a class="brand" href="/" aria-label="FE Copilot home">
       <img class="logo-elastic" src="/assets/img/elastic/logo-horizontal-white.svg" alt="Elastic" />
@@ -28,7 +29,7 @@
     </div>
   </header>
 
-  <main class="container">
+  <main class="container" id="main-content" tabindex="-1">
     <section class="hero">
       <h1>Agent Builder <span class="grad">live in your Elastic cluster.</span></h1>
       <p class="lede">
@@ -78,7 +79,7 @@
       </div>
     </section>
 
-    <section id="toast-host"></section>
+    <section id="toast-host" role="status" aria-live="polite" aria-atomic="false"></section>
   </main>
 
   <div class="ab-modal" id="ab-modal" hidden role="dialog" aria-modal="true" aria-labelledby="ab-modal-title">
@@ -86,7 +87,7 @@
     <div class="ab-modal-card" role="document">
       <header class="ab-modal-head">
         <h3 id="ab-modal-title" data-i18n="ab.modal.title">Create a specialist agent</h3>
-        <button type="button" class="ab-modal-close" data-ab-close aria-label="Close">x</button>
+        <button type="button" class="ab-modal-close" data-ab-close aria-label="Close create-agent dialog"><span aria-hidden="true">&times;</span></button>
       </header>
       <form id="ab-modal-form" class="ab-modal-form" onsubmit="return false">
         <div class="ab-field-row">
@@ -134,7 +135,7 @@
               placeholder="Search tools by name or capability"
               aria-label="Search tools"
             />
-            <button type="button" class="ab-tool-search-clear" id="ab-f-tools-clear" hidden data-i18n-title="ab.tool.clear" aria-label="Clear search">x</button>
+            <button type="button" class="ab-tool-search-clear" id="ab-f-tools-clear" hidden data-i18n-title="ab.tool.clear" aria-label="Clear tool search"><span aria-hidden="true">&times;</span></button>
           </div>
           <div id="ab-f-tools" class="ab-tools-grid" role="group" aria-label="Tool picker"></div>
           <div class="ab-tool-counter" id="ab-f-tools-counter" aria-live="polite"></div>

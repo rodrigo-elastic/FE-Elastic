@@ -11,6 +11,25 @@
     "black-friday-outage": "🛒",
     "credential-stuffing": "🔐",
     "noisy-microservice": "🚨",
+    "gdpr-audit-timeline": "📋",
+    "supply-chain-attack": "🧩",
+    "fsi-banking-fraud": "🏦",
+    "healthcare-hipaa-audit": "🩺",
+    "gov-cdm-compliance": "🏛️",
+  };
+
+  // Map FE Brain industry ids (W15A schema) to display labels for the badge pill.
+  const INDUSTRY_LABELS = {
+    "fsi-banking": "FSI Banking",
+    "healthcare-providers": "Healthcare Providers",
+    "gov-federal": "Government Federal",
+  };
+
+  // Convention fallback when a scenario module does not export INDUSTRY_ID.
+  const SCENARIO_INDUSTRY = {
+    "fsi-banking-fraud": "fsi-banking",
+    "healthcare-hipaa-audit": "healthcare-providers",
+    "gov-cdm-compliance": "gov-federal",
   };
 
   function el(tag, attrs = {}, children = []) {
@@ -41,12 +60,29 @@
 
   function card(scenario) {
     const root = el("div", { class: "dd-card", "data-scenario": scenario.id });
-    root.appendChild(
-      el("div", { class: "dd-card-head" }, [
-        el("span", { class: "dd-icon" }, SCENARIO_ICONS[scenario.id] || "🧪"),
-        el("h3", { class: "dd-title" }, scenario.title),
-      ])
-    );
+    const head = el("div", { class: "dd-card-head" }, [
+      el("span", { class: "dd-icon" }, SCENARIO_ICONS[scenario.id] || "🧪"),
+      el("h3", { class: "dd-title" }, scenario.title),
+    ]);
+    // Industry tag pill (W15A industry id format). Falls back to a static map
+    // for the three flagship scenarios in case the backend response omits it.
+    const industryId = scenario.industry_id || SCENARIO_INDUSTRY[scenario.id];
+    if (industryId) {
+      const label = INDUSTRY_LABELS[industryId] || industryId;
+      head.appendChild(
+        el("span", {
+          class: `dd-industry-pill industry-${industryId}`,
+          "data-industry-id": industryId,
+          title: `Industry vertical: ${label}`,
+        }, label)
+      );
+    }
+    root.appendChild(head);
+    if (scenario.customer_name) {
+      root.appendChild(
+        el("div", { class: "dd-customer muted small" }, `Customer: ${scenario.customer_name}`)
+      );
+    }
     root.appendChild(el("p", { class: "dd-desc" }, scenario.description));
     const indicesList = (scenario.indices || []).join(" · ");
     root.appendChild(el("div", { class: "dd-indices muted small" }, indicesList ? `Indices: ${indicesList}` : ""));

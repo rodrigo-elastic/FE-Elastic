@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="/assets/css/command-palette.css" />
 </head>
 <body class="battlecards-page">
+  <a class="skip-to-main" href="#main-content" data-i18n="a11y.skip_to_main">Skip to main content</a>
   <header class="topbar" id="bc-topbar">
     <a class="brand" href="/" aria-label="FE Copilot home">
       <img class="logo-elastic" src="/assets/img/elastic/logo-horizontal-white.svg" alt="Elastic" />
@@ -30,7 +31,8 @@
   </header>
 
   <!-- Grid view: list of battlecards. Hidden when a hash slug is active. -->
-  <main class="container" id="bc-grid-view">
+  <main class="container" id="bc-grid-view" tabindex="-1">
+    <span id="main-content" tabindex="-1" class="visually-hidden">Main content start</span>
     <section class="hero">
       <h1>Counter-positioning <span class="grad">at your fingertips.</span></h1>
       <p class="lede">
@@ -77,17 +79,48 @@
         </button>
       </div>
       <label class="bc-toggle" for="bc-main-toggle">
-        <input type="checkbox" id="bc-main-toggle" checked />
+        <input type="checkbox" id="bc-main-toggle" />
         <span class="bc-toggle-track" aria-hidden="true"><span class="bc-toggle-thumb"></span></span>
         <span class="bc-toggle-label" data-i18n="bc.toggle.mains">Main competitors only</span>
       </label>
+    </section>
+
+    <section class="bc-industry-filter" aria-label="Filter by industry" role="group">
+      <label class="bc-industry-label" for="bc-industry-select" data-i18n="bc.filter.industry">Filter by industry</label>
+      <div class="bc-industry-select-wrap">
+        <select class="bc-industry-select" id="bc-industry-select" aria-label="Filter battlecards by industry">
+          <option value="all" data-i18n="bc.filter.industry_all">All industries</option>
+          <option value="fsi-banking" data-i18n="bc.industry.fsi-banking">FSI - Banking</option>
+          <option value="fsi-insurance" data-i18n="bc.industry.fsi-insurance">FSI - Insurance</option>
+          <option value="fsi-capital-markets" data-i18n="bc.industry.fsi-capital-markets">FSI - Capital Markets</option>
+          <option value="gov-federal" data-i18n="bc.industry.gov-federal">Government - Federal</option>
+          <option value="gov-state-local" data-i18n="bc.industry.gov-state-local">Government - State and Local</option>
+          <option value="healthcare-providers" data-i18n="bc.industry.healthcare-providers">Healthcare - Providers</option>
+          <option value="healthcare-payers" data-i18n="bc.industry.healthcare-payers">Healthcare - Payers</option>
+          <option value="pharma-life-sciences" data-i18n="bc.industry.pharma-life-sciences">Pharma and Life Sciences</option>
+          <option value="retail-ecommerce" data-i18n="bc.industry.retail-ecommerce">Retail - E-commerce</option>
+          <option value="retail-brick-mortar" data-i18n="bc.industry.retail-brick-mortar">Retail - Brick and Mortar</option>
+          <option value="telco" data-i18n="bc.industry.telco">Telco</option>
+          <option value="media-streaming" data-i18n="bc.industry.media-streaming">Media and Streaming</option>
+          <option value="tech-saas" data-i18n="bc.industry.tech-saas">Tech and SaaS</option>
+          <option value="mfg-discrete" data-i18n="bc.industry.mfg-discrete">Manufacturing - Discrete</option>
+          <option value="mfg-process" data-i18n="bc.industry.mfg-process">Manufacturing - Process</option>
+          <option value="energy-utilities" data-i18n="bc.industry.energy-utilities">Energy and Utilities</option>
+          <option value="transportation-logistics" data-i18n="bc.industry.transportation-logistics">Transportation and Logistics</option>
+          <option value="travel-hospitality" data-i18n="bc.industry.travel-hospitality">Travel and Hospitality</option>
+          <option value="automotive" data-i18n="bc.industry.automotive">Automotive</option>
+          <option value="aerospace-defense" data-i18n="bc.industry.aerospace-defense">Aerospace and Defense</option>
+        </select>
+        <svg class="bc-industry-caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <button type="button" class="bc-industry-clear" id="bc-industry-clear" hidden aria-label="Clear industry filter" data-i18n="bc.filter.industry_clear">Clear</button>
     </section>
 
     <section class="bc-grid" id="bc-grid" aria-label="Competitor battlecards">
       <p class="muted">Loading battlecards...</p>
     </section>
 
-    <section id="toast-host"></section>
+    <section id="toast-host" role="status" aria-live="polite" aria-atomic="false"></section>
   </main>
 
   <!-- Detail view: full-screen sales kit for one competitor. Activated by URL hash. -->

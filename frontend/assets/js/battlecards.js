@@ -15,9 +15,22 @@
     miniMounted: null, // slug currently mounted into the chat panel
     lastFocus: null,
     vertical: "all",          // active vertical chip; "all" or one of the 4 keys
-    mainsOnly: true,          // toggle defaults on per sprint spec
+    industry: "all",          // selected industry id; "all" or one of the 20 ids
+    mainsOnly: false,         // toggle defaults off so all 31 cards are visible by default
     searchQuery: "",          // last applied search string
   };
+
+  // Canonical 20 industry IDs aligned with W15A.
+  const INDUSTRY_IDS = [
+    "fsi-banking", "fsi-insurance", "fsi-capital-markets",
+    "gov-federal", "gov-state-local",
+    "healthcare-providers", "healthcare-payers", "pharma-life-sciences",
+    "retail-ecommerce", "retail-brick-mortar",
+    "telco", "media-streaming", "tech-saas",
+    "mfg-discrete", "mfg-process",
+    "energy-utilities", "transportation-logistics",
+    "travel-hospitality", "automotive", "aerospace-defense",
+  ];
 
   const VERTICAL_LABELS = {
     direct_search_vector: "Search / Vector",
@@ -206,17 +219,36 @@
     return root;
   }
 
+  function tr(key, fallback) {
+    if (window.t && typeof t === "function") {
+      const v = t(key);
+      if (v && v !== key) return v;
+    }
+    return fallback;
+  }
+
   function renderList(cards) {
     const grid = $("#bc-grid");
     if (!grid) return;
     clear(grid);
     if (!cards.length) {
+      const filtersActive = STATE.cards.length && (
+        STATE.searchQuery || STATE.vertical !== "all" || STATE.industry !== "all" || STATE.mainsOnly
+      );
+      const headline = STATE.cards.length
+        ? (filtersActive
+            ? tr("bc.filter.no_match", "No battlecards match these filters.")
+            : "No competitors match that search.")
+        : "No battlecards loaded yet.";
+      const sub = STATE.cards.length
+        ? (filtersActive
+            ? "Try clearing a filter or picking a different industry."
+            : "Try a different name or clear the search.")
+        : "The fec-battlecards index is empty and no seed file was found. Re-run the data seeder.";
       grid.appendChild(
         el("div", { class: "bc-empty" }, [
-          el("strong", {}, STATE.cards.length ? "No competitors match that search." : "No battlecards loaded yet."),
-          el("span", {}, STATE.cards.length
-            ? "Try a different name or clear the search."
-            : "The fec-battlecards index is empty and no seed file was found. Re-run the data seeder."),
+          el("strong", {}, headline),
+          el("span", {}, sub),
         ])
       );
       return;
@@ -228,10 +260,15 @@
     if (typeof query === "string") STATE.searchQuery = query;
     const q = (STATE.searchQuery || "").toLowerCase().trim();
     const vertical = STATE.vertical || "all";
+    const industry = STATE.industry || "all";
     const mainsOnly = !!STATE.mainsOnly;
 
     STATE.filtered = STATE.cards.filter((c) => {
       if (vertical !== "all" && (c.vertical || "") !== vertical) return false;
+      if (industry !== "all") {
+        const inds = Array.isArray(c.industries) ? c.industries : [];
+        if (!inds.includes(industry)) return false;
+      }
       if (mainsOnly && !c.is_main_competitor) return false;
       if (!q) return true;
       const hay = [
@@ -239,6 +276,7 @@
         c.competitor_slug || "",
         c.tagline || "",
         c.vertical || "",
+        (Array.isArray(c.industries) ? c.industries.join(" ") : ""),
       ].join(" ").toLowerCase();
       return hay.includes(q);
     });
@@ -248,7 +286,7 @@
       const total = STATE.cards.length;
       const shown = STATE.filtered.length;
       const parts = [];
-      if (q || vertical !== "all" || mainsOnly) {
+      if (q || vertical !== "all" || industry !== "all" || mainsOnly) {
         parts.push(`${shown} of ${total}`);
       }
       counter.textContent = parts.join(" ");
@@ -258,13 +296,19 @@
   }
 
   // Recompute the count badge on each chip. Counts respect the mains-only toggle
-  // (so the user sees the same population that clicking the chip will produce)
-  // but ignore the search box, so the chips do not flicker as the user types.
+  // and the active industry filter (so the user sees the same population that
+  // clicking the chip will produce) but ignore the search box, so the chips do
+  // not flicker as the user types.
   function refreshChipCounts() {
     const mainsOnly = !!STATE.mainsOnly;
+    const industry = STATE.industry || "all";
     const totals = { all: 0, direct_search_vector: 0, observability_logs: 0, ai_search_ecommerce: 0, security_siem_xdr: 0 };
     for (const c of STATE.cards) {
       if (mainsOnly && !c.is_main_competitor) continue;
+      if (industry !== "all") {
+        const inds = Array.isArray(c.industries) ? c.industries : [];
+        if (!inds.includes(industry)) continue;
+      }
       totals.all += 1;
       if (c.vertical && totals.hasOwnProperty(c.vertical)) totals[c.vertical] += 1;
     }
@@ -272,6 +316,24 @@
       const key = node.getAttribute("data-count-for");
       if (key && totals.hasOwnProperty(key)) node.textContent = String(totals[key]);
     });
+    // Sync the count pill in the hero meta to reflect the visible card count.
+    const pillCount = $("#bc-pill-count");
+    if (pillCount && Array.isArray(STATE.filtered)) {
+      const shown = STATE.filtered.length;
+      const total = STATE.cards.length;
+      let label;
+      if (shown === total) {
+        label = total === 1 ? "1 card loaded" : `${total} cards loaded`;
+      } else {
+        label = `${shown} of ${total} cards`;
+      }
+      pillCount.textContent = label;
+      pillCount.classList.remove("ab-pill-muted");
+      pillCount.classList.add(shown > 0 ? "ab-pill-ok" : "ab-pill-err");
+    }
+    // Toggle visibility of the inline "Clear" button next to the dropdown.
+    const clearBtn = $("#bc-industry-clear");
+    if (clearBtn) clearBtn.hidden = (STATE.industry || "all") === "all";
   }
 
   function setVertical(key) {
@@ -287,6 +349,14 @@
 
   function setMainsOnly(on) {
     STATE.mainsOnly = !!on;
+    applyFilter();
+  }
+
+  function setIndustry(value) {
+    const next = value && INDUSTRY_IDS.indexOf(value) >= 0 ? value : "all";
+    STATE.industry = next;
+    const select = $("#bc-industry-select");
+    if (select && select.value !== next) select.value = next;
     applyFilter();
   }
 
@@ -947,6 +1017,20 @@
     }
   }
 
+  function bindIndustryFilter() {
+    const select = $("#bc-industry-select");
+    if (select) {
+      select.addEventListener("change", () => setIndustry(select.value || "all"));
+    }
+    const clearBtn = $("#bc-industry-clear");
+    if (clearBtn) {
+      clearBtn.addEventListener("click", (ev) => {
+        ev.preventDefault();
+        setIndustry("all");
+      });
+    }
+  }
+
   // ----------------------------------------------------------------- load
 
   async function load() {
@@ -955,9 +1039,37 @@
       const data = await apiGet("/battlecards");
       STATE.cards = Array.isArray(data && data.items) ? data.items : [];
       STATE.source = (data && data.source) || "seed";
-      STATE.cards.sort((a, b) =>
-        String(a.competitor || "").localeCompare(String(b.competitor || ""))
-      );
+      // Order by competitor importance / marketshare, not alphabetical.
+      // Lower rank = bigger / more strategic. Main competitors always sort
+      // ahead of non-main within the same effective rank.
+      const IMPORTANCE = {
+        // Observability and SIEM giants.
+        "splunk": 1, "datadog": 2, "dynatrace": 3, "grafana": 4, "new relic": 5,
+        "appdynamics": 6, "cisco-bundle": 7, "sumo logic": 8, "splunk-cloud": 9,
+        "cribl": 10, "honeycomb": 11, "servicenow-itom": 12, "loki": 13, "graylog": 14,
+        // Direct search and vector DB.
+        "aws-opensearch": 1, "pinecone": 2, "weaviate": 3, "milvus": 4,
+        "typesense": 5, "meilisearch": 6,
+        // AI search e-commerce.
+        "algolia": 1, "coveo": 2, "lucidworks": 3,
+        // Security SIEM XDR.
+        "crowdstrike": 1, "microsoft sentinel": 2, "sentinelone": 3, "wiz": 4,
+        "qradar": 5, "exabeam": 6, "chronicle": 7, "dragos": 8,
+      };
+      const rankOf = (c) => {
+        const slug = String(c.competitor_slug || c.competitor || "").toLowerCase();
+        const r = IMPORTANCE[slug];
+        return typeof r === "number" ? r : 999;
+      };
+      STATE.cards.sort((a, b) => {
+        const am = a.is_main_competitor ? 0 : 1;
+        const bm = b.is_main_competitor ? 0 : 1;
+        if (am !== bm) return am - bm;
+        const ar = rankOf(a);
+        const br = rankOf(b);
+        if (ar !== br) return ar - br;
+        return String(a.competitor || "").localeCompare(String(b.competitor || ""));
+      });
       setMeta(STATE.cards.length, STATE.source);
       applyFilter("");
       // Re-route now that data is available (handles deep-link to #slug).
@@ -981,6 +1093,7 @@
   function init() {
     bindSearch();
     bindVerticalFilter();
+    bindIndustryFilter();
     bindRouting();
     bindDetailToolbar();
     routeFromHash(); // shows grid until data arrives or hash is empty

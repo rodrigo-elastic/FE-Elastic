@@ -1,0 +1,463 @@
+[
+  {
+    "id": "fsi-banking",
+    "name": "Financial Services - Banking",
+    "icon": "bank",
+    "summary": "Retail, commercial, and investment banking. Splunk replacement, fraud, and DORA-aligned regulatory reporting.",
+    "personas": [
+      {"role": "CISO", "pain": "Audit-grade SIEM at half the cost of Splunk Enterprise, with full DORA traceability."},
+      {"role": "Head of Observability", "pain": "Trade-system latency under 5ms with end-to-end distributed tracing."},
+      {"role": "Compliance Officer", "pain": "FRTB, PCI DSS, DORA evidence collection without 3 weeks of manual lift."},
+      {"role": "Head of Fraud", "pain": "Detect account takeover and credential stuffing in under 90 seconds, not 90 minutes."}
+    ],
+    "regulations": ["DORA", "PCI DSS", "FRTB", "Basel III", "SOX", "GDPR"],
+    "top_competitors": ["battlecard-splunk", "battlecard-datadog", "battlecard-sumologic", "battlecard-microsoft-sentinel"],
+    "scenario_ids": ["credstuff", "gdpr-audit"],
+    "tool_ids": ["fec_compliance", "fec_compare", "fec_proposal", "fec_cost_calc"],
+    "kpis": [
+      {"metric": "TCO reduction vs Splunk", "value": "60 to 75%"},
+      {"metric": "Mean time to detect fraud", "value": "under 90 seconds"},
+      {"metric": "Audit evidence prep", "value": "from 3 weeks to 2 days"}
+    ],
+    "elastic_wins_when": "The customer is over Splunk capacity costs OR needs DORA-aligned cyber resilience OR runs trade systems where latency budgets are micro-seconds.",
+    "elastic_loses_when": "The SOC has standardized on a competing XDR (CrowdStrike, SentinelOne) and is unwilling to dual-stack."
+  },
+  {
+    "id": "fsi-insurance",
+    "name": "Financial Services - Insurance",
+    "icon": "shield-check",
+    "summary": "P&C, life, and reinsurance carriers. Claims fraud detection, actuarial search, and Solvency II reporting.",
+    "personas": [
+      {"role": "Chief Claims Officer", "pain": "Catch claims fraud rings across policy, vehicle, and provider data in one query."},
+      {"role": "Chief Actuary", "pain": "Sub-second search across 15 years of policy data for catastrophe modeling."},
+      {"role": "CISO", "pain": "NAIC Insurance Data Security Model Law evidence on demand."},
+      {"role": "Head of Underwriting", "pain": "Score risk using 3rd-party signals at quote time, not 24 hours later."}
+    ],
+    "regulations": ["NAIC Insurance Data Security Model", "Solvency II", "GDPR", "HIPAA", "SOX"],
+    "top_competitors": ["battlecard-splunk", "battlecard-datadog", "battlecard-microsoft-sentinel", "battlecard-coveo"],
+    "scenario_ids": ["credstuff", "gdpr-audit"],
+    "tool_ids": ["fec_compliance", "fec_knowledge_search", "fec_proposal"],
+    "kpis": [
+      {"metric": "Claims fraud savings", "value": "2 to 4% of paid losses"},
+      {"metric": "Quote latency", "value": "under 200ms"},
+      {"metric": "Solvency II reporting cycle", "value": "from 6 weeks to 9 days"}
+    ],
+    "elastic_wins_when": "The carrier needs a single search layer for claims, policy, and 3rd-party risk data OR is running an aging Splunk SIEM at unsustainable cost.",
+    "elastic_loses_when": "The customer is fully on Guidewire DataHub and Predict, with no appetite for an external search layer."
+  },
+  {
+    "id": "fsi-capital-markets",
+    "name": "Financial Services - Capital Markets",
+    "icon": "trending-up",
+    "summary": "Investment banks, broker-dealers, exchanges, hedge funds. Trade surveillance, market data search, and FRTB.",
+    "personas": [
+      {"role": "Head of Trade Surveillance", "pain": "Spoofing and layering detection on T+0 across 40 venues."},
+      {"role": "Head of Market Data", "pain": "Tick-level history search across 7 years for back-testing in seconds."},
+      {"role": "Head of Risk", "pain": "FRTB IMA daily PnL attribution and ES calculation under regulatory deadlines."},
+      {"role": "CISO", "pain": "MNPI access logging with provable chain of custody for SEC and FINRA."}
+    ],
+    "regulations": ["FRTB", "MiFID II", "Dodd-Frank", "Reg SCI", "SEC Rule 17a-4", "FINRA 4511"],
+    "top_competitors": ["battlecard-splunk", "battlecard-honeycomb", "battlecard-grafana", "battlecard-datadog"],
+    "scenario_ids": ["noisy-microservice", "credstuff"],
+    "tool_ids": ["fec_capacity", "fec_spl_to_esql", "fec_compliance", "fec_compare"],
+    "kpis": [
+      {"metric": "Tick history search latency", "value": "under 1 second over 7 years"},
+      {"metric": "Spoofing alert false-positive rate", "value": "drop from 30% to under 5%"},
+      {"metric": "FRTB nightly job runtime", "value": "from 7 hours to 90 minutes"}
+    ],
+    "elastic_wins_when": "The firm needs surveillance plus observability on the same platform, OR is rebuilding a kdb+ or proprietary tick store and cost is the driver.",
+    "elastic_loses_when": "Trade surveillance is locked into Nasdaq SMARTS or NICE Actimize and there is no consolidation budget this fiscal year."
+  },
+  {
+    "id": "gov-federal",
+    "name": "Government - Federal",
+    "icon": "landmark",
+    "summary": "US federal civilian and DoD agencies. FedRAMP-aligned SIEM, mission observability, FOIA-ready archive.",
+    "personas": [
+      {"role": "Agency CISO", "pain": "M-21-31 logging tier 3 across all agency endpoints inside FY budget."},
+      {"role": "Mission Owner", "pain": "Continuous ATO with evidence pulled directly from telemetry, not slide decks."},
+      {"role": "Program Manager", "pain": "FedRAMP High and IL5 deployment with the same code path as commercial."},
+      {"role": "Data Officer", "pain": "FOIA-grade archive search across 7 years of agency communications."}
+    ],
+    "regulations": ["FedRAMP High", "FISMA", "M-21-31", "NIST 800-53", "DoD IL4 IL5", "CJIS"],
+    "top_competitors": ["battlecard-splunk", "battlecard-microsoft-sentinel", "battlecard-chronicle", "battlecard-qradar"],
+    "scenario_ids": ["credstuff", "supply-chain"],
+    "tool_ids": ["fec_compliance", "fec_proposal", "fec_compare", "fec_capacity"],
+    "kpis": [
+      {"metric": "M-21-31 EL3 attainment timeline", "value": "from 18 months to 6 months"},
+      {"metric": "ATO evidence prep effort", "value": "60% reduction"},
+      {"metric": "Splunk MOOSE renewal savings", "value": "40 to 60%"}
+    ],
+    "elastic_wins_when": "The agency is on Splunk MOOSE and renewal is squeezing the mission budget, OR is on a CDM dashboard mandate that needs faster search.",
+    "elastic_loses_when": "The agency has a sole-source Splunk Cloud GovCloud BPA with multi-year remaining and no executive sponsor for change."
+  },
+  {
+    "id": "gov-state-local",
+    "name": "Government - State and Local",
+    "icon": "building",
+    "summary": "States, counties, cities, and education. Shared services SIEM, 311 search, election security.",
+    "personas": [
+      {"role": "State CISO", "pain": "StateRAMP-aligned SOC running on a budget that does not get bigger every year."},
+      {"role": "CIO", "pain": "Citizen-facing search (DMV, benefits, 311) that does not melt during peak."},
+      {"role": "Director of Elections", "pain": "Ballot logistics and poll-site telemetry with auditable retention."},
+      {"role": "K12 Tech Lead", "pain": "Student safety signals across LMS, email, and chat with FERPA boundaries."}
+    ],
+    "regulations": ["StateRAMP", "CJIS", "IRS Pub 1075", "FERPA", "HIPAA", "GLBA"],
+    "top_competitors": ["battlecard-splunk", "battlecard-microsoft-sentinel", "battlecard-graylog", "battlecard-sumologic"],
+    "scenario_ids": ["credstuff", "gdpr-audit"],
+    "tool_ids": ["fec_compliance", "fec_cost_calc", "fec_proposal"],
+    "kpis": [
+      {"metric": "SIEM cost per citizen served", "value": "drop 40 to 55%"},
+      {"metric": "Citizen search peak latency", "value": "under 500ms at 10x traffic"},
+      {"metric": "MS-ISAC reportable incident MTTR", "value": "from 4 hours to under 60 minutes"}
+    ],
+    "elastic_wins_when": "The agency is consolidating from a patchwork of free or open-source tools (ELK self-managed, Graylog) and wants vendor support, OR Splunk renewal is impossible.",
+    "elastic_loses_when": "The state has a Microsoft E5 G5 EA and Sentinel is essentially free at the margin."
+  },
+  {
+    "id": "healthcare-providers",
+    "name": "Healthcare - Providers",
+    "icon": "stethoscope",
+    "summary": "Hospitals, IDNs, ambulatory networks. EHR observability, HIPAA SOC, clinical search across notes.",
+    "personas": [
+      {"role": "CMIO", "pain": "Search across 10 years of clinical notes (Epic, Cerner) without exporting PHI to a third party."},
+      {"role": "CISO", "pain": "HIPAA and HITRUST SOC at half the headcount."},
+      {"role": "VP of Clinical Apps", "pain": "Epic Hyperspace login and chart-open latency under 2 seconds."},
+      {"role": "Director of Revenue Cycle", "pain": "Denials root cause across claims, eligibility, and EHR in one search."}
+    ],
+    "regulations": ["HIPAA", "HITRUST CSF", "HITECH", "21 CFR Part 11", "GDPR"],
+    "top_competitors": ["battlecard-splunk", "battlecard-datadog", "battlecard-coveo", "battlecard-microsoft-sentinel"],
+    "scenario_ids": ["gdpr-audit", "noisy-microservice"],
+    "tool_ids": ["fec_compliance", "fec_knowledge_search", "fec_proposal"],
+    "kpis": [
+      {"metric": "Clinical search recall on free-text notes", "value": "75 to 90%"},
+      {"metric": "EHR transaction MTTD", "value": "from 22 minutes to under 3 minutes"},
+      {"metric": "HITRUST audit evidence collection", "value": "from 4 weeks to 5 days"}
+    ],
+    "elastic_wins_when": "The IDN runs Epic and needs a search layer that respects PHI boundaries, OR Splunk is being pushed out by IT finance.",
+    "elastic_loses_when": "Epic Cogito and Caboodle are funded and the customer believes those cover analytics needs."
+  },
+  {
+    "id": "healthcare-payers",
+    "name": "Healthcare - Payers",
+    "icon": "clipboard-check",
+    "summary": "Health plans, PBMs, TPAs. Member portal search, fraud waste and abuse, prior auth observability.",
+    "personas": [
+      {"role": "Chief Medical Officer", "pain": "Prior-auth turnaround inside CMS interoperability deadlines."},
+      {"role": "SIU Director", "pain": "Fraud waste and abuse detection across claims, providers, and pharmacy in one platform."},
+      {"role": "VP Member Experience", "pain": "Find-a-doctor search that actually returns in-network providers in milliseconds."},
+      {"role": "CISO", "pain": "HIPAA breach notification windows met without manual log digging."}
+    ],
+    "regulations": ["HIPAA", "HITRUST CSF", "CMS Interoperability and Patient Access", "ACA", "GLBA"],
+    "top_competitors": ["battlecard-splunk", "battlecard-coveo", "battlecard-datadog", "battlecard-algolia"],
+    "scenario_ids": ["gdpr-audit", "credstuff"],
+    "tool_ids": ["fec_knowledge_search", "fec_compliance", "fec_proposal"],
+    "kpis": [
+      {"metric": "FWA recovery uplift", "value": "10 to 25% year over year"},
+      {"metric": "Find-a-doctor search latency", "value": "under 150ms at p99"},
+      {"metric": "Prior-auth decision MTTR", "value": "from 72 hours to under 24 hours"}
+    ],
+    "elastic_wins_when": "The plan is rebuilding member-facing search and needs vector plus lexical, OR consolidating SIEM and observability after an M&A.",
+    "elastic_loses_when": "The carrier is fully on Optum Insight and SAS Detection and Investigation and has no break-glass appetite."
+  },
+  {
+    "id": "pharma-life-sciences",
+    "name": "Pharma and Life Sciences",
+    "icon": "flask-conical",
+    "summary": "Big pharma, biotech, CROs, MedTech. GxP-validated logging, clinical trial search, cold-chain telemetry.",
+    "personas": [
+      {"role": "Head of Quality", "pain": "GxP-validated logging with 21 CFR Part 11 e-signature evidence on tap."},
+      {"role": "VP Clinical Operations", "pain": "Cross-trial protocol deviation search across CTMS, EDC, and eTMF in seconds."},
+      {"role": "Head of Manufacturing IT", "pain": "MES and historian telemetry with full provenance for batch release."},
+      {"role": "Chief Medical Affairs Officer", "pain": "Real-world evidence search across publications and adverse event reports."}
+    ],
+    "regulations": ["GxP", "21 CFR Part 11", "EU Annex 11", "GDPR", "HIPAA", "Computer System Validation"],
+    "top_competitors": ["battlecard-splunk", "battlecard-coveo", "battlecard-datadog", "battlecard-grafana"],
+    "scenario_ids": ["gdpr-audit", "supply-chain"],
+    "tool_ids": ["fec_compliance", "fec_knowledge_search", "fec_proposal"],
+    "kpis": [
+      {"metric": "Batch release cycle time", "value": "from 7 days to 36 hours"},
+      {"metric": "CSV qualification pack effort", "value": "60% reduction"},
+      {"metric": "RWE corpus search recall", "value": "85% with vector retrieval"}
+    ],
+    "elastic_wins_when": "The customer needs a validated logging platform across GxP and non-GxP estates with one operating model, OR is replacing a legacy LIMS search front end.",
+    "elastic_loses_when": "Veeva Vault is the system of record for everything regulated and the customer wants no parallel search layer."
+  },
+  {
+    "id": "retail-ecommerce",
+    "name": "Retail - E-commerce",
+    "icon": "shopping-cart",
+    "summary": "Pure-play and omnichannel e-commerce. Site search relevance, Black Friday observability, customer 360.",
+    "personas": [
+      {"role": "VP of Digital", "pain": "Site search relevance lift and zero-result rate cut in half."},
+      {"role": "Head of Platform Engineering", "pain": "Black Friday at 10x peak with no SEV-1, with full traces and logs in one tool."},
+      {"role": "Head of CX", "pain": "Single customer view across web, mobile, POS, and call center in real time."},
+      {"role": "Head of FinOps", "pain": "Datadog ingest bill cut by half without losing a single useful signal."}
+    ],
+    "regulations": ["PCI DSS", "GDPR", "CCPA CPRA", "ADA Section 508"],
+    "top_competitors": ["battlecard-algolia", "battlecard-coveo", "battlecard-datadog", "battlecard-typesense"],
+    "scenario_ids": ["black-friday", "noisy-microservice"],
+    "tool_ids": ["fec_capacity", "fec_cost_calc", "fec_compare", "fec_knowledge_search"],
+    "kpis": [
+      {"metric": "Site search conversion lift", "value": "5 to 15%"},
+      {"metric": "Black Friday p99 checkout latency", "value": "under 800ms"},
+      {"metric": "Datadog ingest savings", "value": "40 to 60%"}
+    ],
+    "elastic_wins_when": "The retailer needs search relevance and observability and customer 360 on the same data layer, OR is being squeezed by Algolia query pricing at scale.",
+    "elastic_loses_when": "The customer is happy with Algolia plus Datadog and the merchandising team has no relevance complaints."
+  },
+  {
+    "id": "retail-brick-mortar",
+    "name": "Retail - Brick and Mortar",
+    "icon": "store",
+    "summary": "Big box, grocery, specialty, and convenience. Store-edge telemetry, loss prevention, inventory search.",
+    "personas": [
+      {"role": "VP Store Operations", "pain": "POS and self-checkout outage MTTR under 10 minutes across 2,000 stores."},
+      {"role": "Head of Loss Prevention", "pain": "Sweethearting and shrink detection from POS plus video plus weight events."},
+      {"role": "Head of Supply Chain", "pain": "Real-time inventory search across DC, store, and in-transit for ship-from-store."},
+      {"role": "CIO", "pain": "Edge telemetry from store cameras, scales, and IoT without a fat WAN bill."}
+    ],
+    "regulations": ["PCI DSS", "GDPR", "CCPA CPRA", "FSMA"],
+    "top_competitors": ["battlecard-splunk", "battlecard-datadog", "battlecard-grafana", "battlecard-sumologic"],
+    "scenario_ids": ["black-friday", "supply-chain"],
+    "tool_ids": ["fec_capacity", "fec_compliance", "fec_cost_calc"],
+    "kpis": [
+      {"metric": "Store outage MTTR", "value": "from 47 minutes to under 10 minutes"},
+      {"metric": "Shrink reduction", "value": "0.4 to 0.8 points of revenue"},
+      {"metric": "Inventory search latency at the store", "value": "under 200ms"}
+    ],
+    "elastic_wins_when": "The retailer is rolling out edge compute in stores and needs telemetry that ingests at the edge and ships only what matters.",
+    "elastic_loses_when": "The retailer is on Cisco AppDynamics plus ServiceNow ITOM bundle for ops and IT finance is not opening that contract."
+  },
+  {
+    "id": "telco",
+    "name": "Telecommunications",
+    "icon": "radio-tower",
+    "summary": "Mobile, fixed, and cable operators. RAN observability, customer search, fraud and SIM swap detection.",
+    "personas": [
+      {"role": "VP Network Operations", "pain": "5G RAN KPI degradation root cause across DU, CU, and core in minutes."},
+      {"role": "Head of Customer Care", "pain": "Single customer view across CRM, billing, network state, and ticket history."},
+      {"role": "CISO", "pain": "SIM swap and account takeover detection inside 60 seconds, before money moves."},
+      {"role": "Head of Fraud", "pain": "Wangiri and IRSF detection on CDR streams at carrier scale."}
+    ],
+    "regulations": ["GDPR", "ePrivacy Directive", "CALEA", "TCPA", "NIS2", "STIR SHAKEN"],
+    "top_competitors": ["battlecard-splunk", "battlecard-datadog", "battlecard-dynatrace", "battlecard-grafana"],
+    "scenario_ids": ["credstuff", "noisy-microservice"],
+    "tool_ids": ["fec_capacity", "fec_compare", "fec_compliance", "fec_cost_calc"],
+    "kpis": [
+      {"metric": "RAN KPI MTTR", "value": "from 90 minutes to under 12 minutes"},
+      {"metric": "SIM swap fraud detection", "value": "under 60 seconds"},
+      {"metric": "Care AHT reduction", "value": "12 to 20%"}
+    ],
+    "elastic_wins_when": "The carrier is consolidating Splunk plus a homegrown ELK plus a KPI tool into one platform, OR rolling out 5G SA and needs RAN plus core observability with one query language.",
+    "elastic_loses_when": "The customer is fully on Dynatrace OneAgent for RAN and observability is not a budget line this year."
+  },
+  {
+    "id": "media-streaming",
+    "name": "Media and Streaming",
+    "icon": "play-circle",
+    "summary": "Streaming services, broadcasters, gaming. Playback QoE, content search, ads anti-fraud.",
+    "personas": [
+      {"role": "VP Streaming Engineering", "pain": "Playback start time under 2 seconds at p99 across CDN, device, and ISP combinations."},
+      {"role": "Head of Content Discovery", "pain": "Catalog and metadata search relevance across 50 languages."},
+      {"role": "Head of Ad Tech", "pain": "Ad fraud and SSAI verification at full RPS without slowing the ad call."},
+      {"role": "Head of Trust and Safety", "pain": "Live-stream abuse detection seconds after it appears, not minutes."}
+    ],
+    "regulations": ["GDPR", "COPPA", "CCPA CPRA", "DSA", "DMCA"],
+    "top_competitors": ["battlecard-datadog", "battlecard-grafana", "battlecard-honeycomb", "battlecard-coveo"],
+    "scenario_ids": ["noisy-microservice", "black-friday"],
+    "tool_ids": ["fec_capacity", "fec_cost_calc", "fec_compare"],
+    "kpis": [
+      {"metric": "Playback start latency p99", "value": "under 2 seconds"},
+      {"metric": "Catalog search relevance", "value": "+18% NDCG@10 with vector blend"},
+      {"metric": "QoE incident MTTR", "value": "from 35 minutes to under 8 minutes"}
+    ],
+    "elastic_wins_when": "The service is on a Datadog contract that scales linearly with subscribers and the FinOps team is screaming, OR catalog search needs vector plus lexical fusion.",
+    "elastic_loses_when": "The customer has a Honeycomb contract for the platform team that they actively defend on UX grounds."
+  },
+  {
+    "id": "tech-saas",
+    "name": "Technology - SaaS",
+    "icon": "cloud",
+    "summary": "B2B and B2C SaaS, dev tools, data platforms. Multi-tenant observability, in-app search, AI features.",
+    "personas": [
+      {"role": "VP Engineering", "pain": "Tenant-aware observability without paying per-host on every pod."},
+      {"role": "Head of Platform", "pain": "Datadog overage alerts every Friday and a board that wants margin back."},
+      {"role": "Head of Search", "pain": "In-product search and copilot over a fast-growing vector index."},
+      {"role": "Director of SRE", "pain": "Trace sampling that does not throw away the trace that mattered."}
+    ],
+    "regulations": ["SOC 2 Type II", "ISO 27001", "GDPR", "CCPA CPRA", "HIPAA optional"],
+    "top_competitors": ["battlecard-datadog", "battlecard-honeycomb", "battlecard-new-relic", "battlecard-grafana"],
+    "scenario_ids": ["noisy-microservice", "black-friday"],
+    "tool_ids": ["fec_cost_calc", "fec_compare", "fec_capacity", "fec_knowledge_search"],
+    "kpis": [
+      {"metric": "Observability TCO per million events", "value": "drop 50 to 70%"},
+      {"metric": "p95 trace query latency", "value": "under 1 second"},
+      {"metric": "Search-driven product engagement lift", "value": "8 to 14%"}
+    ],
+    "elastic_wins_when": "The SaaS is past Series C, Datadog is the largest non-payroll line item, and the platform team wants logs plus traces plus search in one place.",
+    "elastic_loses_when": "The customer has standardized on the Grafana stack (Loki, Tempo, Mimir) and the SRE team is happy with it."
+  },
+  {
+    "id": "mfg-discrete",
+    "name": "Manufacturing - Discrete",
+    "icon": "factory",
+    "summary": "Discrete manufacturers (electronics, white goods, industrial). MES telemetry, OT SOC, defect search.",
+    "personas": [
+      {"role": "VP Operations", "pain": "OEE drift root cause across 40 lines without a 6-hour Excel pull."},
+      {"role": "Plant CISO", "pain": "OT SOC for IEC 62443 with no IT-style endpoint agents on the PLCs."},
+      {"role": "Head of Quality", "pain": "Defect cause search across MES, vision, and supplier data in seconds."},
+      {"role": "Head of Smart Factory", "pain": "Edge ingest from 10,000 sensors per plant without flooding the WAN."}
+    ],
+    "regulations": ["IEC 62443", "ISO 9001", "ISO 27001", "NIST 800-82", "RoHS REACH", "ITAR optional"],
+    "top_competitors": ["battlecard-splunk", "battlecard-datadog", "battlecard-grafana", "battlecard-dynatrace"],
+    "scenario_ids": ["supply-chain", "noisy-microservice"],
+    "tool_ids": ["fec_capacity", "fec_knowledge_search", "fec_proposal"],
+    "kpis": [
+      {"metric": "OEE root cause MTTR", "value": "from 6 hours to under 45 minutes"},
+      {"metric": "Defect rework cost reduction", "value": "8 to 14%"},
+      {"metric": "Edge ingest WAN savings", "value": "55 to 70%"},
+      {"metric": "OT-SOC alert triage time", "value": "drop 60%"}
+    ],
+    "elastic_wins_when": "The manufacturer is consolidating IT plus OT observability under one platform with edge filtering, OR a Dragos plus Splunk OT stack is up for renewal.",
+    "elastic_loses_when": "The customer runs Aveva PI plus PI Vision and the controls engineers will not give up that workflow."
+  },
+  {
+    "id": "mfg-process",
+    "name": "Manufacturing - Process",
+    "icon": "beaker",
+    "summary": "Chemicals, food and beverage, paper. Continuous-process telemetry, batch genealogy, safety event search.",
+    "personas": [
+      {"role": "VP Process Engineering", "pain": "Continuous-process drift detection across 200,000 tags in real time."},
+      {"role": "Head of EHS", "pain": "Safety incident root cause across LIMS, MES, and SCADA in one search."},
+      {"role": "Plant Manager", "pain": "Batch genealogy from raw material to finished good in a single click."},
+      {"role": "Head of Reliability", "pain": "Predictive maintenance on rotating equipment without ripping out the historian."}
+    ],
+    "regulations": ["ISA-95", "OSHA PSM", "FDA 21 CFR 110 117 211", "FSMA", "NIST 800-82", "REACH"],
+    "top_competitors": ["battlecard-splunk", "battlecard-datadog", "battlecard-grafana", "battlecard-dynatrace"],
+    "scenario_ids": ["supply-chain", "noisy-microservice"],
+    "tool_ids": ["fec_capacity", "fec_compliance", "fec_proposal"],
+    "kpis": [
+      {"metric": "Unplanned downtime reduction", "value": "12 to 25%"},
+      {"metric": "Batch genealogy query time", "value": "from hours to under 2 seconds"},
+      {"metric": "Safety incident MTTR", "value": "from days to hours"}
+    ],
+    "elastic_wins_when": "The plant has a historian plus an aging SIEM and is consolidating; ROI shows up in maintenance and EHS line items.",
+    "elastic_loses_when": "The customer is fully bought into Aspen Mtell plus Aspen InfoPlus.21 and the OT team owns the budget."
+  },
+  {
+    "id": "energy-utilities",
+    "name": "Energy and Utilities",
+    "icon": "zap",
+    "summary": "Power generation, transmission, distribution, oil and gas, water. NERC CIP SIEM, grid telemetry, asset search.",
+    "personas": [
+      {"role": "Bulk Electric System CISO", "pain": "NERC CIP-007 and CIP-010 evidence on demand without a 4-week pull."},
+      {"role": "VP Grid Operations", "pain": "PMU and SCADA correlation to find the source of a frequency event in under a minute."},
+      {"role": "Head of Asset Performance", "pain": "Predictive maintenance on transformers and turbines from 20 years of historian data."},
+      {"role": "Director of OT Security", "pain": "Detect Volt Typhoon-style living-off-the-land in the OT VLAN with low false positives."}
+    ],
+    "regulations": ["NERC CIP", "TSA Pipeline Security", "IEC 62443", "EU NIS2", "AWIA", "FERC Order 881"],
+    "top_competitors": ["battlecard-splunk", "dragos", "battlecard-microsoft-sentinel", "battlecard-grafana"],
+    "scenario_ids": ["supply-chain", "credstuff"],
+    "tool_ids": ["fec_compliance", "fec_capacity", "fec_proposal", "fec_compare"],
+    "kpis": [
+      {"metric": "NERC CIP audit prep effort", "value": "from 4 weeks to 4 days"},
+      {"metric": "Frequency event root cause", "value": "under 60 seconds"},
+      {"metric": "Transformer failure prediction window", "value": "30 to 90 days advance notice"}
+    ],
+    "elastic_wins_when": "The utility is consolidating IT plus OT SIEM under one operating model, OR is replacing a Splunk renewal that no longer fits the rate-case budget.",
+    "elastic_loses_when": "The utility runs a Dragos plus Claroty stack with a recent renewal and OT security has no appetite to layer on another platform."
+  },
+  {
+    "id": "transportation-logistics",
+    "name": "Transportation and Logistics",
+    "icon": "truck",
+    "summary": "Carriers, parcel, freight, ports, rail. Fleet telemetry, shipment search, peak-season observability.",
+    "personas": [
+      {"role": "VP Network Operations", "pain": "Hub sortation telemetry with SLA-grade alerts during peak."},
+      {"role": "Head of Fleet Telematics", "pain": "Driver safety and idle-time signals across 20,000 vehicles without a fat platform fee per truck."},
+      {"role": "Head of Customer Tracking", "pain": "Tracking search at last-mile scale without melting the API tier."},
+      {"role": "CISO", "pain": "TSA Security Directive 1580 and 1582 evidence for rail and pipeline."}
+    ],
+    "regulations": ["TSA SD 1580 1582", "DOT FMCSA", "C-TPAT", "GDPR", "PCI DSS"],
+    "top_competitors": ["battlecard-splunk", "battlecard-datadog", "battlecard-grafana", "battlecard-sumologic"],
+    "scenario_ids": ["black-friday", "supply-chain"],
+    "tool_ids": ["fec_capacity", "fec_cost_calc", "fec_compliance"],
+    "kpis": [
+      {"metric": "Peak-season hub MTTR", "value": "from 25 minutes to under 6 minutes"},
+      {"metric": "Tracking search throughput", "value": "10x at same cost"},
+      {"metric": "Telematics platform TCO", "value": "drop 35 to 50%"}
+    ],
+    "elastic_wins_when": "The customer is rebuilding a homegrown tracking and observability stack and wants one platform across logs, metrics, traces, and search.",
+    "elastic_loses_when": "The carrier is on Samsara plus Geotab and the telematics workflow lives there with no consolidation mandate."
+  },
+  {
+    "id": "travel-hospitality",
+    "name": "Travel and Hospitality",
+    "icon": "plane",
+    "summary": "Airlines, hotels, OTAs, cruise. Booking funnel observability, loyalty search, irregular ops response.",
+    "personas": [
+      {"role": "VP Digital Commerce", "pain": "Booking funnel conversion lift from sub-second search and rate-shop."},
+      {"role": "Head of Reservations IT", "pain": "Irregular ops (IROPS) alerting and rebooking telemetry across PSS, GDS, and ops."},
+      {"role": "Head of Loyalty", "pain": "Member search across web, mobile, app, and partner with one query."},
+      {"role": "CISO", "pain": "PCI plus GDPR plus PNR data protection without a wall-to-wall Splunk renewal."}
+    ],
+    "regulations": ["PCI DSS", "GDPR", "EU PNR Directive", "ADA", "DOT 14 CFR 250"],
+    "top_competitors": ["battlecard-datadog", "battlecard-coveo", "battlecard-algolia", "battlecard-splunk"],
+    "scenario_ids": ["black-friday", "noisy-microservice"],
+    "tool_ids": ["fec_capacity", "fec_knowledge_search", "fec_cost_calc"],
+    "kpis": [
+      {"metric": "Booking search latency p95", "value": "under 350ms"},
+      {"metric": "IROPS rebooking time", "value": "from 35 minutes to under 9 minutes"},
+      {"metric": "Loyalty search relevance lift", "value": "+22% NDCG@10"}
+    ],
+    "elastic_wins_when": "The carrier or chain is rebuilding its commerce platform on cloud-native and wants search plus observability under one runtime.",
+    "elastic_loses_when": "The customer has just signed Sabre plus Amadeus managed services and the IT team has frozen platform decisions for 18 months."
+  },
+  {
+    "id": "automotive",
+    "name": "Automotive",
+    "icon": "car",
+    "summary": "OEMs, tier-1 suppliers, mobility services. Connected-vehicle telemetry, factory observability, recall search.",
+    "personas": [
+      {"role": "Head of Connected Vehicle", "pain": "Fleet-wide telemetry from 10M vehicles without a per-VIN ingest tax."},
+      {"role": "VP Manufacturing IT", "pain": "Plant downtime root cause across MES, robotics, and quality systems in minutes."},
+      {"role": "Head of Quality", "pain": "Field issue triage and recall scoping from warranty plus telemetry plus social signals."},
+      {"role": "VSOC Lead", "pain": "WP.29 cybersecurity event detection across IVI, TCU, and OTA campaigns."}
+    ],
+    "regulations": ["UNECE WP.29 R155 R156", "ISO 21434", "ISO 26262", "TISAX", "IATF 16949", "GDPR"],
+    "top_competitors": ["battlecard-splunk", "battlecard-datadog", "battlecard-dynatrace", "battlecard-grafana"],
+    "scenario_ids": ["supply-chain", "noisy-microservice"],
+    "tool_ids": ["fec_capacity", "fec_compliance", "fec_compare"],
+    "kpis": [
+      {"metric": "Connected-vehicle ingest TCO", "value": "drop 45 to 60%"},
+      {"metric": "Recall scoping cycle", "value": "from 6 weeks to 8 days"},
+      {"metric": "Plant downtime MTTR", "value": "from 90 minutes to under 18 minutes"}
+    ],
+    "elastic_wins_when": "The OEM is building a VSOC for WP.29 R155 and needs the same platform across vehicle, factory, and IT, OR is replacing a fixed-cost Splunk ingest model that does not scale to 10M vehicles.",
+    "elastic_loses_when": "The customer has a multi-year Dynatrace OneAgent contract covering vehicle and factory IT and the FinOps team has no leverage."
+  },
+  {
+    "id": "aerospace-defense",
+    "name": "Aerospace and Defense",
+    "icon": "rocket",
+    "summary": "Primes, integrators, MRO, space. Mission systems observability, ITAR-aware logging, parts traceability.",
+    "personas": [
+      {"role": "Mission Assurance Lead", "pain": "Telemetry and event correlation across mission systems with ITAR-clean boundaries."},
+      {"role": "Program ISSM", "pain": "RMF continuous monitoring with NIST 800-53 evidence pulled from telemetry."},
+      {"role": "Head of MRO Operations", "pain": "Aircraft turn-time root cause across maintenance, parts, and crew systems."},
+      {"role": "Head of Supplier Quality", "pain": "Parts traceability across tier-2 and tier-3 suppliers for AS9100 and DPAS."}
+    ],
+    "regulations": ["ITAR", "EAR", "CMMC 2.0", "NIST 800-171", "NIST 800-53", "AS9100", "DFARS 252.204-7012"],
+    "top_competitors": ["battlecard-splunk", "battlecard-microsoft-sentinel", "battlecard-chronicle", "battlecard-dynatrace"],
+    "scenario_ids": ["supply-chain", "credstuff"],
+    "tool_ids": ["fec_compliance", "fec_proposal", "fec_capacity"],
+    "kpis": [
+      {"metric": "RMF continuous monitoring evidence prep", "value": "70% reduction"},
+      {"metric": "Aircraft turn-time MTTR", "value": "from 4 hours to under 90 minutes"},
+      {"metric": "Tier-2 parts traceability lookup", "value": "from days to seconds"}
+    ],
+    "elastic_wins_when": "The prime needs an ITAR-clean SIEM plus search and observability stack with an air-gap and a commercial deployment story.",
+    "elastic_loses_when": "The contract is on a Splunk MOOSE BPA with multi-year remaining and the program office sees no relief."
+  }
+]

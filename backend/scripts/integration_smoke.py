@@ -80,6 +80,7 @@ FRONTEND_PAGES: List[Tuple[str, bool]] = [
     ("/fe-brain.html", True),
     ("/battlecards.html", False),
     ("/health.html", False),
+    ("/industries.html", False),
 ]
 
 # Demo indices and dashboards (sourced from backend/app/services/scenarios/*.py).
@@ -99,6 +100,18 @@ EXPECTED_DEMO_INDICES: List[str] = [
     "demo-supplychain-build-events",
     "demo-supplychain-runtime-events",
     "demo-supplychain-mitre-alerts",
+    # FSI Banking - card-not-present fraud rings (Northwind Pay).
+    "demo-fsi-card-transactions",
+    "demo-fsi-fraud-alerts",
+    "demo-fsi-customer-journey",
+    # Healthcare - HIPAA audit readiness (Atlas Health).
+    "demo-hc-phi-access-logs",
+    "demo-hc-audit-events",
+    "demo-hc-rtbf-requests",
+    # Government Federal - CDM compliance (Federal Demonstration Agency).
+    "demo-gov-asset-inventory",
+    "demo-gov-cve-findings",
+    "demo-gov-config-drift",
 ]
 EXPECTED_FEC_INDICES: List[str] = [
     "fec-briefs",
@@ -118,6 +131,15 @@ EXPECTED_DEMO_DASHBOARDS: List[str] = [
     "demo-gdpr-audit-customer-dashboard",
     "demo-supply-chain-attack-dashboard",
     "demo-supply-chain-attack-customer-dashboard",
+    # FSI Banking fraud (Northwind Pay).
+    "demo-fsi-banking-fraud-dashboard",
+    "demo-fsi-banking-fraud-customer-dashboard",
+    # Healthcare HIPAA audit (Atlas Health).
+    "demo-hc-hipaa-audit-dashboard",
+    "demo-hc-hipaa-audit-customer-dashboard",
+    # Government CDM compliance (Federal Demonstration Agency).
+    "demo-gov-cdm-dashboard",
+    "demo-gov-cdm-customer-dashboard",
 ]
 
 EXPECTED_FEC_TOOLS: List[str] = [

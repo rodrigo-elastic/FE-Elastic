@@ -16,7 +16,10 @@ from app.config import settings
 from app.services.scenarios import (
     black_friday,
     credential_stuffing,
+    fsi_banking_fraud,
     gdpr_audit,
+    government_cdm,
+    healthcare_hipaa_audit,
     noisy_microservice,
     supply_chain_attack,
 )
@@ -34,17 +37,32 @@ SCENARIOS = {
     noisy_microservice.SCENARIO_ID: noisy_microservice,
     gdpr_audit.SCENARIO_ID: gdpr_audit,
     supply_chain_attack.SCENARIO_ID: supply_chain_attack,
+    fsi_banking_fraud.SCENARIO_ID: fsi_banking_fraud,
+    healthcare_hipaa_audit.SCENARIO_ID: healthcare_hipaa_audit,
+    government_cdm.SCENARIO_ID: government_cdm,
 }
 
 
 def _meta(mod) -> Dict[str, Any]:
-    return {
+    out = {
         "id": mod.SCENARIO_ID,
         "title": mod.SCENARIO_TITLE,
         "description": mod.SCENARIO_DESCRIPTION,
         "indices": list(mod.INDICES.values()),
         "dashboard_id": mod.DASHBOARD_ID,
     }
+    # Optional fields the new flagship scenarios expose; older scenarios omit
+    # them and we leave the keys absent rather than null so the UI can detect.
+    industry = getattr(mod, "INDUSTRY_ID", None)
+    customer = getattr(mod, "CUSTOMER_NAME", None)
+    customer_dashboard_id = getattr(mod, "CUSTOMER_DASHBOARD_ID", None)
+    if industry:
+        out["industry_id"] = industry
+    if customer:
+        out["customer_name"] = customer
+    if customer_dashboard_id:
+        out["customer_dashboard_id"] = customer_dashboard_id
+    return out
 
 
 @router.get("/scenarios")
