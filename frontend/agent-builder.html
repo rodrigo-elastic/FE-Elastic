@@ -48,10 +48,13 @@
       <aside class="ab-sidebar" aria-label="Your agents">
         <div class="ab-sidebar-head">
           <h2 class="ab-sidebar-title" data-i18n="ab.your_agents">Your agents</h2>
-          <button type="button" class="ab-new-btn" id="ab-new-agent" data-i18n-title="ab.create_new" title="Create a new agent">
-            <span aria-hidden="true">+</span>
-            <span class="visually-hidden" data-i18n="ab.create_new">New agent</span>
-          </button>
+          <div class="ab-sidebar-actions">
+            <a class="ab-sidebar-kibana" id="ab-sidebar-kibana" href="https://fe-summit-hackathon-ed0e8e.kb.us-west-1.aws.found.io/app/agent_builder/agents" target="_blank" rel="noreferrer" data-i18n="ab.view_in_kibana" data-i18n-title="ab.view_in_kibana_title" title="View all agents in Kibana Agent Builder">View in Kibana &#8599;</a>
+            <button type="button" class="ab-new-btn" id="ab-new-agent" data-i18n-title="ab.create_new" title="Create a new agent">
+              <span aria-hidden="true">+</span>
+              <span class="visually-hidden" data-i18n="ab.create_new">New agent</span>
+            </button>
+          </div>
         </div>
         <div class="ab-sidebar-list" id="ab-sidebar-list" role="list" aria-live="polite"></div>
       </aside>
@@ -114,7 +117,25 @@
         </label>
         <fieldset class="ab-field ab-tools-field">
           <legend class="ab-field-label" data-i18n="ab.modal.tools">Tools</legend>
+          <div class="ab-tool-bundles" id="ab-f-tools-bundles" role="group" aria-label="Recommended bundles"></div>
+          <div class="ab-tool-search">
+            <svg class="ab-tool-search-icon" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+              <circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="1.7"/>
+              <path d="M15 15l5 5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+            </svg>
+            <input
+              type="search"
+              id="ab-f-tools-search"
+              autocomplete="off"
+              spellcheck="false"
+              data-i18n-placeholder="ab.tool.search_placeholder"
+              placeholder="Search tools by name or capability"
+              aria-label="Search tools"
+            />
+            <button type="button" class="ab-tool-search-clear" id="ab-f-tools-clear" hidden data-i18n-title="ab.tool.clear" aria-label="Clear search">x</button>
+          </div>
           <div id="ab-f-tools" class="ab-tools-grid" role="group" aria-label="Tool picker"></div>
+          <div class="ab-tool-counter" id="ab-f-tools-counter" aria-live="polite"></div>
           <span class="ab-field-error" data-error-for="tool_ids"></span>
         </fieldset>
         <div class="ab-modal-actions">

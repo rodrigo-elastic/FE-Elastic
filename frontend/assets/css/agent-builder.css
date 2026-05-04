@@ -60,6 +60,26 @@
   letter-spacing: 0.08em;
   color: var(--muted);
 }
+.ab-sidebar-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ab-sidebar-kibana {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--primary);
+  text-decoration: none;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 119, 204, 0.35);
+  background: transparent;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.ab-sidebar-kibana:hover { background: var(--primary-soft); }
+[data-theme="dark"] .ab-sidebar-kibana { color: #6cb5ff; border-color: rgba(108, 181, 255, 0.4); }
 .ab-new-btn {
   width: 28px;
   height: 28px;
@@ -753,36 +773,211 @@
 }
 .ab-slug-row input:focus { box-shadow: none !important; }
 .ab-tools-field { border: 0; padding: 0; margin: 0; }
+
+/* Recommended bundles: chip row above the search input. */
+.ab-tool-bundles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.ab-tool-bundle {
+  appearance: none;
+  cursor: pointer;
+  font: 600 11.5px/1 inherit;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--teal-soft);
+  border: 1px solid rgba(0, 191, 179, 0.4);
+  color: var(--teal);
+  transition: background .12s, transform .1s;
+}
+[data-theme="dark"] .ab-tool-bundle { color: #b9f5ed; }
+.ab-tool-bundle:hover { background: rgba(0, 191, 179, 0.22); }
+.ab-tool-bundle:active { transform: scale(0.97); }
+
+/* Search input above the tool list. */
+.ab-tool-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.ab-tool-search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+.ab-tool-search input[type="search"] {
+  width: 100%;
+  padding: 8px 32px 8px 30px;
+  background: var(--bg);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: 13px/1.4 Inter, system-ui, sans-serif;
+}
+.ab-tool-search input[type="search"]:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(0, 119, 204, 0.18);
+}
+/* Hide the native clear button so our own X is the single affordance. */
+.ab-tool-search input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
+.ab-tool-search-clear {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--muted);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 1;
+}
+.ab-tool-search-clear:hover { background: var(--panel-3); color: var(--ink); }
+
+/* Tool list container: scrollable, grouped by category. */
 .ab-tools-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  max-height: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 320px;
   overflow-y: auto;
   padding: 10px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--panel-2);
 }
-.ab-tool-check {
+
+/* Section: header with title, count, and a Select all link. */
+.ab-tool-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ab-tool-section.is-hidden { display: none; }
+.ab-tool-section-head {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
-  padding: 6px 8px;
+  padding: 4px 2px 2px;
+}
+.ab-tool-section-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.ab-tool-section-count {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--panel-3);
+  color: var(--ink-2);
+  letter-spacing: 0;
+}
+.ab-tool-section-select {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: var(--primary);
+  font: 500 11px/1 inherit;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+[data-theme="dark"] .ab-tool-section-select { color: var(--white); }
+.ab-tool-section-select:hover { background: var(--primary-soft); }
+
+/* Per-tool card layout: checkbox, id + pill, one-line description. */
+.ab-tool-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
   border: 1px solid var(--border-soft);
   background: var(--bg);
   border-radius: 6px;
   cursor: pointer;
   font-size: 12.5px;
+  transition: border-color .12s, background .12s;
 }
-.ab-tool-check:hover { border-color: var(--primary); }
-.ab-tool-check input { margin: 0; }
-.ab-tool-check-name { font-weight: 500; color: var(--ink); }
-.ab-tool-check-id {
-  margin-left: auto;
+.ab-tool-row:hover { border-color: var(--primary); background: var(--panel-3); }
+.ab-tool-row.is-hidden { display: none; }
+.ab-tool-row input[type="checkbox"] {
+  margin: 2px 0 0;
+  flex: 0 0 auto;
+}
+.ab-tool-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+.ab-tool-row-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.ab-tool-row-id {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 10.5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.ab-tool-row-pill {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  border: 1px solid rgba(0, 119, 204, 0.4);
+}
+[data-theme="dark"] .ab-tool-row-pill { color: var(--white); }
+.ab-tool-row-desc {
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Sticky bottom counter: how many tools the user has selected. */
+.ab-tool-counter {
+  margin-top: 6px;
+  padding: 6px 10px;
+  font-size: 11.5px;
   color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  text-align: right;
 }
 .ab-field-error {
   font-size: 11.5px;
@@ -833,7 +1028,7 @@
     scroll-snap-align: start;
   }
   .ab-agent-desc { -webkit-line-clamp: 1; }
-  .ab-tools-grid { grid-template-columns: minmax(0, 1fr); }
+  .ab-tools-grid { max-height: 260px; }
 }
 
 /* ============================================================ Responsive: mobile (<= 768px) */

@@ -96,6 +96,10 @@ https://github.com/rodrigo-elastic/FE-Elastic
 4. Send: "Generate a 1-page proposal for Banco Atlántico, include POV hours"
 5. Trace pane shows fec_proposal called with structured input. Output is a renderable HTML proposal.
 
+Three user-defined agents are pre-seeded in the cluster so the sidebar at `/agent-builder.html` is populated on first open: `fec_user_migration_specialist` (Migration Specialist, 5 tools), `fec_user_compliance_pursuit` (Compliance Pursuit, 4 tools), and `fec_user_rfp_responder` (RFP Responder, 4 tools). Each one is a real Agent Builder agent persisted in the customer's Kibana cluster, not a frontend stub. The judge can chat with any of the four out of the box.
+
+The "Create a specialist agent" modal upgrades the tool picker so a new FE can build their own agent in under a minute. The 12 fec_* tools are grouped into four categories (Research, Compete, Sizing, Build), each row shows the tool id plus a one-line capability summary pulled live from the `/api/v1/agent-builder/tools` description field, and a search input live-filters the list by id, category, or capability text. Three recommended bundles (RFP, Migration, Sizing) pre-select the right tool combo with one click. A counter at the bottom keeps "{n} of 12 tools selected" visible at all times.
+
 Users can create their own agents from `/agent-builder.html`. Master agent (`fec_field_assistant`) cannot be deleted. User agents are persisted in your Kibana cluster, not in this webapp.
 
 Verification commands (terminal):

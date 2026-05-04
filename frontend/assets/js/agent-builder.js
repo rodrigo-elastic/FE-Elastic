@@ -46,6 +46,56 @@
     fec_proposal: "One-page proposal (Carmen)",
   };
 
+  // Categorization for the modal tool picker. Four groups, rendered in this exact order:
+  // Research, Compete, Sizing, Build. Tools without a mapping fall back to "Other".
+  const TOOL_CATEGORIES = {
+    fec_knowledge_search: "Research",
+    fec_orchestrator:     "Research",
+    fec_compare:          "Compete",
+    fec_compliance:       "Compete",
+    fec_proposal:         "Compete",
+    fec_cost_calc:        "Sizing",
+    fec_capacity:         "Sizing",
+    fec_poc_plan:         "Sizing",
+    fec_spl_to_esql:      "Build",
+    fec_code_sample:      "Build",
+    fec_stack_extract:    "Build",
+    fec_troubleshoot:     "Build",
+  };
+
+  // Display order + i18n keys for the four sections. Anything not in this list is grouped at the bottom under "Other".
+  const CATEGORY_ORDER = ["Research", "Compete", "Sizing", "Build"];
+  const CATEGORY_I18N = {
+    Research: "ab.tool.section.research",
+    Compete:  "ab.tool.section.compete",
+    Sizing:   "ab.tool.section.sizing",
+    Build:    "ab.tool.section.build",
+  };
+
+  // Recommended bundles. A click overwrites the current selection with the bundle's tool ids.
+  const TOOL_BUNDLES = [
+    { id: "rfp",       i18n: "ab.tool.bundle.rfp",       label: "RFP",       tools: ["fec_knowledge_search", "fec_compare", "fec_compliance", "fec_proposal"] },
+    { id: "migration", i18n: "ab.tool.bundle.migration", label: "Migration", tools: ["fec_spl_to_esql", "fec_cost_calc", "fec_capacity", "fec_compliance", "fec_proposal"] },
+    { id: "sizing",    i18n: "ab.tool.bundle.sizing",    label: "Sizing",    tools: ["fec_capacity", "fec_cost_calc", "fec_poc_plan"] },
+  ];
+
+  // Truncate a tool description to the first sentence or 110 chars, whichever is shorter.
+  // Returns the trimmed string. Caller is responsible for putting the full text in title="...".
+  function shortDescription(desc) {
+    const raw = String(desc || "").trim();
+    if (!raw) return "";
+    // First sentence: stop at the first ". " followed by a capital, or first newline.
+    let cut = raw.length;
+    const firstNewline = raw.indexOf("\n");
+    if (firstNewline > 0) cut = Math.min(cut, firstNewline);
+    const firstPeriod = raw.search(/\.\s+[A-Z(]/);
+    if (firstPeriod > 0) cut = Math.min(cut, firstPeriod + 1);
+    if (cut > 110) cut = 110;
+    let out = raw.slice(0, cut).trim();
+    if (out.length < raw.length && !/[.!?]$/.test(out)) out += "...";
+    return out;
+  }
+
   const state = {
     inFlight: false,
     kibanaUrl: null,
@@ -106,9 +156,13 @@
       pillTools.classList.remove("ab-pill-muted");
       pillTools.classList.add("ab-pill-ok");
       if (state.kibanaUrl) {
-        pillKibana.href = state.kibanaUrl + "/app/agent_builder";
+        pillKibana.href = state.kibanaUrl + "/app/agent_builder/agents";
+        const sidebarBtn = $("#ab-sidebar-kibana");
+        if (sidebarBtn) sidebarBtn.href = state.kibanaUrl + "/app/agent_builder/agents";
       } else {
         pillKibana.style.display = "none";
+        const sidebarBtn = $("#ab-sidebar-kibana");
+        if (sidebarBtn) sidebarBtn.style.display = "none";
       }
     } catch (e) {
       const pillStatus = $("#ab-pill-status");
@@ -452,6 +506,189 @@
     if (node) node.textContent = message || "";
   }
 
+  // ============================================================ Tool picker (modal)
+  // The picker is rebuilt every time the modal opens. We keep tool meta in a closure-local
+  // index so the live filter does not need to re-derive descriptions or categories per keystroke.
+  let _pickerIndex = null;
+
+  function buildToolPickerIndex() {
+    // Index every fec_* tool from the live roster, plus any extras the API returned. Tools without
+    // a category mapping land in "Other", which we render last. Each entry carries the id,
+    // category, full description, and pre-truncated short description for the row.
+    const tools = (state.tools || []).filter((tt) => tt && tt.id);
+    const items = tools.map((tt) => {
+      const id = tt.id;
+      const category = TOOL_CATEGORIES[id] || "Other";
+      const description = String(tt.description || "").trim();
+      return {
+        id,
+        category,
+        label: TOOL_LABELS[id] || id,
+        description,
+        short: shortDescription(description),
+      };
+    });
+    // Group by category in CATEGORY_ORDER, alphabetical within each group, "Other" last.
+    const sections = [];
+    const seen = new Set();
+    CATEGORY_ORDER.forEach((cat) => {
+      const inCat = items.filter((it) => it.category === cat).sort((a, b) => a.id.localeCompare(b.id));
+      if (inCat.length) {
+        sections.push({ category: cat, i18n: CATEGORY_I18N[cat], items: inCat });
+        inCat.forEach((it) => seen.add(it.id));
+      }
+    });
+    const leftovers = items.filter((it) => !seen.has(it.id)).sort((a, b) => a.id.localeCompare(b.id));
+    if (leftovers.length) {
+      sections.push({ category: "Other", i18n: null, items: leftovers });
+    }
+    return { sections, total: items.length };
+  }
+
+  function getCheckedToolIds() {
+    return $$('#ab-f-tools input[type="checkbox"]:checked').map((c) => c.value);
+  }
+
+  function setCheckedToolIds(ids) {
+    const set = new Set(ids || []);
+    $$('#ab-f-tools input[type="checkbox"]').forEach((cb) => {
+      cb.checked = set.has(cb.value);
+    });
+    updateToolCounter();
+  }
+
+  function updateToolCounter() {
+    const counter = $("#ab-f-tools-counter");
+    if (!counter || !_pickerIndex) return;
+    const checked = getCheckedToolIds().length;
+    const total = _pickerIndex.total;
+    const tmpl = t("ab.tool.counter", "{count} of {total} tools selected");
+    counter.textContent = tmpl.replace("{count}", String(checked)).replace("{total}", String(total));
+  }
+
+  function applyToolFilter(query) {
+    const q = String(query || "").trim().toLowerCase();
+    const grid = $("#ab-f-tools");
+    if (!grid) return;
+    const rows = $$("#ab-f-tools .ab-tool-row");
+    rows.forEach((row) => {
+      if (!q) {
+        row.classList.remove("is-hidden");
+        return;
+      }
+      const id = row.getAttribute("data-tool-id") || "";
+      const cat = row.getAttribute("data-tool-cat") || "";
+      const desc = row.getAttribute("data-tool-desc") || "";
+      const hit =
+        id.toLowerCase().includes(q) ||
+        cat.toLowerCase().includes(q) ||
+        desc.toLowerCase().includes(q);
+      row.classList.toggle("is-hidden", !hit);
+    });
+    // Hide entire sections that have no visible rows.
+    $$("#ab-f-tools .ab-tool-section").forEach((sec) => {
+      const visibleRows = sec.querySelectorAll(".ab-tool-row:not(.is-hidden)").length;
+      sec.classList.toggle("is-hidden", visibleRows === 0);
+    });
+    // Show / hide the clear button.
+    const clearBtn = $("#ab-f-tools-clear");
+    if (clearBtn) clearBtn.hidden = !q;
+  }
+
+  function renderToolPicker() {
+    const grid = $("#ab-f-tools");
+    if (!grid) return;
+    grid.innerHTML = "";
+    _pickerIndex = buildToolPickerIndex();
+    if (!_pickerIndex.total) {
+      grid.appendChild(el("div", { class: "ab-empty-sm" }, "No tools available."));
+      return;
+    }
+    _pickerIndex.sections.forEach((section) => {
+      const sectionEl = el("div", { class: "ab-tool-section", "data-cat": section.category });
+      const head = el("div", { class: "ab-tool-section-head" });
+      const title = el("span", { class: "ab-tool-section-title" });
+      const titleText = section.i18n ? t(section.i18n, section.category) : section.category;
+      title.appendChild(document.createTextNode(titleText));
+      title.appendChild(el("span", { class: "ab-tool-section-count" }, `${section.items.length}`));
+      head.appendChild(title);
+      const selectAll = el(
+        "button",
+        {
+          type: "button",
+          class: "ab-tool-section-select",
+          "data-i18n": "ab.tool.select_all",
+          title: t("ab.tool.select_all", "Select all"),
+        },
+        t("ab.tool.select_all", "Select all")
+      );
+      selectAll.addEventListener("click", (ev) => {
+        ev.preventDefault();
+        const checked = getCheckedToolIds();
+        const merged = new Set(checked);
+        section.items.forEach((it) => merged.add(it.id));
+        setCheckedToolIds(Array.from(merged));
+      });
+      head.appendChild(selectAll);
+      sectionEl.appendChild(head);
+      section.items.forEach((it) => {
+        const id = "tool-" + it.id;
+        const row = el("label", {
+          class: "ab-tool-row",
+          for: id,
+          "data-tool-id": it.id,
+          "data-tool-cat": it.category,
+          "data-tool-desc": it.description,
+          title: it.description,
+        });
+        const cb = el("input", { type: "checkbox", id, value: it.id });
+        cb.addEventListener("change", updateToolCounter);
+        row.appendChild(cb);
+        const main = el("div", { class: "ab-tool-row-main" });
+        const top = el("div", { class: "ab-tool-row-top" });
+        top.appendChild(el("span", { class: "ab-tool-row-id" }, it.id));
+        top.appendChild(el("span", { class: "ab-tool-row-pill" }, it.category));
+        main.appendChild(top);
+        if (it.short) {
+          main.appendChild(el("div", { class: "ab-tool-row-desc", title: it.description }, it.short));
+        }
+        row.appendChild(main);
+        sectionEl.appendChild(row);
+      });
+      grid.appendChild(sectionEl);
+    });
+    updateToolCounter();
+  }
+
+  function renderToolBundles() {
+    const host = $("#ab-f-tools-bundles");
+    if (!host) return;
+    host.innerHTML = "";
+    TOOL_BUNDLES.forEach((b) => {
+      const chip = el(
+        "button",
+        {
+          type: "button",
+          class: "ab-tool-bundle",
+          "data-bundle": b.id,
+          title: b.tools.join(", "),
+        },
+        t(b.i18n, b.label)
+      );
+      chip.addEventListener("click", (ev) => {
+        ev.preventDefault();
+        setCheckedToolIds(b.tools);
+        // Clear the search when applying a bundle so the user sees the selection right away.
+        const search = $("#ab-f-tools-search");
+        if (search) {
+          search.value = "";
+          applyToolFilter("");
+        }
+      });
+      host.appendChild(chip);
+    });
+  }
+
   function openModal() {
     const modal = $("#ab-modal");
     if (!modal) return;
@@ -461,25 +698,22 @@
     $("#ab-f-description").value = "";
     $("#ab-f-prompt").value = "";
     $("#ab-f-prompt-count").textContent = "0";
-    // Build the tool checkboxes from the latest tool roster (alphabetical).
-    const grid = $("#ab-f-tools");
-    grid.innerHTML = "";
-    const toolIds = (state.tools || []).map((tt) => tt && tt.id).filter(Boolean);
-    toolIds.sort();
-    if (!toolIds.length) {
-      grid.appendChild(el("div", { class: "ab-empty-sm" }, "No tools available."));
+    // Build the categorized tool picker from the live roster + bundles.
+    renderToolBundles();
+    renderToolPicker();
+    // Reset filter input.
+    const search = $("#ab-f-tools-search");
+    if (search) {
+      search.value = "";
+      applyToolFilter("");
     }
-    toolIds.forEach((tid) => {
-      const id = "tool-" + tid;
-      const wrap = el("label", { class: "ab-tool-check", for: id });
-      const cb = el("input", { type: "checkbox", id, value: tid });
-      wrap.appendChild(cb);
-      wrap.appendChild(el("span", { class: "ab-tool-check-name" }, TOOL_LABELS[tid] || tid));
-      wrap.appendChild(el("span", { class: "ab-tool-check-id" }, tid));
-      grid.appendChild(wrap);
-    });
     modal.hidden = false;
-    setTimeout(() => $("#ab-f-name").focus(), 30);
+    // Focus the search input first so the user can filter tools immediately. The name field
+    // is still there; users can tab to it. This matches the modal's primary friction point.
+    setTimeout(() => {
+      const target = $("#ab-f-tools-search") || $("#ab-f-name");
+      if (target) target.focus();
+    }, 30);
   }
 
   function closeModal() {
@@ -608,6 +842,22 @@
       ev.preventDefault();
       submitModal();
     });
+    // Tool picker: live filter + clear button.
+    const toolSearch = $("#ab-f-tools-search");
+    if (toolSearch) {
+      toolSearch.addEventListener("input", (ev) => applyToolFilter(ev.target.value));
+    }
+    const toolClear = $("#ab-f-tools-clear");
+    if (toolClear) {
+      toolClear.addEventListener("click", (ev) => {
+        ev.preventDefault();
+        if (toolSearch) {
+          toolSearch.value = "";
+          applyToolFilter("");
+          toolSearch.focus();
+        }
+      });
+    }
     // Auto-derive the slug as the user types the name, until they edit the slug manually.
     let slugDirty = false;
     const slugInput = $("#ab-f-slug");
@@ -619,12 +869,19 @@
     promptArea.addEventListener("input", () => {
       $("#ab-f-prompt-count").textContent = String(promptArea.value.length);
     });
-    // ESC closes the modal.
+    // ESC clears the tool search if it has text, otherwise closes the modal.
     document.addEventListener("keydown", (ev) => {
-      if (ev.key === "Escape") {
-        const modal = $("#ab-modal");
-        if (modal && !modal.hidden) closeModal();
+      if (ev.key !== "Escape") return;
+      const modal = $("#ab-modal");
+      if (!modal || modal.hidden) return;
+      const search = $("#ab-f-tools-search");
+      if (search && search.value && document.activeElement === search) {
+        search.value = "";
+        applyToolFilter("");
+        ev.preventDefault();
+        return;
       }
+      closeModal();
     });
   }
 
