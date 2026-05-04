@@ -1,0 +1,264 @@
+<!--
+  filename: quick-research.html
+  description: Quick Research workspace. Pre-meeting brief form, transcript analyzer,
+  calendar inbox, meetings on file and history. Extracted from /index.html so the
+  dashboard portal stays clean.
+  Author: Rodrigo Careaga
+  Date: 04-05-2026
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FE Copilot - Quick Research</title>
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="/assets/img/elastic/glyph-cluster-color.svg" />
+  <link rel="stylesheet" href="/assets/css/command-palette.css" />
+  <link rel="stylesheet" href="/assets/css/autopilot.css" />
+  <style>
+    .demo-banner { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 8px 16px; background: #fff3cd; color: #856404; font-size: 12px; line-height: 1.4; border-bottom: 1px solid #f5e2a4; text-align: center; }
+    .demo-banner.is-hidden { display: none; }
+    .demo-banner-text { flex: 1; max-width: 1100px; }
+    .demo-banner-close { background: transparent; border: 0; color: #856404; font-size: 14px; cursor: pointer; padding: 2px 6px; line-height: 1; border-radius: 3px; }
+    .demo-banner-close:hover { background: rgba(133, 100, 4, 0.12); }
+  </style>
+</head>
+<body class="quick-research-page">
+  <a class="skip-to-main" href="#main-content" data-i18n="a11y.skip_to_main">Skip to main content</a>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="FE Copilot home">
+      <img class="logo-elastic" src="/assets/img/elastic/logo-horizontal-white.svg" alt="Elastic" />
+      <span class="brand-sep">/</span>
+      <span class="name">FE <span class="accent">Copilot</span></span>
+      <span class="tag">Quick Research</span>
+    </a>
+    <div class="right">
+      <div class="lang-host" id="lang-host"></div>
+      <span class="pill" id="model-pill">Loading model...</span>
+      <span class="pill" id="status" data-i18n="topbar.connecting">Connecting...</span>
+    </div>
+  </header>
+
+  <div class="demo-banner" id="fec-demo-banner" role="note">
+    <span class="demo-banner-text" data-i18n="banner.demo">Demo data only. All companies, employees, and financials shown are fictional. Public list pricing for Splunk and Datadog is real.</span>
+    <button type="button" class="demo-banner-close" id="fec-demo-banner-close" aria-label="Dismiss demo data notice" data-i18n-aria-label="banner.dismiss">&times;</button>
+  </div>
+  <script>
+    (function () { try { var b=document.getElementById('fec-demo-banner'); if(!b) return; if(localStorage.getItem('fec.banner_dismissed')==='1'){ b.classList.add('is-hidden'); return; } var x=document.getElementById('fec-demo-banner-close'); if(x){ x.addEventListener('click', function(){ b.classList.add('is-hidden'); try{localStorage.setItem('fec.banner_dismissed','1');}catch(e){} }); } } catch(e){} })();
+  </script>
+
+  <main class="container" id="main-content" tabindex="-1">
+    <section class="hero">
+      <h1><span data-i18n="hero.title.1">Three agents.</span> <span class="grad" data-i18n="hero.title.2">One pre-meeting flow.</span></h1>
+      <p class="lede" data-i18n="hero.lede">FE Copilot chains a Pre-Meeting Researcher, a Live Companion, and a Post-Meeting Action Engine on top of Claude. All sample data here is synthetic; no customer data was used.</p>
+      <div class="hero-stats">
+        <div class="hero-stat teal"><div class="num" id="stat-companies">-</div><div class="lbl" data-i18n="stats.accounts">Accounts</div></div>
+        <div class="hero-stat yellow"><div class="num" id="stat-upcoming">-</div><div class="lbl" data-i18n="stats.upcoming">Upcoming</div></div>
+        <div class="hero-stat blue"><div class="num" id="stat-past">-</div><div class="lbl" data-i18n="stats.past">Past meetings</div></div>
+        <div class="hero-stat pink"><div class="num" id="stat-briefs">-</div><div class="lbl" data-i18n="stats.briefs">Briefs generated</div></div>
+      </div>
+    </section>
+
+    <div class="entry-tabs" role="tablist" aria-label="Entry mode">
+      <button class="entry-tab active" data-mode="qr" type="button" role="tab" id="tab-qr" aria-selected="true" aria-controls="entry-qr">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span data-i18n="tab.qr">Pre-meeting research</span>
+      </button>
+      <button class="entry-tab" data-mode="tr" type="button" role="tab" id="tab-tr" aria-selected="false" aria-controls="entry-tr">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        <span data-i18n="tab.tr">Analyze transcript</span>
+      </button>
+    </div>
+
+    <section class="quick-research" id="entry-qr" role="tabpanel" aria-labelledby="tab-qr">
+      <div class="qr-head">
+        <div>
+          <h2 data-i18n="qr.title">Quick research</h2>
+          <p class="muted small" style="margin: 4px 0 0 0" data-i18n="qr.subtitle">Research any account in 10 seconds. Only what you type leaves the boundary.</p>
+        </div>
+      </div>
+      <div class="qr-templates" aria-labelledby="qr-templates-label">
+        <div class="qr-templates-head">
+          <span class="qr-templates-lbl" id="qr-templates-label" data-i18n="tpl.label">Start from a template</span>
+          <span class="muted small" data-i18n="tpl.hint">Pre-fills industry, size, stack notes, context, and model. Just add the company name.</span>
+        </div>
+        <div class="qr-templates-row" id="qr-templates-row" role="list"></div>
+        <div class="qr-applied-host" id="qr-applied-host" aria-live="polite" aria-atomic="true"></div>
+      </div>
+      <form id="qr-form" class="qr-form" onsubmit="return false;">
+        <div class="qr-row">
+          <label class="qr-field grow">
+            <span class="qr-lbl" data-i18n="qr.field.company">Company</span>
+            <input type="text" id="qr-name" data-i18n-placeholder="qr.placeholder.company" placeholder="e.g. Northwind Pay, Mercado Atlas, Banco Atlántico" required />
+          </label>
+          <label class="qr-field">
+            <span class="qr-lbl" data-i18n="qr.field.industry">Industry</span>
+            <input type="text" id="qr-industry" data-i18n-placeholder="qr.placeholder.industry" placeholder="Fintech, Retail, Public sector..." />
+          </label>
+          <label class="qr-field">
+            <span class="qr-lbl" data-i18n="qr.field.size">Size</span>
+            <input type="text" id="qr-size" data-i18n-placeholder="qr.placeholder.size" placeholder="Mid-market, Enterprise..." />
+          </label>
+        </div>
+        <label class="qr-field">
+          <span class="qr-lbl" data-i18n="qr.field.stack">Stack notes (optional)</span>
+          <input type="text" id="qr-stack" data-i18n-placeholder="qr.placeholder.stack" placeholder="Comma-separated. e.g. Splunk, AWS, ServiceNow" />
+        </label>
+        <label class="qr-field">
+          <span class="qr-lbl" data-i18n="qr.field.notes">Meeting context (optional)</span>
+          <textarea id="qr-notes" rows="2" data-i18n-placeholder="qr.placeholder.notes" placeholder="What do you want to discuss? Recent signal? Blocker?"></textarea>
+        </label>
+        <div class="qr-actions">
+          <button type="submit" class="btn primary" id="qr-submit">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <span data-i18n="qr.submit">Generate brief</span>
+          </button>
+          <label class="qr-model" for="qr-model">
+            <span class="qr-model-lbl">Model</span>
+            <select id="qr-model" aria-label="Choose Claude model for pre-meeting research">
+              <option value="">Haiku 4.5 (default)</option>
+              <option value="claude-haiku-4-5">Haiku 4.5 (fastest, cheapest)</option>
+              <option value="claude-sonnet-4-6">Sonnet 4.6 (balanced)</option>
+              <option value="claude-opus-4-7">Opus 4.7 (deepest research)</option>
+            </select>
+          </label>
+          <span class="muted small" id="qr-status" role="status" aria-live="polite"></span>
+        </div>
+        <div class="qr-progress-host" id="qr-progress-host" hidden>
+          <div class="progress-bar" id="qr-progress" role="progressbar" aria-label="Researching" aria-valuemin="0" aria-valuemax="100" hidden>
+            <span class="progress-bar-fill"></span>
+          </div>
+          <span class="qr-eta" id="qr-eta" data-i18n="qr.eta">Typically 15 to 25 seconds. The first run is the slowest.</span>
+        </div>
+      </form>
+    </section>
+
+    <section class="quick-research transcript-card" id="entry-tr" role="tabpanel" hidden aria-labelledby="tab-tr">
+      <div class="qr-head">
+        <div>
+          <h2 id="tr-heading" data-i18n="tr.title">Analyze transcript</h2>
+          <p class="muted small" style="margin: 4px 0 0 0" data-i18n="tr.subtitle">Paste a Zoom .vtt, Gong export, or any "Speaker: text" transcript. The Post-Meeting agent extracts action items, MEDDPICC signals, and competitor mentions.</p>
+        </div>
+      </div>
+      <form id="tr-form" class="qr-form tr-form" onsubmit="return false;" novalidate>
+        <div class="qr-row">
+          <div class="qr-field grow">
+            <label class="qr-lbl" for="tr-name" data-i18n="tr.field.company">Company</label>
+            <input type="text" id="tr-name" name="company_name" autocomplete="organization" required minlength="1" maxlength="120" data-i18n-placeholder="tr.placeholder.company" placeholder="e.g. Globex, Mercado Atlas, Banco Atlántico" aria-required="true" />
+          </div>
+          <div class="qr-field">
+            <label class="qr-lbl" for="tr-title" data-i18n="tr.field.title">Meeting title</label>
+            <input type="text" id="tr-title" name="meeting_title" maxlength="160" data-i18n-placeholder="tr.placeholder.title" placeholder="Discovery, QBR, technical follow-up..." />
+          </div>
+          <div class="qr-field">
+            <label class="qr-lbl" for="tr-source" data-i18n="tr.field.source">Source</label>
+            <select id="tr-source" name="transcript_source">
+              <option value="zoom" data-i18n="tr.source.zoom">Zoom (.vtt)</option>
+              <option value="gong" data-i18n="tr.source.gong">Gong export</option>
+              <option value="manual" data-i18n="tr.source.manual">Manual paste</option>
+            </select>
+          </div>
+        </div>
+        <div class="qr-row">
+          <div class="qr-field">
+            <label class="qr-lbl" for="tr-industry" data-i18n="tr.field.industry">Industry (optional)</label>
+            <input type="text" id="tr-industry" name="industry" maxlength="80" data-i18n-placeholder="tr.placeholder.industry" placeholder="Fintech, Retail, Public sector..." />
+          </div>
+          <div class="qr-field">
+            <label class="qr-lbl" for="tr-size" data-i18n="tr.field.size">Size (optional)</label>
+            <input type="text" id="tr-size" name="size" maxlength="80" data-i18n-placeholder="tr.placeholder.size" placeholder="Mid-market, Enterprise..." />
+          </div>
+        </div>
+        <div class="qr-field">
+          <label class="qr-lbl" for="tr-notes" data-i18n="tr.field.notes">Notes (optional)</label>
+          <textarea id="tr-notes" name="notes" rows="2" maxlength="2000" data-i18n-placeholder="tr.placeholder.notes" placeholder="Anything the agent should know: deal stage, blockers, attendees..."></textarea>
+        </div>
+        <div class="qr-field">
+          <div class="tr-text-head">
+            <label class="qr-lbl" for="tr-text" data-i18n="tr.field.text">Transcript</label>
+            <span class="muted small tr-hint" data-i18n="tr.hint">Paste from Gong, Zoom, or any "Speaker: text" export. Min 20 characters.</span>
+          </div>
+          <textarea id="tr-text" name="transcript_text" rows="14" required minlength="20" maxlength="200000" spellcheck="false" data-i18n-placeholder="tr.placeholder.text" placeholder="WEBVTT&#10;&#10;00:00:01.000 --> 00:00:05.000&#10;Alice (Customer): We saw a 30% spike in p99 latency last week.&#10;&#10;00:00:05.500 --> 00:00:09.000&#10;Bob (Elastic FE): Got it. Walk me through the alerting setup..."></textarea>
+          <div class="tr-meta">
+            <span class="muted small" id="tr-charcount" aria-live="polite">0 chars</span>
+            <span class="dot">·</span>
+            <label class="tr-file-pick">
+              <span data-i18n="tr.field.file">Or upload a .vtt / .txt</span>
+              <input type="file" id="tr-file" accept=".vtt,.txt,.srt" />
+            </label>
+          </div>
+        </div>
+        <div class="qr-actions">
+          <button type="submit" class="btn primary" id="tr-submit">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            <span data-i18n="tr.submit">Analyze transcript</span>
+          </button>
+          <div class="qr-model">
+            <label class="qr-model-lbl" for="tr-model" data-i18n="tr.field.model">Model</label>
+            <select id="tr-model" name="model">
+              <option value="">Haiku 4.5 (default)</option>
+              <option value="claude-haiku-4-5">Haiku 4.5 (fastest, cheapest)</option>
+              <option value="claude-sonnet-4-6">Sonnet 4.6 (balanced)</option>
+              <option value="claude-opus-4-7">Opus 4.7 (deepest analysis)</option>
+            </select>
+          </div>
+          <span class="muted small tr-status" id="tr-status" role="status" aria-live="polite"></span>
+        </div>
+      </form>
+    </section>
+
+    <section>
+      <div class="row-between">
+        <h2>Calendar inbox</h2>
+        <span class="muted small" id="cal-count"></span>
+      </div>
+      <p class="muted small" style="margin: 0 0 8px 0">Mock Google Calendar feed; the smart-resolver picks the customer for each invite even when consultants are in the room.</p>
+      <ul id="calendar-list" class="meetings"></ul>
+    </section>
+
+    <section>
+      <div class="row-between">
+        <h2 data-i18n="section.meetings">Meetings on file</h2>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <span class="muted small" id="meetings-count"></span>
+          <div class="search-wrap" role="search">
+            <svg class="search-ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <label for="meetings-search" class="visually-hidden">Filter meetings</label>
+            <input type="text" id="meetings-search" data-i18n-placeholder="search.placeholder" placeholder="Filter by company, title, industry..." aria-label="Filter meetings by company, title, or industry" />
+            <kbd class="kbd" aria-hidden="true">/</kbd>
+          </div>
+        </div>
+      </div>
+      <div class="row-between" style="margin: 10px 0 6px 0">
+        <h3 class="subhead yellow"><span class="dot"></span> <span data-i18n="section.upcoming">Upcoming</span></h3>
+        <span class="muted small" id="upcoming-count"></span>
+      </div>
+      <ul id="upcoming" class="meetings"></ul>
+
+      <div class="row-between" style="margin: 22px 0 6px 0">
+        <h3 class="subhead blue"><span class="dot"></span> <span data-i18n="section.past">Past</span></h3>
+        <span class="muted small" id="past-count"></span>
+      </div>
+      <ul id="past" class="meetings"></ul>
+    </section>
+
+    <section style="margin-top: 28px">
+      <div class="row-between">
+        <h2 data-i18n="section.history">History</h2>
+        <span class="muted small" id="history-count"></span>
+      </div>
+      <ul id="history" class="history"></ul>
+    </section>
+
+    <section id="toast-host" role="status" aria-live="polite" aria-atomic="false"></section>
+  </main>
+
+  <script src="/assets/js/i18n.js"></script>
+  <script src="/assets/js/api.js"></script>
+  <script src="/assets/js/ui.js"></script>
+  <script src="/assets/js/tools-rail.js"></script>
+  <script src="/assets/js/app.js"></script>
+  <script src="/assets/js/command-palette.js"></script>
+</body>
+</html>
