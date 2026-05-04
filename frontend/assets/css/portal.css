@@ -1,0 +1,309 @@
+/*
+  filename: portal.css
+  description: FE Copilot portal landing styles. Inspired by the Elastic Cloud portal:
+    compact welcome row, inline stat pills, autopilot CTA banner, 3-column feature
+    card grid with illustrative SVG art, secondary pills row. Light and dark themes
+    via existing tokens (var(--bg), var(--panel), var(--ink), etc.).
+  Author: Rodrigo Careaga
+  Date: 04-05-2026
+*/
+
+/* ============================================================ Container override */
+/* The portal page wants a slightly wider canvas than the legacy 1080px so 3
+   cards breathe on a 1440x900 desktop. Scoped to .portal-page so other pages
+   keep the original container width. */
+body.portal-page .container {
+  max-width: 1240px;
+  margin: 28px auto 56px auto;
+  padding: 0 32px;
+}
+
+/* ============================================================ Welcome row */
+.portal-welcome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  margin: 4px 0 20px 0;
+}
+.portal-welcome h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  line-height: 1.2;
+}
+.welcome-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.welcome-hint {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* ============================================================ Stats row (inline pills) */
+.portal-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 20px 0;
+}
+.stat-pill {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+  white-space: nowrap;
+  transition: background 140ms var(--easing), border-color 140ms var(--easing);
+}
+.stat-pill b {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.stat-pill:hover {
+  background: var(--panel-3);
+  border-color: var(--border);
+}
+.stat-pill-accent {
+  background: var(--primary-soft);
+  border-color: rgba(0, 119, 204, 0.32);
+  color: var(--primary);
+}
+.stat-pill-accent b {
+  color: var(--primary);
+  opacity: 0.85;
+}
+[data-theme="dark"] .stat-pill-accent {
+  color: #9fd1ff;
+}
+[data-theme="dark"] .stat-pill-accent b {
+  color: #9fd1ff;
+  opacity: 0.85;
+}
+
+/* ============================================================ Autopilot banner */
+.portal-autopilot {
+  margin: 0 0 22px 0;
+}
+.ap-cta-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 22px 26px;
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(0, 191, 179, 0.18) 0%, transparent 55%),
+    radial-gradient(circle at 0% 100%, rgba(240, 78, 152, 0.14) 0%, transparent 55%),
+    linear-gradient(135deg, var(--panel) 0%, var(--panel-2) 100%);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+.ap-cta-text { flex: 1; min-width: 0; }
+.ap-cta-text h2 {
+  margin: 0 0 4px 0;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.ap-cta-text p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 14px;
+  line-height: 1.5;
+  max-width: 720px;
+}
+
+/* ============================================================ Feature grid */
+.portal-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin: 0 0 22px 0;
+}
+.portal-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 22px 22px 24px 22px;
+  border-radius: 14px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--ink);
+  text-decoration: none;
+  transition:
+    transform 160ms var(--easing),
+    box-shadow 160ms var(--easing),
+    border-color 160ms var(--easing);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+.portal-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--primary);
+  box-shadow: var(--shadow-md);
+  color: var(--ink);
+}
+.portal-card:focus-visible {
+  outline: 2px solid var(--primary-hi);
+  outline-offset: 2px;
+}
+.portal-card-art {
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--primary-soft) 0%, rgba(27, 169, 245, 0.08) 100%);
+  border: 1px solid var(--border-soft);
+}
+.portal-card-art[data-art="brain"] {
+  background: linear-gradient(135deg, var(--teal-soft) 0%, rgba(0, 191, 179, 0.06) 100%);
+}
+.portal-card-art[data-art="agent"] {
+  background: linear-gradient(135deg, var(--pink-soft) 0%, rgba(240, 78, 152, 0.06) 100%);
+}
+.portal-card-art[data-art="cards"] {
+  background: linear-gradient(135deg, var(--yellow-soft) 0%, rgba(254, 197, 20, 0.06) 100%);
+}
+.portal-card-art[data-art="industries"] {
+  background: linear-gradient(135deg, var(--blue-soft) 0%, rgba(27, 169, 245, 0.06) 100%);
+}
+.portal-card-art[data-art="demo"] {
+  background: linear-gradient(135deg, rgba(147, 201, 14, 0.18) 0%, rgba(147, 201, 14, 0.06) 100%);
+}
+.portal-card-art svg {
+  width: 44px;
+  height: 44px;
+  color: var(--primary);
+}
+.portal-card-art[data-art="brain"] svg { color: var(--teal); }
+.portal-card-art[data-art="agent"] svg { color: var(--pink); }
+.portal-card-art[data-art="cards"] svg { color: #d2a307; }
+[data-theme="dark"] .portal-card-art[data-art="cards"] svg { color: var(--yellow); }
+.portal-card-art[data-art="industries"] svg { color: var(--blue); }
+.portal-card-art[data-art="demo"] svg { color: #6f9c0a; }
+[data-theme="dark"] .portal-card-art[data-art="demo"] svg { color: var(--green); }
+
+.portal-card h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.005em;
+}
+.portal-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ============================================================ Secondary pills */
+.portal-secondary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 18px 0;
+}
+.portal-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px 10px 16px;
+  border-radius: 10px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--primary);
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 13px;
+  line-height: 1.4;
+  transition: background 140ms var(--easing), border-color 140ms var(--easing), transform 140ms var(--easing);
+}
+.portal-pill:hover {
+  background: var(--panel-2);
+  border-left-color: var(--primary-hi);
+  transform: translateX(1px);
+  color: var(--ink);
+}
+.portal-pill b {
+  color: var(--ink);
+  font-weight: 700;
+  margin-right: 4px;
+}
+
+/* ============================================================ Power user view (legacy) */
+.portal-power-user {
+  margin-top: 28px;
+  border-top: 1px dashed var(--border);
+  padding-top: 18px;
+}
+.portal-power-user > summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  user-select: none;
+}
+.portal-power-user > summary:hover {
+  background: var(--panel-3);
+  color: var(--ink);
+}
+.portal-power-user > summary::before {
+  content: "▸";
+  font-size: 11px;
+  transition: transform 140ms var(--easing);
+}
+.portal-power-user[open] > summary::before {
+  transform: rotate(90deg);
+}
+.portal-power-user > summary::-webkit-details-marker { display: none; }
+
+/* ============================================================ Responsive */
+@media (max-width: 1100px) {
+  .portal-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 720px) {
+  body.portal-page .container { padding: 0 20px; }
+  .portal-welcome {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .portal-welcome h1 { font-size: 24px; }
+  .portal-grid { grid-template-columns: 1fr; }
+  .ap-cta-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 20px;
+  }
+  .portal-stats { gap: 6px; }
+  .stat-pill { font-size: 12.5px; padding: 6px 10px; }
+}

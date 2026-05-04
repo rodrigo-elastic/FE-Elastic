@@ -14,6 +14,7 @@
   <link rel="icon" type="image/svg+xml" href="/assets/img/elastic/glyph-cluster-color.svg" />
   <link rel="stylesheet" href="/assets/css/command-palette.css" />
   <link rel="stylesheet" href="/assets/css/autopilot.css" />
+  <link rel="stylesheet" href="/assets/css/portal.css" />
   <style>
     .demo-banner {
       display: flex;
@@ -60,7 +61,7 @@
     @media (max-width: 900px) { .sko-event { display: none; } }
   </style>
 </head>
-<body>
+<body class="portal-page">
   <a class="skip-to-main" href="#main-content" data-i18n="a11y.skip_to_main">Skip to main content</a>
   <header class="topbar">
     <a class="brand" href="/" aria-label="FE Copilot home">
@@ -106,6 +107,98 @@
   </script>
 
   <main class="container" id="main-content" tabindex="-1">
+    <!-- ============================================================ Portal welcome row -->
+    <header class="portal-welcome">
+      <h1 data-i18n="portal.welcome">Welcome, Rodrigo Careaga</h1>
+      <div class="welcome-actions">
+        <span class="welcome-hint" data-i18n="portal.welcome_hint">FE Summit hackathon submission</span>
+        <a href="/health.html" class="btn ghost" data-i18n="portal.btn.live_health">Live health</a>
+      </div>
+    </header>
+
+    <!-- ============================================================ Inline stat pills -->
+    <div class="portal-stats" id="portal-stats" aria-label="System counters">
+      <span class="stat-pill"><b data-i18n="portal.stats.tools">Tools</b> <span id="stat-pill-tools">12</span></span>
+      <span class="stat-pill"><b data-i18n="portal.stats.agents">Agents</b> <span id="stat-pill-agents">4</span></span>
+      <span class="stat-pill"><b data-i18n="portal.stats.battlecards">Battlecards</b> <span id="stat-pill-battlecards">31</span></span>
+      <span class="stat-pill"><b data-i18n="portal.stats.industries">Industries</b> <span id="stat-pill-industries">20</span></span>
+      <span class="stat-pill"><b data-i18n="portal.stats.scenarios">Scenarios</b> <span id="stat-pill-scenarios">8</span></span>
+      <span class="stat-pill"><b data-i18n="portal.stats.brain">FE Brain</b> <span id="stat-pill-brain">3837</span> <span class="muted" data-i18n="portal.stats.chunks">chunks</span></span>
+      <span class="stat-pill stat-pill-accent" id="hs-pill"><b data-i18n="portal.stats.hours_saved_week">Hours saved this week</b> <span id="hs-pill-hours">68.1</span></span>
+    </div>
+
+    <!-- ============================================================ Autopilot CTA banner -->
+    <section class="portal-autopilot" aria-labelledby="ap-cta-title">
+      <div class="ap-cta-card">
+        <div class="ap-cta-text">
+          <h2 id="ap-cta-title" data-i18n="portal.autopilot.title">Show me the magic</h2>
+          <p data-i18n="portal.autopilot.body">Forty five seconds. Twelve tools, thirty one battlecards, twenty industries. No typing.</p>
+        </div>
+        <button class="autopilot-cta" id="autopilot-cta-portal" type="button" aria-label="Run the autopilot demo">
+          <span class="ap-icon" aria-hidden="true">*</span>
+          <span class="ap-label" data-i18n="portal.autopilot.btn">Run autopilot</span>
+          <span class="ap-sub">45s</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ============================================================ Feature card grid -->
+    <section class="portal-grid" aria-label="FE Copilot features">
+      <a class="portal-card" href="#qr-form-anchor" id="portal-card-research" data-target="qr">
+        <div class="portal-card-art" data-art="research" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><path d="M16 5l1.5 1.5M19 3l1.5 1.5" stroke-width="1.6"/></svg>
+        </div>
+        <h3 data-i18n="portal.cards.quick_research.title">Quick Research</h3>
+        <p data-i18n="portal.cards.quick_research.body">Research any account in ten seconds. Pre-meeting brief grounded in SEC EDGAR plus public news.</p>
+      </a>
+      <a class="portal-card" href="/fe-brain.html">
+        <div class="portal-card-art" data-art="brain" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4a3 3 0 0 0-3 3v0a3 3 0 0 0-3 3v2a3 3 0 0 0 1.5 2.6V17a3 3 0 0 0 4.5 2.6"/><path d="M15 4a3 3 0 0 1 3 3v0a3 3 0 0 1 3 3v2a3 3 0 0 1-1.5 2.6V17a3 3 0 0 1-4.5 2.6"/><path d="M9 4v16M15 4v16M9 9h2M15 9h-2M9 14h2M15 14h-2"/></svg>
+        </div>
+        <h3 data-i18n="portal.cards.brain.title">FE Brain</h3>
+        <p data-i18n="portal.cards.brain.body">Cited answers over 3837 Elastic doc chunks. Hybrid retrieval plus rerank. Stop pinging Slack.</p>
+      </a>
+      <a class="portal-card" href="/agent-builder.html">
+        <div class="portal-card-art" data-art="agent" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="8" width="14" height="11" rx="2"/><path d="M12 4v4M9 4h6"/><circle cx="9.5" cy="13.5" r="1.2"/><circle cx="14.5" cy="13.5" r="1.2"/><path d="M9 17h6"/><path d="M3 12h2M19 12h2"/></svg>
+        </div>
+        <h3 data-i18n="portal.cards.agent.title">Agent Builder</h3>
+        <p data-i18n="portal.cards.agent.body">Master agent plus three specialists. Build your own from a modal. Persisted in your Kibana cluster.</p>
+      </a>
+      <a class="portal-card" href="/battlecards.html">
+        <div class="portal-card-art" data-art="cards" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="11" height="14" rx="2"/><rect x="10" y="3" width="11" height="14" rx="2"/><path d="M6 10h5M6 13h5M6 16h3"/></svg>
+        </div>
+        <h3 data-i18n="portal.cards.battlecards.title">Battlecards</h3>
+        <p data-i18n="portal.cards.battlecards.body">Thirty one competitors sorted by marketshare. Filter by vertical or industry. TCO, gaps, talking points.</p>
+      </a>
+      <a class="portal-card" href="/industries.html">
+        <div class="portal-card-art" data-art="industries" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="7" height="10"/><rect x="14" y="3" width="7" height="18"/><path d="M5 14h3M5 17h3M16 7h3M16 11h3M16 15h3"/></svg>
+        </div>
+        <h3 data-i18n="portal.cards.industries.title">Industries</h3>
+        <p data-i18n="portal.cards.industries.body">Twenty verticals covering eighty percent of Elastic customers. Personas, regulations, top competitors.</p>
+      </a>
+      <a class="portal-card" href="/demo-data.html">
+        <div class="portal-card-art" data-art="demo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="2.5"/><path d="M4 5v6c0 1.4 3.6 2.5 8 2.5s8-1.1 8-2.5V5"/><path d="M4 11v6c0 1.4 3.6 2.5 8 2.5s8-1.1 8-2.5v-6"/></svg>
+        </div>
+        <h3 data-i18n="portal.cards.demo.title">Demo Data</h3>
+        <p data-i18n="portal.cards.demo.body">Eight paired demo scenarios. FE view plus Customer view dashboards. Fifteen seconds, not half a day.</p>
+      </a>
+    </section>
+
+    <!-- ============================================================ Secondary pills -->
+    <section class="portal-secondary" aria-label="Secondary tools">
+      <a href="/workflow-demo.html" class="portal-pill"><b data-i18n="portal.secondary.workflows.label">Workflows</b> <span data-i18n="portal.secondary.workflows.body">2 Kibana alerting rules plus webhook handlers</span></a>
+      <a href="/health.html" class="portal-pill"><b data-i18n="portal.secondary.health.label">Health</b> <span data-i18n="portal.secondary.health.body">Live system status</span></a>
+      <a href="/audit.html" class="portal-pill"><b data-i18n="portal.secondary.audit.label">Audit log</b> <span data-i18n="portal.secondary.audit.body">Token usage and tool calls</span></a>
+    </section>
+
+    <!-- ============================================================ Power-user view (legacy) -->
+    <details class="portal-power-user" id="portal-power-user">
+      <summary data-i18n="portal.power_user">Power user view: Quick Research form, calendar inbox, history</summary>
+
     <section class="hero">
       <h1><span data-i18n="hero.title.1">Three agents.</span> <span class="grad" data-i18n="hero.title.2">One pre-meeting flow.</span></h1>
       <p class="lede" data-i18n="hero.lede">
@@ -323,6 +416,8 @@
       <ul id="history" class="history"></ul>
     </section>
 
+    </details>
+
     <section id="toast-host" role="status" aria-live="polite" aria-atomic="false"></section>
   </main>
 
@@ -385,5 +480,96 @@
   <script src="/assets/js/dashboard-stats.js"></script>
   <script src="/assets/js/command-palette.js"></script>
   <script src="/assets/js/autopilot.js"></script>
+  <script>
+  /* Portal landing wire-up: dynamic stat pills, autopilot CTA, Quick Research card.
+     Failures are silently ignored; the page falls back to the static markup. */
+  (function () {
+    "use strict";
+
+    function $(id) { return document.getElementById(id); }
+    function setNum(id, n) {
+      var node = $(id);
+      if (node && typeof n === "number" && !isNaN(n)) node.textContent = String(n);
+    }
+
+    // The Quick Research card opens the collapsed power-user view and scrolls
+    // to the form so existing JS bindings (qr-form) keep working.
+    function bindQuickResearchCard() {
+      var card = $("portal-card-research");
+      if (!card) return;
+      card.addEventListener("click", function (ev) {
+        var details = $("portal-power-user");
+        if (details) details.open = true;
+        var form = $("qr-form");
+        if (form) {
+          ev.preventDefault();
+          requestAnimationFrame(function () {
+            form.scrollIntoView({ behavior: "smooth", block: "start" });
+            var name = $("qr-name");
+            if (name) setTimeout(function () { name.focus(); }, 320);
+          });
+        }
+      });
+    }
+
+    // Pull live counts from /api/v1/health/full. On 5xx or network error, keep
+    // the static fallback values rendered in the markup.
+    function fetchHealthFull() {
+      fetch("/api/v1/health/full", { cache: "no-store" })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) {
+          if (!j) return;
+          if (j.mcp_tools && typeof j.mcp_tools.count === "number") setNum("stat-pill-tools", j.mcp_tools.count);
+          if (j.fe_brain && typeof j.fe_brain.chunks === "number") setNum("stat-pill-brain", j.fe_brain.chunks);
+          if (j.battlecards && typeof j.battlecards.count === "number") setNum("stat-pill-battlecards", j.battlecards.count);
+          if (j.demo_data && typeof j.demo_data.scenarios === "number") setNum("stat-pill-scenarios", j.demo_data.scenarios);
+        })
+        .catch(function () { /* keep fallback */ });
+    }
+
+    // Hours saved this week, painted into the accent pill. Reuses the existing
+    // /api/v1/stats/savings endpoint. Animates from 0 on first paint.
+    function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+    function animateNumber(node, from, to, durationMs) {
+      if (!node) return;
+      var start = performance.now();
+      var delta = to - from;
+      var decimals = (to % 1 !== 0) ? 1 : 0;
+      function frame(now) {
+        var t = Math.min(1, (now - start) / durationMs);
+        var v = from + delta * easeOutCubic(t);
+        node.textContent = decimals ? v.toFixed(1) : Math.round(v).toString();
+        if (t < 1) requestAnimationFrame(frame);
+        else node.textContent = decimals ? to.toFixed(1) : Math.round(to).toString();
+      }
+      requestAnimationFrame(frame);
+    }
+    function fetchSavings() {
+      fetch("/api/v1/stats/savings", { cache: "no-store" })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) {
+          if (!j) return;
+          var hours = (j.this_week && typeof j.this_week.hours_saved === "number") ? j.this_week.hours_saved : null;
+          if (hours == null) return;
+          var node = $("hs-pill-hours");
+          if (!node) return;
+          animateNumber(node, 0, hours, 1100);
+        })
+        .catch(function () { /* keep fallback */ });
+    }
+
+    function init() {
+      bindQuickResearchCard();
+      fetchHealthFull();
+      fetchSavings();
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", init);
+    } else {
+      init();
+    }
+  })();
+  </script>
 </body>
 </html>

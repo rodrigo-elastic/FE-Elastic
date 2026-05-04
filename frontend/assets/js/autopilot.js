@@ -625,6 +625,17 @@
   // ============================================================ Mount CTA
   function mount() {
     if (isMobile()) return; // hidden on mobile
+
+    // Portal landing has its own CTA (#autopilot-cta-portal). Prefer it when
+    // present so label updates and the countdown render in the visible banner
+    // instead of the legacy hero button hidden inside the power-user details.
+    const portalBtn = document.getElementById("autopilot-cta-portal");
+    if (portalBtn) {
+      portalBtn.addEventListener("click", () => start());
+      state.nodes.cta = portalBtn;
+      return;
+    }
+
     const hero = document.querySelector("section.hero");
     if (!hero) return;
 
