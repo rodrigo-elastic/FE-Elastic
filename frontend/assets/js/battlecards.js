@@ -1039,22 +1039,47 @@
       const data = await apiGet("/battlecards");
       STATE.cards = Array.isArray(data && data.items) ? data.items : [];
       STATE.source = (data && data.source) || "seed";
-      // Order by competitor importance / marketshare, not alphabetical.
-      // Lower rank = bigger / more strategic. Main competitors always sort
-      // ahead of non-main within the same effective rank.
+      // Order by competitor importance / marketshare, GLOBALLY (not per
+      // vertical). Lower rank = bigger / more strategic in Elastic
+      // conversations. Tie breaker is is_main_competitor first, then
+      // alphabetical. Ranks reflect a mix of (a) vendor revenue, (b)
+      // frequency of head-to-head Elastic deals, and (c) deal-size impact.
       const IMPORTANCE = {
-        // Observability and SIEM giants.
-        "splunk": 1, "datadog": 2, "dynatrace": 3, "grafana": 4, "new relic": 5,
-        "appdynamics": 6, "cisco-bundle": 7, "sumo logic": 8, "splunk-cloud": 9,
-        "cribl": 10, "honeycomb": 11, "servicenow-itom": 12, "loki": 13, "graylog": 14,
-        // Direct search and vector DB.
-        "aws-opensearch": 1, "pinecone": 2, "weaviate": 3, "milvus": 4,
-        "typesense": 5, "meilisearch": 6,
-        // AI search e-commerce.
-        "algolia": 1, "coveo": 2, "lucidworks": 3,
-        // Security SIEM XDR.
-        "crowdstrike": 1, "microsoft sentinel": 2, "sentinelone": 3, "wiz": 4,
-        "qradar": 5, "exabeam": 6, "chronicle": 7, "dragos": 8,
+        // Top-of-mind giants (Splunk replacement, Datadog displacement,
+        // CrowdStrike SIEM-side, AWS OpenSearch fork, MS Sentinel gov).
+        "splunk": 1,
+        "datadog": 2,
+        "crowdstrike": 3,
+        "aws-opensearch": 4,
+        "microsoft sentinel": 5,
+        "dynatrace": 6,
+        "algolia": 7,
+        "pinecone": 8,
+        "sentinelone": 9,
+        "wiz": 10,
+        // Strong second tier.
+        "grafana": 11,
+        "new relic": 12,
+        "coveo": 13,
+        "sumo logic": 14,
+        "chronicle": 15,
+        "lucidworks": 16,
+        "weaviate": 17,
+        "milvus": 18,
+        "typesense": 19,
+        "meilisearch": 20,
+        // Non-main but relevant in conversations.
+        "appdynamics": 21,
+        "splunk-cloud": 22,
+        "cisco-bundle": 23,
+        "qradar": 24,
+        "cribl": 25,
+        "servicenow-itom": 26,
+        "exabeam": 27,
+        "honeycomb": 28,
+        "loki": 29,
+        "graylog": 30,
+        "dragos": 31,
       };
       const rankOf = (c) => {
         const slug = String(c.competitor_slug || c.competitor || "").toLowerCase();
