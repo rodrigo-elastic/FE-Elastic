@@ -8,7 +8,7 @@ __copyright__ = "Copyright 2026, Rodrigo Careaga"
 __version__ = "0.1.0"
 __status__ = "Development"
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -301,3 +301,71 @@ class ProposalOut(BaseModel):
     risks: List[ProposalRisk]
     next_steps: List[str]
     pdf_path: str = ""
+
+
+# ============================================================ COST CALC (Lyra) =========
+
+
+# Data-quality literal: every numeric line carries one of these so the FE,
+# the JSON consumer, and the demo judges can all separate hard list pricing
+# from a demo-grade approximation in one glance.
+DataQuality = Literal["verified_list_price", "demo_estimate"]
+
+
+class CostLineItem(BaseModel):
+    """One labeled numeric output of the cost calculator with a quality tag."""
+    label: str
+    amount_usd: Optional[float] = None
+    unit_price_usd: Optional[float] = None
+    data_quality: DataQuality = "demo_estimate"
+    note: Optional[str] = None
+
+
+class ElasticCost(BaseModel):
+    """Elastic Cloud annual TCO breakdown."""
+    hot_gb: float = 0.0
+    warm_gb: float = 0.0
+    frozen_gb: float = 0.0
+    hot_cost: float = 0.0
+    warm_cost: float = 0.0
+    frozen_cost: float = 0.0
+    total_annual_usd: float = 0.0
+    line_items: List[CostLineItem] = Field(default_factory=list)
+
+
+class CompetitorCost(BaseModel):
+    """Named competitor (Splunk or Datadog) annual TCO breakdown."""
+    name: str
+    total_annual_usd: float = 0.0
+    line_items: List[CostLineItem] = Field(default_factory=list)
+
+
+class SavingsBreakdown(BaseModel):
+    """Savings of Elastic vs the user's current spend, with per-line tags."""
+    vs_current_usd: Optional[float] = None
+    vs_current_pct: Optional[float] = None
+    line_items: List[CostLineItem] = Field(default_factory=list)
+
+
+class CostInputs(BaseModel):
+    """Echo of the user-supplied calculator inputs (for audit and replay)."""
+    ingest_gb_day: float
+    retention_months: int
+    hot_pct: float = 30.0
+    warm_pct: float = 30.0
+    frozen_pct: float = 40.0
+    current_spend_annual_usd: Optional[float] = None
+    competitor: str = "splunk"
+
+
+class CostOut(BaseModel):
+    """Full cost-calc response. Every numeric line carries a data_quality tag."""
+    inputs: CostInputs
+    elastic: ElasticCost
+    splunk: CompetitorCost
+    datadog: CompetitorCost
+    competitor: CompetitorCost
+    savings: SavingsBreakdown
+    savings_vs_current: Optional[float] = None
+    savings_pct_vs_current: Optional[float] = None
+    notes: List[str] = Field(default_factory=list)

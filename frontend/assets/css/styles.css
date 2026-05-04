@@ -3616,3 +3616,69 @@ body.has-tools-rail .container {
     transition: none !important;
   }
 }
+
+/* ----- Cost-calc data-quality badges (W11B)
+   Tag every numeric line in the cost calculator output as either a published
+   list price (verified) or a demo-grade approximation (estimate). Lochmara
+   blue chip for verified, amber chip for estimate. */
+.badge-quality {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  vertical-align: middle;
+  white-space: nowrap;
+  cursor: help;
+}
+.badge-verified {
+  background: rgba(0, 119, 204, 0.10);
+  color: var(--primary, #0077CC);
+  border-color: rgba(0, 119, 204, 0.30);
+}
+[data-theme="dark"] .badge-verified {
+  background: rgba(27, 143, 229, 0.18);
+  color: var(--primary-hi, #1B8FE5);
+  border-color: rgba(27, 143, 229, 0.45);
+}
+.badge-estimate {
+  background: rgba(245, 166, 35, 0.12);
+  color: #b06c00;
+  border-color: rgba(245, 166, 35, 0.35);
+}
+[data-theme="dark"] .badge-estimate {
+  background: rgba(245, 166, 35, 0.18);
+  color: #f5a623;
+  border-color: rgba(245, 166, 35, 0.45);
+}
+.cost-line-list {
+  list-style: none;
+  padding: 0;
+  margin: 4px 0 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cost-line {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 0;
+  font-size: 13px;
+  border-bottom: 1px dashed var(--border, rgba(0, 0, 0, 0.08));
+}
+.cost-line:last-child {
+  border-bottom: none;
+}
+.cost-line .cost-line-label {
+  flex: 1;
+  color: var(--ink);
+}
+.cost-line .cost-line-amount {
+  font-variant-numeric: tabular-nums;
+}

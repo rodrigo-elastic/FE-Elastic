@@ -1,3 +1,25 @@
+<p align="center">
+  <img src="assets/hero-dashboard.png" alt="FE Copilot. Field Engineers, finally go home on time. Twelve MCP tools, five demo scenarios, six hours per FE per week saved." width="1100" />
+</p>
+
+<p align="center"><em>Field Engineer Copilot. Twelve MCP tools. Five demo scenarios. Six hours per FE per week back.</em></p>
+
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License: Apache 2.0" /></a>
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.11%2B-blue.svg" alt="Python 3.11+" /></a>
+  <a href="https://www.elastic.co/"><img src="https://img.shields.io/badge/Elastic-9.3-005571.svg?logo=elastic&logoColor=white" alt="Elastic 9.3" /></a>
+  <a href="https://www.anthropic.com/"><img src="https://img.shields.io/badge/Built%20on-Anthropic%20Claude-0077CC.svg" alt="Built on Anthropic Claude" /></a>
+</p>
+
+## 30-second tour
+
+1. Open `frontend/index.html` and click "Show me the magic"
+2. Watch the autopilot run six tools across one customer scenario
+3. Open Kibana Agent Builder, click `fec_field_assistant`
+4. Ask: "TCO comparison vs Splunk at 200 GB/day"
+
+No setup needed: 5 demo scenarios pre-seeded, 12 tools live behind the MCP connector.
+
 # FE Copilot
 
 **Three agents. Nine MCP tools. Eight pages. One Field Engineer who finally goes home on time.**

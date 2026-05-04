@@ -88,6 +88,28 @@ https://github.com/rodrigo-elastic/FE-Elastic
 
 ---
 
+## Verify in Kibana Agent Builder
+
+1. Open https://fe-summit-hackathon-ed0e8e.kb.us-west-1.aws.found.io/app/agent_builder
+2. Click `fec_field_assistant` (the Master Agent)
+3. Confirm 12 tools listed under Connected Tools, including `fec_proposal`
+4. Send: "Generate a 1-page proposal for Banco Santander, include POV hours"
+5. Trace pane shows fec_proposal called with structured input. Output is a renderable HTML proposal.
+
+Verification commands (terminal):
+
+```bash
+curl -s https://headlamp-squatting-usable.ngrok-free.dev/api/v1/mcp -X POST \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | jq '.result.tools | length'
+```
+
+Expected output: 12.
+
+End-to-end routing traces captured in `runtime/qa/carmen_routing_trace.json` (single canonical Santander prompt) and `runtime/qa/carmen_routing_variants.json` (3 prompt variants, all routed to fec_proposal).
+
+---
+
 ## Tech stack
 
 - **Language**: Python 3.11+ (backend), vanilla HTML/CSS/JS (frontend, no build step)

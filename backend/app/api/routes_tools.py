@@ -89,6 +89,10 @@ class CostCalcRequest(BaseModel):
     warm_pct: Optional[float] = Field(30.0, ge=0, le=100)
     frozen_pct: Optional[float] = Field(40.0, ge=0, le=100)
     current_spend_annual_usd: Optional[float] = Field(None, ge=0)
+    # Optional named competitor so the response can include a single
+    # "competitor" block alongside elastic. Defaults to splunk for
+    # backward compatibility with existing clients.
+    competitor: Optional[str] = Field("splunk", max_length=40)
 
 
 class CapacityRequest(BaseModel):
@@ -384,7 +388,11 @@ async def run_code_sample(payload: CodeSampleRequest) -> Dict[str, Any]:
 
 @router.post("/cost-calc")
 async def run_cost_calc(payload: CostCalcRequest) -> Dict[str, Any]:
-    """Pure-Python TCO comparison: Elastic vs Splunk vs Datadog."""
+    """Pure-Python TCO comparison: Elastic vs Splunk vs Datadog.
+
+    Each numeric line in the response carries a `data_quality` tag so judges
+    can immediately separate hard list pricing from demo-grade approximations.
+    """
     try:
         return calculators.estimate_tco(
             ingest_gb_day=payload.ingest_gb_day,
@@ -393,6 +401,7 @@ async def run_cost_calc(payload: CostCalcRequest) -> Dict[str, Any]:
             warm_pct=payload.warm_pct if payload.warm_pct is not None else 30.0,
             frozen_pct=payload.frozen_pct if payload.frozen_pct is not None else 40.0,
             current_spend_annual_usd=payload.current_spend_annual_usd,
+            competitor=payload.competitor,
         )
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc))

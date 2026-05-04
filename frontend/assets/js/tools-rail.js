@@ -83,6 +83,13 @@
       icon:
         '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/><circle cx="19" cy="6" r="1.4"/></svg>',
     },
+    {
+      id: "health",
+      label: "Health",
+      href: "/health.html",
+      icon:
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg>',
+    },
   ];
 
   const TOOLS = [
@@ -119,6 +126,9 @@
   }
   function isAuditPage() {
     return /\/audit(\.html)?$/.test(location.pathname) || document.body.classList.contains("audit-page");
+  }
+  function isHealthPage() {
+    return /\/health(\.html)?$/.test(location.pathname) || document.body.classList.contains("health-page");
   }
 
   function ensureBodyClass() {
@@ -158,6 +168,7 @@
     if (p.id === "demo-data" && isDemoDataPage()) { a.classList.add("active"); isActive = true; }
     if (p.id === "battlecards" && isBattlecardsPage()) { a.classList.add("active"); isActive = true; }
     if (p.id === "audit" && isAuditPage()) { a.classList.add("active"); isActive = true; }
+    if (p.id === "health" && isHealthPage()) { a.classList.add("active"); isActive = true; }
     if (isActive) a.setAttribute("aria-current", "page");
     const ico = document.createElement("span");
     ico.className = "tools-nav-icon";

@@ -251,12 +251,35 @@ async function runCostCalc() {
   const splunk = res.splunk || {};
   const datadog = res.datadog || {};
 
+  // Quality badge helper. Each numeric output line gets a chip so judges can
+  // tell verified list pricing from demo-grade approximation at a glance.
+  const verifiedLabel = t("cost.badge.verified") || "verified";
+  const estimateLabel = t("cost.badge.estimate") || "estimate";
+  const tooltip =
+    t("cost.badge.tooltip") ||
+    "Verified = published list price. Estimate = demo-grade approximation, validate before quoting.";
+  const qualityBadge = (q) => {
+    const isVerified = q === "verified_list_price";
+    return el(
+      "span",
+      {
+        class: "badge-quality " + (isVerified ? "badge-verified" : "badge-estimate"),
+        title: tooltip,
+        "aria-label": isVerified ? verifiedLabel : estimateLabel,
+      },
+      "[" + (isVerified ? verifiedLabel : estimateLabel) + "]"
+    );
+  };
+
   const max = Math.max(elastic.total_annual_usd || 0, splunk.total_annual_usd || 0, datadog.total_annual_usd || 0, 1);
 
-  const bar = (label, val, color) => {
+  const bar = (label, val, color, quality) => {
     const w = Math.max(8, (val / max) * 100);
     return el("div", { class: "bar-row" }, [
-      el("div", { class: "bar-label" }, label),
+      el("div", { class: "bar-label" }, [
+        qualityBadge(quality || "demo_estimate"),
+        el("span", { style: "margin-left:6px" }, label),
+      ]),
       el("div", { class: "bar-track" }, [
         el("div", { class: "bar-fill bar-fill-" + color, style: `width:${w}%` }, null),
       ]),
@@ -267,9 +290,9 @@ async function runCostCalc() {
   host.appendChild(el("h4", { class: "tool-section" }, "12-month TCO comparison"));
   host.appendChild(
     el("div", { class: "bar-chart" }, [
-      bar("Elastic Cloud", elastic.total_annual_usd || 0, "primary"),
-      bar("Splunk", splunk.total_annual_usd || 0, "pink"),
-      bar("Datadog", datadog.total_annual_usd || 0, "yellow"),
+      bar("Elastic Cloud", elastic.total_annual_usd || 0, "primary", "demo_estimate"),
+      bar("Splunk", splunk.total_annual_usd || 0, "pink", "demo_estimate"),
+      bar("Datadog", datadog.total_annual_usd || 0, "yellow", "demo_estimate"),
     ])
   );
 
@@ -278,7 +301,8 @@ async function runCostCalc() {
     const pct = Math.abs(res.savings_pct_vs_current).toFixed(1);
     host.appendChild(
       el("div", { class: "savings-callout" }, [
-        el("strong", {}, `${sign} ${pct}%`),
+        qualityBadge("demo_estimate"),
+        el("strong", { style: "margin-left:6px" }, `${sign} ${pct}%`),
         el("span", {}, ` vs current (${fmt(res.savings_vs_current || 0)} delta).`),
       ])
     );
@@ -287,11 +311,50 @@ async function runCostCalc() {
   // Elastic breakdown
   host.appendChild(el("h4", { class: "tool-section" }, "Elastic breakdown by tier"));
   const ebreak = el("div", { class: "tool-pills" }, [
-    el("span", { class: "tool-pill" }, `Hot ${Math.round(elastic.hot_gb || 0).toLocaleString()} GB → ${fmt(elastic.hot_cost || 0)}/yr`),
-    el("span", { class: "tool-pill" }, `Warm ${Math.round(elastic.warm_gb || 0).toLocaleString()} GB → ${fmt(elastic.warm_cost || 0)}/yr`),
-    el("span", { class: "tool-pill" }, `Frozen ${Math.round(elastic.frozen_gb || 0).toLocaleString()} GB → ${fmt(elastic.frozen_cost || 0)}/yr`),
+    el("span", { class: "tool-pill" }, [
+      qualityBadge("demo_estimate"),
+      el("span", { style: "margin-left:6px" }, `Hot ${Math.round(elastic.hot_gb || 0).toLocaleString()} GB -> ${fmt(elastic.hot_cost || 0)}/yr`),
+    ]),
+    el("span", { class: "tool-pill" }, [
+      qualityBadge("demo_estimate"),
+      el("span", { style: "margin-left:6px" }, `Warm ${Math.round(elastic.warm_gb || 0).toLocaleString()} GB -> ${fmt(elastic.warm_cost || 0)}/yr`),
+    ]),
+    el("span", { class: "tool-pill" }, [
+      qualityBadge("demo_estimate"),
+      el("span", { style: "margin-left:6px" }, `Frozen ${Math.round(elastic.frozen_gb || 0).toLocaleString()} GB -> ${fmt(elastic.frozen_cost || 0)}/yr`),
+    ]),
   ]);
   host.appendChild(ebreak);
+
+  // Per-line breakdown with data_quality badge for each numeric line.
+  const renderLineList = (heading, items) => {
+    if (!items || !items.length) return;
+    host.appendChild(el("h4", { class: "tool-section" }, heading));
+    const ul = el("ul", { class: "cost-line-list" });
+    items.forEach((it) => {
+      const amount =
+        typeof it.amount_usd === "number" && it.label && it.label.endsWith("(%)")
+          ? `${it.amount_usd.toFixed(1)}%`
+          : typeof it.amount_usd === "number"
+          ? fmt(it.amount_usd)
+          : "n/a";
+      ul.appendChild(
+        el("li", { class: "cost-line" }, [
+          qualityBadge(it.data_quality || "demo_estimate"),
+          el("span", { class: "cost-line-label", style: "margin-left:6px" }, it.label || ""),
+          el("span", { class: "cost-line-amount muted" }, ` -> ${amount}`),
+        ])
+      );
+    });
+    host.appendChild(ul);
+  };
+
+  renderLineList("Elastic line items", elastic.line_items);
+  renderLineList("Splunk line items", splunk.line_items);
+  renderLineList("Datadog line items", datadog.line_items);
+  if (res.savings && Array.isArray(res.savings.line_items)) {
+    renderLineList("Savings line items", res.savings.line_items);
+  }
 
   if (res.notes?.length) {
     host.appendChild(el("h4", { class: "tool-section" }, "Assumptions"));

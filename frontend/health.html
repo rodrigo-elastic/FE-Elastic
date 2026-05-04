@@ -1,0 +1,288 @@
+<!--
+  filename: health.html
+  description: FE Copilot system health dashboard. One-glance answer to "is FE Copilot real, deployed, exercised, fresh?". Reads /api/v1/health/full and renders status badge plus six big-number cards (MCP tools, FE Brain chunks, workflows, demo scenarios, battlecards, Elastic cluster). Auto-refreshes every 30 seconds.
+  Author: Rodrigo Careaga
+  Date: 04-05-2026
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FE Copilot - System Health</title>
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+  <link rel="stylesheet" href="/assets/css/agent-builder.css" />
+  <link rel="stylesheet" href="/assets/css/audit.css" />
+  <link rel="icon" type="image/svg+xml" href="/assets/img/elastic/glyph-cluster-color.svg" />
+  <link rel="stylesheet" href="/assets/css/command-palette.css" />
+  <style>
+    /* Health page surgical extras: 3-col stat grid (degrades to 2 / 1), status hue badges, footer line. */
+    .health-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 22px;
+    }
+    @media (max-width: 920px) { .health-stats { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 560px) { .health-stats { grid-template-columns: 1fr; } }
+    .health-stat {
+      background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 18px 16px;
+      position: relative;
+      overflow: hidden;
+    }
+    .health-stat::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 2px;
+      opacity: 0.85;
+    }
+    .health-stat[data-tone="teal"]::before   { background: linear-gradient(90deg, var(--teal), var(--blue)); }
+    .health-stat[data-tone="blue"]::before   { background: linear-gradient(90deg, var(--blue), var(--primary)); }
+    .health-stat[data-tone="pink"]::before   { background: linear-gradient(90deg, var(--pink), var(--yellow)); }
+    .health-stat[data-tone="yellow"]::before { background: linear-gradient(90deg, var(--yellow), var(--pink)); }
+    .health-stat[data-tone="green"]::before  { background: linear-gradient(90deg, var(--green), var(--teal)); }
+    .health-stat[data-tone="primary"]::before{ background: linear-gradient(90deg, var(--primary), var(--teal)); }
+    .health-stat-lbl {
+      color: var(--muted);
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+    }
+    .health-stat-val {
+      margin-top: 8px;
+      font-size: 38px;
+      font-weight: 700;
+      line-height: 1.05;
+      color: var(--ink);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.5px;
+    }
+    .health-stat-val.small { font-size: 22px; letter-spacing: 0; }
+    .health-stat-sub {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12.5px;
+      line-height: 1.45;
+    }
+    .health-stat-foot {
+      margin-top: 10px;
+      color: var(--muted-2);
+      font-size: 11.5px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+    /* Status badge. */
+    .health-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 12.5px;
+      letter-spacing: 0.02em;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--ink);
+    }
+    .health-status-badge .health-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--muted-2);
+    }
+    .health-status-badge[data-status="green"]  { border-color: rgba(147, 201, 14, 0.45); background: rgba(147, 201, 14, 0.10); }
+    .health-status-badge[data-status="green"]  .health-dot { background: var(--green); box-shadow: 0 0 0 4px rgba(147, 201, 14, 0.18); }
+    .health-status-badge[data-status="yellow"] { border-color: rgba(254, 197, 20, 0.55); background: rgba(254, 197, 20, 0.12); }
+    .health-status-badge[data-status="yellow"] .health-dot { background: var(--yellow); box-shadow: 0 0 0 4px rgba(254, 197, 20, 0.18); }
+    .health-status-badge[data-status="red"]    { border-color: rgba(255, 102, 102, 0.55); background: rgba(255, 102, 102, 0.12); }
+    .health-status-badge[data-status="red"]    .health-dot { background: var(--red); box-shadow: 0 0 0 4px rgba(255, 102, 102, 0.20); }
+    .health-status-badge[data-status="loading"] .health-dot { background: var(--muted-2); }
+    /* Hero secondary line. */
+    .health-cluster-line {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .health-cluster-line code {
+      background: var(--code-bg);
+      border: 1px solid var(--code-border);
+      padding: 2px 8px;
+      border-radius: 6px;
+      color: var(--code-fg);
+      font-size: 12.5px;
+    }
+    /* Build footer. */
+    .health-build-footer {
+      margin-top: 28px;
+      padding: 14px 18px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .health-build-footer .build-sha {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      color: var(--ink);
+      background: var(--code-bg);
+      border: 1px solid var(--code-border);
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 12.5px;
+    }
+    .health-warnings {
+      margin-top: 14px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: rgba(254, 197, 20, 0.10);
+      border: 1px solid rgba(254, 197, 20, 0.45);
+      color: var(--ink-2);
+      font-size: 13px;
+    }
+    .health-warnings strong { color: var(--yellow); margin-right: 6px; }
+    .health-warnings ul { margin: 4px 0 0 18px; padding: 0; }
+    .health-skeleton {
+      display: inline-block;
+      width: 60px;
+      height: 0.95em;
+      background: var(--panel-3);
+      border-radius: 4px;
+      animation: health-skel 1.4s ease-in-out infinite;
+      vertical-align: middle;
+    }
+    @keyframes health-skel {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.55; }
+    }
+  </style>
+</head>
+<body class="health-page">
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="FE Copilot home">
+      <img class="logo-elastic" src="/assets/img/elastic/logo-horizontal-white.svg" alt="Elastic" />
+      <span class="brand-sep">/</span>
+      <span class="name">FE <span class="accent">Copilot</span></span>
+      <span class="tag" data-i18n="topbar.tag.health">Health</span>
+    </a>
+    <div class="right">
+      <div class="lang-host" id="lang-host"></div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <h1>
+        <span data-i18n="health.title.1">System health.</span>
+        <span class="grad" data-i18n="health.title.2">Real, deployed, exercised, fresh.</span>
+      </h1>
+      <p class="lede" data-i18n="health.lede">
+        One glance answers: is FE Copilot a real product? Live values are pulled from the Elastic cluster, the FE Brain index, the registered Kibana workflows, and the in-process MCP tool registry. Auto-refreshes every 30 seconds.
+      </p>
+      <div class="audit-pill-row">
+        <span class="health-status-badge" id="health-status-badge" data-status="loading">
+          <span class="health-dot" aria-hidden="true"></span>
+          <span id="health-status-label" data-i18n="health.status.loading">Loading...</span>
+        </span>
+        <span class="ab-pill ab-pill-muted" id="health-cluster-pill" aria-live="polite">
+          <span class="audit-dot" aria-hidden="true"></span>
+          <span id="health-cluster-name">Elastic cluster</span>
+        </span>
+        <span class="ab-pill ab-pill-muted" id="health-version-pill">
+          <span data-i18n="health.pill.version">version</span>
+          <span id="health-cluster-version">-</span>
+        </span>
+        <span class="ab-pill ab-pill-muted" id="health-ping-pill">
+          <span data-i18n="health.pill.ping">ping</span>
+          <span id="health-ping-ms">-</span>
+        </span>
+      </div>
+    </section>
+
+    <section class="health-stats" aria-label="System health stats">
+      <article class="health-stat" data-tone="primary" aria-labelledby="card-mcp-lbl">
+        <div class="health-stat-lbl" id="card-mcp-lbl" data-i18n="health.card.mcp.lbl">MCP Tools</div>
+        <div class="health-stat-val" id="card-mcp-val"><span class="health-skeleton" aria-hidden="true"></span></div>
+        <div class="health-stat-sub" data-i18n="health.card.mcp.sub">Specialists, orchestrator, comparator, proposal generator, all live over Streamable HTTP.</div>
+        <div class="health-stat-foot" id="card-mcp-foot"></div>
+      </article>
+
+      <article class="health-stat" data-tone="teal" aria-labelledby="card-brain-lbl">
+        <div class="health-stat-lbl" id="card-brain-lbl" data-i18n="health.card.brain.lbl">FE Brain Chunks</div>
+        <div class="health-stat-val" id="card-brain-val"><span class="health-skeleton" aria-hidden="true"></span></div>
+        <div class="health-stat-sub" data-i18n="health.card.brain.sub">ELSER-backed Elastic public docs in fec-knowledge, indexed for the knowledge-search tool.</div>
+        <div class="health-stat-foot" id="card-brain-foot"></div>
+      </article>
+
+      <article class="health-stat" data-tone="blue" aria-labelledby="card-wf-lbl">
+        <div class="health-stat-lbl" id="card-wf-lbl" data-i18n="health.card.workflows.lbl">Workflows</div>
+        <div class="health-stat-val" id="card-wf-val"><span class="health-skeleton" aria-hidden="true"></span></div>
+        <div class="health-stat-sub" data-i18n="health.card.workflows.sub">Kibana alerting rules: post-meeting transcripts and orphan high-impact action items.</div>
+        <div class="health-stat-foot" id="card-wf-foot"></div>
+      </article>
+
+      <article class="health-stat" data-tone="pink" aria-labelledby="card-demo-lbl">
+        <div class="health-stat-lbl" id="card-demo-lbl" data-i18n="health.card.demo.lbl">Demo Scenarios</div>
+        <div class="health-stat-val" id="card-demo-val"><span class="health-skeleton" aria-hidden="true"></span></div>
+        <div class="health-stat-sub" data-i18n="health.card.demo.sub">One-click stories that seed Elastic plus paired Kibana dashboards (FE plus customer view).</div>
+        <div class="health-stat-foot" id="card-demo-foot"></div>
+      </article>
+
+      <article class="health-stat" data-tone="yellow" aria-labelledby="card-bc-lbl">
+        <div class="health-stat-lbl" id="card-bc-lbl" data-i18n="health.card.battlecards.lbl">Battlecards</div>
+        <div class="health-stat-val" id="card-bc-val"><span class="health-skeleton" aria-hidden="true"></span></div>
+        <div class="health-stat-sub" data-i18n="health.card.battlecards.sub">Competitor cards in fec-battlecards, served live to the Sloane competitive comparison tool.</div>
+        <div class="health-stat-foot" id="card-bc-foot"></div>
+      </article>
+
+      <article class="health-stat" data-tone="green" aria-labelledby="card-elastic-lbl">
+        <div class="health-stat-lbl" id="card-elastic-lbl" data-i18n="health.card.elastic.lbl">Elastic Cluster</div>
+        <div class="health-stat-val small" id="card-elastic-val"><span class="health-skeleton" aria-hidden="true"></span></div>
+        <div class="health-stat-sub" data-i18n="health.card.elastic.sub">Cloud-hosted cluster powering briefs, post-meetings, audit, battlecards, and the FE Brain.</div>
+        <div class="health-stat-foot" id="card-elastic-foot"></div>
+      </article>
+    </section>
+
+    <div class="health-warnings" id="health-warnings" hidden>
+      <strong data-i18n="health.warnings.lbl">Warnings:</strong>
+      <ul id="health-warnings-list"></ul>
+    </div>
+
+    <div class="health-build-footer" id="health-build-footer" aria-live="polite">
+      <span><span data-i18n="health.footer.build">Build</span> <span class="build-sha" id="health-build-sha">-</span></span>
+      <span class="dot">.</span>
+      <span><span data-i18n="health.footer.committed">Committed</span> <span id="health-build-ts">-</span></span>
+      <span class="dot">.</span>
+      <span><span data-i18n="health.footer.lastcheck">Last health check:</span> <span id="health-last-check">-</span></span>
+      <span class="dot">.</span>
+      <span><span data-i18n="health.footer.agent">Agent Builder agent:</span> <code id="health-agent-id">-</code></span>
+      <span class="dot">.</span>
+      <span><span data-i18n="health.footer.connector">MCP connector:</span> <code id="health-connector-name">-</code></span>
+    </div>
+
+    <section id="toast-host"></section>
+  </main>
+
+  <script src="/assets/js/i18n.js"></script>
+  <script src="/assets/js/api.js"></script>
+  <script src="/assets/js/ui.js"></script>
+  <script src="/assets/js/tools-rail.js"></script>
+  <script src="/assets/js/health.js"></script>
+  <script src="/assets/js/command-palette.js"></script>
+</body>
+</html>
