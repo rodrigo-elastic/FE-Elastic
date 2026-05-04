@@ -705,8 +705,16 @@
 .bc-detail-empty strong { color: var(--ink); font-size: 16px; }
 
 /* ============================================================ Body locks */
-body.bc-detail-open .topbar { display: none; }
-body.bc-detail-open .container { display: none; }
+body.bc-detail-open .topbar,
+body.bc-detail-open .container,
+body.bc-detail-open .tools-sidebar,
+body.bc-detail-open .demo-banner,
+body.bc-detail-open .sidebar-toggle,
+body.bc-detail-open .sko-event,
+body.bc-detail-open .skip-to-main { display: none !important; }
+/* The detail view paints its own background and consumes 100vw, so we drop
+   the global rail gutter so it does not leave a 268px empty space. */
+body.bc-detail-open.has-tools-rail .bc-detail { padding-left: 0; }
 
 /* ============================================================ Mobile */
 @media (max-width: 1024px) {
