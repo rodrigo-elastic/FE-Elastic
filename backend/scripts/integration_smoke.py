@@ -82,6 +82,7 @@ FRONTEND_PAGES: List[Tuple[str, bool]] = [
     ("/health.html", False),
     ("/industries.html", False),
     ("/quick-research.html", False),
+    ("/customers.html", False),
 ]
 
 # Demo indices and dashboards (sourced from backend/app/services/scenarios/*.py).
