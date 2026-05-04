@@ -710,6 +710,7 @@ body.bc-detail-open .container,
 body.bc-detail-open .tools-sidebar,
 body.bc-detail-open .demo-banner,
 body.bc-detail-open .sidebar-toggle,
+body.bc-detail-open .sidebar-scrim,
 body.bc-detail-open .sko-event,
 body.bc-detail-open .skip-to-main { display: none !important; }
 /* The detail view paints its own background and consumes 100vw, so we drop

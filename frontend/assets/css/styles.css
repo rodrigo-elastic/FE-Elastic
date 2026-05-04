@@ -1626,6 +1626,12 @@ details[open] > summary .chevron { transform: rotate(180deg); opacity: 1; }
     background-image: none !important;
   }
   .topbar,
+  .tools-sidebar,
+  .sidebar-toggle,
+  .sidebar-scrim,
+  .demo-banner,
+  .sko-event,
+  .skip-to-main,
   .tabs,
   .row-between .btn,
   .row-between a.btn,
@@ -1635,6 +1641,8 @@ details[open] > summary .chevron { transform: rotate(180deg); opacity: 1; }
   #panel-post,
   #panel-live,
   #panel-context { display: none !important; }
+  /* Drop the rail gutter when printing so the brief flows full width. */
+  body.has-tools-rail .container { padding: 0 14pt !important; }
   .panel {
     box-shadow: none !important;
     border: none !important;

@@ -667,7 +667,31 @@
     }
   }
 
+  // Rewrite the "Open in Kibana" pill href against the live Kibana base URL
+  // returned by /api/v1/health. Without this, the static href "/app/dashboards#..."
+  // resolves against the FE Copilot origin (localhost:8123) and 404s.
+  // If Kibana is unreachable, the pill is hidden so we never link to nowhere.
+  async function fixKibanaLink() {
+    const a = document.getElementById("audit-pill-kibana");
+    if (!a) return;
+    try {
+      const r = await fetch("/api/v1/health", { cache: "no-store" });
+      if (!r.ok) throw new Error("health " + r.status);
+      const j = await r.json();
+      const base = j && j.kibana && j.kibana.url ? String(j.kibana.url).replace(/\/+$/, "") : "";
+      if (base) {
+        a.href = base + "/app/dashboards#/view/fec-audit-self-observability";
+        a.hidden = false;
+      } else {
+        a.hidden = true;
+      }
+    } catch (_e) {
+      a.hidden = true;
+    }
+  }
+
   function init() {
+    fixKibanaLink();
     load({ force: false, silent: false });
     startAutoRefresh();
     document.addEventListener("visibilitychange", () => {
