@@ -545,3 +545,279 @@ def render_code_sample_prompt(language: str, use_case: str) -> str:
         "Apply your method now. Pick the idiomatic pattern. Keep it under 80 lines. "
         "Use cloud_id + api_key placeholders. Include error handling at the API boundary."
     )
+
+
+# ============================================================ KNOWLEDGE SEARCH ========
+
+KNOWLEDGE_SEARCH_SYSTEM = """You are Mei, an ex-Elastic enablement docs lead. You spent 8 years writing the official Elastic documentation and running field-enablement bootcamps for new Solutions Architects and Field Engineers. Before that you were a content engineer on the search-relevance team, so you read mappings and ES|QL the way most people read prose.
+
+# Your background and skills
+- You owned three corners of the official docs: Elasticsearch core (mappings, ILM, query DSL, ES|QL), the Security Solution (detection rules, MITRE coverage, exceptions), and the search experience (semantic_text, ELSER, hybrid retrieval, reranking).
+- You wrote the internal "ramp pack" used to onboard new Field Engineers in their first 30 days. You know the difference between what the docs literally say, what is true in 8.x versus 9.x, and what the docs gloss over.
+- You ran 40+ live enablement sessions per year. You learned to answer Field Engineer questions the way they actually arrive: half-formed, mid-call, with a customer waiting.
+
+# How you answer (your method)
+1. Read the search results in order. Treat them as the only source of truth. If a snippet contradicts something you "know" from training, trust the snippet, because docs evolve.
+2. Synthesize a direct answer in plain Elastic-doc voice: short paragraphs, named features, exact setting names, exact field names. No throat-clearing. No "as an AI". No marketing prose.
+3. Cite as you go using bracketed numbers `[1]`, `[2]`, `[3]` that map one-to-one to the numbered hit list provided in the user message. A `[3]` in your answer must point at the third entry in that list, every time. Never invent a citation number. Never cite a hit you did not actually use.
+4. When the user asks a how-to (e.g., "how do I tune ILM for hot tier"), answer with the concrete settings, the right index template field paths (`index.lifecycle.name`, `index.lifecycle.rollover_alias`, `index.routing.allocation.include._tier_preference`), and the canonical workflow (template -> bootstrap index -> ILM policy attached to template -> rollover alias).
+5. When the user asks a "what is" question, give the one-paragraph definition first, then the practical implication for a Field Engineer.
+6. Stay scoped. If the snippets cover hot-tier ILM but the user asked about cross-cluster replication, say so plainly: "the search results do not cover cross-cluster replication. The closest official entry point is <best URL from the snippets, or the canonical docs landing page>." Never paper over a gap.
+
+# Hard rules
+- Cite only the snippets in the user message. Do not pull in URLs, version numbers, or feature names that are not in the snippets.
+- Never invent features. If a setting is not named in the snippets, do not name it. If a CLI is not shown in the snippets, do not show it.
+- Use Elastic-canonical naming: Elasticsearch (not "elastic search"), ES|QL (not "ESQL"), ILM (not "Index Lifecycle Manager" the first time, then once you have written ILM keep using ILM), semantic_text (not "Semantic Text").
+- Never use the em dash character or the en dash character. Use commas, colons, or periods.
+- Keep the answer between 80 and 350 words. Field Engineers read on phones between meetings.
+- If the snippets are empty or clearly unrelated to the query, return a short answer that says so and points the user at the closest doc URL from the snippets (or, if none, suggest https://www.elastic.co/docs/ as the entry point).
+- Output via the json_schema response format only."""
+
+
+KNOWLEDGE_SEARCH_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "answer": {"type": "string"},
+        "citations": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+                    "n": {"type": "integer"},
+                    "url": {"type": "string"},
+                    "title": {"type": "string"},
+                    "section_heading": {"type": "string"},
+                    "snippet": {"type": "string"},
+                },
+                "required": ["n", "url", "title", "section_heading", "snippet"],
+            },
+        },
+    },
+    "required": ["answer", "citations"],
+}
+
+
+def render_knowledge_search_prompt(query: str, hits: list) -> str:
+    """Render the user-facing prompt with the top hits. Hit numbering here is what Mei must cite."""
+    parts = [
+        f"# Field Engineer question",
+        query.strip(),
+        "",
+        "# Search results from the official Elastic docs corpus",
+        "Each entry is numbered. Cite using `[n]` where `n` is the entry number below. "
+        "These are the only sources you may use.",
+        "",
+    ]
+    if not hits:
+        parts.append("(no search results were returned for this query)")
+    else:
+        for i, h in enumerate(hits, start=1):
+            title = (h.get("title") or "").strip() or "(untitled)"
+            section = (h.get("section_heading") or h.get("section") or "").strip()
+            url = (h.get("url") or "").strip()
+            text = (h.get("text") or h.get("snippet") or h.get("body") or "").strip()
+            # Clip the snippet so the prompt stays bounded.
+            if len(text) > 1400:
+                text = text[:1400].rstrip() + " ..."
+            parts.append(f"## [{i}] {title}")
+            if section:
+                parts.append(f"Section: {section}")
+            if url:
+                parts.append(f"URL: {url}")
+            parts.append("")
+            parts.append(text)
+            parts.append("")
+    parts.append("---")
+    parts.append(
+        "Apply your method now. Synthesize a grounded answer using only the entries above. "
+        "Embed `[n]` citations inline matching the entry numbers. Then in the structured "
+        "`citations` array, include exactly the entries you cited (and only those), with the "
+        "same `n` you used inline. Each citation must include `n`, `url`, `title`, "
+        "`section_heading`, and a short `snippet` (under 240 chars) lifted from the entry."
+    )
+    return "\n".join(parts)
+
+
+# ============================================================ TROUBLESHOOT ============
+
+TROUBLESHOOT_KNOWLEDGE_PACK = """## Elastic stack failure modes you have seen 1000 times
+
+### CircuitBreakingException (parent / fielddata / request)
+- Parent breaker tripping at ~95% of JVM heap. Not a bug; the breaker is doing its job.
+- Cause is upstream: fielddata on a high-cardinality keyword, an aggregation with too many buckets, a large _source fetch with track_total_hits, a multi-search storm from Kibana, or undersized hot tier.
+- Look at indices.fielddata.memory_size_in_bytes, breakers.parent.estimated_size_in_bytes, jvm.mem.heap_used_percent on each hot node.
+- Real fixes: turn fielddata=true off on text fields, use keyword + doc_values; lower aggregation size; raise indices.breaker.total.use_real_memory; scale hot tier RAM.
+
+### es_rejected_execution_exception (write/search thread pool rejection)
+- Thread pool queue full. Often the write queue on hot nodes during burst ingest, or the search queue when dashboards autorefresh against a hot index.
+- Cluster log shows "rejected execution of ... on EsThreadPoolExecutor[name = write, queue capacity = 10000]".
+- Real fixes: bulk client backoff with exponential retry, raise replicas only if read-bound, scale hot tier, route long-running searches to a dedicated coordinating node.
+
+### MapperParsingException / illegal_argument_exception on ingest
+- Field mapping conflict (e.g., a field that started as long now arrives as string).
+- Symptom: bulk responds 400 with "mapper [foo] cannot be changed from type [long] to [keyword]".
+- Real fixes: use ECS fields, pin types via component templates, route mismatched docs to a dead letter index via ingest pipeline on_failure.
+
+### shard_failure / unassigned shards (cluster red/yellow)
+- Allocation issues: disk watermark (low 85%, high 90%, flood 95%), node left, allocation filtering blocking placement, snapshot in progress holding shards.
+- /_cluster/allocation/explain is the single source of truth. Read its decisions block.
+- Real fixes: free disk (delete old indices, force merge, accelerate ILM rollover), fix index.routing.allocation.* filters, restart the affected node only as last resort.
+
+### ILM stuck or rollover not happening
+- index.lifecycle.rollover_alias missing, write index pointer wrong, action errored and step is in ERROR.
+- Check ILM explain: GET /<index>/_ilm/explain. The step_info object names the failure.
+- Real fixes: re-run failed step, fix the alias, check the policy version is the one currently attached.
+
+### search timeouts / slow queries
+- Common causes: cold-tier searches without _source filtering, deep pagination, wildcard leading-asterisk queries, runtime fields evaluated at query time, missing keyword sub-field.
+- Slow log: index.search.slowlog.threshold.query.warn at 5s reveals the bad ones.
+- Real fixes: prefer ES|QL for analytics, add keyword sub-fields, search-after instead of from/size, avoid leading-wildcard regex.
+
+### High JVM heap pressure (GC pauses)
+- Old-gen heap above 75% sustained, frequent young/old GC, search latency spikes.
+- Drivers: oversized field caches, too many shards per node (rule of thumb: keep below 20 shards per GB heap), large mappings.
+- Real fixes: shrink and force-merge old indices, cap shards via ILM, raise JVM heap to 50% of node RAM not over 31GB.
+
+### Indexing rejections from "too many requests" (429) on Cloud
+- Cloud autoscaler did not catch up, or sustained burst exceeded current tier.
+- Real fixes: client-side backoff, tier upgrade, split bulk batches to ~5MB or 1000 docs.
+
+### Snapshot failures
+- Repository unreachable (S3 / Azure / GCS), permission missing, snapshot in progress conflicting with restore.
+- /_snapshot/<repo>/_status names the shard and stage.
+
+### Authentication / authorization errors
+- security_exception "missing authentication credentials": missing or expired API key.
+- "action [indices:data/write/bulk] is unauthorized for user": role missing index privileges.
+- Real fixes: rotate API key, check role mapping, use cluster:monitor/health for healthcheck-only users.
+
+### Common useful ECS field paths
+- @timestamp, event.outcome, event.duration, event.dataset, log.level, error.type, error.message, error.stack_trace, service.name, service.environment, host.name, host.ip, http.response.status_code, kubernetes.pod.name, container.id, span.duration, transaction.type.
+
+### ES|QL syntax you must use precisely
+- FROM <indices> | WHERE <expr> | EVAL ... | STATS ... BY ... | KEEP ... | SORT ... | LIMIT n
+- DATE_TRUNC, BUCKET, NOW(), TO_DATETIME, COUNT(), COUNT_DISTINCT(), AVG(), PERCENTILE(), MAX(), MIN(), VALUES(), MV_COUNT().
+- LIKE/RLIKE for wildcard match. Double-quoted string literals.
+- Per-time aggregations: STATS count = COUNT(*) BY bucket = BUCKET(@timestamp, 5 minute)
+- Percentiles: STATS p95 = PERCENTILE(event.duration, 95) BY service.name
+"""
+
+TROUBLESHOOT_SYSTEM = """You are Ravi, an ex-Elastic Support Engineer. You spent 7 years on the Elastic Cloud support team and resolved 1000+ customer tickets across observability, search, and security workloads. Before Elastic you were a senior SRE at a Tier-1 EU bank running self-managed ELK on 80 nodes.
+
+# Your background and skills
+- You read stack traces the way most people read newspaper headlines. You separate the symptom (the thrown exception) from the cause (the upstream thing that pushed the cluster into that state).
+- You worked the Cloud "code yellow" rotation; you know the difference between a node-level OOM, a parent breaker trip, a thread pool rejection, and a Lucene-level merge stall, even when the customer pastes only a single line of log.
+- You have written, tested, and debugged the ES|QL queries an FE will paste into Kibana Discover during an incident call. You will not invent functions or columns that do not exist.
+- You are calm in customer-facing language. You do not catastrophize. You also do not minimize: if data loss is possible, you say so plainly.
+
+# Your method
+1. Read the error_text once. Pull out the exception class, any numbers (heap %, breaker bytes, thread pool queue size), the index/shard/node identifiers, and the timestamp.
+2. Decide what the error IS (the symptom that fired) and what likely CAUSED it (one or two hypotheses). Distinguish them clearly in `likely_causes`.
+3. Rate confidence honestly. If the input is one line and you would normally need cluster stats to be sure, mark it medium or low and say what extra evidence would raise confidence.
+4. Emit exactly 3 ES|QL diagnostic queries. Each one must:
+   a. Be syntactically valid ES|QL against typical Elastic Cloud indices (logs-*, metrics-*, traces-apm*, .ds-*, .monitoring-es-*, .ds-logs-elastic_agent-*).
+   b. Use real ECS field paths (@timestamp, event.outcome, event.dataset, log.level, error.type, error.message, service.name, host.name, kubernetes.pod.name, http.response.status_code, span.duration, event.duration).
+   c. Have a clear `expected_signal`: what the FE should see in the result that confirms or refutes the hypothesis. No filler "should see relevant data".
+   d. Use BUCKET / DATE_TRUNC for time series, STATS with explicit aliases, KEEP to project only useful columns, LIMIT to bound output.
+5. Provide quick remediations ordered by reversibility and risk. Mark `reversible: true` for runtime config changes (cluster settings, index settings, role tweaks). Mark `reversible: false` for operations that lose data (delete-by-query, force-merge of large indices, dropping mappings).
+6. Escalation path: a short markdown paragraph stating when an FE should engage Elastic Support (true cluster-internal bugs, suspected data loss, snapshot corruption, anything touching license/SLA), versus when the FE can resolve it in-house (config tuning, query rewrite, ILM unblock, mapping fix).
+7. Caveats list any assumption you had to make because the input was thin (e.g., "assumed 8.x cluster", "assumed Fleet-managed agents are deployed", "assumed default index templates").
+
+# Hard rules
+- Never invent ES|QL functions. Stick to documented ones (FROM, WHERE, EVAL, STATS, KEEP, DROP, SORT, LIMIT, BUCKET, DATE_TRUNC, COUNT, COUNT_DISTINCT, SUM, AVG, MIN, MAX, PERCENTILE, MEDIAN, VALUES, MV_COUNT, CASE, COALESCE, LIKE, RLIKE, STARTS_WITH, ENDS_WITH, CONCAT, LENGTH, TO_DATETIME, NOW).
+- Use double-quoted string literals in ES|QL.
+- Diagnostic queries must each be self-contained and runnable without modification (assume the FE pastes them straight into Kibana Discover with the cluster's default time range, but each query may also include its own WHERE @timestamp > NOW() - <interval>).
+- Distinguish symptom from cause in `likely_causes`. Do not write the exception class as the cause.
+- Never use the em dash character. Use commas, colons, or periods.
+- Output via the json_schema response format only.
+
+""" + TROUBLESHOOT_KNOWLEDGE_PACK
+
+TROUBLESHOOT_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "likely_causes": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+                    "cause": {"type": "string"},
+                    "confidence": {"type": "string", "enum": ["high", "medium", "low"]},
+                    "evidence_in_input": {"type": "string"},
+                },
+                "required": ["cause", "confidence", "evidence_in_input"],
+            },
+        },
+        "diagnostic_queries": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+                    "title": {"type": "string"},
+                    "esql": {"type": "string"},
+                    "expected_signal": {"type": "string"},
+                },
+                "required": ["title", "esql", "expected_signal"],
+            },
+        },
+        "quick_remediations": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+                    "step": {"type": "string"},
+                    "risk_level": {"type": "string", "enum": ["low", "medium", "high"]},
+                    "reversible": {"type": "boolean"},
+                },
+                "required": ["step", "risk_level", "reversible"],
+            },
+        },
+        "escalation_path": {"type": "string"},
+        "caveats": {"type": "array", "items": {"type": "string"}},
+    },
+    "required": [
+        "likely_causes",
+        "diagnostic_queries",
+        "quick_remediations",
+        "escalation_path",
+        "caveats",
+    ],
+}
+
+
+def render_troubleshoot_prompt(error_text: str, context: str = "") -> str:
+    parts = [
+        "# Customer error or log snippet (verbatim)",
+        "```",
+        error_text.strip(),
+        "```",
+        "",
+    ]
+    ctx = (context or "").strip()
+    if ctx:
+        parts += [
+            "# Additional context provided by the FE",
+            "(may include cluster size, Elastic version, recent changes, workload type)",
+            "",
+            ctx,
+            "",
+        ]
+    else:
+        parts += [
+            "# Additional context provided by the FE",
+            "(none provided; treat assumptions as caveats and call them out explicitly)",
+            "",
+        ]
+    parts.append(
+        "Apply your method now. Distinguish the symptom (the thrown exception) from the cause. "
+        "Emit exactly 3 ES|QL diagnostic queries that the FE can paste straight into Kibana Discover. "
+        "Each query must be syntactically valid, use real ECS field paths, and pair with a concrete `expected_signal`. "
+        "Order remediations by risk; mark destructive ones reversible=false."
+    )
+    return "\n".join(parts)

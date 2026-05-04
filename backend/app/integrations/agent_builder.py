@@ -81,13 +81,19 @@ def get_tool(tool_id: str) -> Dict[str, Any]:
 
 
 def upsert_tool(tool: Dict[str, Any]) -> Dict[str, Any]:
-    """Create or update an Agent Builder tool. The tool dict must include `id`, `type`, `description`, and `configuration`."""
+    """Create or update an Agent Builder tool. The tool dict must include `id`, `type`, `description`, and `configuration`.
+
+    Kibana 9.3's PUT /api/agent_builder/tools/{id} rejects `id` and `type` in the body
+    (those are inferred from the URL and from the existing object). Strip them before PUT.
+    POST keeps the full payload for first-time creation.
+    """
     tool_id = tool.get("id")
     if not tool_id:
         raise ValueError("tool dict must include `id`")
     existing = get_tool(tool_id) if is_live() else None
     if existing and not existing.get("error") and not existing.get("dry_run"):
-        return _request("PUT", f"/api/agent_builder/tools/{tool_id}", tool)
+        update_body = {k: v for k, v in tool.items() if k not in ("id", "type")}
+        return _request("PUT", f"/api/agent_builder/tools/{tool_id}", update_body)
     return _request("POST", "/api/agent_builder/tools", tool)
 
 
@@ -112,12 +118,15 @@ def get_agent(agent_id: str) -> Dict[str, Any]:
 
 
 def upsert_agent(agent: Dict[str, Any]) -> Dict[str, Any]:
+    """PUT /api/agent_builder/agents/{id} rejects `id` (and any other fields not in the
+    update schema) in the body, just like the tool endpoint. Strip them before PUT."""
     agent_id = agent.get("id")
     if not agent_id:
         raise ValueError("agent dict must include `id`")
     existing = get_agent(agent_id) if is_live() else None
     if existing and not existing.get("error") and not existing.get("dry_run"):
-        return _request("PUT", f"/api/agent_builder/agents/{agent_id}", agent)
+        update_body = {k: v for k, v in agent.items() if k not in ("id", "type")}
+        return _request("PUT", f"/api/agent_builder/agents/{agent_id}", update_body)
     return _request("POST", "/api/agent_builder/agents", agent)
 
 

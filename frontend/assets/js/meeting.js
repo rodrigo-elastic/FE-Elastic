@@ -178,6 +178,7 @@ async function mountAgentBuilderMinis() {
         { label: "POV plan outline", prompt: "Sketch a 6-week Proof-of-Value plan tailored to this account, grounded in the pain points and signals from the brief." },
         { label: "Compliance angle", prompt: "Which regulations matter most for this customer (use the company industry above) and how does Elastic map to them?" },
         { label: "TCO at 200 GB/day", prompt: "Run a TCO comparison at 200 GB/day, 12 months retention, current spend $1.5M." },
+        { label: "Ask the docs (FE Brain)", prompt: "Use fec_knowledge_search to ask the Elastic docs how Elastic ML jobs handle deployment regression detection, and cite the doc pages. Tie the answer back to this customer's pain points above." },
       ],
     });
   }
@@ -202,6 +203,7 @@ async function mountAgentBuilderMinis() {
         { label: "Cost + capacity follow-up", prompt: "If the customer's workload is 150 GB/day at peak 30k EPS, run both the cost calculator and the capacity planner so I can include them in the follow-up email." },
         { label: "Competitor counter-positioning", prompt: "Use the competitor-mentions list above. For each competitor named, give me a one-paragraph counter-positioning anchored on Elastic strengths and the customer's current pain points." },
         { label: "Translate any SPL discussed", prompt: "If the customer mentioned any SPL queries during the meeting (check the MEDDPICC signals and transcript context above), translate them to ES|QL using fec_spl_to_esql." },
+        { label: "Ask the docs (FE Brain)", prompt: "Call fec_knowledge_search with the most technical objection from this meeting (read the post-meeting record above) and bring back a cited Elastic-docs answer I can paste into the follow-up email." },
       ],
     });
   }
@@ -225,6 +227,7 @@ async function mountAgentBuilderMinis() {
         { label: "What should I say next?", prompt: "Given the last few transcript turns above, what is the strongest next question I can ask to advance the deal? Anchor to MEDDPICC." },
         { label: "Pull a battlecard", prompt: "If a competitor was mentioned in the transcript above, give me the 3-bullet counter for them. If multiple, do all of them." },
         { label: "Quick cost ballpark", prompt: "Give me a quick Elastic vs Splunk cost ballpark at 100 GB/day, 6 months. Use fec_cost_calc." },
+        { label: "Ask the docs (FE Brain)", prompt: "Use fec_knowledge_search to find the official Elastic docs answer to whatever the customer just asked in the most recent transcript turn. Paste the cited snippet so I can read it back to them." },
       ],
     });
   }
@@ -247,6 +250,7 @@ async function mountAgentBuilderMinis() {
         { label: "Industry trends", prompt: "What are the top 3 trends in this customer's industry (above) that should shape my Elastic pitch?" },
         { label: "Stack extraction", prompt: `Extract this customer's tech stack into canonical buckets given what we know. Use fec_stack_extract.` },
         { label: "Code sample", prompt: "Give me a Python code sample to bulk-index 1000 web logs into Elasticsearch using ES|QL semantics." },
+        { label: "Ask the docs (FE Brain)", prompt: "Use fec_knowledge_search against the Elastic docs corpus to surface the canonical Elastic guidance for this customer's stack (see Stack above). Cite the doc pages so I can share them." },
       ],
     });
   }

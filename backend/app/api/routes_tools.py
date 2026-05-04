@@ -8,7 +8,9 @@ __copyright__ = "Copyright 2026, Rodrigo Careaga"
 __version__ = "0.1.0"
 __status__ = "Development"
 
+import asyncio
 import json
+import time
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
@@ -23,6 +25,7 @@ from app.agents.schemas import (
     POCPlanOut,
     SPLToESQLOut,
     StackExtractOut,
+    TroubleshootOut,
 )
 from app.config import settings
 from app.integrations.claude_client import get_service
@@ -84,6 +87,25 @@ class CapacityRequest(BaseModel):
     warm_data_gb: Optional[int] = Field(0, ge=0)
     replicas: Optional[int] = Field(1, ge=0, le=5)
     peak_qps: Optional[int] = Field(100, ge=0)
+
+
+class KnowledgeSearchRequest(BaseModel):
+    query: str = Field(..., min_length=2, max_length=2000)
+    top_k: int = Field(5, ge=1, le=20)
+    model: Optional[str] = Field("", max_length=60)
+
+
+class KnowledgeCitation(BaseModel):
+    n: int
+    url: str
+    title: str
+    section_heading: str
+    snippet: str
+
+
+class KnowledgeSearchOut(BaseModel):
+    answer: str
+    citations: List[KnowledgeCitation]
 
 
 # ============================================================ Helpers ================
@@ -376,3 +398,246 @@ async def run_capacity(payload: CapacityRequest) -> Dict[str, Any]:
         )
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc))
+
+
+# ============================================================ Knowledge search =======
+
+
+_KNOWLEDGE_MOCK: Dict[str, Any] = {
+    "answer": (
+        "Mock fallback: the knowledge index is not yet populated. "
+        "Once the corpus and embeddings are ready, this tool will return a grounded answer with citations. "
+        "Visit https://www.elastic.co/docs/ for the official documentation in the meantime."
+    ),
+    "citations": [],
+}
+
+
+def _load_knowledge_repo():
+    """Locate the KnowledgeRepo built by agent S3B. Tries a few known module paths."""
+    last_err: Optional[Exception] = None
+    for mod_path in (
+        "app.repositories.knowledge_repo",
+        "app.repositories.knowledge",
+    ):
+        try:
+            mod = __import__(mod_path, fromlist=["KnowledgeRepo"])
+            cls = getattr(mod, "KnowledgeRepo", None)
+            if cls is not None:
+                return cls
+        except Exception as exc:
+            last_err = exc
+            continue
+    if last_err:
+        log.info("knowledge_repo.import_failed", reason=str(last_err))
+    return None
+
+
+def _normalize_hits(raw_hits: Any) -> List[Dict[str, Any]]:
+    """Normalize whatever S3B's repo returns into the shape Mei's prompt expects."""
+    if not raw_hits:
+        return []
+    out: List[Dict[str, Any]] = []
+    for h in raw_hits:
+        if not isinstance(h, dict):
+            continue
+        # Some repos nest payload in `_source`; flatten if needed.
+        src = h.get("_source") if isinstance(h.get("_source"), dict) else h
+        out.append(
+            {
+                "title": src.get("title") or src.get("page_title") or "",
+                "url": src.get("url") or src.get("source_url") or "",
+                "section_heading": (
+                    src.get("section_heading")
+                    or src.get("section")
+                    or src.get("heading")
+                    or ""
+                ),
+                "text": (
+                    src.get("text")
+                    or src.get("body")
+                    or src.get("content")
+                    or src.get("snippet")
+                    or ""
+                ),
+            }
+        )
+    return out
+
+
+async def run_knowledge_search(payload: KnowledgeSearchRequest) -> Dict[str, Any]:
+    """Semantic search over the Elastic public docs corpus, synthesized by Mei."""
+    query = payload.query.strip()
+    top_k = max(1, min(payload.top_k or 5, 20))
+    log.info("tool.knowledge_search.start", query_len=len(query), top_k=top_k)
+
+    cls = _load_knowledge_repo()
+    repo = None
+    raw_hits: List[Any] = []
+
+    if cls is not None:
+        try:
+            repo = cls()
+            raw_hits = repo.search(query, top_k) or []
+        except Exception as exc:
+            log.info("knowledge_repo.init_failed", reason=str(exc))
+            repo = None
+            raw_hits = []
+
+    # Per spec: if the repo is missing OR the corpus is empty, retry for up to 90s.
+    if not raw_hits:
+        deadline = time.monotonic() + 90.0
+        while time.monotonic() < deadline:
+            await asyncio.sleep(3.0)
+            cls = _load_knowledge_repo() if cls is None else cls
+            if cls is None:
+                continue
+            try:
+                repo = cls()
+                raw_hits = repo.search(query, top_k) or []
+                if raw_hits:
+                    break
+            except Exception as exc:
+                log.info("knowledge_repo.retry_failed", reason=str(exc))
+
+    if repo is None:
+        return {
+            "answer": (
+                "The knowledge index is not yet ready. The corpus and embeddings are still being built; "
+                "please retry in a minute. In the meantime, the Elastic public documentation lives at "
+                "https://www.elastic.co/docs/ and is the canonical source for ILM, ES|QL, semantic_text, "
+                "and detection-rule guidance."
+            ),
+            "citations": [],
+            "warning": "knowledge_repo_unavailable",
+        }
+
+    hits = _normalize_hits(raw_hits)
+    log.info("tool.knowledge_search.hits", count=len(hits))
+
+    user_prompt = tool_prompts.render_knowledge_search_prompt(query, hits)
+
+    result: KnowledgeSearchOut = get_service().call_structured(
+        system=tool_prompts.KNOWLEDGE_SEARCH_SYSTEM,
+        user=user_prompt,
+        schema=tool_prompts.KNOWLEDGE_SEARCH_SCHEMA,
+        output_model=KnowledgeSearchOut,
+        model=_resolve_model(payload.model),
+        max_tokens=4096,
+        effort="high",
+        mock_payload=_KNOWLEDGE_MOCK,
+        audit_meta={
+            "agent": "tool_knowledge_search",
+            "tool": "knowledge_search",
+            "query_len": len(query),
+            "top_k": top_k,
+            "hit_count": len(hits),
+        },
+    )
+
+    data = result.model_dump()
+    log.info(
+        "tool.knowledge_search.complete",
+        answer_len=len(data.get("answer") or ""),
+        citation_count=len(data.get("citations") or []),
+    )
+    return data
+
+
+@router.post("/knowledge-search")
+async def knowledge_search_endpoint(payload: KnowledgeSearchRequest) -> Dict[str, Any]:
+    """Mei (ex-Elastic enablement docs lead) answers FE questions grounded in the public docs corpus."""
+    return await run_knowledge_search(payload)
+
+
+# ============================================================ Troubleshoot ===========
+
+
+class TroubleshootRequest(BaseModel):
+    error_text: str = Field(..., min_length=3, max_length=20000)
+    context: Optional[str] = Field("", max_length=8000)
+    language: Optional[str] = Field("English", max_length=40)
+    model: Optional[str] = Field("", max_length=60)
+
+
+_TROUBLESHOOT_MOCK: Dict[str, Any] = {
+    "likely_causes": [
+        {
+            "cause": "Hot tier JVM heap is undersized for the current ingest + aggregation workload, so the parent circuit breaker trips before requests can complete.",
+            "confidence": "medium",
+            "evidence_in_input": "CircuitBreakingException with parent breaker [3.2gb/3gb]",
+        }
+    ],
+    "diagnostic_queries": [
+        {
+            "title": "Mock fallback: recent error rate by service",
+            "esql": "FROM logs-* | WHERE @timestamp > NOW() - 1 hour AND log.level == \"error\" | STATS errors = COUNT(*) BY service.name | SORT errors DESC | LIMIT 10",
+            "expected_signal": "Top 10 services with the most error logs in the last hour. A single service dominating points at the upstream cause.",
+        }
+    ],
+    "quick_remediations": [
+        {
+            "step": "Mock fallback: enable the bulk client retry policy with exponential backoff while you size the cluster.",
+            "risk_level": "low",
+            "reversible": True,
+        }
+    ],
+    "escalation_path": "Mock fallback: engage Elastic Support if the breaker keeps tripping after you scale the hot tier or if shards become unassigned. Routine config tuning stays in-house.",
+    "caveats": [
+        "Mock mode active because no Anthropic API key is configured.",
+        "Real responses include three diagnostic queries and a full cause-confidence-evidence breakdown.",
+    ],
+}
+
+
+@router.post("/troubleshoot")
+async def run_troubleshoot(payload: TroubleshootRequest) -> Dict[str, Any]:
+    """Ravi (ex-Elastic Support, 1000+ tickets) diagnoses an Elastic stack error and emits 3 ES|QL diagnostic queries."""
+    language = payload.language or "English"
+    log.info("tool.troubleshoot.start", language=language, has_context=bool(payload.context))
+
+    user_prompt = (
+        language_preamble(language)
+        + tool_prompts.render_troubleshoot_prompt(payload.error_text, payload.context or "")
+        + language_instruction(language)
+    )
+
+    result: TroubleshootOut = get_service().call_structured(
+        system=tool_prompts.TROUBLESHOOT_SYSTEM,
+        user=user_prompt,
+        schema=tool_prompts.TROUBLESHOOT_SCHEMA,
+        output_model=TroubleshootOut,
+        model=_resolve_model(payload.model),
+        max_tokens=6144,
+        effort="high",
+        mock_payload=_TROUBLESHOOT_MOCK,
+        audit_meta={"agent": "tool_troubleshoot", "tool": "troubleshoot"},
+    )
+
+    data = result.model_dump()
+
+    # Persist a timestamped audit artifact for this diagnosis.
+    try:
+        out_dir = settings.runtime_dir / "troubleshoot"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+        record = {
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "language": language,
+            "error_text": payload.error_text,
+            "context": payload.context or "",
+            **data,
+        }
+        (out_dir / f"{ts}.json").write_text(
+            json.dumps(record, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+        )
+    except Exception as exc:
+        log.warning("tool.troubleshoot.persist_failed", reason=str(exc))
+
+    log.info(
+        "tool.troubleshoot.complete",
+        causes=len(data.get("likely_causes") or []),
+        queries=len(data.get("diagnostic_queries") or []),
+        remediations=len(data.get("quick_remediations") or []),
+    )
+    return data

@@ -1,6 +1,6 @@
 """
 filename: sync_agent_builder.py
-description: Idempotent sync of FE Copilot's MCP server, seven tools, and master agent into Elastic Agent Builder. Creates a .mcp connector pointing at the FE Copilot MCP endpoint, registers seven Agent Builder tools (one per MCP tool) referencing that connector, then creates the master agent that orchestrates them. Reads KIBANA_URL and KIBANA_API_KEY from settings; runs in dry-run mode (logs payloads only) when no key is configured. Override the public backend URL with BACKEND_BASE_URL (e.g., an ngrok forwarding URL) when Kibana is remote. Run with: PYTHONPATH=backend python -m scripts.sync_agent_builder.
+description: Idempotent sync of FE Copilot's MCP server, eight tools, and master agent into Elastic Agent Builder. Creates a .mcp connector pointing at the FE Copilot MCP endpoint, registers eight Agent Builder tools (one per MCP tool) referencing that connector, then creates the master agent that orchestrates them. Reads KIBANA_URL and KIBANA_API_KEY from settings; runs in dry-run mode (logs payloads only) when no key is configured. Override the public backend URL with BACKEND_BASE_URL (e.g., an ngrok forwarding URL) when Kibana is remote. Run with: PYTHONPATH=backend python -m scripts.sync_agent_builder.
 date: 03-05-2026
 """
 __author__ = "Rodrigo Careaga"
@@ -82,7 +82,20 @@ MCP_TOOLS: List[Dict[str, str]] = [
         "name": "FE Copilot - Elastic cluster capacity planner",
         "description": "Heuristic Elastic Cloud cluster sizing given peak indexing EPS, hot data GB, warm data GB, replicas, peak QPS. Returns a recommended hot/warm/frozen/master/Kibana topology.",
     },
+    {
+        "id": "fec_knowledge_search",
+        "name": "FE Copilot - Elastic docs knowledge search",
+        "description": "Semantic search over the Elastic public documentation corpus. Returns a synthesized answer with [n] inline citations and a citation list (URL, title, section, snippet). Persona: Mei, ex-Elastic enablement docs lead (8 years writing official Elastic doc and field-enablement).",
+    },
+    {
+        "id": "fec_troubleshoot",
+        "name": "FE Copilot - Troubleshooting Assistant",
+        "description": "Diagnose Elastic stack errors and emit ES|QL diagnostic queries. Persona: Ravi, ex-Elastic support engineer.",
+    },
 ]
+# TODO(merge): S3C already extended MASTER_AGENT_INSTRUCTIONS to mention fec_knowledge_search.
+# fec_troubleshoot was added later by S4A. Re-merge MASTER_AGENT_INSTRUCTIONS by hand to add a
+# bullet for fec_troubleshoot and bump the count from "eight" to "nine".
 
 
 # ============================================================ Connectors =============
@@ -141,7 +154,7 @@ def upsert_mcp_tool(connector_id: str, tool: Dict[str, str]) -> Dict[str, Any]:
 
 MASTER_AGENT_INSTRUCTIONS = """You are FE Copilot, an Elastic Field Engineering Assistant. You help Elastic Field Engineers prep for customer meetings, recap conversations, and run technical analysis on demand.
 
-You have seven specialized tools, each backed by a dedicated expert persona:
+You have nine specialized tools, each backed by a dedicated expert persona or pure-compute helper:
 - fec_poc_plan: build a Proof-of-Value plan from a customer meeting record (Marta, Sr Solutions Architect).
 - fec_spl_to_esql: translate Splunk SPL to Elastic ES|QL (Diego, ex-Splunk consultant).
 - fec_compliance: map regulations to native Elastic controls (Priya, ex-PwC compliance auditor).
@@ -149,15 +162,17 @@ You have seven specialized tools, each backed by a dedicated expert persona:
 - fec_code_sample: produce runnable Elastic SDK code samples (Kenji, SDK cookbook author).
 - fec_cost_calc: compute Elastic vs Splunk vs Datadog TCO (pure compute).
 - fec_capacity: produce a heuristic Elastic cluster sizing (pure compute).
+- fec_knowledge_search: semantic search over the Elastic public docs corpus, with synthesized answer and [n] citations (Mei, ex-Elastic enablement docs lead).
+- fec_troubleshoot: diagnose an Elastic stack error or log snippet, propose 3 ES|QL diagnostic queries plus quick remediations (Ravi, ex-Elastic support engineer with 1000+ resolved tickets).
 
-Pick the right tool for each request. Combine tools when useful (e.g., compliance + cost calc for a security POV). Always be honest about gaps, never invent customer-specific details. Never use the em dash character."""
+Pick the right tool for each request. Combine tools when useful (e.g., compliance + cost calc for a security POV; knowledge search to ground a POC plan in current docs; troubleshoot then knowledge search to confirm a remediation). Use fec_knowledge_search whenever the user asks a product-specific question that the public Elastic docs would answer (sizing, ILM, ES|QL syntax, semantic_text setup, detection rules). Use fec_troubleshoot when the user pastes an error message, log snippet, or describes a stack issue that needs diagnosis. Always be honest about gaps, never invent customer-specific details. Never use the em dash character."""
 
 
 def build_agent_payload() -> Dict[str, Any]:
     return {
         "id": "fec_field_assistant",
         "name": "FE Copilot - Field Assistant",
-        "description": "Elastic Field Engineering Assistant. Wraps the seven FE Copilot tools (POC plan, SPL to ES|QL, compliance mapping, stack extract, code sample, cost calc, capacity planner).",
+        "description": "Elastic Field Engineering Assistant. Wraps the nine FE Copilot tools (POC plan, SPL to ES|QL, compliance mapping, stack extract, code sample, cost calc, capacity planner, docs knowledge search, troubleshooter).",
         "configuration": {
             "instructions": MASTER_AGENT_INSTRUCTIONS,
             "tools": [{"tool_ids": [t["id"] for t in MCP_TOOLS]}],

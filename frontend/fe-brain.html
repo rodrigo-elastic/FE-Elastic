@@ -1,0 +1,80 @@
+<!--
+  filename: fe-brain.html
+  description: FE Brain - Elastic docs RAG. Cited, live answers grounded in Elastic documentation. Calls /api/v1/tools/knowledge-search and renders a markdown answer plus a citations sidebar.
+  Author: Rodrigo Careaga
+  Date: 03-05-2026
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FE Copilot - FE Brain</title>
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+  <link rel="stylesheet" href="/assets/css/agent-builder.css" />
+  <link rel="stylesheet" href="/assets/css/fe-brain.css" />
+  <link rel="icon" type="image/svg+xml" href="/assets/img/elastic/glyph-cluster-color.svg" />
+</head>
+<body class="fe-brain-page">
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="FE Copilot home">
+      <img class="logo-elastic" src="/assets/img/elastic/logo-horizontal-white.svg" alt="Elastic" />
+      <span class="brand-sep">/</span>
+      <span class="name">FE <span class="accent">Copilot</span></span>
+      <span class="tag">FE Brain - Elastic docs RAG</span>
+    </a>
+    <div class="right">
+      <div class="lang-host" id="lang-host"></div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <h1>Ask the docs. <span class="grad">Cited. Live.</span></h1>
+      <p class="lede">
+        FE Brain is a retrieval-augmented assistant grounded in the official Elastic documentation. Every
+        answer is sourced from indexed docs, with numbered citations linking back to the original page and
+        section. Mei (Elastic Docs Lead) curates the corpus and keeps it fresh.
+      </p>
+      <div class="ab-meta" id="fb-meta">
+        <span class="ab-pill ab-pill-muted" id="fb-pill-status">Connecting...</span>
+        <span class="ab-pill ab-pill-muted" id="fb-pill-corpus">corpus loading</span>
+        <span class="ab-pill ab-pill-muted">Mei (Elastic Docs Lead)</span>
+      </div>
+    </section>
+
+    <section class="ab-suggested" aria-label="Suggested queries">
+      <button class="ab-chip" data-prompt="How do I tune ILM for a hot+warm+frozen 200 GB/day cluster?">Tune ILM for hot+warm+frozen 200 GB/day</button>
+      <button class="ab-chip" data-prompt="What are the ES|QL functions for percentile aggregations?">ES|QL percentile functions</button>
+      <button class="ab-chip" data-prompt="Set up semantic_text with ELSER on Elastic Cloud">semantic_text with ELSER on Elastic Cloud</button>
+      <button class="ab-chip" data-prompt="Detection rules for credential stuffing">Detection rules: credential stuffing</button>
+      <button class="ab-chip" data-prompt="How does the service map auto-detect 80/20 patterns?">Service map 80/20 patterns</button>
+    </section>
+
+    <form id="fb-form" class="ab-composer" onsubmit="return false">
+      <label class="ab-input-wrap">
+        <textarea id="fb-input" rows="2" placeholder="Ask the Elastic docs anything. Cmd/Ctrl + Enter to send."></textarea>
+      </label>
+      <div class="ab-actions">
+        <button type="button" class="btn ghost" id="fb-clear" title="Clear the current answer">Clear</button>
+        <button type="submit" class="btn primary" id="fb-send">Send</button>
+      </div>
+      <p class="ab-hint">Powered by <code>fec_knowledge_search</code> over the Elastic docs corpus. Top 5 hits per query.</p>
+    </form>
+
+    <section class="fb-result" id="fb-result" aria-live="polite">
+      <div class="fb-empty" id="fb-empty">
+        Pick a suggested query above or type your own to start. Answers appear on the left, numbered citations on the right.
+      </div>
+    </section>
+
+    <section id="toast-host"></section>
+  </main>
+
+  <script src="/assets/js/i18n.js"></script>
+  <script src="/assets/js/api.js"></script>
+  <script src="/assets/js/ui.js"></script>
+  <script src="/assets/js/tools-rail.js"></script>
+  <script src="/assets/js/fe-brain.js"></script>
+</body>
+</html>

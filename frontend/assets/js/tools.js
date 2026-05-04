@@ -1,6 +1,6 @@
 /*
   filename: tools.js
-  description: Frontend handlers for the seven FE technical tools (POC plan, SPL-to-ES|QL, compliance, cost calc, capacity planner, stack extract, code sample).
+  description: Frontend handlers for the eight FE technical tools (POC plan, SPL-to-ES|QL, compliance, cost calc, capacity planner, stack extract, code sample, troubleshooting assistant).
   Author: Rodrigo Careaga
   Date: 03-05-2026
 */
@@ -37,6 +37,7 @@ function bindAll() {
   bindToolForm("cap-form", "cap-status", "Plan cluster", runCapacity);
   bindToolForm("stack-form", "stack-status", "Extract stack", runStackExtract);
   bindToolForm("code-form", "code-status", "Generate code", runCodeSample);
+  bindToolForm("ts-form", "ts-status", "Diagnose", runTroubleshoot);
 }
 
 function bindToolForm(formId, statusId, label, runner) {
@@ -419,4 +420,266 @@ async function runCodeSample() {
     "Copy code"
   );
   host.appendChild(copyBtn);
+}
+
+// ----------------------------------------------------------------- Troubleshoot
+
+async function runTroubleshoot() {
+  const errorText = document.getElementById("ts-error").value;
+  if (!errorText || errorText.trim().length < 10) {
+    throw new Error("paste an error or log snippet first (min 10 chars)");
+  }
+  const context = document.getElementById("ts-context").value.trim();
+  const model = document.getElementById("ts-model").value;
+  const body = {
+    error_text: errorText,
+    context: context || null,
+    language: claudeLanguageName(),
+    model,
+  };
+  const res = await apiPost("/tools/troubleshoot", body);
+  renderTroubleshoot(res);
+}
+
+function renderTroubleshoot(res) {
+  const host = document.getElementById("ts-result");
+  clear(host);
+  host.classList.add("fade-in");
+
+  // Optional headline / summary
+  if (res.summary || res.headline) {
+    host.appendChild(el("div", { class: "brief-headline" }, res.summary || res.headline));
+  }
+
+  // ---- 1. Likely causes (reuse .phases-grid + .phase-card)
+  const causes = res.likely_causes || [];
+  if (causes.length) {
+    host.appendChild(el("h4", { class: "tool-section" }, "Likely causes"));
+    const grid = el("div", { class: "phases-grid" });
+    causes.forEach((c, i) => {
+      const conf = (c.confidence || "").toString().toLowerCase();
+      const confChip = conf
+        ? el(
+            "span",
+            { class: "native-badge " + tsConfClass(conf), style: tsConfStyle(conf) },
+            conf.toUpperCase()
+          )
+        : null;
+      const card = el("div", { class: "phase-card" });
+      card.appendChild(
+        el("div", { class: "phase-head" }, [
+          el("span", { class: "phase-num" }, "C" + (i + 1)),
+          el("div", { style: "flex:1; min-width:0;" }, [
+            el("div", { class: "phase-name" }, c.cause || c.title || "(unspecified cause)"),
+            confChip
+              ? el("div", { class: "phase-weeks", style: "margin-top:4px;" }, [confChip])
+              : null,
+          ]),
+        ])
+      );
+      if (c.evidence) {
+        card.appendChild(el("div", { class: "phase-section-lbl" }, "Evidence"));
+        card.appendChild(
+          el("div", { class: "muted small", style: "font-style: italic;" }, c.evidence)
+        );
+      }
+      grid.appendChild(card);
+    });
+    host.appendChild(grid);
+  }
+
+  // ---- 2. Diagnostic ES|QL queries
+  const queries = res.diagnostic_queries || [];
+  if (queries.length) {
+    host.appendChild(el("h4", { class: "tool-section" }, "Diagnostic ES|QL queries"));
+    queries.forEach((q, i) => {
+      const card = el("div", {
+        class: "comp-card",
+        style: "padding: 12px 14px;",
+      });
+      const title = q.title || q.name || `Query ${i + 1}`;
+      const esql = q.esql || q.query || "";
+      card.appendChild(
+        el(
+          "div",
+          {
+            class: "comp-head",
+            style: "padding-bottom: 6px; margin-bottom: 6px;",
+          },
+          [
+            el("span", { class: "phase-num" }, "Q" + (i + 1)),
+            el(
+              "span",
+              { class: "comp-reg", style: "font-size: 13.5px; flex:1; min-width:0;" },
+              title
+            ),
+            el(
+              "button",
+              {
+                type: "button",
+                class: "btn ghost",
+                style: "padding: 4px 10px; font-size: 12px;",
+                onclick: () => tsCopyToClipboard(esql),
+              },
+              "Copy"
+            ),
+          ]
+        )
+      );
+      const pre = el("pre", { class: "code-block" });
+      pre.appendChild(el("code", { class: "language-esql" }, esql));
+      card.appendChild(pre);
+      if (q.expected_signal || q.expected) {
+        card.appendChild(
+          el(
+            "div",
+            { class: "muted small", style: "margin-top: 8px;" },
+            [
+              el("strong", {}, "Expected signal: "),
+              el("span", {}, q.expected_signal || q.expected),
+            ]
+          )
+        );
+      }
+      host.appendChild(card);
+    });
+  }
+
+  // ---- 3. Quick remediations (numbered, with chips)
+  const remediations = res.quick_remediations || [];
+  if (remediations.length) {
+    host.appendChild(el("h4", { class: "tool-section" }, "Quick remediations"));
+    const ol = el("ol", {
+      class: "risk-list",
+      style: "padding-left: 28px; list-style: decimal;",
+    });
+    remediations.forEach((r) => {
+      const risk = (r.risk_level || r.risk || "").toString().toLowerCase();
+      const reversible =
+        r.reversible === true ||
+        r.reversible === "true" ||
+        r.reversible === "yes" ||
+        (typeof r.reversible === "string" && r.reversible.toLowerCase() === "reversible");
+      const li = el("li");
+      li.appendChild(
+        el("div", { class: "risk-desc" }, r.action || r.step || r.text || "(unspecified)")
+      );
+      const chips = el("div", {
+        class: "tool-pills",
+        style: "margin-top: 6px; gap: 6px;",
+      });
+      if (risk) {
+        chips.appendChild(
+          el(
+            "span",
+            { class: "native-badge " + tsRiskClass(risk), style: tsRiskStyle(risk) },
+            "Risk: " + risk.toUpperCase()
+          )
+        );
+      }
+      chips.appendChild(
+        el(
+          "span",
+          {
+            class: "native-badge " + (reversible ? "yes" : "no"),
+          },
+          reversible ? "Reversible" : "Not reversible"
+        )
+      );
+      li.appendChild(chips);
+      if (r.note) {
+        li.appendChild(el("div", { class: "risk-mit muted small" }, r.note));
+      }
+      ol.appendChild(li);
+    });
+    host.appendChild(ol);
+  }
+
+  // ---- 4. Escalation path (rendered markdown)
+  if (res.escalation_path) {
+    host.appendChild(el("h4", { class: "tool-section" }, "Escalation path"));
+    host.appendChild(
+      el("div", {
+        class: "comp-card",
+        style: "padding: 12px 16px; line-height: 1.55; font-size: 13.5px;",
+        html: tsRenderMarkdown(res.escalation_path),
+      })
+    );
+  }
+
+  // ---- 5. Caveats
+  if (res.caveats?.length) {
+    host.appendChild(el("h4", { class: "tool-section" }, "Caveats"));
+    const ul = el("ul", { class: "muted small" });
+    res.caveats.forEach((c) => ul.appendChild(el("li", {}, c)));
+    host.appendChild(ul);
+  }
+}
+
+// Map a confidence string to one of the existing native-badge variants.
+function tsConfClass(conf) {
+  if (conf === "high") return "yes";
+  if (conf === "low") return "no";
+  return ""; // medium / unknown: bare badge with inline style
+}
+function tsConfStyle(conf) {
+  if (conf === "high" || conf === "low") return "";
+  // medium / unknown - amber
+  return "background: rgba(246, 192, 0, 0.14); color: #8a6d00; border: 1px solid rgba(246, 192, 0, 0.40);";
+}
+
+// Map a risk level to badge style.
+function tsRiskClass(risk) {
+  if (risk === "low") return "yes";
+  if (risk === "high" || risk === "critical") return "no";
+  return "";
+}
+function tsRiskStyle(risk) {
+  if (risk === "low" || risk === "high" || risk === "critical") return "";
+  return "background: rgba(246, 192, 0, 0.14); color: #8a6d00; border: 1px solid rgba(246, 192, 0, 0.40);";
+}
+
+// Clipboard helper: modern API + textarea fallback (mirrors agent-builder-mini.js).
+async function tsCopyToClipboard(text) {
+  let ok = false;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      ok = true;
+    } catch (_) {
+      // fall through
+    }
+  }
+  if (!ok) {
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+    } catch (_) {
+      ok = false;
+    }
+  }
+  toast(ok ? "Query copied to clipboard" : "Copy failed", ok ? "ok" : "bad");
+}
+
+// Lightweight markdown renderer for the escalation path block.
+function tsRenderMarkdown(text) {
+  const escape = (s) =>
+    String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  let html = escape(text);
+  html = html.replace(/```([\s\S]*?)```/g, (_, code) => `<pre class="code-block"><code>${code}</code></pre>`);
+  html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
+  html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  html = html.replace(/^\s*\d+\.\s+(.+)$/gm, "<li>$1</li>");
+  html = html.replace(/^\s*[-*]\s+(.+)$/gm, "<li>$1</li>");
+  html = html.replace(/(?:<li>[\s\S]*?<\/li>\s*)+/g, (m) => `<ul>${m}</ul>`);
+  html = html.replace(/\n{2,}/g, "<br><br>");
+  html = html.replace(/\n/g, "<br>");
+  return html;
 }

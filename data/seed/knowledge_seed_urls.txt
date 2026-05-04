@@ -1,0 +1,71 @@
+# FE Copilot Knowledge seed URLs.
+# Curated by an Elastic FE for live customer-call recall.
+# One URL per line. Lines starting with "#" or blank are ignored.
+# Coverage: ES core, ES|QL, ILM/snapshots, Kibana Lens, Agent Builder,
+# Security (rules + ML), Observability (APM, service map, SLOs),
+# semantic_text + ELSER, Cloud sizing, ECS.
+
+# --- Elasticsearch core: mappings, indexing, search ---
+https://www.elastic.co/docs/manage-data/data-store/mapping
+https://www.elastic.co/docs/manage-data/data-store/mapping/dynamic-mapping
+https://www.elastic.co/docs/manage-data/data-store/mapping/explicit-mapping
+https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/field-data-types
+https://www.elastic.co/docs/manage-data/data-store/index-basics
+https://www.elastic.co/docs/manage-data/data-store/text-analysis
+https://www.elastic.co/docs/solutions/search/the-search-api
+https://www.elastic.co/docs/solutions/search/querying-for-search
+https://www.elastic.co/docs/explore-analyze/query-filter/languages/querydsl
+https://www.elastic.co/docs/reference/query-languages/query-dsl/query-dsl-bool-query
+
+# --- ES|QL: language + functions ---
+https://www.elastic.co/docs/explore-analyze/query-filter/languages/esql
+https://www.elastic.co/docs/reference/query-languages/esql/esql-syntax
+https://www.elastic.co/docs/reference/query-languages/esql/esql-commands
+https://www.elastic.co/docs/reference/query-languages/esql/esql-functions-operators
+https://www.elastic.co/docs/explore-analyze/query-filter/languages/esql-getting-started
+
+# --- ILM and snapshots ---
+https://www.elastic.co/docs/manage-data/lifecycle/index-lifecycle-management
+https://www.elastic.co/docs/manage-data/lifecycle/data-tiers
+https://www.elastic.co/docs/deploy-manage/tools/snapshot-and-restore
+https://www.elastic.co/docs/deploy-manage/tools/snapshot-and-restore/create-snapshots
+
+# --- Kibana Lens + Agent Builder ---
+https://www.elastic.co/docs/explore-analyze/visualize/lens
+https://www.elastic.co/docs/explore-analyze/dashboards
+https://www.elastic.co/docs/explore-analyze/ai-features/elastic-agent-builder
+https://www.elastic.co/docs/explore-analyze/ai-features/agent-builder/tools
+https://www.elastic.co/docs/explore-analyze/ai-features/agent-builder/agent-builder-agents
+https://www.elastic.co/docs/explore-analyze/ai-features/agent-builder/get-started
+https://www.elastic.co/docs/explore-analyze/ai-features/agent-builder/mcp-server
+
+# --- Elastic Security: detection rules + ML ---
+https://www.elastic.co/docs/solutions/security/detect-and-alert
+https://www.elastic.co/docs/solutions/security/detect-and-alert/create-detection-rule
+https://www.elastic.co/docs/solutions/security/detect-and-alert/prebuilt-rules
+https://www.elastic.co/docs/solutions/security/advanced-entity-analytics
+https://www.elastic.co/docs/explore-analyze/machine-learning/anomaly-detection
+
+# --- Observability: APM, service map, SLOs ---
+https://www.elastic.co/docs/solutions/observability/apm
+https://www.elastic.co/docs/solutions/observability/apm/service-map
+https://www.elastic.co/docs/solutions/observability/apm/services
+https://www.elastic.co/docs/solutions/observability/incident-management/service-level-objectives-slos
+https://www.elastic.co/docs/solutions/observability/logs
+
+# --- semantic_text + ELSER ---
+https://www.elastic.co/docs/solutions/search/semantic-search/semantic-search-semantic-text
+https://www.elastic.co/docs/explore-analyze/machine-learning/nlp/ml-nlp-elser
+https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/semantic-text
+https://www.elastic.co/docs/explore-analyze/machine-learning/nlp/ml-nlp-deploy-models
+
+# --- Elastic Cloud sizing ---
+https://www.elastic.co/docs/deploy-manage/deploy/elastic-cloud
+https://www.elastic.co/docs/deploy-manage/deploy/elastic-cloud/cloud-hosted
+https://www.elastic.co/docs/deploy-manage/production-guidance/general-recommendations
+https://www.elastic.co/docs/deploy-manage/production-guidance/optimize-performance/size-shards
+
+# --- ECS field reference ---
+https://www.elastic.co/docs/reference/ecs
+https://www.elastic.co/docs/reference/ecs/ecs-field-reference
+https://www.elastic.co/docs/reference/ecs/ecs-guidelines

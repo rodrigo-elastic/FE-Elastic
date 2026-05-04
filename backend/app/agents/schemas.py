@@ -145,3 +145,29 @@ class CodeSampleOut(BaseModel):
     code: str
     explanation: str
     prerequisites: List[str]
+
+
+class TroubleshootCause(BaseModel):
+    cause: str
+    confidence: str = Field(description="high | medium | low")
+    evidence_in_input: str
+
+
+class TroubleshootDiagnosticQuery(BaseModel):
+    title: str
+    esql: str
+    expected_signal: str
+
+
+class TroubleshootRemediation(BaseModel):
+    step: str
+    risk_level: str = Field(description="low | medium | high")
+    reversible: bool
+
+
+class TroubleshootOut(BaseModel):
+    likely_causes: List[TroubleshootCause]
+    diagnostic_queries: List[TroubleshootDiagnosticQuery]
+    quick_remediations: List[TroubleshootRemediation]
+    escalation_path: str
+    caveats: List[str]

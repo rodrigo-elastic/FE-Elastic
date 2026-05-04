@@ -1,0 +1,284 @@
+/*
+  filename: fe-brain.css
+  description: Styles for the FE Brain RAG page. Two-column answer + citations layout, numbered citation cards, [n] superscript references in the body.
+  Author: Rodrigo Careaga
+  Date: 03-05-2026
+*/
+
+.fe-brain-page .container { max-width: 1200px; }
+
+/* ============================================================ Result layout */
+.fb-result {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(280px, 1fr);
+  gap: 22px;
+  margin: 8px 0 36px;
+  align-items: start;
+}
+@media (max-width: 920px) {
+  .fb-result { grid-template-columns: 1fr; }
+}
+
+.fb-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 28px 18px;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 13.5px;
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+}
+
+/* ============================================================ Answer column */
+.fb-answer {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 14px;
+  padding: 20px 22px;
+  min-width: 0;
+}
+.fb-answer-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.fb-answer-role {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+.fb-answer-q {
+  font-size: 13.5px;
+  color: rgba(255, 255, 255, 0.78);
+  background: rgba(0, 119, 204, 0.13);
+  border: 1px solid rgba(0, 119, 204, 0.35);
+  padding: 4px 10px;
+  border-radius: 999px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fb-answer-body {
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--white);
+}
+.fb-answer-body p { margin: 0 0 12px; }
+.fb-answer-body ul, .fb-answer-body ol { margin: 0 0 12px; padding-left: 22px; }
+.fb-answer-body li { margin-bottom: 4px; }
+.fb-answer-body code {
+  background: rgba(255, 255, 255, 0.07);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+.fb-answer-body pre {
+  background: #0d1117;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 12px;
+  border-radius: 8px;
+  overflow-x: auto;
+  font-size: 13px;
+}
+.fb-answer-body strong { color: #fff; }
+
+/* ============================================================ Citation pills inside the body */
+.fb-cite-ref {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  margin: 0 2px;
+  border-radius: 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  background: rgba(0, 191, 179, 0.22);
+  border: 1px solid rgba(0, 191, 179, 0.5);
+  color: #b9f5ed;
+  cursor: pointer;
+  vertical-align: super;
+  line-height: 1.2;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-decoration: none;
+  transition: background 0.15s, transform 0.1s;
+}
+.fb-cite-ref:hover { background: rgba(0, 191, 179, 0.36); color: #d8fff8; }
+.fb-cite-ref.fb-cite-ref-flash {
+  background: rgba(254, 197, 20, 0.4);
+  border-color: rgba(254, 197, 20, 0.6);
+  color: #ffe18a;
+}
+
+/* ============================================================ Citations column */
+.fb-cites {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 14px;
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: sticky;
+  top: 84px;
+  max-height: calc(100vh - 110px);
+  overflow-y: auto;
+}
+.fb-cites-head {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+  padding: 0 4px 4px;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+}
+.fb-cite-card {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 10px;
+  padding: 12px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+  scroll-margin-top: 12px;
+}
+.fb-cite-card:hover {
+  border-color: rgba(0, 119, 204, 0.45);
+  background: rgba(0, 119, 204, 0.08);
+}
+.fb-cite-card.fb-cite-card-flash {
+  border-color: rgba(254, 197, 20, 0.6);
+  background: rgba(254, 197, 20, 0.12);
+  animation: fb-flash 1.4s ease-out;
+}
+@keyframes fb-flash {
+  0% { box-shadow: 0 0 0 0 rgba(254, 197, 20, 0.4); }
+  60% { box-shadow: 0 0 0 6px rgba(254, 197, 20, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(254, 197, 20, 0); }
+}
+.fb-cite-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(0, 191, 179, 0.18);
+  color: #b9f5ed;
+  font-weight: 700;
+  font-size: 12.5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.fb-cite-body { min-width: 0; }
+.fb-cite-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--white);
+  line-height: 1.35;
+  margin: 0 0 3px;
+  word-break: break-word;
+}
+.fb-cite-section {
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.62);
+  margin-bottom: 5px;
+  word-break: break-word;
+}
+.fb-cite-section::before {
+  content: "section: ";
+  color: rgba(255, 255, 255, 0.4);
+}
+.fb-cite-snippet {
+  font-size: 12px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 6px;
+  word-break: break-word;
+}
+.fb-cite-url {
+  font-size: 10.5px;
+  color: rgba(0, 119, 204, 0.85);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  word-break: break-all;
+}
+
+/* ============================================================ Loading + error states */
+.fb-loading {
+  grid-column: 1 / -1;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  font-size: 13.5px;
+  color: rgba(255, 255, 255, 0.7);
+}
+.fb-loading::before {
+  content: "";
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: var(--primary-hi);
+  animation: ab-spin 0.7s linear infinite;
+  flex: 0 0 14px;
+}
+
+.fb-error {
+  grid-column: 1 / -1;
+  padding: 16px 18px;
+  border: 1px solid rgba(255, 102, 102, 0.4);
+  background: rgba(255, 102, 102, 0.08);
+  border-radius: 12px;
+  color: #ffd0d0;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.fb-error strong { color: #ffc1c1; }
+.fb-error code {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+/* ============================================================ Raw hits expandable */
+.fb-raw {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 12.5px;
+}
+.fb-raw summary {
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+.fb-raw summary:hover { color: var(--white); }
+.fb-raw pre {
+  margin: 8px 0 0;
+  background: #0d1117;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.78);
+  overflow-x: auto;
+  max-height: 360px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

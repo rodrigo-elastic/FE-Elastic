@@ -1,6 +1,6 @@
 """
 filename: routes_mcp.py
-description: MCP Streamable HTTP server exposing the seven FE Copilot tools to Elastic Agent Builder. Speaks JSON-RPC over a single POST endpoint per the MCP 2025-03-26 spec; each tool delegates to the existing FastAPI tool route.
+description: MCP Streamable HTTP server exposing the eight FE Copilot tools to Elastic Agent Builder. Speaks JSON-RPC over a single POST endpoint per the MCP 2025-03-26 spec; each tool delegates to the existing FastAPI tool route.
 date: 03-05-2026
 """
 __author__ = "Rodrigo Careaga"
@@ -19,16 +19,20 @@ from app.api.routes_tools import (
     CodeSampleRequest,
     ComplianceRequest,
     CostCalcRequest,
+    KnowledgeSearchRequest,
     POCPlanRequest,
     SPLToESQLRequest,
     StackExtractRequest,
+    TroubleshootRequest,
     run_capacity,
     run_code_sample,
     run_compliance_mapping,
     run_cost_calc,
+    run_knowledge_search,
     run_poc_plan,
     run_spl_to_esql,
     run_stack_extract,
+    run_troubleshoot,
 )
 from app.utils.logging import get_logger
 
@@ -133,6 +137,31 @@ TOOLS = [
             "required": ["peak_indexing_eps", "hot_data_gb"],
         },
     },
+    {
+        "name": "fec_knowledge_search",
+        "description": "Semantic search over Elastic public docs. Returns a synthesized answer with citation URLs. Persona: Mei, ex-Elastic enablement docs lead.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string"},
+                "top_k": {"type": "integer", "default": 5},
+            },
+            "required": ["query"],
+        },
+    },
+    {
+        "name": "fec_troubleshoot",
+        "description": "Diagnose an Elastic stack error and propose 3 ES|QL diagnostic queries plus quick remediations. Persona: Ravi, ex-Elastic support engineer 1000+ tickets.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "error_text": {"type": "string"},
+                "context": {"type": "string"},
+                "language": {"type": "string", "default": "English"},
+            },
+            "required": ["error_text"],
+        },
+    },
 ]
 
 
@@ -154,6 +183,10 @@ async def _invoke_tool(name: str, args: Dict[str, Any]) -> Any:
         return await run_cost_calc(CostCalcRequest(**args))
     if name == "fec_capacity":
         return await run_capacity(CapacityRequest(**args))
+    if name == "fec_knowledge_search":
+        return await run_knowledge_search(KnowledgeSearchRequest(**args))
+    if name == "fec_troubleshoot":
+        return await run_troubleshoot(TroubleshootRequest(**args))
     raise ValueError(f"unknown tool: {name}")
 
 

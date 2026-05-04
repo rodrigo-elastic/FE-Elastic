@@ -21,6 +21,13 @@
         '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="M5 7h14l-1 13H6Z"/><circle cx="9" cy="13" r="1"/><circle cx="15" cy="13" r="1"/><path d="M9 17h6"/></svg>',
     },
     {
+      id: "fe-brain",
+      label: "FE Brain",
+      href: "/fe-brain.html",
+      icon:
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h10a2 2 0 0 1 2 2v10"/><path d="M5 4v14a2 2 0 0 0 2 2h7"/><path d="M5 4a2 2 0 0 0 2 2h10"/><circle cx="16.5" cy="17.5" r="3"/><path d="m21 22-2.4-2.4"/></svg>',
+    },
+    {
       id: "workflow",
       label: "Workflow",
       href: "/workflow-demo.html",
@@ -44,6 +51,7 @@
     { id: "tool-capacity", label: "Capacity", num: "05" },
     { id: "tool-stack", label: "Stack", num: "06" },
     { id: "tool-code", label: "Code", num: "07" },
+    { id: "tool-troubleshoot", label: "Troubleshoot", num: "08" },
   ];
 
   function isToolsPage() {
@@ -54,6 +62,9 @@
   }
   function isAgentBuilderPage() {
     return /\/agent-builder(\.html)?$/.test(location.pathname) || document.body.classList.contains("agent-builder-page");
+  }
+  function isFeBrainPage() {
+    return /\/fe-brain(\.html)?$/.test(location.pathname) || document.body.classList.contains("fe-brain-page");
   }
   function isWorkflowPage() {
     return /\/workflow-demo(\.html)?$/.test(location.pathname);
@@ -92,6 +103,7 @@
     a.href = p.href;
     if (p.id === "dashboard" && isDashboardPage()) a.classList.add("active");
     if (p.id === "agent-builder" && isAgentBuilderPage()) a.classList.add("active");
+    if (p.id === "fe-brain" && isFeBrainPage()) a.classList.add("active");
     if (p.id === "workflow" && isWorkflowPage()) a.classList.add("active");
     if (p.id === "demo-data" && isDemoDataPage()) a.classList.add("active");
     const ico = document.createElement("span");
