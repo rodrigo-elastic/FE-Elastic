@@ -387,6 +387,82 @@
       </div>
     </details>
 
+    <details class="tool-panel" id="tool-knowledge">
+      <summary>
+        <span class="tool-num">09</span>
+        <div class="tool-meta">
+          <h2 class="tool-title">Knowledge search (FE Brain)</h2>
+          <p class="tool-desc">Hybrid retrieval (BM25 plus ELSER plus rerank) over 1300 Elastic doc chunks. Cited answers in seconds. Persona: Mei, ex-Elastic enablement docs lead.</p>
+        </div>
+        <span class="tool-tag tag-claude">Claude</span>
+        <span class="chevron"></span>
+      </summary>
+      <div class="tool-body">
+        <p class="muted small">FE Brain ships its own dedicated workspace with a citations sidebar and example chip prompts.</p>
+        <div class="tool-actions">
+          <a class="btn primary" href="/fe-brain.html">Open FE Brain</a>
+          <a class="btn ghost" href="/api/v1/tools/knowledge-search/health" target="_blank" rel="noopener">View corpus stats</a>
+        </div>
+      </div>
+    </details>
+
+    <details class="tool-panel" id="tool-compare">
+      <summary>
+        <span class="tool-num">10</span>
+        <div class="tool-meta">
+          <h2 class="tool-title">Compare (Sloane)</h2>
+          <p class="tool-desc">Structured Elastic vs competitor comparison. TCO, talking points, honest gaps, objection handlers. Persona: Sloane, senior competitive lead.</p>
+        </div>
+        <span class="tool-tag tag-claude">Claude</span>
+        <span class="chevron"></span>
+      </summary>
+      <div class="tool-body">
+        <p class="muted small">Compare runs on top of the 31 battlecards, ordered by marketshare. Pick a card for the full comparison kit.</p>
+        <div class="tool-actions">
+          <a class="btn primary" href="/battlecards.html">Open Battlecards</a>
+          <a class="btn ghost" href="/agent-builder.html">Run via Master Agent</a>
+        </div>
+      </div>
+    </details>
+
+    <details class="tool-panel" id="tool-orchestrator">
+      <summary>
+        <span class="tool-num">11</span>
+        <div class="tool-meta">
+          <h2 class="tool-title">Orchestrator (Auro)</h2>
+          <p class="tool-desc">Routes a single FE question to multiple specialist tools in parallel and merges the answers. Persona: Auro, senior FE conductor.</p>
+        </div>
+        <span class="tool-tag tag-claude">Claude</span>
+        <span class="chevron"></span>
+      </summary>
+      <div class="tool-body">
+        <p class="muted small">Auro is invoked by the Master Agent automatically when a question spans multiple specialties. Try the demo prompt "POV plan plus TCO" in the Agent Builder workbench.</p>
+        <div class="tool-actions">
+          <a class="btn primary" href="/agent-builder.html">Open Agent Builder</a>
+          <a class="btn ghost" href="/meeting.html?id=atlantico-mtg-prev-001">Try the meeting demo</a>
+        </div>
+      </div>
+    </details>
+
+    <details class="tool-panel" id="tool-proposal">
+      <summary>
+        <span class="tool-num">12</span>
+        <div class="tool-meta">
+          <h2 class="tool-title">Proposal (Carmen)</h2>
+          <p class="tool-desc">Drafts a one-page customer proposal grounded in a meeting record (executive summary, pillars, scope, timeline, investment, risks, next steps). Persona: Carmen, senior pursuit lead.</p>
+        </div>
+        <span class="tool-tag tag-claude">Claude</span>
+        <span class="chevron"></span>
+      </summary>
+      <div class="tool-body">
+        <p class="muted small">Available as the 12th MCP tool. Build a Proposal-focused agent in Agent Builder, or ask the Master Agent for a one-pager on any meeting record.</p>
+        <div class="tool-actions">
+          <a class="btn primary" href="/agent-builder.html">Open Agent Builder</a>
+          <a class="btn ghost" href="/customers.html">Pick a customer record</a>
+        </div>
+      </div>
+    </details>
+
     </div><!-- /.tools-content -->
 
     <section id="toast-host"></section>
