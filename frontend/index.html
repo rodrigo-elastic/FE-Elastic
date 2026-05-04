@@ -43,13 +43,13 @@
       </div>
     </section>
 
-    <div class="entry-tabs">
-      <button class="entry-tab active" data-mode="qr">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <div class="entry-tabs" role="tablist" aria-label="Entry mode">
+      <button class="entry-tab active" data-mode="qr" type="button" role="tab" aria-selected="true">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <span data-i18n="tab.qr">Pre-meeting research</span>
       </button>
-      <button class="entry-tab" data-mode="tr">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+      <button class="entry-tab" data-mode="tr" type="button" role="tab" aria-selected="false">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
         <span data-i18n="tab.tr">Analyze transcript</span>
       </button>
     </div>
@@ -86,7 +86,7 @@
         </label>
         <div class="qr-actions">
           <button type="submit" class="btn primary" id="qr-submit">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <span data-i18n="qr.submit">Generate brief</span>
           </button>
           <label class="qr-model">
@@ -141,7 +141,7 @@
         </div>
         <div class="qr-actions">
           <button type="submit" class="btn primary" id="tr-submit">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
             <span data-i18n="tr.submit">Analyze transcript</span>
           </button>
           <label class="qr-model">
@@ -172,10 +172,11 @@
         <h2 data-i18n="section.meetings">Meetings on file</h2>
         <div style="display:flex; gap:10px; align-items:center;">
           <span class="muted small" id="meetings-count"></span>
-          <div class="search-wrap">
-            <svg class="search-ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="meetings-search" data-i18n-placeholder="search.placeholder" placeholder="Filter by company, title, industry..." />
-            <kbd class="kbd">/</kbd>
+          <div class="search-wrap" role="search">
+            <svg class="search-ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <label for="meetings-search" class="visually-hidden">Filter meetings</label>
+            <input type="text" id="meetings-search" data-i18n-placeholder="search.placeholder" placeholder="Filter by company, title, industry..." aria-label="Filter meetings by company, title, or industry" />
+            <kbd class="kbd" aria-hidden="true">/</kbd>
           </div>
         </div>
       </div>
@@ -210,7 +211,7 @@
         <div class="footer-val">
           <span id="audit-calls">0</span> <span data-i18n="footer.audit.calls">calls</span> <span class="dot">·</span>
           <span id="audit-in">0</span> in / <span id="audit-out">0</span> out tokens
-          <a class="footer-link" href="/api/v1/audit" target="_blank" data-i18n="footer.audit.view">view JSON</a>
+          <a class="footer-link" href="/api/v1/audit" target="_blank" rel="noopener" data-i18n="footer.audit.view" aria-label="View audit log JSON in a new tab">view JSON</a>
         </div>
       </div>
       <div class="footer-col">
@@ -219,8 +220,8 @@
           <span class="es-state" id="es-state">checking...</span>
           <span class="dot">·</span>
           <span id="es-url" class="muted small">-</span>
-          <button class="btn-link" id="es-reindex">reindex disk → ES</button>
-          <button class="btn-link" id="es-reconnect">reconnect</button>
+          <button class="btn-link" id="es-reindex" type="button" aria-label="Reindex disk into Elasticsearch">reindex disk → ES</button>
+          <button class="btn-link" id="es-reconnect" type="button" aria-label="Reconnect to Elasticsearch">reconnect</button>
         </div>
       </div>
       <div class="footer-col">
@@ -229,19 +230,19 @@
           <span class="es-state" id="kibana-state">checking...</span>
           <span class="dot">·</span>
           <span id="kibana-url" class="muted small">-</span>
-          <button class="btn-link" id="kibana-setup">create data views</button>
+          <button class="btn-link" id="kibana-setup" type="button" aria-label="Create Kibana data views">create data views</button>
           <span class="muted" style="margin-left:6px"></span>
-          <a class="footer-link" id="kibana-briefs" href="#" target="_blank">briefs</a>
-          <a class="footer-link" id="kibana-post" href="#" target="_blank">post-meetings</a>
-          <a class="footer-link" id="kibana-audit" href="#" target="_blank">audit</a>
-          <a class="footer-link" id="kibana-bc" href="#" target="_blank">battlecards</a>
+          <a class="footer-link" id="kibana-briefs" href="#" target="_blank" rel="noopener" aria-label="Open briefs in Kibana">briefs</a>
+          <a class="footer-link" id="kibana-post" href="#" target="_blank" rel="noopener" aria-label="Open post-meetings in Kibana">post-meetings</a>
+          <a class="footer-link" id="kibana-audit" href="#" target="_blank" rel="noopener" aria-label="Open audit log in Kibana">audit</a>
+          <a class="footer-link" id="kibana-bc" href="#" target="_blank" rel="noopener" aria-label="Open battlecards in Kibana">battlecards</a>
         </div>
       </div>
       <div class="footer-col">
         <div class="footer-lbl" data-i18n="footer.compliance">Compliance</div>
         <div class="footer-val">
           <span data-i18n="footer.compliance.text">Synthetic data · Append-only audit · Per-agent model override · See compliance.md</span>
-          <a class="footer-link" href="/docs-md/compliance.md" target="_blank">compliance.md ↗</a>
+          <a class="footer-link" href="/docs-md/compliance.md" target="_blank" rel="noopener" aria-label="Open compliance documentation in a new tab">compliance.md ↗</a>
         </div>
       </div>
       <div class="footer-col">

@@ -1,0 +1,12 @@
+{
+  "name": "fe-copilot-e2e",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Playwright e2e suite for FE Copilot. Hits the running backend at http://127.0.0.1:8123 and exercises all 8 frontend pages without burning Claude tokens.",
+  "scripts": {
+    "test:e2e": "npx playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.47.0"
+  }
+}

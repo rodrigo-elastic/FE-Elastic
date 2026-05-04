@@ -145,7 +145,7 @@
 .ab-msg-stats {
   margin-top: 8px;
   font-size: 11.5px;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.7);
 }
 
 /* ============================================================ Composer */
@@ -183,7 +183,7 @@
   margin: 0;
   text-align: right;
   font-size: 11.5px;
-  color: rgba(255, 255, 255, 0.45);
+  color: rgba(255, 255, 255, 0.7);
 }
 
 /* ============================================================ Loader */
@@ -209,9 +209,9 @@
 .ab-empty {
   text-align: center;
   padding: 24px 16px;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.7);
   font-size: 13.5px;
-  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border: 1px dashed rgba(255, 255, 255, 0.18);
   border-radius: 12px;
 }
 
@@ -316,7 +316,7 @@
 .abm-msg-stats {
   margin-top: 6px;
   font-size: 10.5px;
-  color: rgba(255, 255, 255, 0.45);
+  color: rgba(255, 255, 255, 0.7);
 }
 .abm-error { color: #ffc1c1; }
 
@@ -462,3 +462,39 @@
 .dd-status.running { color: rgba(254, 197, 20, 0.95); }
 .dd-status.ok { color: rgba(0, 191, 179, 0.95); }
 .dd-status.err { color: rgba(255, 102, 102, 0.95); }
+
+/* ============================================================ Responsive: tablet (769-1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .dd-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ============================================================ Responsive: mobile (<= 768px) */
+@media (max-width: 768px) {
+  /* Suggested chips: full-width tappable rows so prompts are not 12px wide. */
+  .ab-suggested { flex-direction: column; align-items: stretch; gap: 8px; }
+  .ab-chip { width: 100%; padding: 10px 14px; font-size: 13.5px; text-align: left; }
+
+  /* Chat surface: messages take full width; user bubble loses 80% cap. */
+  .ab-msg-user, .ab-msg-assistant { max-width: 100%; align-self: stretch; }
+  .ab-msg { padding: 12px 14px; }
+  .ab-msg-body { font-size: 14px; }
+
+  /* Composer stays full width, send button wraps below. */
+  .ab-composer { padding: 12px; gap: 8px; }
+  .ab-actions { flex-wrap: wrap; justify-content: stretch; }
+  .ab-actions .btn { flex: 1 1 auto; }
+
+  /* Mini embed: composer becomes single column. */
+  .abm-host { padding: 12px; }
+  .abm-composer { grid-template-columns: 1fr; }
+  .abm-send { width: 100%; }
+  .abm-suggestions { flex-direction: column; align-items: stretch; }
+  .abm-chip { width: 100%; text-align: left; padding: 8px 12px; font-size: 12.5px; }
+  .abm-chat { max-height: none; }
+
+  /* Demo data cards: single column, comfortable padding. */
+  .dd-grid { grid-template-columns: 1fr; gap: 14px; }
+  .dd-card { padding: 16px; }
+  .dd-actions { flex-wrap: wrap; }
+  .dd-actions .btn { flex: 1 1 auto; }
+}

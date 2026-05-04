@@ -194,7 +194,7 @@
 }
 .fb-cite-section::before {
   content: "section: ";
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.7);
 }
 .fb-cite-snippet {
   font-size: 12px;
@@ -281,4 +281,35 @@
   max-height: 360px;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+/* ============================================================ Responsive: tablet (769-1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  /* Two-column stays, just shrink the citation column threshold. */
+  .fb-result { grid-template-columns: minmax(0, 1.4fr) minmax(240px, 1fr); gap: 16px; }
+}
+
+/* ============================================================ Responsive: mobile (<= 768px) */
+@media (max-width: 768px) {
+  .fe-brain-page .container { max-width: 100%; }
+
+  /* Single column: answer first, citations below; do not stick to viewport. */
+  .fb-result { grid-template-columns: 1fr; gap: 14px; }
+  .fb-cites {
+    position: static;
+    max-height: none;
+    overflow-y: visible;
+    padding: 14px 12px;
+  }
+  .fb-cite-card { padding: 10px; }
+  .fb-cite-title { font-size: 13px; }
+  .fb-cite-snippet { font-size: 11.5px; }
+
+  /* Answer column: smaller padding, keep word-breaking for long URLs. */
+  .fb-answer { padding: 16px 16px; }
+  .fb-answer-body { font-size: 14px; }
+  .fb-answer-q { white-space: normal; max-width: 100%; }
+
+  /* Raw hits stays scrollable on small screens. */
+  .fb-raw pre { max-height: 280px; }
 }

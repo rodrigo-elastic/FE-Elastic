@@ -81,6 +81,7 @@
     if (document.querySelector(".tools-sidebar")) return null; // legacy markup
     const aside = document.createElement("aside");
     aside.className = "tools-sidebar";
+    aside.setAttribute("aria-label", "FE Copilot navigation");
     const topbar = document.querySelector(".topbar");
     if (topbar && topbar.parentNode) {
       topbar.parentNode.insertBefore(aside, topbar.nextSibling);
@@ -101,13 +102,16 @@
     const a = document.createElement("a");
     a.className = "tools-nav-pill page-link";
     a.href = p.href;
-    if (p.id === "dashboard" && isDashboardPage()) a.classList.add("active");
-    if (p.id === "agent-builder" && isAgentBuilderPage()) a.classList.add("active");
-    if (p.id === "fe-brain" && isFeBrainPage()) a.classList.add("active");
-    if (p.id === "workflow" && isWorkflowPage()) a.classList.add("active");
-    if (p.id === "demo-data" && isDemoDataPage()) a.classList.add("active");
+    let isActive = false;
+    if (p.id === "dashboard" && isDashboardPage()) { a.classList.add("active"); isActive = true; }
+    if (p.id === "agent-builder" && isAgentBuilderPage()) { a.classList.add("active"); isActive = true; }
+    if (p.id === "fe-brain" && isFeBrainPage()) { a.classList.add("active"); isActive = true; }
+    if (p.id === "workflow" && isWorkflowPage()) { a.classList.add("active"); isActive = true; }
+    if (p.id === "demo-data" && isDemoDataPage()) { a.classList.add("active"); isActive = true; }
+    if (isActive) a.setAttribute("aria-current", "page");
     const ico = document.createElement("span");
     ico.className = "tools-nav-icon";
+    ico.setAttribute("aria-hidden", "true");
     ico.innerHTML = p.icon;
     a.appendChild(ico);
     a.appendChild(document.createTextNode(" " + p.label));
@@ -118,21 +122,30 @@
     const a = document.createElement("a");
     a.className = "tools-nav-pill";
     a.href = onTools ? "#" + t.id : "/tools.html#" + t.id;
-    if (onTools && currentHash === "#" + t.id) a.classList.add("active");
+    a.setAttribute("aria-label", "Tool " + t.num + ": " + t.label);
+    if (onTools && currentHash === "#" + t.id) {
+      a.classList.add("active");
+      a.setAttribute("aria-current", "true");
+    }
     a.addEventListener("click", (ev) => {
       if (!onTools) return;
       const det = document.getElementById(t.id);
       if (det) {
         ev.preventDefault();
         det.setAttribute("open", "");
-        document.querySelectorAll(".tools-nav-pill.active").forEach((p) => p.classList.remove("active"));
+        document.querySelectorAll(".tools-nav-pill.active").forEach((p) => {
+          p.classList.remove("active");
+          p.removeAttribute("aria-current");
+        });
         a.classList.add("active");
+        a.setAttribute("aria-current", "true");
         history.replaceState(null, "", "#" + t.id);
         setTimeout(() => det.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
       }
     });
     const num = document.createElement("span");
     num.className = "tools-nav-num";
+    num.setAttribute("aria-hidden", "true");
     num.textContent = t.num;
     a.appendChild(num);
     a.appendChild(document.createTextNode(" " + t.label));
@@ -146,14 +159,18 @@
     aside.appendChild(sectionLabel("Navigate"));
     const pagesNav = document.createElement("nav");
     pagesNav.className = "tools-nav";
+    pagesNav.setAttribute("aria-label", "Primary navigation");
     PAGES.forEach((p) => pagesNav.appendChild(pageLink(p)));
     // Tools as a top-level page entry too (acts as a quick jump to the tools page).
     const toolsHomeLink = document.createElement("a");
     toolsHomeLink.className = "tools-nav-pill page-link";
     toolsHomeLink.href = "/tools.html";
-    if (onTools) toolsHomeLink.classList.add("active");
+    if (onTools) {
+      toolsHomeLink.classList.add("active");
+      toolsHomeLink.setAttribute("aria-current", "page");
+    }
     toolsHomeLink.innerHTML =
-      '<span class="tools-nav-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></span> Tools';
+      '<span class="tools-nav-icon" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></span> Tools';
     pagesNav.appendChild(toolsHomeLink);
     aside.appendChild(pagesNav);
 
@@ -161,9 +178,94 @@
     const toolsNav = document.createElement("nav");
     toolsNav.className = "tools-nav";
     toolsNav.id = "tools-nav";
+    toolsNav.setAttribute("aria-label", "FE technical tools");
     const currentHash = location.hash;
     TOOLS.forEach((t) => toolsNav.appendChild(toolLink(t, onTools, currentHash)));
     aside.appendChild(toolsNav);
+  }
+
+  // ============================================================
+  // Mobile hamburger toggle (surgical addition; desktop layout unchanged).
+  // Injects a button into .topbar that toggles `.tools-sidebar.is-open`.
+  // CSS hides the button above 768px, so the desktop UI is untouched.
+  // ============================================================
+  function buildSidebarToggle(aside) {
+    if (document.querySelector(".sidebar-toggle")) return;
+    const topbar = document.querySelector(".topbar");
+    if (!topbar) return;
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "sidebar-toggle";
+    btn.setAttribute("aria-label", "Open navigation menu");
+    btn.setAttribute("aria-controls", "tools-sidebar");
+    btn.setAttribute("aria-expanded", "false");
+    btn.innerHTML =
+      '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>';
+    // Insert before the .right group so the toggle is left-of-center (next to the brand).
+    const right = topbar.querySelector(".right");
+    if (right && right.parentNode === topbar) {
+      topbar.insertBefore(btn, right);
+    } else {
+      topbar.appendChild(btn);
+    }
+    if (!aside.id) aside.id = "tools-sidebar";
+
+    // Scrim used to dim the page and capture outside taps.
+    let scrim = document.querySelector(".sidebar-scrim");
+    if (!scrim) {
+      scrim = document.createElement("div");
+      scrim.className = "sidebar-scrim";
+      scrim.setAttribute("aria-hidden", "true");
+      document.body.appendChild(scrim);
+    }
+
+    const mq = window.matchMedia("(max-width: 768px)");
+
+    function setOpen(open) {
+      aside.classList.toggle("is-open", !!open);
+      scrim.classList.toggle("is-visible", !!open);
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+      btn.setAttribute(
+        "aria-label",
+        open ? "Close navigation menu" : "Open navigation menu"
+      );
+      // Lock body scroll while the off-canvas panel is visible.
+      document.body.style.overflow = open ? "hidden" : "";
+    }
+
+    btn.addEventListener("click", function (ev) {
+      ev.preventDefault();
+      setOpen(!aside.classList.contains("is-open"));
+    });
+
+    scrim.addEventListener("click", function () {
+      setOpen(false);
+    });
+
+    // Close when any rail link is tapped.
+    aside.addEventListener("click", function (ev) {
+      const target = ev.target.closest("a.tools-nav-pill");
+      if (target && mq.matches) setOpen(false);
+    });
+
+    // Close on Escape.
+    document.addEventListener("keydown", function (ev) {
+      if (ev.key === "Escape" && aside.classList.contains("is-open")) {
+        setOpen(false);
+        btn.focus();
+      }
+    });
+
+    // Auto-close if the viewport widens past mobile while the panel is open.
+    function handleMqChange(e) {
+      if (!e.matches) setOpen(false);
+    }
+    if (typeof mq.addEventListener === "function") {
+      mq.addEventListener("change", handleMqChange);
+    } else if (typeof mq.addListener === "function") {
+      mq.addListener(handleMqChange);
+    }
   }
 
   function init() {
@@ -172,6 +274,7 @@
     if (!aside) aside = buildRail();
     if (!aside) return;
     render(aside);
+    buildSidebarToggle(aside);
   }
 
   if (document.readyState === "loading") {

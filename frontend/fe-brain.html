@@ -44,16 +44,18 @@
     </section>
 
     <section class="ab-suggested" aria-label="Suggested queries">
-      <button class="ab-chip" data-prompt="How do I tune ILM for a hot+warm+frozen 200 GB/day cluster?">Tune ILM for hot+warm+frozen 200 GB/day</button>
-      <button class="ab-chip" data-prompt="What are the ES|QL functions for percentile aggregations?">ES|QL percentile functions</button>
-      <button class="ab-chip" data-prompt="Set up semantic_text with ELSER on Elastic Cloud">semantic_text with ELSER on Elastic Cloud</button>
-      <button class="ab-chip" data-prompt="Detection rules for credential stuffing">Detection rules: credential stuffing</button>
-      <button class="ab-chip" data-prompt="How does the service map auto-detect 80/20 patterns?">Service map 80/20 patterns</button>
+      <h2 class="visually-hidden">Suggested queries</h2>
+      <button class="ab-chip" type="button" data-prompt="How do I tune ILM for a hot+warm+frozen 200 GB/day cluster?">Tune ILM for hot+warm+frozen 200 GB/day</button>
+      <button class="ab-chip" type="button" data-prompt="What are the ES|QL functions for percentile aggregations?">ES|QL percentile functions</button>
+      <button class="ab-chip" type="button" data-prompt="Set up semantic_text with ELSER on Elastic Cloud">semantic_text with ELSER on Elastic Cloud</button>
+      <button class="ab-chip" type="button" data-prompt="Detection rules for credential stuffing">Detection rules: credential stuffing</button>
+      <button class="ab-chip" type="button" data-prompt="How does the service map auto-detect 80/20 patterns?">Service map 80/20 patterns</button>
     </section>
 
-    <form id="fb-form" class="ab-composer" onsubmit="return false">
-      <label class="ab-input-wrap">
-        <textarea id="fb-input" rows="2" placeholder="Ask the Elastic docs anything. Cmd/Ctrl + Enter to send."></textarea>
+    <form id="fb-form" class="ab-composer" onsubmit="return false" aria-label="Ask the Elastic docs">
+      <label class="ab-input-wrap" for="fb-input">
+        <span class="visually-hidden">Question</span>
+        <textarea id="fb-input" rows="2" placeholder="Ask the Elastic docs anything. Cmd/Ctrl + Enter to send." aria-label="Question for the Elastic docs"></textarea>
       </label>
       <div class="ab-actions">
         <button type="button" class="btn ghost" id="fb-clear" title="Clear the current answer">Clear</button>

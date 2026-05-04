@@ -17,7 +17,7 @@
     .wf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 18px; }
     @media (max-width: 900px) { .wf-grid { grid-template-columns: 1fr; } }
     .wf-card { background: var(--surface, #11161d); border: 1px solid rgba(255,255,255,.06); border-radius: 12px; padding: 18px 20px; }
-    .wf-card h3 { margin: 0 0 12px; font-size: 14px; letter-spacing: .04em; text-transform: uppercase; color: rgba(255,255,255,.7); }
+    .wf-card h2 { margin: 0 0 12px; font-size: 14px; letter-spacing: .04em; text-transform: uppercase; color: rgba(255,255,255,.7); font-weight: 600; }
     .wf-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed rgba(255,255,255,.06); }
     .wf-row:last-child { border-bottom: 0; }
     .wf-key { color: rgba(255,255,255,.55); font-size: 12px; }
@@ -72,30 +72,30 @@
     </section>
 
     <div class="wf-grid">
-      <section class="wf-card">
-        <h3>Kibana workflow status</h3>
+      <section class="wf-card" aria-labelledby="wf-h-status">
+        <h2 id="wf-h-status">Kibana workflow status</h2>
         <div id="wf-status">Loading…</div>
         <div class="wf-actions">
-          <button class="btn primary" id="wf-sync">Sync workflow</button>
-          <button class="btn ghost" id="wf-refresh">Refresh status</button>
+          <button class="btn primary" id="wf-sync" type="button">Sync workflow</button>
+          <button class="btn ghost" id="wf-refresh" type="button">Refresh status</button>
         </div>
       </section>
 
-      <section class="wf-card">
-        <h3>Fire a demo transcript</h3>
+      <section class="wf-card" aria-labelledby="wf-h-fire">
+        <h2 id="wf-h-fire">Fire a demo transcript</h2>
         <p style="font-size: 13px; color: rgba(255,255,255,.6); margin: 0 0 10px;">
           Indexes a Northwind Bank discovery transcript into <code>fec-transcript-inbox</code>.
           The rule polls every 60 seconds; a webhook fire should arrive within ~1 minute.
         </p>
         <div class="wf-actions">
-          <button class="btn primary" id="wf-fire">Fire demo transcript</button>
-          <button class="btn ghost" id="wf-trigger-now">Trigger now (skip wait)</button>
+          <button class="btn primary" id="wf-fire" type="button">Fire demo transcript</button>
+          <button class="btn ghost" id="wf-trigger-now" type="button">Trigger now (skip wait)</button>
         </div>
         <div id="wf-fire-result"></div>
       </section>
 
-      <section class="wf-card" style="grid-column: 1 / -1;">
-        <h3>Recent webhook fires <span style="font-size: 11px; color: rgba(255,255,255,.4); font-weight: normal; text-transform: none;">(auto-refreshes every 15s)</span></h3>
+      <section class="wf-card" style="grid-column: 1 / -1;" aria-labelledby="wf-h-fires">
+        <h2 id="wf-h-fires">Recent webhook fires <span style="font-size: 11px; color: rgba(255,255,255,.4); font-weight: normal; text-transform: none;">(auto-refreshes every 15s)</span></h2>
         <div class="wf-fires" id="wf-fires"><div class="wf-empty">No fires yet.</div></div>
       </section>
     </div>

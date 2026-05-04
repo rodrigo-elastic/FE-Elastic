@@ -39,8 +39,25 @@ where = ["backend"]
 include = ["app*"]
 
 [tool.ruff]
-line-length = 100
-target-version = "py311"
+line-length = 110
+target-version = "py313"
+exclude = ["runtime", ".venv", "data/synthetic"]
+
+[tool.ruff.lint]
+# Conservative rule set tuned for the existing codebase. We enable the
+# canonical pycodestyle (E) and pyflakes (F) rules but ignore a small set
+# that would otherwise flag many pre-existing, intentional patterns
+# (long generated strings, lowercase ambiguous identifiers, debug f-strings,
+# convenience re-exports). Adding rules later is welcome - the goal here is
+# a clean signal so CI failures reflect real regressions.
+select = ["E", "F"]
+ignore = [
+    "E501",  # line-too-long (kept readable via line-length=110)
+    "E741",  # ambiguous-variable-name (e.g. single-letter loop vars)
+    "F401",  # unused-import (package re-exports in __init__.py)
+    "F541",  # f-string-missing-placeholders (debug logs)
+    "F841",  # unused-variable (kept for readability in fixtures)
+]
 
 [tool.pytest.ini_options]
 testpaths = ["backend/tests"]

@@ -40,8 +40,8 @@
   /* Typography */
   --ink: #FFFFFF;
   --ink-soft: #DDE2EA;
-  --muted: #98A2B3;
-  --muted-2: #6E7484;
+  --muted: #B0B8C7;     /* WCAG AA, ~7.6:1 on --bg */
+  --muted-2: #8A92A3;   /* WCAG AA, ~4.6:1 on --bg */
 
   /* Effects */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
@@ -54,6 +54,54 @@
 
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
+
+/* ============================================================ Accessibility utilities */
+.visually-hidden,
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* Global focus-visible ring: never hidden, always 4.5:1 against the page bg */
+:focus-visible {
+  outline: 2px solid var(--primary-hi, #1B8FE5);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible,
+[role="tab"]:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--primary-hi, #1B8FE5);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(27, 143, 229, 0.25);
+}
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--primary-hi, #1B8FE5);
+  outline-offset: 1px;
+}
+
+/* Honour user motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
 
 html, body {
   margin: 0;
@@ -2894,4 +2942,271 @@ body.has-tools-rail .container {
 }
 @keyframes toolSpinner {
   to { transform: rotate(360deg); }
+}
+
+/* ============================================================ Hamburger toggle (mobile only) */
+/* The button is injected by tools-rail.js into .topbar; it stays hidden on desktop. */
+.sidebar-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  margin-right: 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 140ms var(--easing), border-color 140ms var(--easing);
+  flex-shrink: 0;
+}
+.sidebar-toggle:hover {
+  background: var(--panel-3);
+  border-color: var(--border-strong);
+}
+.sidebar-toggle:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.sidebar-toggle svg { display: block; }
+
+/* Scrim shown behind the open mobile sidebar so users can tap to close. */
+.sidebar-scrim {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 14, 20, 0.55);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  z-index: 18;
+  opacity: 0;
+  transition: opacity 180ms var(--easing);
+}
+.sidebar-scrim.is-visible {
+  display: block;
+  opacity: 1;
+}
+
+/* ============================================================ Responsive: tablet (769px to 1024px) */
+/* Persistent rail collapses to a narrow icon-only strip; multi-column grids reduce to two columns. */
+@media (min-width: 769px) and (max-width: 1024px) {
+  body.has-tools-rail .container {
+    padding: 0 22px 0 96px;
+    margin: 24px 0 80px 0;
+    max-width: none;
+  }
+  .tools-sidebar {
+    position: fixed;
+    width: 56px;
+    left: 14px;
+    top: 84px;
+    bottom: 20px;
+    inset: 84px auto 20px 14px;
+    padding: 12px 6px;
+    margin-bottom: 0;
+  }
+  .tools-sidebar-lbl {
+    display: none;
+  }
+  .tools-sidebar > .tools-sidebar-lbl + .tools-nav {
+    border-top: none;
+    padding-top: 0;
+  }
+  .tools-nav-pill {
+    justify-content: center;
+    gap: 0;
+    padding: 9px 4px;
+    font-size: 0;
+    color: transparent;
+  }
+  .tools-nav-pill .tools-nav-icon,
+  .tools-nav-pill .tools-nav-num {
+    font-size: 11px;
+  }
+  .tools-nav-pill.active {
+    box-shadow: inset 2px 0 0 var(--primary);
+  }
+  .tools-nav { flex-direction: column; flex-wrap: nowrap; }
+  .hero h1 { font-size: 36px; }
+  .hero-stats { grid-template-columns: repeat(4, 1fr); }
+  .meddpicc-grid { grid-template-columns: repeat(2, 1fr); }
+  .checkbox-grid { grid-template-columns: repeat(2, 1fr); }
+  .phases-grid { grid-template-columns: repeat(2, 1fr); }
+  .stack-grid { grid-template-columns: repeat(2, 1fr); }
+  .health-row { grid-template-columns: 1fr; }
+}
+
+/* ============================================================ Responsive: mobile (<= 768px) */
+/* Sidebar becomes off-canvas, revealed by the hamburger. Multi-column grids collapse. */
+@media (max-width: 768px) {
+  /* Topbar gets a hamburger affordance; existing pills wrap. */
+  .topbar { padding: 10px 14px; gap: 8px; flex-wrap: wrap; }
+  .topbar .right { gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .sidebar-toggle { display: inline-flex; }
+
+  /* Push the brand away from the toggle; keep brand readable. */
+  .brand { font-size: 14px; min-width: 0; }
+  .brand .tag { display: none; }
+  .brand .logo-elastic { height: 18px; }
+
+  /* Container uses the full viewport, with comfortable padding. */
+  body.has-tools-rail .container {
+    max-width: 100%;
+    margin: 18px auto 64px;
+    padding: 0 16px;
+  }
+  .container {
+    max-width: 100%;
+    padding: 0 16px;
+    margin: 18px auto 64px;
+  }
+
+  /* Off-canvas sidebar: hidden by default, slides in when .is-open is set. */
+  .tools-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: auto;
+    bottom: 0;
+    width: 84vw;
+    max-width: 320px;
+    margin: 0;
+    border-radius: 0;
+    border: none;
+    border-right: 1px solid var(--border);
+    padding: 18px 14px 22px;
+    transform: translateX(-100%);
+    transition: transform 220ms var(--easing);
+    z-index: 25;
+    overflow-y: auto;
+  }
+  .tools-sidebar.is-open {
+    transform: translateX(0);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+  }
+  /* When open, a sibling .sidebar-scrim covers the rest of the page. */
+
+  /* Restore label / pill styles (overrides tablet rules). */
+  .tools-sidebar-lbl { display: block; }
+  .tools-nav-pill {
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 11px 12px;
+    font-size: 13.5px;
+    color: var(--ink-soft);
+  }
+
+  /* Hero scales down. */
+  .hero { padding: 20px 18px; margin-bottom: 20px; }
+  .hero h1 { font-size: 28px; line-height: 1.18; }
+  .hero .lede { font-size: 14px; }
+  .hero-stats { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 18px; }
+  .hero-stat .num { font-size: 22px; }
+
+  /* Multi-column grids collapse to one column. */
+  .dd-grid,
+  .ab-suggested,
+  .meddpicc-grid,
+  .phases-grid,
+  .stack-grid,
+  .checkbox-grid,
+  .health-row,
+  .ff-grid,
+  .vf-row,
+  .bant-row,
+  .hero-stats.dense {
+    grid-template-columns: 1fr;
+  }
+
+  /* Tabs scroll horizontally instead of wrapping awkwardly. */
+  .tabs {
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+  .tab {
+    flex-shrink: 0;
+    padding: 11px 12px;
+    font-size: 12.5px;
+  }
+
+  /* Entry tabs stack vertically so the full label is tappable. */
+  .entry-tabs {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+    align-items: stretch;
+  }
+  .entry-tab {
+    width: 100%;
+    justify-content: center;
+    padding: 10px 14px;
+  }
+
+  /* Tools page: tool-panel padding shrinks; form fields go full width. */
+  .tool-panel > summary { padding: 14px 16px; gap: 12px; }
+  .tool-num { width: 32px; height: 32px; font-size: 13px; }
+  .tool-title { font-size: 15px; }
+  .tool-body { padding: 6px 16px 18px; }
+  .tool-form { gap: 10px; }
+  .tool-form input,
+  .tool-form textarea,
+  .tool-form select { width: 100%; box-sizing: border-box; }
+  .tool-actions { flex-wrap: wrap; }
+
+  /* Action items toolbar wraps + grows tap target. */
+  .actions-toolbar { justify-content: flex-start; flex-wrap: wrap; }
+  .toggle-group button { padding: 8px 12px; font-size: 12.5px; }
+
+  /* Brief / post sections: keep the indent reasonable on narrow screens. */
+  .brief-section > ul { padding-left: 22px; }
+  .panel { padding: 16px 16px; }
+
+  /* Bar chart row shrinks the label column. */
+  .bar-row { grid-template-columns: 92px 1fr 70px; gap: 8px; }
+  .bar-label { font-size: 12px; }
+  .bar-val { font-size: 12px; }
+
+  /* Tables and code blocks scroll horizontally rather than overflow page. */
+  .tool-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .code-block { font-size: 11.5px; padding: 12px; }
+
+  /* Markdown panels (customer-fit dashboards, brief copy) must scroll, not bleed. */
+  .panel,
+  .tool-result,
+  .brief-section,
+  .post-section,
+  .email-draft {
+    max-width: 100%;
+    overflow-x: auto;
+    word-break: break-word;
+    -webkit-overflow-scrolling: touch;
+  }
+  .panel pre,
+  .tool-result pre,
+  .panel table,
+  .tool-result table {
+    max-width: 100%;
+    overflow-x: auto;
+    display: block;
+  }
+
+  /* Iframes (Vega chart embeds, Kibana drill-downs) stay within the viewport. */
+  iframe { max-width: 100%; }
+
+  /* Meeting cards: actions wrap full width; topbar stays clean. */
+  .meeting-header h1 { font-size: 22px; }
+  .row-between { flex-direction: column; align-items: stretch; }
+}
+
+/* Smaller phones (<= 380px) tighten spacing further. */
+@media (max-width: 380px) {
+  .hero h1 { font-size: 24px; }
+  .hero-stats { grid-template-columns: 1fr 1fr; }
+  .topbar { padding: 8px 10px; }
 }

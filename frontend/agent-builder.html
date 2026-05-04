@@ -44,19 +44,21 @@
     </section>
 
     <section class="ab-suggested" aria-label="Suggested prompts">
-      <button class="ab-chip" data-prompt='Translate this SPL: index=web | stats count by host'>Translate SPL → ES|QL</button>
-      <button class="ab-chip" data-prompt='Calculate Elastic vs Splunk cost at 200 GB/day, 12 months retention, current spend $1.5M'>TCO at 200 GB/day</button>
-      <button class="ab-chip" data-prompt='Plan a cluster for 50000 EPS peak indexing and 5TB hot data'>Cluster sizing</button>
-      <button class="ab-chip" data-prompt='Translate this SPL: index=web | stats count by host. THEN tell me the Elastic cost at 200GB/day for 12 months.'>Chain: SPL + cost</button>
-      <button class="ab-chip" data-prompt='Map DORA and PCI DSS to Elastic native controls for a UK retail bank'>Compliance mapping</button>
-      <button class="ab-chip" data-prompt='Generate a Python code sample to bulk-index 1000 documents into Elastic'>Code sample</button>
+      <h2 class="visually-hidden">Suggested prompts</h2>
+      <button class="ab-chip" type="button" data-prompt='Translate this SPL: index=web | stats count by host'>Translate SPL → ES|QL</button>
+      <button class="ab-chip" type="button" data-prompt='Calculate Elastic vs Splunk cost at 200 GB/day, 12 months retention, current spend $1.5M'>TCO at 200 GB/day</button>
+      <button class="ab-chip" type="button" data-prompt='Plan a cluster for 50000 EPS peak indexing and 5TB hot data'>Cluster sizing</button>
+      <button class="ab-chip" type="button" data-prompt='Translate this SPL: index=web | stats count by host. THEN tell me the Elastic cost at 200GB/day for 12 months.'>Chain: SPL + cost</button>
+      <button class="ab-chip" type="button" data-prompt='Map DORA and PCI DSS to Elastic native controls for a UK retail bank'>Compliance mapping</button>
+      <button class="ab-chip" type="button" data-prompt='Generate a Python code sample to bulk-index 1000 documents into Elastic'>Code sample</button>
     </section>
 
-    <section class="ab-chat" id="ab-chat" aria-live="polite"></section>
+    <section class="ab-chat" id="ab-chat" aria-live="polite" aria-label="Conversation"></section>
 
-    <form id="ab-form" class="ab-composer" onsubmit="return false">
-      <label class="ab-input-wrap">
-        <textarea id="ab-input" rows="2" placeholder="Ask the Field Engineering Assistant…"></textarea>
+    <form id="ab-form" class="ab-composer" onsubmit="return false" aria-label="Send message to Field Engineering Assistant">
+      <label class="ab-input-wrap" for="ab-input">
+        <span class="visually-hidden">Message</span>
+        <textarea id="ab-input" rows="2" placeholder="Ask the Field Engineering Assistant…" aria-label="Message" aria-describedby="ab-hint"></textarea>
       </label>
       <div class="ab-actions">
         <button type="button" class="btn ghost" id="ab-reset" title="Start a new conversation">New thread</button>

@@ -1,0 +1,58 @@
+# Keep the build context small and reproducible.
+
+# Python virtualenvs / caches
+.venv/
+venv/
+env/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.coverage
+htmlcov/
+
+# Local runtime artifacts (regenerated inside the container).
+runtime/
+backend/runtime/
+
+# VCS / editor / OS noise
+.git/
+.gitignore
+.gitattributes
+.github/
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Node / JS build artifacts (frontend is plain HTML, but be defensive).
+node_modules/
+dist/
+build/
+.next/
+
+# Heavy demo media that is not required to run the backend.
+docs/screenshots/
+docs/gifs/
+
+# Local secrets and env. Fly secrets handle prod config.
+.env
+.env.*
+!.env.example
+
+# Fly + Docker artifacts that should not recurse into the build context.
+fly.toml
+.dockerignore
+Dockerfile
+
+# Tests are not needed in the image.
+backend/tests/
+tests/
+
+# Logs
+*.log
