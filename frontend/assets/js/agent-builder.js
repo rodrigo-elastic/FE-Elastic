@@ -73,10 +73,22 @@
   };
 
   // Recommended bundles. A click overwrites the current selection with the bundle's tool ids.
+  // Each bundle reflects a real FE workflow. Hover the chip for the description.
   const TOOL_BUNDLES = [
-    { id: "rfp",       i18n: "ab.tool.bundle.rfp",       label: "RFP",       tools: ["fec_knowledge_search", "fec_compare", "fec_compliance", "fec_proposal"] },
-    { id: "migration", i18n: "ab.tool.bundle.migration", label: "Migration", tools: ["fec_spl_to_esql", "fec_cost_calc", "fec_capacity", "fec_compliance", "fec_proposal"] },
-    { id: "sizing",    i18n: "ab.tool.bundle.sizing",    label: "Sizing",    tools: ["fec_capacity", "fec_cost_calc", "fec_poc_plan"] },
+    { id: "rfp",          i18n: "ab.tool.bundle.rfp",          label: "RFP",                tools: ["fec_knowledge_search", "fec_compare", "fec_compliance", "fec_proposal"], desc: "Drafts cited RFP answers with battlecard support" },
+    { id: "migration",    i18n: "ab.tool.bundle.migration",    label: "Migration",          tools: ["fec_spl_to_esql", "fec_cost_calc", "fec_capacity", "fec_compliance", "fec_proposal"], desc: "Splunk or Datadog to Elastic, phased plan plus TCO" },
+    { id: "sizing",       i18n: "ab.tool.bundle.sizing",       label: "Sizing",             tools: ["fec_capacity", "fec_cost_calc", "fec_poc_plan"], desc: "Cluster sizing plus 12-month TCO plus POV plan" },
+    { id: "discovery",    i18n: "ab.tool.bundle.discovery",    label: "Discovery",          tools: ["fec_stack_extract", "fec_knowledge_search", "fec_compare"], desc: "Pull stack from a transcript, ask the docs, compare" },
+    { id: "competitive",  i18n: "ab.tool.bundle.competitive",  label: "Competitive",        tools: ["fec_compare", "fec_cost_calc", "fec_proposal", "fec_knowledge_search"], desc: "Replace Splunk, Datadog, Dynatrace, OpenSearch, Algolia" },
+    { id: "compliance",   i18n: "ab.tool.bundle.compliance",   label: "Compliance",         tools: ["fec_compliance", "fec_knowledge_search", "fec_proposal"], desc: "DORA, HIPAA, FedRAMP, PCI DSS mapped to Elastic" },
+    { id: "pov",          i18n: "ab.tool.bundle.pov",          label: "POV",                tools: ["fec_poc_plan", "fec_capacity", "fec_code_sample", "fec_knowledge_search"], desc: "End-to-end proof-of-value with code samples" },
+    { id: "troubleshoot", i18n: "ab.tool.bundle.troubleshoot", label: "Troubleshoot",       tools: ["fec_troubleshoot", "fec_knowledge_search", "fec_code_sample"], desc: "Diagnose stack errors, ES|QL queries, code fixes" },
+    { id: "renewal",      i18n: "ab.tool.bundle.renewal",      label: "Renewal defense",    tools: ["fec_compare", "fec_cost_calc", "fec_compliance", "fec_proposal"], desc: "Retention play with comp, ROI, compliance angle" },
+    { id: "build",        i18n: "ab.tool.bundle.build",        label: "Build",              tools: ["fec_code_sample", "fec_stack_extract", "fec_knowledge_search", "fec_troubleshoot"], desc: "Hands-on integration: SDK samples, stack, fixes" },
+    { id: "exec",         i18n: "ab.tool.bundle.exec",         label: "Exec briefing",      tools: ["fec_proposal", "fec_compare", "fec_cost_calc", "fec_orchestrator"], desc: "C-level pitch: proposal, comp, ROI orchestrated" },
+    { id: "search",       i18n: "ab.tool.bundle.search",       label: "Search architect",   tools: ["fec_knowledge_search", "fec_code_sample", "fec_capacity", "fec_compare"], desc: "RAG, semantic_text, ELSER, hybrid retrieval" },
+    { id: "all",          i18n: "ab.tool.bundle.all",          label: "All twelve",         tools: ["fec_poc_plan","fec_spl_to_esql","fec_compliance","fec_stack_extract","fec_code_sample","fec_cost_calc","fec_capacity","fec_knowledge_search","fec_troubleshoot","fec_compare","fec_orchestrator","fec_proposal"], desc: "Master generalist: pick everything" },
+    { id: "clear",        i18n: "ab.tool.bundle.clear",        label: "Clear",              tools: [], desc: "Deselect all" },
   ];
 
   // Truncate a tool description to the first sentence or 110 chars, whichever is shorter.
@@ -542,7 +554,9 @@
     if (leftovers.length) {
       sections.push({ category: "Other", i18n: null, items: leftovers });
     }
-    return { sections, total: items.length };
+    const byId = {};
+    items.forEach((it) => { byId[it.id] = it; });
+    return { sections, total: items.length, byId };
   }
 
   function getCheckedToolIds() {
@@ -555,6 +569,7 @@
       cb.checked = set.has(cb.value);
     });
     updateToolCounter();
+    renderSelectedSummary();
   }
 
   function updateToolCounter() {
@@ -564,6 +579,7 @@
     const total = _pickerIndex.total;
     const tmpl = t("ab.tool.counter", "{count} of {total} tools selected");
     counter.textContent = tmpl.replace("{count}", String(checked)).replace("{total}", String(total));
+    renderSelectedSummary();
   }
 
   function applyToolFilter(query) {
@@ -667,13 +683,14 @@
     if (!host) return;
     host.innerHTML = "";
     TOOL_BUNDLES.forEach((b) => {
+      const tip = b.desc ? `${b.desc} (${b.tools.length} tools)` : b.tools.join(", ");
       const chip = el(
         "button",
         {
           type: "button",
           class: "ab-tool-bundle",
           "data-bundle": b.id,
-          title: b.tools.join(", "),
+          title: tip,
         },
         t(b.i18n, b.label)
       );
@@ -686,9 +703,52 @@
           search.value = "";
           applyToolFilter("");
         }
+        renderSelectedSummary();
       });
       host.appendChild(chip);
     });
+  }
+
+  // ============================================================ Selected tools summary
+  // A small panel below the picker that renders one chip per selected tool with
+  // an x to remove. Updates live whenever a checkbox or bundle changes.
+  function renderSelectedSummary() {
+    const host = $("#ab-f-selected-summary");
+    if (!host) return;
+    const ids = getCheckedToolIds();
+    host.innerHTML = "";
+    if (!ids.length) {
+      const empty = el("div", { class: "ab-selected-empty" }, t("ab.tool.selected_empty", "No tools selected. Pick a bundle above or check tools below."));
+      host.appendChild(empty);
+      return;
+    }
+    const head = el("div", { class: "ab-selected-head" }, [
+      el("span", { class: "ab-selected-title", text: t("ab.tool.selected_title", "Selected for this agent") }),
+      el("span", { class: "ab-selected-count", text: `${ids.length}` }),
+    ]);
+    host.appendChild(head);
+    const list = el("div", { class: "ab-selected-list" });
+    ids.forEach((id) => {
+      const meta = (_pickerIndex.byId && _pickerIndex.byId[id]) || { id, category: "", description: "" };
+      const cat = (meta.category || "").toLowerCase();
+      const chip = el("span", { class: "ab-selected-chip", "data-cat": cat, title: meta.description || id }, [
+        el("span", { class: "ab-selected-chip-cat" }, meta.category || ""),
+        el("span", { class: "ab-selected-chip-id" }, id),
+        el("button", {
+          type: "button",
+          class: "ab-selected-chip-remove",
+          "aria-label": "Remove " + id,
+          title: "Remove",
+          onclick: () => {
+            const cb = document.getElementById("tool-" + id);
+            if (cb) { cb.checked = false; cb.dispatchEvent(new Event("change", { bubbles: true })); }
+          },
+          text: "x",
+        }),
+      ]);
+      list.appendChild(chip);
+    });
+    host.appendChild(list);
   }
 
   // ============================================================ Modal focus trap (WCAG 2.4.3 / 2.1.2)
@@ -759,6 +819,7 @@
     // Build the categorized tool picker from the live roster + bundles.
     renderToolBundles();
     renderToolPicker();
+    renderSelectedSummary();
     // Reset filter input.
     const search = $("#ab-f-tools-search");
     if (search) {
