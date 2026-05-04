@@ -117,26 +117,26 @@ def render_user_prompt(dossier: dict) -> str:
 
 
 _MOCKS = {
-    "revolut": {
-        "headline": "Revolut's UK banking licence + Datadog renewal create a 90-day window to consolidate observability and SIEM.",
+    "northwind": {
+        "headline": "Northwind Pay's EU banking licence + Datadog renewal create a 90-day window to consolidate observability and SIEM.",
         "sections": [
             {"heading": "Why now", "bullets": [
-                "UK banking licence granted in July 2024 raises the audit-grade observability bar; FCA expectations now apply.",
+                "EU banking licence granted in Q3 2025 raises the audit-grade observability bar; EU banking expectations now apply.",
                 "Datadog spend approaching $4M/year; renewal lands November 1.",
                 "Three-tool fragmentation (Splunk + Datadog + Grafana) is a known on-call pain point.",
             ]},
             {"heading": "Recent signals", "bullets": [
-                "Reuters: Revolut secures UK banking licence after 3-year wait.",
-                "Wikipedia: 50M+ customers, $45B secondary share sale led by Schroders.",
-                "Public engineering blog references Kafka + Kubernetes at heavy scale.",
+                "Demo press: Northwind Pay secures EU banking licence after 3-year wait.",
+                "Demo background: 50M+ customers, secondary share sale led by an unnamed investor.",
+                "Demo engineering blog references Kafka + Kubernetes at heavy scale.",
             ]},
             {"heading": "Likely pain points", "bullets": [
-                "SIEM coverage gap surfaced by FCA audit prep (open P1 ticket).",
+                "SIEM coverage gap surfaced by EU banking audit prep (open P1 ticket).",
                 "Datadog ingest spikes during card-promo campaigns drove $80k overage last month.",
                 "7 year audit retention makes Datadog index-rate pricing punitive.",
             ]},
             {"heading": "Discovery questions", "bullets": [
-                "What does the FCA audit specifically require for SIEM coverage timeline?",
+                "What does the EU banking audit specifically require for SIEM coverage timeline?",
                 "What is the Datadog renewal envelope you are protecting?",
                 "Mike, where is the consolidation hardest technically: ingest, retention, or RBAC?",
             ]},
@@ -148,12 +148,12 @@ _MOCKS = {
             {"heading": "Risks and open questions", "bullets": [
                 "Need successful POC at 80k EPS sustained ingest before any commitment.",
                 "Procurement needs to be looped in early; previous engagements stalled 2 weeks at signing.",
-                "FCA regulatory mapping must be ready before architecture council review.",
+                "EU banking regulatory mapping must be ready before architecture council review.",
             ]},
         ],
     },
-    "mercado-libre": {
-        "headline": "Mercado Libre's flat marketplace conversion + Datadog renewal converge on a search relevance plus observability consolidation play.",
+    "mercado-atlas": {
+        "headline": "Mercado Atlas's flat marketplace conversion + Datadog renewal converge on a search relevance plus observability consolidation play.",
         "sections": [
             {"heading": "Why now", "bullets": [
                 "Marketplace conversion has been flat 4 quarters; semantic search is the next lever.",
@@ -161,9 +161,9 @@ _MOCKS = {
                 "Solr (legacy) + Elasticsearch (new surfaces) split is overdue for consolidation.",
             ]},
             {"heading": "Recent signals", "bullets": [
-                "MELI Investor Relations: Q4 2024 earnings highlight Mercado Pago and credit growth.",
-                "Wikipedia: 18 LATAM countries, NASDAQ listed (MELI), ~75k employees.",
-                "SEC filings show concentrated ML and search infrastructure investments.",
+                "Mercado Atlas IR (demo): Q4 2025 earnings highlight Mercado Atlas Pay and credit growth.",
+                "Demo background: 18 LATAM countries, ~75k employees.",
+                "Demo annual report references concentrated ML and search infrastructure investments.",
             ]},
             {"heading": "Likely pain points", "bullets": [
                 "Search relevance plateau is suppressing marketplace conversion (open P1 ticket).",
@@ -181,43 +181,43 @@ _MOCKS = {
                 "Cross-cluster replication has hardened materially in 8.13.",
             ]},
             {"heading": "Risks and open questions", "bullets": [
-                "ELSER quality at MELI's catalog scale must be benchmarked before commit.",
+                "ELSER quality at Mercado Atlas's catalog scale must be benchmarked before commit.",
                 "OpenSearch already has internal champions; need a clean head-to-head.",
                 "Confirm the 30 percent cost target is hard or aspirational.",
             ]},
         ],
     },
-    "santander": {
-        "headline": "Santander's Splunk renewal + 'Gravity' platform rollout open the door to a consolidated observability layer across all clouds.",
+    "atlantico": {
+        "headline": "Banco Atlántico's Splunk renewal + 'Atlas Multi-Cloud' platform rollout open the door to a consolidated observability layer across all clouds.",
         "sections": [
             {"heading": "Why now", "bullets": [
                 "Splunk renewal lands March 1, 2027 at ~12M euros annual.",
                 "Board mandate is 30 percent cost reduction at parity coverage.",
-                "'Gravity' multi-cloud platform needs a single observability layer across AWS, Azure, GCP, and private cloud.",
+                "'Atlas Multi-Cloud' platform needs a single observability layer across AWS, Azure, GCP, and private cloud.",
             ]},
             {"heading": "Recent signals", "bullets": [
-                "Santander Press Room: 'ONE Transformation' programme emphasises Gravity rollout.",
+                "Banco Atlántico Press Room (demo): 'ONE Transformation' programme emphasises Atlas Multi-Cloud rollout.",
                 "Investor portal: digital channel customer growth is the headline metric.",
-                "Wikipedia: ~210k employees, retail + corporate + investment banking footprint.",
+                "Demo background: ~210k employees, retail + corporate + investment banking footprint.",
             ]},
             {"heading": "Likely pain points", "bullets": [
                 "Trading platform 90 minute slowdown last quarter (P1 RCA closed).",
                 "Audit reporting cycle 21 days vs target under 7 (open P2 project).",
-                "Splunk storage tier costs are punitive at 10 year ECB / Bank of Spain retention.",
+                "Splunk storage tier costs are punitive at 10 year ECB / local central bank retention.",
             ]},
             {"heading": "Discovery questions", "bullets": [
                 "Carlos, what is the architecture council's bar for parity coverage?",
-                "Marina, where is the Gravity integration hardest: AWS, Azure, GCP, or the private cloud?",
+                "Marina, where is the Atlas Multi-Cloud integration hardest: AWS, Azure, GCP, or the private cloud?",
                 "How is FCA outsourcing applied to UK retail today versus the proposed unified layer?",
             ]},
             {"heading": "Talking points (vs Splunk)", "bullets": [
                 "Frozen tier on object storage at 10 year retention is materially cheaper than Splunk index pricing.",
                 "Index level RBAC and SAML federation native to Elastic; aligns with SOC controls.",
-                "Cross-cluster search and replication included; works across the Gravity multi-cloud footprint.",
+                "Cross-cluster search and replication included; works across the Atlas Multi-Cloud footprint.",
             ]},
             {"heading": "Risks and open questions", "bullets": [
                 "Sumo Logic is also in the bake-off; need a clean head-to-head.",
-                "Regulatory mapping for ECB, Bank of Spain, and FCA must be ready for architecture council.",
+                "Regulatory mapping for ECB, local central bank, and FCA must be ready for architecture council.",
                 "Confirm CIO Group Tech sign authority and board mandate firmness.",
             ]},
         ],
@@ -330,11 +330,11 @@ _MOCKS = {
 }
 
 
-def mock_response(company_id: str = "revolut") -> dict:
+def mock_response(company_id: str = "northwind") -> dict:
     """Offline-mode brief used when no API key is configured.
 
-    Hand-written mocks per company let us demo any of the three real accounts (Revolut,
-    Mercado Libre, Santander) without hitting the API. Legacy Acme/Globex/Initech keys
-    remain for backwards compatibility with older fixtures.
+    Hand-written mocks per company let us demo any of the three fictional accounts
+    (Northwind Pay, Mercado Atlas, Banco Atlántico) without hitting the API. Legacy
+    Acme/Globex/Initech keys remain for backwards compatibility with older fixtures.
     """
-    return _MOCKS.get(company_id, _MOCKS["revolut"])
+    return _MOCKS.get(company_id, _MOCKS["northwind"])

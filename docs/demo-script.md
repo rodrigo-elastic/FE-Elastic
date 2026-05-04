@@ -58,7 +58,7 @@ FE Copilot. Eleven personas. Five scenarios. Two workflows. Built for Elastic Fi
 **EN voiceover:** Silent. Presenter does not speak. The autopilot captions carry the narration.
 
 **Captions in order (the on-screen narration):**
-1. "Quick Research. Banco Santander."
+1. "Quick Research. Banco Atlántico."
 2. "Brief writes itself. SEC EDGAR, news, Wikipedia. Haiku 4.5."
 3. "Brief renders. Every claim cites a source."
 4. "Field Assistant. Auro picks two specialists in parallel: POV plan and TCO."
@@ -180,7 +180,7 @@ Sum: 8 + 27 + 20 + 30 + 30 + 30 + 25 + 10 = 180 seconds exact.
 
 Three cuts from the 5:00 script land us at 3:00. Each cut is intentional and the lost content is recovered elsewhere in the new flow.
 
-**Cut 1: Old B3 "Pre-meeting brief grounded" (was 30 seconds).** The autopilot already streams the Banco Santander brief in B1, captions narrate it, and the iframe shows the citation panel. Re-running the same flow live in a separate beat duplicates work and drains a third of the new budget. The autopilot carries it.
+**Cut 1: Old B3 "Pre-meeting brief grounded" (was 30 seconds).** The autopilot already streams the Banco Atlántico brief in B1, captions narrate it, and the iframe shows the citation panel. Re-running the same flow live in a separate beat duplicates work and drains a third of the new budget. The autopilot carries it.
 
 **Cut 2: Long voiceover blocks.** The 5:00 cut had 60 to 80 word voiceovers per beat. The 3:00 cut keeps every voiceover under 25 words (B7 under 28). Short declarative sentences. Land each pain, land each number, move on.
 

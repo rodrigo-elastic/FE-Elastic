@@ -48,7 +48,7 @@ Character count: 137.
 
 ### FE Impact
 
-The pain is sized in real Field Engineering minutes, not vendor slogans. The Pre-Meeting Researcher consumes the live SEC EDGAR HTTP client at `backend/app/integrations/sec_edgar.py` (with the User-Agent header SEC policy mandates) and produces a sourced brief on Mercado Libre (CIK 0001099590), Banco Santander (CIK 0000891478), and Revolut. The Post-Meeting Action Engine fires six discriminated Salesforce writes that you can tail live during the demo from `runtime/salesforce.log`: Opportunity MEDDPICC fields, ContentNote, ContentDocumentLink, Competitor update, Deal_Health update, Slack post. Per-FE recovered time per week: 15 hours research plus 10 hours writeup plus 1 caught competitor signal per discovery call. Quote-able anchor: "Sixty seconds, not thirty minutes."
+The pain is sized in real Field Engineering minutes, not vendor slogans. The Pre-Meeting Researcher consumes the live SEC EDGAR HTTP client at `backend/app/integrations/sec_edgar.py` (with the User-Agent header SEC policy mandates) and produces a sourced brief on Mercado Atlas (CIK 0001099590), Banco Atlántico (CIK 0000891478), and Northwind Pay. The Post-Meeting Action Engine fires six discriminated Salesforce writes that you can tail live during the demo from `runtime/salesforce.log`: Opportunity MEDDPICC fields, ContentNote, ContentDocumentLink, Competitor update, Deal_Health update, Slack post. Per-FE recovered time per week: 15 hours research plus 10 hours writeup plus 1 caught competitor signal per discovery call. Quote-able anchor: "Sixty seconds, not thirty minutes."
 
 ### Use of Workflows + Agent Builder
 
@@ -60,11 +60,11 @@ Eight frontend pages share one persistent left rail injected by `frontend/assets
 
 ### Reusability
 
-The repository abstraction at `backend/app/repositories/` and the synthetic data generator at `backend/scripts/generate_synthetic_data.py` are designed for swap, not for one demo. The three demo accounts (Revolut, Mercado Libre, Santander) are real public companies with verifiable URLs; replace them with any FE's actual account portfolio and the same workflows fire. Three demo-data scenarios (Black Friday, Credential Stuffing, Noisy Microservice in `backend/app/services/scenarios/`) seed paired FE plus Customer dashboards in seconds via `routes_kibana.py` and `routes_demo_data.py`, so any FE can stand up six dashboards to walk a prospect through a workload. Mock integrations encapsulate the boundary; swapping to live Slack or live Salesforce is a one-file change per integration. Quote-able anchor: "Same code. Every FE segment."
+The repository abstraction at `backend/app/repositories/` and the synthetic data generator at `backend/scripts/generate_synthetic_data.py` are designed for swap, not for one demo. The three demo accounts (Northwind Pay, Mercado Atlas, Banco Atlántico) are real public companies with verifiable URLs; replace them with any FE's actual account portfolio and the same workflows fire. Three demo-data scenarios (Black Friday, Credential Stuffing, Noisy Microservice in `backend/app/services/scenarios/`) seed paired FE plus Customer dashboards in seconds via `routes_kibana.py` and `routes_demo_data.py`, so any FE can stand up six dashboards to walk a prospect through a workload. Mock integrations encapsulate the boundary; swapping to live Slack or live Salesforce is a one-file change per integration. Quote-able anchor: "Same code. Every FE segment."
 
 ### Demo Quality
 
-The 5-minute take is locked to a 31-shot storyboard at `docs/storyboard.md` with bilingual voiceover (EN plus ES) per beat, an explicit timing table that lands at 5:10 (within the plus-or-minus-10-second tolerance), 12 named pitfalls each with a recovery line and a hard fallback, and a 37-step pre-flight checklist. Deterministic synthetic data anchored to `NOW = 2026-05-02 09:00 UTC` so the demo plays the same way every take. Three meeting fixtures (Revolut, MELI, Santander) function as primary plus two backups; if one stalls past 30 seconds, Cmd+Tab to a pre-cached backup. Captions on, 1080p, single take preferred. Quote-able anchor: "31 shots, 5 minutes, single take."
+The 5-minute take is locked to a 31-shot storyboard at `docs/storyboard.md` with bilingual voiceover (EN plus ES) per beat, an explicit timing table that lands at 5:10 (within the plus-or-minus-10-second tolerance), 12 named pitfalls each with a recovery line and a hard fallback, and a 37-step pre-flight checklist. Deterministic synthetic data anchored to `NOW = 2026-05-02 09:00 UTC` so the demo plays the same way every take. Three meeting fixtures (Northwind Pay, Mercado Atlas, Banco Atlántico) function as primary plus two backups; if one stalls past 30 seconds, Cmd+Tab to a pre-cached backup. Captions on, 1080p, single take preferred. Quote-able anchor: "31 shots, 5 minutes, single take."
 
 ---
 
@@ -93,7 +93,7 @@ https://github.com/rodrigo-elastic/FE-Elastic
 1. Open https://fe-summit-hackathon-ed0e8e.kb.us-west-1.aws.found.io/app/agent_builder
 2. Click `fec_field_assistant` (the Master Agent)
 3. Confirm 12 tools listed under Connected Tools, including `fec_proposal`
-4. Send: "Generate a 1-page proposal for Banco Santander, include POV hours"
+4. Send: "Generate a 1-page proposal for Banco Atlántico, include POV hours"
 5. Trace pane shows fec_proposal called with structured input. Output is a renderable HTML proposal.
 
 Verification commands (terminal):
@@ -106,7 +106,7 @@ curl -s https://headlamp-squatting-usable.ngrok-free.dev/api/v1/mcp -X POST \
 
 Expected output: 12.
 
-End-to-end routing traces captured in `runtime/qa/carmen_routing_trace.json` (single canonical Santander prompt) and `runtime/qa/carmen_routing_variants.json` (3 prompt variants, all routed to fec_proposal).
+End-to-end routing traces captured in `runtime/qa/carmen_routing_trace.json` (single canonical Banco Atlántico prompt) and `runtime/qa/carmen_routing_variants.json` (3 prompt variants, all routed to fec_proposal).
 
 ---
 
@@ -145,7 +145,7 @@ PYTHONPATH=backend python -m scripts.generate_synthetic_data      # 5 sec
 PYTHONPATH=backend uvicorn app.main:app --port 8123 &             # 5 sec
 curl -X POST http://127.0.0.1:8123/api/v1/agents/pre-meeting/ad-hoc \
   -H 'Content-Type: application/json' \
-  -d '{"company":"Mercado Libre"}'                                # 25 sec on Haiku
+  -d '{"company":"Mercado Atlas"}'                                # 25 sec on Haiku
 ```
 
 Total: 90 seconds. The first call runs in mock mode if no Anthropic key is in `.env` and still produces a deterministic brief.
@@ -173,6 +173,6 @@ The picker lives in the global sidebar; copy is hot-swapped from the i18n bundle
 | 6 paired Kibana dashboards | Real | 8 markdown panels per dashboard, FE plus Customer tabs. |
 | Salesforce write | **Demo-grade integration**. Append-only JSON log at `runtime/salesforce.log`. Real REST shape with capitalized field names. Swap to live SFDC is a one-file change in `backend/app/integrations/salesforce_mock.py`. The demo shows the log tailing live so the writes are visible to the judges. Demo-grade is correct here because the hackathon scope is FE workflow proof, not SFDC org admin work. |
 | Slack post | **Demo-grade integration**. Appends to `runtime/slack.log`. Same swap-out path. |
-| Google Calendar | **Demo-grade integration**. Mock events with consultant-mixed cases (Accenture, KPMG, Deloitte, Capgemini) so the smart resolver in `backend/app/services/company_resolver.py` is observable. |
+| Google Calendar | **Demo-grade integration**. Mock events with consultant-mixed cases (Pinnacle Consulting, Helix Advisory, Apex Advisory, Vega Consulting) so the smart resolver in `backend/app/services/company_resolver.py` is observable. |
 
 The reasoning behind labeling these demo-grade: they are integration boundaries, not product logic. Wiring the real APIs is a credentials and SSO exercise that adds zero hackathon scoring value and risks recording-day flakiness. The mocks emit the exact JSON payloads the real APIs would receive.

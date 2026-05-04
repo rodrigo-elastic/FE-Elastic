@@ -73,7 +73,7 @@ FRONTEND_PAGES: List[Tuple[str, bool]] = [
     ("/", True),
     ("/index.html", True),
     ("/tools.html", True),
-    ("/meeting.html?id=revolut-mtg-prev-001", True),
+    ("/meeting.html?id=northwind-mtg-prev-001", True),
     ("/agent-builder.html", True),
     ("/demo-data.html", True),
     ("/workflow-demo.html", True),

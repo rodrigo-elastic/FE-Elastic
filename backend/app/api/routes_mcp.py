@@ -56,7 +56,7 @@ TOOLS = [
         "inputSchema": {
             "type": "object",
             "properties": {
-                "meeting_id": {"type": "string", "description": "FE Copilot meeting id (e.g., revolut-mtg-prev-001)"},
+                "meeting_id": {"type": "string", "description": "FE Copilot meeting id (e.g., northwind-mtg-prev-001)"},
                 "language": {"type": "string", "default": "English"},
             },
             "required": ["meeting_id"],

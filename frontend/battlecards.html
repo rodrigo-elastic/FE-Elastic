@@ -53,6 +53,36 @@
       <span class="muted small" id="bc-result-count" aria-live="polite"></span>
     </section>
 
+    <section class="bc-vertical-bar" aria-label="Filter by vertical" role="group">
+      <div class="bc-chip-row" id="bc-chip-row">
+        <button type="button" class="bc-chip is-active" data-vertical="all" id="bc-chip-all" aria-pressed="true">
+          <span class="bc-chip-label" data-i18n="bc.vert.all">All verticals</span>
+          <span class="bc-chip-count" data-count-for="all">0</span>
+        </button>
+        <button type="button" class="bc-chip bc-chip-search" data-vertical="direct_search_vector" aria-pressed="false">
+          <span class="bc-chip-label" data-i18n="bc.vert.direct_search_vector">Direct Search / Vector</span>
+          <span class="bc-chip-count" data-count-for="direct_search_vector">0</span>
+        </button>
+        <button type="button" class="bc-chip bc-chip-obs" data-vertical="observability_logs" aria-pressed="false">
+          <span class="bc-chip-label" data-i18n="bc.vert.observability_logs">Observability / Logs</span>
+          <span class="bc-chip-count" data-count-for="observability_logs">0</span>
+        </button>
+        <button type="button" class="bc-chip bc-chip-ecom" data-vertical="ai_search_ecommerce" aria-pressed="false">
+          <span class="bc-chip-label" data-i18n="bc.vert.ai_search_ecommerce">AI Search / E-commerce</span>
+          <span class="bc-chip-count" data-count-for="ai_search_ecommerce">0</span>
+        </button>
+        <button type="button" class="bc-chip bc-chip-sec" data-vertical="security_siem_xdr" aria-pressed="false">
+          <span class="bc-chip-label" data-i18n="bc.vert.security_siem_xdr">Security / SIEM</span>
+          <span class="bc-chip-count" data-count-for="security_siem_xdr">0</span>
+        </button>
+      </div>
+      <label class="bc-toggle" for="bc-main-toggle">
+        <input type="checkbox" id="bc-main-toggle" checked />
+        <span class="bc-toggle-track" aria-hidden="true"><span class="bc-toggle-thumb"></span></span>
+        <span class="bc-toggle-label" data-i18n="bc.toggle.mains">Main competitors only</span>
+      </label>
+    </section>
+
     <section class="bc-grid" id="bc-grid" aria-label="Competitor battlecards">
       <p class="muted">Loading battlecards...</p>
     </section>

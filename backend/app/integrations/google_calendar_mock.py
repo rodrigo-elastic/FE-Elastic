@@ -1,6 +1,6 @@
 """
 filename: google_calendar_mock.py
-description: Mock Google Calendar feed shaped like Calendar API v3 events. The dashboard reads upcoming events here so the smart-resolver can show which customer each invite actually belongs to (consultants, observers, and internal stakeholders are filtered out).
+description: Mock Google Calendar feed shaped like Calendar API v3 events. The dashboard reads upcoming events here so the smart-resolver can show which customer each invite actually belongs to (consultants, observers, and internal stakeholders are filtered out). All companies and consultants here are fictional demo data.
 date: 03-05-2026
 """
 __author__ = "Rodrigo Careaga"
@@ -25,74 +25,74 @@ def _build_events() -> List[Dict[str, Any]]:
     """Compose the mock event list lazily so offsets are anchored to real-time."""
     n = _now()
     return [
-    # 1) Clean case: only Revolut + Elastic. Domain match wins.
+    # 1) Clean case: only Northwind Pay + Elastic. Domain match wins.
     {
         "id": "gcal-evt-001",
-        "summary": "Revolut x Elastic - observability cost & SIEM consolidation",
-        "description": "Discovery call. Datadog renewal lands November 1. UK banking licence audit prep ongoing.",
+        "summary": "Northwind Pay x Elastic, observability cost & SIEM consolidation",
+        "description": "Discovery call. Datadog renewal lands November 1. EU banking licence audit prep ongoing.",
         "start": {"dateTime": _iso(n + timedelta(hours=24))},
         "end": {"dateTime": _iso(n + timedelta(hours=24, minutes=45))},
         "organizer": {"email": "rodrigo.careaga@elastic.co"},
         "attendees": [
             {"email": "rodrigo.careaga@elastic.co", "responseStatus": "accepted"},
-            {"email": "sarah.chen@revolut.com", "responseStatus": "accepted"},
-            {"email": "mike.taylor@revolut.com", "responseStatus": "accepted"},
+            {"email": "sarah.chen@northwindpay.example", "responseStatus": "accepted"},
+            {"email": "mike.taylor@northwindpay.example", "responseStatus": "accepted"},
         ],
-        "hangoutLink": "https://meet.google.com/fec-mock-rev-001",
+        "hangoutLink": "https://meet.google.com/fec-mock-nw-001",
     },
-    # 2) Tricky: consultant from Accenture + the actual customer (Mercado Libre).
-    # Resolver should prefer mercadolibre.com because Accenture is a known consulting firm.
+    # 2) Tricky: consultant from Pinnacle Consulting + the actual customer (Mercado Atlas).
+    # Resolver should prefer mercadoatlas.example because Pinnacle Consulting is a known consulting firm.
     {
         "id": "gcal-evt-002",
-        "summary": "MELI search relevance review - quarterly update",
-        "description": "Quarterly review with Mercado Libre engineering and an Accenture observer team.",
+        "summary": "Mercado Atlas search relevance review, quarterly update",
+        "description": "Quarterly review with Mercado Atlas engineering and a Pinnacle Consulting observer team.",
         "start": {"dateTime": _iso(n + timedelta(hours=48))},
         "end": {"dateTime": _iso(n + timedelta(hours=49))},
         "organizer": {"email": "rodrigo.careaga@elastic.co"},
         "attendees": [
             {"email": "rodrigo.careaga@elastic.co"},
-            {"email": "lucia.fernandez@mercadolibre.com"},
-            {"email": "diego.alvarez@mercadolibre.com"},
-            # Accenture consultant - should NOT be picked as the customer.
-            {"email": "j.morales@accenture.com"},
-            {"email": "another.consultant@accenture.com"},
+            {"email": "lucia.fernandez@mercadoatlas.example"},
+            {"email": "diego.alvarez@mercadoatlas.example"},
+            # Pinnacle Consulting consultant, should NOT be picked as the customer.
+            {"email": "j.morales@pinnacleconsulting.example"},
+            {"email": "another.consultant@pinnacleconsulting.example"},
         ],
         "hangoutLink": "https://meet.google.com/fec-mock-meli-001",
     },
-    # 3) Multi-party: Santander + KPMG + Deloitte + Elastic.
-    # Two consulting firms in the room; resolver should still pick Santander.
+    # 3) Multi-party: Banco Atlántico + Helix Advisory + Apex Advisory + Elastic.
+    # Two consulting firms in the room; resolver should still pick Banco Atlántico.
     {
         "id": "gcal-evt-003",
-        "summary": "Santander Splunk renewal review - architecture council",
-        "description": "Architecture council with Santander + KPMG advisory + Deloitte risk team.",
+        "summary": "Banco Atlántico Splunk renewal review, architecture council",
+        "description": "Architecture council with Banco Atlántico + Helix Advisory + Apex Advisory risk team.",
         "start": {"dateTime": _iso(n + timedelta(hours=144))},
         "end": {"dateTime": _iso(n + timedelta(hours=144, minutes=60))},
         "organizer": {"email": "rodrigo.careaga@elastic.co"},
         "attendees": [
             {"email": "rodrigo.careaga@elastic.co"},
-            {"email": "carlos.ruiz@santander.com"},
-            {"email": "marina.lopez@santander.com"},
-            {"email": "advisor1@kpmg.com"},
-            {"email": "risk.lead@deloitte.com"},
+            {"email": "carlos.ruiz@bancoatlantico.example"},
+            {"email": "marina.lopez@bancoatlantico.example"},
+            {"email": "advisor1@helixadvisory.example"},
+            {"email": "risk.lead@apexadvisory.example"},
         ],
-        "hangoutLink": "https://meet.google.com/fec-mock-san-001",
+        "hangoutLink": "https://meet.google.com/fec-mock-atl-001",
     },
-    # 4) Ambiguous: only consultants + a freemail attendee. Title carries the customer name ("BBVA").
+    # 4) Ambiguous: only consultants + a freemail attendee. Title carries the customer name ("Fjordbank").
     # Resolver falls through domains (no match) and uses title-keyword fallback.
     {
         "id": "gcal-evt-004",
-        "summary": "BBVA Mexico - intro call (via Capgemini)",
-        "description": "Intro call brokered by Capgemini. BBVA contacts will dial in from a freemail.",
+        "summary": "Fjordbank Mexico, intro call (via Vega Consulting)",
+        "description": "Intro call brokered by Vega Consulting. Fjordbank contacts will dial in from a freemail.",
         "start": {"dateTime": _iso(n + timedelta(hours=72))},
         "end": {"dateTime": _iso(n + timedelta(hours=72, minutes=30))},
         "organizer": {"email": "rodrigo.careaga@elastic.co"},
         "attendees": [
             {"email": "rodrigo.careaga@elastic.co"},
-            {"email": "broker.lead@capgemini.com"},
-            {"email": "engagement.partner@capgemini.com"},
-            {"email": "j.gomez99@gmail.com"},  # BBVA contact via personal mail
+            {"email": "broker.lead@vegaconsulting.example"},
+            {"email": "engagement.partner@vegaconsulting.example"},
+            {"email": "j.gomez99@gmail.com"},  # Fjordbank contact via personal mail
         ],
-        "hangoutLink": "https://meet.google.com/fec-mock-bbva-001",
+        "hangoutLink": "https://meet.google.com/fec-mock-fjord-001",
     },
     # 5) Internal-only event (no external attendees). Resolver should flag as "internal".
     {

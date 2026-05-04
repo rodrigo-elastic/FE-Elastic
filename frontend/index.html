@@ -14,8 +14,41 @@
   <link rel="icon" type="image/svg+xml" href="/assets/img/elastic/glyph-cluster-color.svg" />
   <link rel="stylesheet" href="/assets/css/command-palette.css" />
   <link rel="stylesheet" href="/assets/css/autopilot.css" />
+  <style>
+    .demo-banner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 8px 16px;
+      background: #fff3cd;
+      color: #856404;
+      font-size: 12px;
+      line-height: 1.4;
+      border-bottom: 1px solid #f5e2a4;
+      text-align: center;
+    }
+    .demo-banner.is-hidden { display: none; }
+    .demo-banner-text { flex: 1; max-width: 1100px; }
+    .demo-banner-close {
+      background: transparent;
+      border: 0;
+      color: #856404;
+      font-size: 14px;
+      cursor: pointer;
+      padding: 2px 6px;
+      line-height: 1;
+      border-radius: 3px;
+    }
+    .demo-banner-close:hover { background: rgba(133, 100, 4, 0.12); }
+    .sko-banner { display: block; width: 100%; line-height: 0; }
+    .sko-banner img { display: block; width: 100%; height: auto; max-height: 96px; object-fit: cover; object-position: center; }
+  </style>
 </head>
 <body>
+  <a class="sko-banner" href="#" aria-label="FY27 Sales Kickoff, May 11 to 14, 2026, Las Vegas, Nevada">
+    <img src="/assets/sko-fy27-banner.png" alt="FY27 Sales Kickoff. May 11 to 14, 2026. Las Vegas, Nevada." />
+  </a>
   <header class="topbar">
     <a class="brand" href="/" aria-label="FE Copilot home">
       <img class="logo-elastic" src="/assets/img/elastic/logo-horizontal-white.svg" alt="Elastic" />
@@ -29,6 +62,30 @@
       <span class="pill" id="status" data-i18n="topbar.connecting">Connecting...</span>
     </div>
   </header>
+
+  <div class="demo-banner" id="fec-demo-banner" role="note">
+    <span class="demo-banner-text" data-i18n="banner.demo">Demo data only. All companies, employees, and financials shown are fictional. Public list pricing for Splunk and Datadog is real.</span>
+    <button type="button" class="demo-banner-close" id="fec-demo-banner-close" aria-label="Dismiss demo data notice" data-i18n-aria-label="banner.dismiss">&times;</button>
+  </div>
+  <script>
+    (function () {
+      try {
+        var banner = document.getElementById('fec-demo-banner');
+        if (!banner) return;
+        if (localStorage.getItem('fec.banner_dismissed') === '1') {
+          banner.classList.add('is-hidden');
+          return;
+        }
+        var btn = document.getElementById('fec-demo-banner-close');
+        if (btn) {
+          btn.addEventListener('click', function () {
+            banner.classList.add('is-hidden');
+            try { localStorage.setItem('fec.banner_dismissed', '1'); } catch (e) {}
+          });
+        }
+      } catch (e) {}
+    })();
+  </script>
 
   <main class="container">
     <section class="hero">
@@ -75,7 +132,7 @@
         <div class="qr-row">
           <label class="qr-field grow">
             <span class="qr-lbl" data-i18n="qr.field.company">Company</span>
-            <input type="text" id="qr-name" data-i18n-placeholder="qr.placeholder.company" placeholder="e.g. Stripe, Mercado Libre, Banco Itau" required />
+            <input type="text" id="qr-name" data-i18n-placeholder="qr.placeholder.company" placeholder="e.g. Northwind Pay, Mercado Atlas, Banco Atlántico" required />
           </label>
           <label class="qr-field">
             <span class="qr-lbl" data-i18n="qr.field.industry">Industry</span>
@@ -130,7 +187,7 @@
         <div class="qr-row">
           <div class="qr-field grow">
             <label class="qr-lbl" for="tr-name" data-i18n="tr.field.company">Company</label>
-            <input type="text" id="tr-name" name="company_name" autocomplete="organization" required minlength="1" maxlength="120" data-i18n-placeholder="tr.placeholder.company" placeholder="e.g. Globex, Mercado Libre, Banco Itau" aria-required="true" />
+            <input type="text" id="tr-name" name="company_name" autocomplete="organization" required minlength="1" maxlength="120" data-i18n-placeholder="tr.placeholder.company" placeholder="e.g. Globex, Mercado Atlas, Banco Atlántico" aria-required="true" />
           </div>
           <div class="qr-field">
             <label class="qr-lbl" for="tr-title" data-i18n="tr.field.title">Meeting title</label>

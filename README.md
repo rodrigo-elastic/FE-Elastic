@@ -1,4 +1,8 @@
 <p align="center">
+  <img src="assets/sko-fy27-banner.png" alt="FY27 Sales Kickoff. May 11 to 14, 2026. Las Vegas, Nevada." width="1100" />
+</p>
+
+<p align="center">
   <img src="assets/hero-dashboard.png" alt="FE Copilot. Field Engineers, finally go home on time. Twelve MCP tools, five demo scenarios, six hours per FE per week saved." width="1100" />
 </p>
 
@@ -34,6 +38,8 @@ No setup needed: 5 demo scenarios pre-seeded, 12 tools live behind the MCP conne
 [![Submission](https://img.shields.io/badge/deadline-2026--05--10-orange)](#)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
+> **Demo data**: All customer names, employees, and financial figures shown in scenarios and brief outputs are fictional. Splunk and Datadog list pricing is from public sources. No real customer data is used.
+
 ---
 
 ## 30-second elevator
@@ -45,8 +51,8 @@ Field Engineers run six customer meetings a day and burn fifteen hours a week on
 | Surface | Screenshot | Demo GIF |
 |---|---|---|
 | Dashboard | [docs/screenshots/dashboard.png](docs/screenshots/dashboard.png) | docs/gifs/dashboard.gif |
-| Meeting (Mercado Libre) | [docs/screenshots/meeting_meli.png](docs/screenshots/meeting_meli.png) | docs/gifs/meeting.gif |
-| Meeting (Revolut) | [docs/screenshots/meeting_revolut.png](docs/screenshots/meeting_revolut.png) | docs/gifs/live_alerts.gif |
+| Meeting (Mercado Atlas) | [docs/screenshots/meeting_meli.png](docs/screenshots/meeting_meli.png) | docs/gifs/meeting.gif |
+| Meeting (Northwind Pay) | [docs/screenshots/meeting_revolut.png](docs/screenshots/meeting_revolut.png) | docs/gifs/live_alerts.gif |
 | Tools rail | [docs/screenshots/tools.png](docs/screenshots/tools.png) | docs/gifs/tools.gif |
 | Agent Builder | [docs/screenshots/agent_builder.png](docs/screenshots/agent_builder.png) | docs/gifs/agent_builder.gif |
 | Workflow loop | [docs/screenshots/workflow_demo.png](docs/screenshots/workflow_demo.png) | docs/gifs/workflow.gif |
@@ -70,7 +76,7 @@ Persistent left sidebar on every page (`frontend/assets/js/tools-rail.js`). Five
 
 ### Reusability
 
-One codebase, every FE segment. The same three agents serve SMB, Mid-market, Enterprise, and Public Sector because the dossier abstraction (`backend/app/repositories/synthetic.py`) is segment-agnostic. The seven tools (POC plan, SPL to ES|QL, compliance mapping, stack extract, code sample, cost calc, capacity) are the daily-driver utilities every FE asks for in chat. Each persona prompt (Marta, Diego, Priya, Aiko, Kenji, Mei) is a frozen system block in `backend/app/agents/prompts/tools.py` that any FE can fork. Three demo accounts ship with verifiable public sources: Revolut, Mercado Libre (CIK 0001099590), Banco Santander (CIK 0000891478). Five demo scenarios are planned (Black Friday, Credential Stuffing, Noisy Microservice, Stride Payments OTel, plus a fifth scenario currently being seeded).
+One codebase, every FE segment. The same three agents serve SMB, Mid-market, Enterprise, and Public Sector because the dossier abstraction (`backend/app/repositories/synthetic.py`) is segment-agnostic. The seven tools (POC plan, SPL to ES|QL, compliance mapping, stack extract, code sample, cost calc, capacity) are the daily-driver utilities every FE asks for in chat. Each persona prompt (Marta, Diego, Priya, Aiko, Kenji, Mei) is a frozen system block in `backend/app/agents/prompts/tools.py` that any FE can fork. Three demo accounts ship as fictional placeholders: Northwind Pay, Mercado Atlas, Banco Atlántico. Five demo scenarios are planned (Black Friday, Credential Stuffing, Noisy Microservice, Stride Payments OTel, plus a fifth scenario currently being seeded).
 
 ### Demo Quality
 
@@ -151,13 +157,13 @@ PYTHONPATH=backend python -m scripts.run_pipeline
 | # | Page | Path | Who it is for | What it does |
 |---|---|---|---|---|
 | 1 | Dashboard | [`/`](frontend/index.html) | Every FE | Calendar inbox with smart resolver that filters Elastic-internal invites and deprioritizes 17+ consulting firms ([`backend/app/services/company_resolver.py`](backend/app/services/company_resolver.py)). Hero stats, three entry modes (Quick Research, Transcript paste, Calendar). Screenshot: [docs/screenshots/dashboard.png](docs/screenshots/dashboard.png). |
-| 2 | Meeting workspace | [`/meeting.html?id=...`](frontend/meeting.html) | FE running a customer call | Three tabs: pre-meeting brief, live companion, post-meeting actions. Field Assistant mini-chat grounded in the brief and the last 8 transcript turns. Customer journey strip across the top. Screenshot: [docs/screenshots/meeting_revolut.png](docs/screenshots/meeting_revolut.png). |
+| 2 | Meeting workspace | [`/meeting.html?id=...`](frontend/meeting.html) | FE running a customer call | Three tabs: pre-meeting brief, live companion, post-meeting actions. Field Assistant mini-chat grounded in the brief and the last 8 transcript turns. Customer journey strip across the top. Screenshot: [docs/screenshots/meeting_revolut.png](docs/screenshots/meeting_revolut.png) (the "revolut" filename is a legacy asset; the demo content now uses the Northwind Pay fictional account). |
 | 3 | Tools rail | [`/tools.html`](frontend/tools.html) | Every FE | Seven collapsible panels: POC plan, SPL to ES\|QL, Compliance mapper, Stack extractor, Code sample generator, Cost calc, Capacity planner. Each one wraps a Claude expert persona. Screenshot: [docs/screenshots/tools.png](docs/screenshots/tools.png). |
 | 4 | FE Brain | [`/fe-brain.html`](frontend/fe-brain.html) | FE asking docs questions | Retrieval-augmented Q+A grounded in 160 chunks of the official Elastic documentation, indexed in `fec-knowledge` with ELSER embeddings. Citations link back to the source page. Mei (Elastic Docs Lead) curates the corpus. |
 | 5 | Agent Builder | [`/agent-builder.html`](frontend/agent-builder.html) | FE wanting tool chaining | Chat surface for the master agent `fec_field_assistant` running inside Kibana 9.3.4. Streams reasoning steps and tool calls inline. One prompt chains SPL conversion plus cost. Screenshot: [docs/screenshots/agent_builder.png](docs/screenshots/agent_builder.png). |
 | 6 | Workflow demo | [`/workflow-demo.html`](frontend/workflow-demo.html) | FE leadership | Visualises the closed-loop: doc lands in `fec-transcript-inbox`, Kibana Workflow fires, webhook hits backend, post-meeting agent runs Salesforce + Slack. Screenshot: [docs/screenshots/workflow_demo.png](docs/screenshots/workflow_demo.png). |
 | 7 | Demo data | [`/demo-data.html`](frontend/demo-data.html) | Anyone reproducing the demo | Seeder for the five scenarios planned (Black Friday, Credential Stuffing, Noisy Microservice, Stride Payments, plus the fifth being finalised). Pushes docs into Elastic and creates paired FE + Customer dashboards. Screenshot: [docs/screenshots/demo_data.png](docs/screenshots/demo_data.png). |
-| 8 | Per-meeting workspace | `/meeting.html?id=<meeting_id>` | Account team | Same surface as #2 but parameterised by meeting_id. Three live demo accounts: `mtg-revolut-001`, `mtg-meli-001`, `mtg-santander-001`. |
+| 8 | Per-meeting workspace | `/meeting.html?id=<meeting_id>` | Account team | Same surface as #2 but parameterised by meeting_id. Three live demo accounts: `northwind-mtg-001`, `mercadoatlas-mtg-001`, `atlantico-mtg-001`. |
 
 The persistent left sidebar (`frontend/assets/js/tools-rail.js`) is on every page. Same shortcuts everywhere.
 

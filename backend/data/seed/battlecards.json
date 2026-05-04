@@ -52,7 +52,9 @@
       "Are you on the Cisco bundle path or paying separately for AppD, ThousandEyes and Splunk?",
       "How much of your APM agent footprint is OpenTelemetry today versus AppD proprietary?",
       "What does your AppD renewal look like in the next 12 months?"
-    ]
+    ],
+    "vertical": "observability_logs",
+    "is_main_competitor": false
   },
   {
     "id": "battlecard-chronicle",
@@ -107,7 +109,9 @@
       "How many of your detections are written in YARA-L versus inherited from Google curated rules?",
       "Do you have any data residency or air-gap requirements that GCP-only deployment complicates?",
       "How is Chronicle handling your non-security telemetry (observability, app logs)?"
-    ]
+    ],
+    "vertical": "security_siem_xdr",
+    "is_main_competitor": false
   },
   {
     "id": "battlecard-cribl",
@@ -158,7 +162,9 @@
       "If the destination cost dropped 60 percent, would the Cribl bill still be worth it?",
       "Are you running Cribl Stream, Edge, or both, and who maintains the routing rules?",
       "What is Cribl's renewal date and ARR?"
-    ]
+    ],
+    "vertical": "observability_logs",
+    "is_main_competitor": false
   },
   {
     "id": "battlecard-datadog",
@@ -208,7 +214,9 @@
       "What is your Datadog renewal date and current ARR with them?",
       "Where does the ingest cost spike most: logs, traces, or custom metrics?",
       "Have you hit the 'we cannot afford to keep more history' moment yet?"
-    ]
+    ],
+    "vertical": "observability_logs",
+    "is_main_competitor": true
   },
   {
     "id": "battlecard-dynatrace",
@@ -263,7 +271,9 @@
       "How much of your instrumentation is OpenTelemetry today?",
       "Are you using Dynatrace logs (Grail) or shipping logs elsewhere?",
       "What is your Dynatrace renewal date and the current DPS commit?"
-    ]
+    ],
+    "vertical": "observability_logs",
+    "is_main_competitor": true
   },
   {
     "id": "battlecard-exabeam",
@@ -314,7 +324,9 @@
       "How many of your detections are vendor-supplied versus authored by your team?",
       "What is the ratio of UEBA license cost to total Exabeam ARR?",
       "How is long-term retention handled today?"
-    ]
+    ],
+    "vertical": "security_siem_xdr",
+    "is_main_competitor": false
   },
   {
     "id": "battlecard-grafana",
@@ -369,7 +381,9 @@
       "Have you hit Loki's free-text search wall yet?",
       "What is your active-series count on Mimir/Grafana Cloud?",
       "Where does security telemetry live in the LGTM stack?"
-    ]
+    ],
+    "vertical": "observability_logs",
+    "is_main_competitor": true
   },
   {
     "id": "battlecard-graylog",
@@ -420,7 +434,9 @@
       "How are you handling retention beyond 90 days today?",
       "Which Graylog Enterprise modules (Operations, Security, Illuminate) are you paying for?",
       "How much custom detection content has your team authored?"
-    ]
+    ],
+    "vertical": "observability_logs",
+    "is_main_competitor": false
   },
   {
     "id": "battlecard-honeycomb",
@@ -471,7 +487,9 @@
       "Is your team primarily SRE/dev or does Platform/Security need access too?",
       "How are you handling logs and what is that bill?",
       "How much of your Honeycomb spend is event volume versus retention?"
-    ]
+    ],
+    "vertical": "observability_logs",
+    "is_main_competitor": false
   },
   {
     "id": "battlecard-loki",
@@ -522,7 +540,9 @@
       "How often do analysts hit the 'this query timed out' wall?",
       "What is the operational footprint of running Loki, Mimir, Tempo and Pyroscope?",
       "Where does security telemetry live today?"
-    ]
+    ],
+    "vertical": "observability_logs",
+    "is_main_competitor": false
   },
   {
     "id": "battlecard-microsoft-sentinel",
@@ -577,7 +597,9 @@
       "Have you hit the E5 included-data cap?",
       "Are you running Sentinel and Defender XDR consolidated yet, and how is that going?",
       "What is your retention requirement and how is it priced today?"
-    ]
+    ],
+    "vertical": "security_siem_xdr",
+    "is_main_competitor": false
   },
   {
     "id": "battlecard-new-relic",
@@ -628,7 +650,9 @@
       "What is your monthly ingest and how much of that is logs versus APM?",
       "How much of your instrumentation is OpenTelemetry today?",
       "What is your New Relic renewal date and ARR?"
-    ]
+    ],
+    "vertical": "observability_logs",
+    "is_main_competitor": true
   },
   {
     "id": "battlecard-qradar",
@@ -683,7 +707,9 @@
       "What is your current EPS rating and how often do you hit it?",
       "How many of your detections are IBM-supplied versus custom?",
       "Is the IBM-to-Palo-Alto QRadar SaaS deal affecting your roadmap?"
-    ]
+    ],
+    "vertical": "security_siem_xdr",
+    "is_main_competitor": false
   },
   {
     "id": "battlecard-splunk",
@@ -733,7 +759,9 @@
       "What is your audit retention requirement and what does the storage cost line look like today?",
       "How many license tiers are you paying for across Splunk Core, Observability, and Enterprise Security?",
       "If you had to consolidate to one platform in 12 months, what's the blocker?"
-    ]
+    ],
+    "vertical": "observability_logs",
+    "is_main_competitor": true
   },
   {
     "id": "battlecard-sumologic",
@@ -779,7 +807,9 @@
       "Do you have any workloads that need air-gapped or self-hosted deployment?",
       "What is your typical query latency at peak ingest?",
       "Is your team feeling the limits of Sumo's CSE customization?"
-    ]
+    ],
+    "vertical": "security_siem_xdr",
+    "is_main_competitor": true
   },
   {
     "id": "cisco-appd-splunk-bundle",
@@ -834,7 +864,9 @@
       "How is cross-product correlation working today: shared data, dashboard links, or manual?",
       "What is the bundle uplift versus paying for each product separately?",
       "Which of the three products would you keep if you could only keep one?"
-    ]
+    ],
+    "vertical": "observability_logs",
+    "is_main_competitor": false
   },
   {
     "id": "dragos",
@@ -889,7 +921,9 @@
       "What percentage of incidents started in IT and pivoted into OT, or the reverse?",
       "Are you paying Dragos for asset coverage that is actually IT, not OT?",
       "Who owns the IT-OT bridge: plant security, corporate SOC, or neither?"
-    ]
+    ],
+    "vertical": "security_siem_xdr",
+    "is_main_competitor": false
   },
   {
     "id": "servicenow-itom",
@@ -944,7 +978,9 @@
       "What is your daily log ingest, and is Health Log Analytics handling all of it?",
       "Do you have data residency or air-gap requirements that the ServiceNow instance complicates?",
       "Where does Security telemetry live, and is it in scope for ITOM?"
-    ]
+    ],
+    "vertical": "observability_logs",
+    "is_main_competitor": false
   },
   {
     "id": "splunk-cloud",
@@ -999,7 +1035,9 @@
       "How spiky is your ingest pattern, and how does that interact with SVC sizing?",
       "Are your analyst and ingest regions aligned with the Splunk Cloud regions you can choose?",
       "What is your retention requirement, and how is SmartStore plus warm-tier costed today?"
-    ]
+    ],
+    "vertical": "observability_logs",
+    "is_main_competitor": false
   },
   {
     "id": "wiz",
@@ -1054,6 +1092,855 @@
       "What is your SOC log retention requirement, and is Wiz storing that data?",
       "Are you buying SIEM-tier, posture-tier, or both?",
       "How are runtime cloud detections handled today: Wiz Defend, GuardDuty, EDR, or SIEM rules?"
-    ]
+    ],
+    "vertical": "security_siem_xdr",
+    "is_main_competitor": false
+  },
+  {
+    "id": "battlecard-aws-opensearch",
+    "competitor": "AWS OpenSearch",
+    "competitor_slug": "aws-opensearch",
+    "vertical": "direct_search_vector",
+    "is_main_competitor": true,
+    "tagline": "Same Lucene roots, but Elastic ships the platform features OpenSearch lacks",
+    "key_pain": "AWS OpenSearch is a 7.10 fork that has diverged on plugins, ML, vector and APM. Customers picking it for AWS-native billing inherit a slower release cadence, no semantic_text, and no first-party APM or SIEM workflow. The community is real but smaller and AWS-centric.",
+    "talking_points": [
+      {
+        "angle": "Feature parity gap",
+        "claim": "ELSER, semantic_text, ES|QL, Universal Profiling, APM and Elastic Security exist in Elastic and not in OpenSearch.",
+        "proof": "OpenSearch ML Commons covers vector and a subset of NLP, but there is no semantic_text mapping, no ELSER sparse model, and no full APM/Security UI. Compare release notes side by side."
+      },
+      {
+        "angle": "Release velocity",
+        "claim": "Elastic ships major capability every 6 to 8 weeks; OpenSearch tracks AWS service rhythms.",
+        "proof": "Vector quantization (BBQ), inference API, ES|QL and Search Applications shipped in Elastic in 2024 and 2025; OpenSearch parity lags by quarters or has no equivalent."
+      },
+      {
+        "angle": "Where you run it",
+        "claim": "Elastic Cloud runs on AWS, GCP and Azure with marketplace billing on all three.",
+        "proof": "OpenSearch Service is AWS only. Multi-cloud or on-prem regulated customers default-disqualify it on residency."
+      }
+    ],
+    "elastic_advantages": [
+      "ELSER and semantic_text for built-in semantic search with no model wrangling",
+      "ES|QL piped query language plus EQL for security analytics",
+      "First-party APM, RUM, synthetics and Elastic Security on the same cluster",
+      "Universal Profiling for whole-fleet eBPF flame graphs",
+      "Frozen tier on S3 with searchable snapshots integrated and supported",
+      "Multi-cloud deployment (AWS, GCP, Azure) and on-prem or air-gapped"
+    ],
+    "proof_points": [
+      {
+        "metric": "ELSER and semantic_text shipped GA in Elastic 8.11; no equivalent in OpenSearch.",
+        "source": "elastic.co/blog/elser-elastic-learned-sparse-encoder-v2-retrieval-enhancement"
+      },
+      {
+        "metric": "Better Binary Quantization (BBQ) reduces vector RAM by ~32x with minimal recall loss.",
+        "source": "elastic.co/blog/scalar-quantization-in-lucene"
+      },
+      {
+        "metric": "Elastic ships APM, RUM, Profiling and Security on the same data plane; OpenSearch ships none of these.",
+        "source": "elastic.co/observability vs aws.amazon.com/opensearch-service/features"
+      }
+    ],
+    "objection_handlers": [
+      {
+        "q": "We are AWS-only and OpenSearch is one click in the console.",
+        "a": "Elastic Cloud on AWS is also one click via AWS Marketplace, with PrivateLink and consolidated billing. You keep AWS-native procurement and gain the platform features OpenSearch is missing."
+      },
+      {
+        "q": "OpenSearch is open source; Elastic relicensed under ELv2 and SSPL.",
+        "a": "Elastic is back to AGPLv3 since 2024 and is OSI-recognised again. The OpenSearch fork was created under different conditions; the licensing argument has expired."
+      },
+      {
+        "q": "Our team already knows the OpenSearch dashboard and APIs.",
+        "a": "OpenSearch and Elastic share the 7.10 API surface. ES|QL is additive and Kibana feature parity is high. Migration cost is mostly index reconfiguration, not query rewriting."
+      }
+    ],
+    "pricing_anchor": "AWS OpenSearch Service on-demand from ~$0.036/hr for t3.small.search; production tiers scale per node hour plus EBS plus data transfer. See aws.amazon.com/opensearch-service/pricing.",
+    "gotchas": [
+      "OpenSearch is materially cheaper for a write-once log archive on small clusters.",
+      "AWS-native shops with deep IAM integration get tighter Cognito/IAM auth out of the box on OpenSearch Service.",
+      "OpenSearch Dashboards (forked Kibana) is good enough for basic log search; the gap shows in APM, Security and ML, not in raw search.",
+      "OpenSearch has its own Anomaly Detection plugin; for simple metric anomalies it is comparable."
+    ],
+    "discovery_questions": [
+      "Are you on OpenSearch Service or self-managed OpenSearch, and on what version?",
+      "What use cases are you running today: logs, search, vectors, security, or all of the above?",
+      "Have you hit any of the missing features: ELSER, semantic_text, ES|QL, APM, Security?",
+      "Is multi-cloud or on-prem on the 24-month roadmap, or is AWS-only locked in?",
+      "Who owns the OpenSearch cluster operationally, and what is the on-call burden?"
+    ],
+    "clincher": "Same engine origin, but Elastic kept building the platform; OpenSearch kept building the AWS console integration."
+  },
+  {
+    "id": "battlecard-pinecone",
+    "competitor": "Pinecone",
+    "competitor_slug": "pinecone",
+    "vertical": "direct_search_vector",
+    "is_main_competitor": true,
+    "tagline": "Stop running two databases. BM25 plus dense plus ELSER under one query.",
+    "key_pain": "Pinecone is a vector-only managed service. Customers pair it with Elastic, Postgres or another keyword store for hybrid search, then pay for both, sync data both ways and reconcile two ranking models at query time. The architecture is simple until you need filters, full text or audit retention.",
+    "talking_points": [
+      {
+        "angle": "Hybrid in one query",
+        "claim": "BM25, dense vectors and ELSER sparse retrieval combine in a single _search call with rank-fusion (RRF) built in.",
+        "proof": "Pinecone added sparse-dense hybrid in 2024 but you still need a separate BM25 index for production keyword relevance. Elastic ranks all three together with reciprocal rank fusion."
+      },
+      {
+        "angle": "Filtering at scale",
+        "claim": "Pre-filter and post-filter on hundreds of metadata fields; nested documents and security filters supported.",
+        "proof": "Pinecone metadata filtering exists but performance falls off on high-cardinality filters. Elastic was designed for filtered search from day one."
+      },
+      {
+        "angle": "One platform, many uses",
+        "claim": "The same cluster can serve RAG, log analytics, observability and security search.",
+        "proof": "Customers consolidate to one license and one operations surface. Pinecone solves vectors only; everything else is somebody else's bill."
+      }
+    ],
+    "elastic_advantages": [
+      "Hybrid BM25 plus dense plus ELSER with built-in RRF",
+      "ELSER (sparse) gives strong out-of-domain retrieval with no fine-tuning",
+      "BBQ vector quantization for cost-efficient memory at scale",
+      "Native data ingestion, parsing and enrichment without an ETL service",
+      "Searchable snapshots on object storage for cheap long-term vector retention",
+      "Self-hosted, Elastic Cloud and air-gapped deployment options"
+    ],
+    "proof_points": [
+      {
+        "metric": "Elastic supports dense, sparse (ELSER) and BM25 hybrid via RRF in one query (8.8+).",
+        "source": "elastic.co/blog/whats-new-elastic-8-8-0"
+      },
+      {
+        "metric": "BBQ delivers ~95% recall at ~1/32 the memory of float32 vectors.",
+        "source": "elastic.co/blog/better-binary-quantization-lucene-elasticsearch"
+      },
+      {
+        "metric": "Pinecone Standard is $0.096/hr per p1.x1 pod plus storage. Two databases means two bills.",
+        "source": "pinecone.io/pricing"
+      }
+    ],
+    "objection_handlers": [
+      {
+        "q": "Pinecone has the lowest p99 vector latency we have seen.",
+        "a": "True at the dedicated-vector tier and at extreme query rates. For mixed workloads with filters, BM25 and reranking, Elastic typically wins on end-to-end relevance latency because there is no second hop and no client-side fusion."
+      },
+      {
+        "q": "Pinecone is fully managed; we do not want to run a search cluster.",
+        "a": "Elastic Cloud Serverless gives you the same managed surface: pay for ingest plus search, no node sizing. The vector tier is autoscaled."
+      },
+      {
+        "q": "Our team already wired Pinecone into LangChain and LlamaIndex.",
+        "a": "Both frameworks ship a first-class Elasticsearch retriever. The migration is a connection-string change plus an index mapping; data backfill runs from your source of truth."
+      }
+    ],
+    "pricing_anchor": "Pinecone Starter is free; Standard pods at ~$0.096/hr per p1.x1 plus storage. See pinecone.io/pricing for current tiers.",
+    "gotchas": [
+      "On a pure-vector workload at very high QPS, Pinecone serverless can be cheaper and simpler to operate.",
+      "Pinecone's namespaces give effortless multi-tenant isolation; Elastic uses index-per-tenant or document-level security, which is more flexible but more setup.",
+      "Pinecone has a smaller, simpler API surface that some teams prefer for prototype RAG apps.",
+      "Pinecone serverless billing is decoupled from infrastructure; very bursty workloads can land cheaper there."
+    ],
+    "discovery_questions": [
+      "Beyond vectors, where else does the search live today: BM25, Postgres FTS, Algolia, or somewhere else?",
+      "How many metadata filters does each query carry, and what is the cardinality?",
+      "What is your Pinecone bill at peak month, and is it growing linearly with corpus or with QPS?",
+      "Do you reconcile two ranking models in application code today, or do you let Pinecone do it all?",
+      "What is the freshness SLA between source of truth and the vector index?"
+    ],
+    "clincher": "Pinecone is a vector cache. Elastic is the search engine your data already lives in."
+  },
+  {
+    "id": "battlecard-weaviate",
+    "competitor": "Weaviate",
+    "competitor_slug": "weaviate",
+    "vertical": "direct_search_vector",
+    "is_main_competitor": true,
+    "tagline": "Vector-native works until you need keyword, filters and security on one cluster",
+    "key_pain": "Weaviate is a clean, vector-native open source database with strong GraphQL ergonomics. It is a great fit for greenfield RAG. Where it strains: enterprise auth, large filtered queries, hybrid scoring beyond a single index, and operational features that Elastic shipped a decade ago.",
+    "talking_points": [
+      {
+        "angle": "True hybrid retrieval",
+        "claim": "Elastic combines BM25, dense vectors and ELSER sparse with RRF; Weaviate hybrid is BM25 plus dense only.",
+        "proof": "ELSER outperforms BM25 on out-of-domain corpora without fine-tuning and stacks with dense vectors via RRF in one Elastic query."
+      },
+      {
+        "angle": "Operations at scale",
+        "claim": "Tiered storage, snapshot-restore, cross-cluster search and ILM are mature in Elastic.",
+        "proof": "Weaviate has snapshots and replication but lacks the warm/cold/frozen pattern, cross-cluster search and policy-driven lifecycle that regulated customers depend on."
+      },
+      {
+        "angle": "Single platform",
+        "claim": "Vectors, logs, metrics, traces and security on one cluster with one auth model.",
+        "proof": "Weaviate is a vector DB. Bringing in observability or SIEM means standing up another stack."
+      }
+    ],
+    "elastic_advantages": [
+      "BM25 plus dense plus ELSER hybrid with RRF in one query",
+      "Document-level security and field-level security built in",
+      "Frozen tier on object storage for cold vector retention",
+      "Native ingest pipelines, no separate ETL service required",
+      "Same cluster runs observability and security workloads",
+      "AGPLv3 open source plus commercial support and Elastic Cloud"
+    ],
+    "proof_points": [
+      {
+        "metric": "Elastic ships ELSER sparse retrieval; Weaviate uses BM25 for the sparse leg of hybrid.",
+        "source": "elastic.co/blog/elser-v2"
+      },
+      {
+        "metric": "Elastic 8.x supports document-level and field-level security on vector indices.",
+        "source": "elastic.co/guide/en/elasticsearch/reference/current/document-level-security.html"
+      },
+      {
+        "metric": "Searchable snapshots store cold data on S3/GCS/Azure Blob at object-storage prices.",
+        "source": "elastic.co/blog/introducing-elasticsearch-searchable-snapshots"
+      }
+    ],
+    "objection_handlers": [
+      {
+        "q": "Weaviate has GraphQL out of the box; our app team prefers it.",
+        "a": "Elastic exposes a typed REST API plus client libraries that most LLM frameworks already integrate. If GraphQL is a hard requirement, a thin gateway in front of Elastic is a 1-day build."
+      },
+      {
+        "q": "Weaviate's class schema and modules feel cleaner than Elastic mappings.",
+        "a": "Mappings carry more responsibility because Elastic indexes structured logs, metrics and security events too. For a pure vector use case the schema delta is small."
+      },
+      {
+        "q": "Weaviate is open source and we want to self-host.",
+        "a": "Elastic is open source under AGPLv3 and ships a self-managed binary with no telemetry or phone-home. Same self-host story, much wider feature surface."
+      }
+    ],
+    "pricing_anchor": "Weaviate Cloud Standard tier starts around $25/month for small workloads; production workloads price per dimension and stored object. See weaviate.io/pricing for current tiers.",
+    "gotchas": [
+      "For a pure RAG prototype with no other data, Weaviate is faster to stand up than tuning an Elastic mapping.",
+      "Weaviate's vectorizer modules (text2vec-openai, text2vec-cohere) are convenient; Elastic uses the inference API which is comparable but newer.",
+      "Weaviate has a friendlier developer story for engineers who only ever want vectors and modules.",
+      "If you do not care about logs, metrics, traces or security telemetry, the platform breadth is wasted."
+    ],
+    "discovery_questions": [
+      "What is on the same data plane as your vectors today, and what is on a different stack?",
+      "Are you running keyword (BM25) somewhere alongside Weaviate, and how is that bill split?",
+      "Do you have document-level access control needs (per-customer, per-tenant)?",
+      "What does your retention story look like for cold vectors after 6 months?",
+      "Where is the renewal pressure: Weaviate Cloud, the keyword side, or both?"
+    ],
+    "clincher": "Pick Weaviate if you only ever need vectors. Pick Elastic when search is a platform decision."
+  },
+  {
+    "id": "battlecard-milvus",
+    "competitor": "Milvus",
+    "competitor_slug": "milvus",
+    "vertical": "direct_search_vector",
+    "is_main_competitor": true,
+    "tagline": "Billion-scale vectors are useful; the question is what else lives on the same cluster",
+    "key_pain": "Milvus and Zilliz Cloud lead pure-vector benchmarks at billion-scale and offer GPU indexing. The tradeoff is operational complexity (etcd, Pulsar, MinIO components) and a narrow feature set: no first-class BM25, weak metadata filtering performance, no observability or security workloads on the same cluster.",
+    "talking_points": [
+      {
+        "angle": "Hybrid retrieval that ships",
+        "claim": "Elastic combines BM25, dense vectors and ELSER sparse via RRF in one query; Milvus hybrid is dense plus a basic sparse vector.",
+        "proof": "ELSER plus BM25 plus dense in one ranked result set is a single Elastic query. Milvus achieves similar scoring with two collections and client-side fusion."
+      },
+      {
+        "angle": "Operational simplicity",
+        "claim": "Elastic ships as one binary plus optional Kibana; Milvus depends on etcd, Pulsar/Kafka and an object store.",
+        "proof": "The Milvus distributed deployment is documented to require multiple services; Zilliz Cloud abstracts this for a price. Elastic Cloud is a single managed surface."
+      },
+      {
+        "angle": "Use case breadth",
+        "claim": "Same cluster serves search, logs, observability and security; one license, one ops model.",
+        "proof": "Customers replace 3-4 single-purpose tools with Elastic. Milvus does vectors well and only vectors."
+      }
+    ],
+    "elastic_advantages": [
+      "BM25 plus dense plus ELSER hybrid in one ranked query (RRF)",
+      "BBQ vector quantization for low memory cost at billion scale",
+      "Single-process deployment with native scaling, no etcd/Pulsar dependency",
+      "Searchable snapshots on object storage for cold vectors",
+      "Mature multi-tenant security (DLS, FLS, API keys, SSO)",
+      "Same cluster handles logs, metrics, traces and security telemetry"
+    ],
+    "proof_points": [
+      {
+        "metric": "BBQ reduces vector RAM by ~32x with minimal recall loss versus float32.",
+        "source": "elastic.co/blog/better-binary-quantization-lucene-elasticsearch"
+      },
+      {
+        "metric": "Elastic supports billion-scale vector indices with HNSW and tiered storage.",
+        "source": "elastic.co/blog/whats-new-elastic-8-8-0"
+      },
+      {
+        "metric": "Elastic 8.x ships ELSER sparse retrieval with no fine-tuning required.",
+        "source": "elastic.co/blog/elser-elastic-learned-sparse-encoder-v2-retrieval-enhancement"
+      }
+    ],
+    "objection_handlers": [
+      {
+        "q": "Milvus benchmarks higher QPS on pure vector at billion scale.",
+        "a": "On a pure-vector benchmark with no filters, no BM25 and no auth, Milvus can win. Production workloads almost always carry filters, security and BM25; the head-to-head numbers shift quickly."
+      },
+      {
+        "q": "Milvus has GPU indexing, Elastic does not.",
+        "a": "True today. Elastic ships HNSW with BBQ on CPU and remains competitive at billion scale; the GPU advantage is mostly index build time, not query latency."
+      },
+      {
+        "q": "We standardised on open source; Milvus is Apache 2.0.",
+        "a": "Elastic is back to AGPLv3 OSI-recognised open source as of 2024. Both are open source; the platform breadth is the differentiator now."
+      }
+    ],
+    "pricing_anchor": "Milvus is free open source; Zilliz Cloud Serverless is usage-based starting around $0.10 per million vectors per hour. See zilliz.com/pricing.",
+    "gotchas": [
+      "Milvus is the right choice when the entire architecture is pure vector at very high scale and nothing else.",
+      "GPU index build is genuinely faster on Milvus for huge corpora rebuilt frequently.",
+      "Zilliz Cloud has a clean, vector-only console that some teams prefer to Kibana for RAG-only work.",
+      "Milvus 2.4+ has a cleaner partition-key story for very high-cardinality multi-tenant vector apps."
+    ],
+    "discovery_questions": [
+      "What is the corpus size today, what will it be in 12 months, and how often is it fully rebuilt?",
+      "How many filters, ACLs or tenants does each query carry?",
+      "Do you also need keyword search, and if so where does it live today?",
+      "Who runs the Milvus cluster operationally and what is the on-call burden?",
+      "What other workloads sit next to vector search: logs, observability, security?"
+    ],
+    "clincher": "Milvus stores vectors. Elastic powers the application that uses them."
+  },
+  {
+    "id": "battlecard-typesense",
+    "competitor": "Typesense",
+    "competitor_slug": "typesense",
+    "vertical": "direct_search_vector",
+    "is_main_competitor": true,
+    "tagline": "Great for one site search. Elastic is the platform for everything that comes after.",
+    "key_pain": "Typesense is fast to install, has a clean API and a generous free tier, and makes site search trivial. The ceiling appears the moment you need: enterprise auth, multi-cluster, security analytics on the same data, log retention, or anything beyond product-search ranking.",
+    "talking_points": [
+      {
+        "angle": "Long-term platform",
+        "claim": "Elastic grows with the customer from site search to observability, security and AI Search.",
+        "proof": "Customers consolidate from 3-4 vendors to one Elastic license; Typesense remains a single-purpose tool."
+      },
+      {
+        "angle": "Hybrid relevance",
+        "claim": "BM25 plus dense plus ELSER sparse with RRF in one ranked result set.",
+        "proof": "Typesense supports dense vectors and BM25 hybrid; ELSER sparse retrieval and RRF rank fusion are Elastic-only."
+      },
+      {
+        "angle": "Enterprise readiness",
+        "claim": "RBAC, document-level security, SSO/SAML/OIDC, audit log and FedRAMP options ship in Elastic.",
+        "proof": "Typesense API keys are scoped well for one app; multi-team enterprise governance and compliance certifications are limited."
+      }
+    ],
+    "elastic_advantages": [
+      "BM25 plus dense plus ELSER hybrid scoring with RRF",
+      "Document-level and field-level security for multi-tenant catalogs",
+      "Same cluster powers observability and security workloads",
+      "Frozen tier on object storage for analytics history",
+      "Search Applications and Behavioral Analytics for product search KPIs",
+      "Mature SSO, audit log, IP allowlist and FIPS deployment"
+    ],
+    "proof_points": [
+      {
+        "metric": "Elastic Search Applications offers a high-level API for site search with personalization and reranking.",
+        "source": "elastic.co/guide/en/enterprise-search/current/search-applications.html"
+      },
+      {
+        "metric": "ELSER plus BM25 plus dense via RRF outperforms BM25-only on retrieval recall.",
+        "source": "elastic.co/blog/elser-v2"
+      },
+      {
+        "metric": "Elastic Behavioral Analytics tracks query reformulation, click-through and conversion natively.",
+        "source": "elastic.co/guide/en/enterprise-search/current/behavioral-analytics-overview.html"
+      }
+    ],
+    "objection_handlers": [
+      {
+        "q": "Typesense was running in 30 minutes; Elastic feels like more setup.",
+        "a": "Elastic Cloud Serverless gets to the same first-query speed; the apparent gap is mostly tutorial polish. The investment pays back when the second use case (logs, security, vectors) reuses the same cluster."
+      },
+      {
+        "q": "Typesense's typo tolerance is unbeatable out of the box.",
+        "a": "Elastic ships fuzziness AUTO plus phonetic and edge n-gram tokenizers; tuning takes a half day for the same result. The default is less aggressive on purpose to control recall."
+      },
+      {
+        "q": "We do not need observability or security; site search is the only use case.",
+        "a": "Then Typesense is a defensible choice today. The question is the 24-month roadmap: most product teams add personalization, A/B testing or analytics, and Elastic scales into that without a re-platform."
+      }
+    ],
+    "pricing_anchor": "Typesense Cloud starts around $25/month for a small node; production clusters scale per node hour. See typesense.org/pricing.",
+    "gotchas": [
+      "For a single-page e-commerce or docs site search, Typesense is faster to ship and cheaper at small scale.",
+      "Typo tolerance defaults are friendlier without tuning; Elastic requires a few minutes of analyzer config to match.",
+      "Typesense's developer experience and documentation are excellent for greenfield apps.",
+      "Curation rules are simpler in Typesense for non-engineers than in Elastic Search Applications."
+    ],
+    "discovery_questions": [
+      "What other data lives in Typesense today, and what does not?",
+      "Is multi-region or multi-tenant on the roadmap, and what does that look like in Typesense?",
+      "Do you have personalization, A/B test or boost-by-business-rules requirements coming?",
+      "What is the analytics story for search KPIs (click-through, conversion, abandonment)?",
+      "Where does observability and security data live today, and is consolidation on the table?"
+    ],
+    "clincher": "Typesense ends at site search. Elastic begins there."
+  },
+  {
+    "id": "battlecard-meilisearch",
+    "competitor": "Meilisearch",
+    "competitor_slug": "meilisearch",
+    "vertical": "direct_search_vector",
+    "is_main_competitor": true,
+    "tagline": "Developer-friendly is great until the security team and the SRE team show up",
+    "key_pain": "Meilisearch is the most loved developer experience in the search space: a single binary, instant install, JS-first SDKs, prefix search and typo tolerance enabled by default. The ceiling appears around enterprise scale: limited multi-tenant security, no tiered storage, no first-party observability, no SIEM workflow.",
+    "talking_points": [
+      {
+        "angle": "Hybrid retrieval ceiling",
+        "claim": "Elastic ships BM25 plus dense plus ELSER sparse with RRF; Meilisearch hybrid is BM25 plus dense.",
+        "proof": "ELSER sparse retrieval and three-way RRF rank fusion are Elastic-only. Meilisearch added vectors in v1.6 (2024) but the hybrid surface is narrower."
+      },
+      {
+        "angle": "Enterprise governance",
+        "claim": "Document-level security, field-level security, SSO/SAML/OIDC, audit log and FIPS deployment ship in Elastic.",
+        "proof": "Meilisearch tenant tokens are scoped well for an app; corporate IAM, audit and compliance certifications are limited."
+      },
+      {
+        "angle": "Platform breadth",
+        "claim": "Same cluster runs site search, RAG, observability and security.",
+        "proof": "Meilisearch is search-only by design. Elastic replaces 3-4 single-purpose stacks at consolidation time."
+      }
+    ],
+    "elastic_advantages": [
+      "BM25 plus dense plus ELSER hybrid with RRF",
+      "Document-level and field-level security",
+      "Mature SSO, audit log and FIPS-ready deployments",
+      "Frozen tier on object storage for analytics retention",
+      "Search Applications, Behavioral Analytics and reranking included",
+      "Same data plane handles logs, metrics, traces and security"
+    ],
+    "proof_points": [
+      {
+        "metric": "Elastic Search Applications API gives a curated relevance surface for site and product search.",
+        "source": "elastic.co/guide/en/enterprise-search/current/search-applications.html"
+      },
+      {
+        "metric": "ELSER plus BM25 plus dense via RRF lifts retrieval recall over BM25-only.",
+        "source": "elastic.co/blog/elser-v2"
+      },
+      {
+        "metric": "Elastic Cloud is FedRAMP Moderate authorised; Meilisearch Cloud is not.",
+        "source": "elastic.co/industries/public-sector"
+      }
+    ],
+    "objection_handlers": [
+      {
+        "q": "Meilisearch was running in 5 minutes and the JS client is beautiful.",
+        "a": "Elastic Cloud Serverless plus the Search Application client closes most of the gap; the first-experience polish is real but the long-term ceiling matters more for the team you support 24 months out."
+      },
+      {
+        "q": "Typo tolerance defaults are friendlier in Meilisearch.",
+        "a": "True out of the box. Elastic ships fuzziness AUTO and the new lexical and semantic relevance defaults; tuning matches Meilisearch in a few hours."
+      },
+      {
+        "q": "We are JavaScript-first; Elastic feels Java-centric.",
+        "a": "The official @elastic/elasticsearch JS client is mature and TypeScript-typed. The internals are Java; the developer surface is HTTP plus a clean JS SDK."
+      }
+    ],
+    "pricing_anchor": "Meilisearch Cloud Build tier from $30/month; production tiers scale per document and per-month. See meilisearch.com/pricing.",
+    "gotchas": [
+      "For a small SaaS app or a docs site, Meilisearch ships faster and the DX is genuinely best-in-class.",
+      "Meilisearch's typo tolerance and prefix search defaults are more forgiving without configuration.",
+      "JavaScript and React integration libraries are first-class and well-documented.",
+      "If you only ever do site search and have no compliance overhead, Meilisearch is hard to beat on time-to-value."
+    ],
+    "discovery_questions": [
+      "What other data lives in Meilisearch today, and what is on a different stack?",
+      "Do you have enterprise IAM, audit, or compliance pressure (SOC2, ISO, FedRAMP, HIPAA)?",
+      "Is multi-tenant search a requirement, and how is isolation enforced today?",
+      "Where does observability and security telemetry live, and could one platform serve all of it?",
+      "What is the team's appetite for consolidating vendors at the next renewal?"
+    ],
+    "clincher": "Meilisearch wins the demo. Elastic wins the audit."
+  },
+  {
+    "id": "battlecard-algolia",
+    "competitor": "Algolia",
+    "competitor_slug": "algolia",
+    "vertical": "ai_search_ecommerce",
+    "is_main_competitor": true,
+    "tagline": "Algolia is rented relevance. Elastic is owned relevance plus the platform around it.",
+    "key_pain": "Algolia ships fast, ranks well and has the best-in-class merchandising UI for product search. The cost shows up in three places: per-record-per-month pricing that punishes large catalogs, no data residency control beyond a few regions, and a ceiling at search-only when the team needs RAG, observability or security on the same data.",
+    "talking_points": [
+      {
+        "angle": "TCO at large catalogs",
+        "claim": "Per-GB ingest plus storage tiers replaces per-record-per-month at scale.",
+        "proof": "Algolia Premium lists at $1.50 per 1000 records/month; a 50M-product catalog runs into six figures monthly. Elastic indexed at the same scale runs predictable per-GB."
+      },
+      {
+        "angle": "Data sovereignty",
+        "claim": "Elastic Cloud runs in 50+ regions across AWS, GCP and Azure, plus self-hosted and air-gapped.",
+        "proof": "Algolia hosts data in a small number of regions and does not offer self-hosted. EU, healthcare, public sector and financial customers often disqualify on residency."
+      },
+      {
+        "angle": "Beyond product search",
+        "claim": "Same cluster handles RAG, log analytics, observability and security.",
+        "proof": "Algolia is search-only by design. Elastic replaces multiple stacks at the next consolidation cycle."
+      }
+    ],
+    "elastic_advantages": [
+      "Per-GB ingest plus tiered storage scales economically with catalog size",
+      "Self-hosted, Elastic Cloud (50+ regions) and air-gapped deployments",
+      "Hybrid BM25 plus dense plus ELSER sparse with RRF",
+      "Search Applications, Behavioral Analytics and reranking included",
+      "Same data plane for site search, RAG, observability and security",
+      "Open source under AGPLv3, no full vendor lock-in"
+    ],
+    "proof_points": [
+      {
+        "metric": "Elastic Search Applications and Behavioral Analytics ship merchandising and search KPIs natively.",
+        "source": "elastic.co/guide/en/enterprise-search/current/behavioral-analytics-overview.html"
+      },
+      {
+        "metric": "Algolia Premium list price is $1.50 per 1000 records/month plus $0.50 per 1000 search requests.",
+        "source": "algolia.com/pricing"
+      },
+      {
+        "metric": "Elastic Cloud is FedRAMP Moderate authorised and supports HIPAA, ISO 27001 and SOC 2.",
+        "source": "elastic.co/trust/compliance"
+      }
+    ],
+    "objection_handlers": [
+      {
+        "q": "Algolia's merchandising and ranking UI is the best in the market.",
+        "a": "Algolia has invested years in that surface. Elastic Search Applications and the Search UI components close most of the gap, and Behavioral Analytics gives parity on KPIs. For pure merchandising depth, scope it in the POV."
+      },
+      {
+        "q": "Algolia's sub-50ms global latency is a hard requirement.",
+        "a": "Elastic Cloud regional clusters plus searchable snapshots and HTTP-level caching match the latency budget for the regions that matter. Round-trip within region is comparable."
+      },
+      {
+        "q": "We do not have search engineers; Algolia is fully managed.",
+        "a": "Elastic Cloud Serverless and Search Applications give the same managed surface. The investment is one-time and pays back at renewal scale."
+      }
+    ],
+    "pricing_anchor": "Algolia Premium lists at $1.50 per 1000 records/month plus $0.50 per 1000 search requests. See algolia.com/pricing.",
+    "gotchas": [
+      "For small catalogs (under 1M records), Algolia's per-record pricing is competitive and the time-to-launch is unbeatable.",
+      "Algolia's merchandising UI for non-engineers is more polished than Elastic Search Applications today.",
+      "Algolia's NeuralSearch is a strong managed semantic-search experience for teams that do not want to model relevance.",
+      "Algolia's CDN-style global edge serving is very mature; Elastic edge story is region-based plus customer-managed CDNs."
+    ],
+    "discovery_questions": [
+      "What is your record count today, what will it be in 12 months, and what is the growth driver?",
+      "Where does the catalog data originate, and how often is it reindexed?",
+      "Do you have data residency, sovereignty or air-gap pressure (EU, public sector, healthcare)?",
+      "What other data could share the same search cluster (orders, sessions, logs)?",
+      "What is your Algolia renewal date and current monthly run-rate?"
+    ],
+    "clincher": "Algolia is rented search. Elastic is owned search on the data plane your business already runs on."
+  },
+  {
+    "id": "battlecard-coveo",
+    "competitor": "Coveo",
+    "competitor_slug": "coveo",
+    "vertical": "ai_search_ecommerce",
+    "is_main_competitor": true,
+    "tagline": "Open relevance plus open data, on the same platform that runs your logs and SIEM",
+    "key_pain": "Coveo's enterprise relevance and recommendations are mature and well-tuned for Salesforce and ServiceNow shops. The cost: a closed ML stack, indexed-document pricing, and a single-purpose footprint that does not extend to RAG, log analytics, observability or security.",
+    "talking_points": [
+      {
+        "angle": "Open ML and inference",
+        "claim": "ELSER, dense vectors, the inference API and external model integrations are open and inspectable.",
+        "proof": "Coveo's relevance and Coveo ML run inside Coveo's tenant; export and portability are limited. Elastic detection rules, ML jobs and inference pipelines are open and Git-managed."
+      },
+      {
+        "angle": "Pricing model",
+        "claim": "Per-GB ingest plus tiered storage instead of indexed-document tiers.",
+        "proof": "Coveo prices per indexed document and per query class; large catalogs and high-traffic sites hit pricing inflection. Elastic decouples ingest from storage cost."
+      },
+      {
+        "angle": "Platform breadth",
+        "claim": "The same cluster runs site search, RAG, observability and security.",
+        "proof": "Coveo is search-and-recommendations only. Elastic consolidates 3-4 stacks at the next renewal cycle."
+      }
+    ],
+    "elastic_advantages": [
+      "Open ML: ELSER, inference API, third-party model upload",
+      "Per-GB ingest plus warm/cold/frozen storage tiers",
+      "Search Applications and Behavioral Analytics included",
+      "Same platform serves RAG, observability and security",
+      "AGPLv3 open source plus commercial support",
+      "Self-hosted, Elastic Cloud and air-gapped deployment"
+    ],
+    "proof_points": [
+      {
+        "metric": "Elastic ELSER plus BM25 plus dense vectors via RRF lifts retrieval recall in one query.",
+        "source": "elastic.co/blog/elser-v2"
+      },
+      {
+        "metric": "Elastic Search Applications supports curations, boosts, synonyms and reranking out of the box.",
+        "source": "elastic.co/guide/en/enterprise-search/current/search-applications.html"
+      },
+      {
+        "metric": "Elastic Cloud is FedRAMP Moderate authorised; Coveo Cloud is FedRAMP-eligible but with narrower control coverage.",
+        "source": "elastic.co/trust/compliance"
+      }
+    ],
+    "objection_handlers": [
+      {
+        "q": "Coveo's ML personalization is more mature, especially for ServiceNow and Salesforce.",
+        "a": "True for those packaged integrations. For greenfield or non-Salesforce shops, Elastic ELSER plus reranking matches Coveo on relevance with open models you can audit."
+      },
+      {
+        "q": "Coveo for Salesforce and Coveo for ServiceNow are first-party plug-ins.",
+        "a": "Elastic has Salesforce and ServiceNow connectors plus mature webhook integrations. The ML personalization rebuild is real work; scope the tradeoff in the POV against TCO and openness."
+      },
+      {
+        "q": "Coveo's relevance UI for non-engineers is polished.",
+        "a": "Elastic Search Applications and Lens dashboards close most of the gap. For a curation-heavy merchandising team that does not want any engineer involvement, scope it explicitly."
+      }
+    ],
+    "pricing_anchor": "Coveo prices per indexed document, per query class and per ML SKU. Public list pricing varies; verify on coveo.com or with the AE before quoting.",
+    "gotchas": [
+      "For Salesforce-heavy shops, Coveo's first-party integration is faster to ship than building it on Elastic.",
+      "Coveo ML's session-based personalization is well-tuned for retail and self-service knowledge bases.",
+      "Coveo's relevance tuning UI for non-technical merchandisers is more mature than Elastic Search Applications today.",
+      "Coveo Atomic and Coveo Headless give a strong frontend component story that some teams prefer."
+    ],
+    "discovery_questions": [
+      "Are you on Coveo for Salesforce, Coveo for ServiceNow, or the standalone platform?",
+      "What is your current ARR with Coveo and what is the renewal date?",
+      "How much of the relevance is hand-tuned in the Coveo UI versus driven by Coveo ML?",
+      "What other search or RAG use cases are on the 12-month roadmap?",
+      "Where do logs, observability and security data live today?"
+    ],
+    "clincher": "Coveo runs in Coveo's tenant. Elastic runs on your data, in your region, with your models."
+  },
+  {
+    "id": "battlecard-lucidworks",
+    "competitor": "Lucidworks",
+    "competitor_slug": "lucidworks",
+    "vertical": "ai_search_ecommerce",
+    "is_main_competitor": true,
+    "tagline": "Elastic shipped the platform features Solr-based Fusion is still chasing",
+    "key_pain": "Lucidworks Fusion is the commercial wrapper around Apache Solr, with strong relevance heritage and a deep services practice. The cost: Solr's release cadence, a smaller community than Elastic, fewer first-party integrations, and no observability or security workloads on the same data plane.",
+    "talking_points": [
+      {
+        "angle": "Velocity and ecosystem",
+        "claim": "Elastic ships major capability every 6 to 8 weeks and powers Beats, Agent and the wider OTel community.",
+        "proof": "Solr's release rhythm and community size are smaller; Lucidworks adds value on top but cannot ship faster than upstream Solr."
+      },
+      {
+        "angle": "Hybrid retrieval and ML",
+        "claim": "ELSER sparse plus dense plus BM25 with RRF in one query, plus the inference API for any external model.",
+        "proof": "Solr supports vectors and basic hybrid; Lucidworks ML adds personalization. The ELSER plus three-way RRF capability is Elastic-only."
+      },
+      {
+        "angle": "Beyond search",
+        "claim": "Same cluster runs RAG, observability, APM and security.",
+        "proof": "Fusion is a search platform. Elastic consolidates 3-4 single-purpose stacks at the next renewal cycle."
+      }
+    ],
+    "elastic_advantages": [
+      "ELSER plus BM25 plus dense vectors with RRF",
+      "Inference API for any third-party model, plus first-party ELSER",
+      "Same platform handles observability, APM and security",
+      "Per-GB ingest plus warm/cold/frozen storage tiers",
+      "Search Applications, Behavioral Analytics and reranking included",
+      "Self-hosted, Elastic Cloud, marketplaces and air-gapped"
+    ],
+    "proof_points": [
+      {
+        "metric": "Elastic ELSER plus dense plus BM25 via RRF lifts retrieval recall in one query.",
+        "source": "elastic.co/blog/elser-v2"
+      },
+      {
+        "metric": "Elastic Search Applications and Behavioral Analytics ship search KPIs natively.",
+        "source": "elastic.co/guide/en/enterprise-search/current/behavioral-analytics-overview.html"
+      },
+      {
+        "metric": "Elastic Cloud is FedRAMP Moderate authorised and supports HIPAA, ISO 27001 and SOC 2.",
+        "source": "elastic.co/trust/compliance"
+      }
+    ],
+    "objection_handlers": [
+      {
+        "q": "We have years of Solr expertise and Fusion's services team is excellent.",
+        "a": "Migration tools translate Solr schema and queries with high fidelity; Elastic services partners run the migration. The expertise carries over because both engines are Lucene-based."
+      },
+      {
+        "q": "Fusion's signal-driven boosting and Smart Answers are tuned for our use case.",
+        "a": "Elastic Search Applications plus Behavioral Analytics deliver equivalent signal-driven boosts. Smart Answers is a packaged ML SKU; ELSER plus reranking covers the same surface, with open models."
+      },
+      {
+        "q": "Lucidworks owns the relevance Lab process for big retailers.",
+        "a": "Elastic has comparable services partners and a public reference list. The Lab process is replicable; the differentiator is platform breadth and TCO."
+      }
+    ],
+    "pricing_anchor": "Lucidworks Fusion is enterprise-licensed; public list pricing is not posted. Verify with the Lucidworks AE or Elastic competitive desk before quoting.",
+    "gotchas": [
+      "For Solr-native shops with a long-running search team, Fusion is the lower-friction renewal.",
+      "Lucidworks' relevance Lab process is well-known for big-retailer engagements.",
+      "Smart Answers and Predictive Merchandiser are packaged for non-engineers more than Elastic equivalents.",
+      "Solr's facet performance for very high-cardinality fields is competitive."
+    ],
+    "discovery_questions": [
+      "What is the Solr footprint underneath Fusion (versions, shards, JVM heap)?",
+      "How much of the relevance is hand-tuned in Fusion versus driven by Smart Answers or Predictive Merchandiser?",
+      "What is the current Lucidworks ARR and renewal date?",
+      "Are there other search or RAG use cases on the roadmap that could share the cluster?",
+      "Where do observability and security data live, and is consolidation on the table?"
+    ],
+    "clincher": "Solr started this story. Elastic kept writing it."
+  },
+  {
+    "id": "battlecard-crowdstrike",
+    "competitor": "CrowdStrike",
+    "competitor_slug": "crowdstrike",
+    "vertical": "security_siem_xdr",
+    "is_main_competitor": true,
+    "tagline": "Falcon catches the endpoint. Elastic catches the rest and keeps the history.",
+    "key_pain": "CrowdStrike Falcon dominates endpoint detection and response. Where it strains as a platform: long-retention SIEM-class storage gets expensive on Falcon LogScale, detection content outside the endpoint is thinner, and Next-Gen SIEM is a newer product that customers are still proving in. Most CrowdStrike shops keep a separate SIEM.",
+    "talking_points": [
+      {
+        "angle": "Co-existence is the default",
+        "claim": "Elastic ingests Falcon Insight and Falcon Cloud Workload alerts via the native integration; Elastic Security correlates across endpoint, identity, network and cloud.",
+        "proof": "The Elastic Falcon integration ships in Fleet; mappings are ECS-aligned. Customers keep Falcon for endpoint and run Elastic as the SIEM."
+      },
+      {
+        "angle": "Long retention economics",
+        "claim": "Frozen tier on object storage gives 12-24+ months of searchable retention at object-storage prices.",
+        "proof": "Falcon LogScale (ex-Humio) retention is priced per GB ingest plus storage tier; Elastic searchable snapshots on S3/GCS/Azure Blob are typically cheaper at the 12-month boundary."
+      },
+      {
+        "angle": "Open detection engineering",
+        "claim": "Detection rules in EQL, KQL or ES|QL, all open-source on GitHub at elastic/detection-rules with full CI.",
+        "proof": "CrowdStrike's detections are proprietary IOAs and rules; export and customisation are limited. Elastic detection IP stays with the customer."
+      }
+    ],
+    "elastic_advantages": [
+      "Native Falcon integration ingests detections, processes and host data",
+      "Frozen tier on object storage for long SIEM retention",
+      "Open detection rule format on GitHub (elastic/detection-rules)",
+      "MITRE ATT&CK navigator built into Kibana",
+      "Cross-domain correlation: endpoint plus identity plus network plus cloud",
+      "Self-hosted, Elastic Cloud or air-gapped deployment"
+    ],
+    "proof_points": [
+      {
+        "metric": "Elastic Falcon integration is documented and ships with ECS mappings.",
+        "source": "docs.elastic.co/integrations/crowdstrike"
+      },
+      {
+        "metric": "Elastic detection-rules repository is public on GitHub with hundreds of rules.",
+        "source": "github.com/elastic/detection-rules"
+      },
+      {
+        "metric": "Falcon Pro list pricing is published in the public market around $60/endpoint/year for the entry tier.",
+        "source": "Public CrowdStrike pricing references; see crowdstrike.com/products/bundles for current bundles"
+      }
+    ],
+    "objection_handlers": [
+      {
+        "q": "CrowdStrike Next-Gen SIEM is bundled with Falcon now; why pay for a second SIEM?",
+        "a": "Next-Gen SIEM is a newer offering; ingest pricing, retention economics and detection content depth are not yet at parity with the established SIEM market. Run a like-for-like POV on detection coverage and 12-month retention TCO before assuming the bundle wins."
+      },
+      {
+        "q": "Falcon's endpoint detection is best-in-class; Elastic Endpoint is newer.",
+        "a": "We agree on the endpoint. The pitch is not to replace Falcon; it is to be the SIEM that consumes Falcon, retains long, and correlates across other domains."
+      },
+      {
+        "q": "We already pay for Falcon LogScale, retention is sorted.",
+        "a": "Compare 12 and 24-month retention TCO side by side. Frozen tier on S3 typically wins materially at multi-TB-per-day ingest; the LogScale value is in real-time search at small scale."
+      }
+    ],
+    "pricing_anchor": "CrowdStrike Falcon Pro entry tier is roughly $60/endpoint/year list; Falcon Enterprise and Complete bundles are higher and quote-based. Verify on crowdstrike.com/products/bundles.",
+    "gotchas": [
+      "On endpoint detection efficacy and analyst experience, Falcon is best-in-class; do not pretend otherwise.",
+      "Falcon LogScale's real-time search on small windows is genuinely fast and well-loved.",
+      "CrowdStrike's threat-intel and managed-hunting (Falcon OverWatch and Complete) are mature commercial offerings with deep telemetry depth.",
+      "If the customer does not need cross-domain correlation or long retention, Falcon Insight plus Next-Gen SIEM may be enough."
+    ],
+    "discovery_questions": [
+      "What is your CrowdStrike footprint today (Insight, Cloud, Identity, Discover, LogScale)?",
+      "Where do non-endpoint detections live: identity, network, cloud, application logs?",
+      "What is your retention requirement, and what does that cost on LogScale at full ingest?",
+      "Who writes and maintains your detection content, and where does the IP live?",
+      "Are you evaluating Next-Gen SIEM or sticking with a separate SIEM platform?"
+    ],
+    "clincher": "Keep Falcon at the edge. Make Elastic the SIEM that remembers everything else."
+  },
+  {
+    "id": "battlecard-sentinelone",
+    "competitor": "SentinelOne",
+    "competitor_slug": "sentinelone",
+    "vertical": "security_siem_xdr",
+    "is_main_competitor": true,
+    "tagline": "S1 stops the host. Elastic is the open SIEM that hunts across everything else.",
+    "key_pain": "SentinelOne Singularity is a strong autonomous EDR with mature one-click rollback. Its SIEM and data lake story (Singularity Data Lake, ex-Scalyr) is newer; long retention and broad detection content outside the endpoint are less mature than the established SIEM market.",
+    "talking_points": [
+      {
+        "angle": "Co-existence pattern",
+        "claim": "Elastic ingests SentinelOne agent telemetry and alerts via the documented integration; Elastic Security correlates across identity, network and cloud.",
+        "proof": "The Elastic SentinelOne integration ships in Fleet with ECS mappings. Customers keep S1 on the endpoint and run Elastic as the SIEM and hunt platform."
+      },
+      {
+        "angle": "Long retention economics",
+        "claim": "Frozen tier on object storage gives 12-24+ months of searchable retention at object-storage prices.",
+        "proof": "Singularity Data Lake retention is priced per GB ingest plus tier; Elastic searchable snapshots on S3/GCS/Azure Blob are typically cheaper at the 12-month boundary."
+      },
+      {
+        "angle": "Open detection engineering",
+        "claim": "Detection rules in EQL, KQL or ES|QL on GitHub with full CI; rule IP stays with the customer.",
+        "proof": "S1's STAR rules are powerful but proprietary. Elastic detection rules are AGPLv3 and Git-managed, including in air-gapped deployments."
+      }
+    ],
+    "elastic_advantages": [
+      "Native SentinelOne integration ingests alerts, agents and threats",
+      "Frozen tier on object storage for SIEM-class retention",
+      "Open detection rule format on GitHub (elastic/detection-rules)",
+      "MITRE ATT&CK navigator built into Kibana",
+      "Cross-domain correlation across endpoint, identity, network and cloud",
+      "Self-hosted, Elastic Cloud or air-gapped deployment"
+    ],
+    "proof_points": [
+      {
+        "metric": "Elastic SentinelOne integration is documented and ECS-mapped.",
+        "source": "docs.elastic.co/integrations/sentinel_one"
+      },
+      {
+        "metric": "Elastic detection-rules repository is public on GitHub with full CI.",
+        "source": "github.com/elastic/detection-rules"
+      },
+      {
+        "metric": "SentinelOne Singularity Core list pricing is published around $45/endpoint/year for the entry tier.",
+        "source": "Public SentinelOne pricing references; see sentinelone.com/platform-packages for current bundles"
+      }
+    ],
+    "objection_handlers": [
+      {
+        "q": "Singularity Data Lake is included in the platform; why pay for a second SIEM?",
+        "a": "SDL ingest, retention pricing and detection content depth are still maturing relative to the established SIEM market. Run a like-for-like POV on detection coverage and 12-month retention TCO before assuming the bundle wins."
+      },
+      {
+        "q": "S1's autonomous rollback and quarantine are best-in-class.",
+        "a": "We agree on the endpoint. The pitch is not to replace S1; it is to be the SIEM that consumes S1 telemetry, retains long, and correlates with non-endpoint domains."
+      },
+      {
+        "q": "We already pay for SDL; doubling on SIEM is hard to justify.",
+        "a": "Compare 12 and 24-month retention TCO side by side at full ingest. Frozen tier on object storage typically wins materially; SDL value is short-window real-time search."
+      }
+    ],
+    "pricing_anchor": "SentinelOne Singularity Core entry tier is roughly $45/endpoint/year list; Control and Complete bundles are higher and quote-based. Verify on sentinelone.com/platform-packages.",
+    "gotchas": [
+      "On autonomous EDR remediation and rollback, S1 is best-in-class; do not pretend otherwise.",
+      "Singularity Identity (post-Attivo) gives strong identity-attack telemetry that Elastic ingests but does not generate.",
+      "Vigilance MDR is a mature managed-hunting service with deep S1 product knowledge.",
+      "For mid-market customers without a separate SIEM team, the bundle convenience can win on simplicity even if TCO is higher long-term."
+    ],
+    "discovery_questions": [
+      "What is your SentinelOne footprint (Singularity Core, Control, Complete, Identity)?",
+      "Are you on Singularity Data Lake today, and what is the retention you actually keep?",
+      "Where do non-endpoint detections live: identity, network, cloud, application logs?",
+      "Who writes and maintains your detection content?",
+      "What is the Vigilance MDR scope, and is it adequate for the broader SOC mission?"
+    ],
+    "clincher": "S1 ends the attack on the host. Elastic remembers it long enough to find the next one."
   }
 ]

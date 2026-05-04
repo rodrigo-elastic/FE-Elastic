@@ -22,28 +22,18 @@ INTERNAL_DOMAINS = {
     "elasticcloud.com",
 }
 
-# Known global consulting firms; their attendees should not anchor the customer guess.
+# Fictional consulting firms used in demo invites; their attendees should not anchor
+# the customer guess. We deliberately avoid naming real consulting firms so demo data
+# never looks like leaked customer intel.
 CONSULTING_DOMAINS = {
-    "accenture.com",
-    "deloitte.com",
-    "mckinsey.com",
-    "ey.com",
-    "kpmg.com",
-    "pwc.com",
-    "capgemini.com",
-    "bcg.com",
-    "infosys.com",
-    "tcs.com",
-    "wipro.com",
-    "cognizant.com",
-    "hcl.com",
-    "tatasteel.com",
-    "ibm.com",  # often acts as advisor / SI in observability deals
-    "oracle.com",
-    "boozallen.com",
-    "bain.com",
-    "rolandberger.com",
-    "thoughtworks.com",
+    "helixadvisory.example",
+    "pinnacleconsulting.example",
+    "apexadvisory.example",
+    "vegaconsulting.example",
+    "meridiansi.example",
+    "lumenpartners.example",
+    "cardinalstrategy.example",
+    "northstaradvisory.example",
 }
 
 # Free / personal mail providers - present in the room but not a corporate signal.
@@ -58,47 +48,47 @@ FREEMAIL_DOMAINS = {
 }
 
 # Customer aliases beyond the canonical synthetic IDs. Both subdomains and brand variants
-# (Mercado Pago, Mercado Envios) map back to the parent account.
+# map back to the parent account. All domains are fictional .example placeholders.
 DOMAIN_TO_COMPANY_ID = {
-    "revolut.com": "revolut",
-    "revolut.co.uk": "revolut",
-    "revoluttechnologies.com": "revolut",
-    "mercadolibre.com": "mercado-libre",
-    "mercadolibre.com.ar": "mercado-libre",
-    "mercadolibre.com.br": "mercado-libre",
-    "mercadolibre.com.mx": "mercado-libre",
-    "mercadopago.com": "mercado-libre",
-    "mercadoenvios.com": "mercado-libre",
-    "santander.com": "santander",
-    "santander.co.uk": "santander",
-    "santander.es": "santander",
-    "santanderbank.com": "santander",
-    "openbank.es": "santander",
+    "northwindpay.example": "northwind",
+    "northwind.example": "northwind",
+    "northwindtechnologies.example": "northwind",
+    "mercadoatlas.example": "mercado-atlas",
+    "mercadoatlas.com.ar": "mercado-atlas",
+    "mercadoatlas.com.br": "mercado-atlas",
+    "mercadoatlas.com.mx": "mercado-atlas",
+    "mercadoatlaspago.example": "mercado-atlas",
+    "mercadoatlasenvios.example": "mercado-atlas",
+    "bancoatlantico.example": "atlantico",
+    "bancoatlantico.co.uk": "atlantico",
+    "bancoatlantico.es": "atlantico",
+    "atlanticobank.example": "atlantico",
+    "openatlantico.es": "atlantico",
 }
 
-# Coarse keyword fallbacks for company names that appear in titles but not as email
-# domains (e.g. customer dialled in from a freemail account, brokered by a consultant).
+# Coarse keyword fallbacks for fictional company names that appear in titles but not as
+# email domains (e.g. customer dialled in from a freemail account, brokered by a
+# consultant). All entries are fictional placeholders the demo can showcase.
 TITLE_KEYWORDS = {
-    "bbva": "BBVA",
-    "stripe": "Stripe",
-    "shopify": "Shopify",
-    "spotify": "Spotify",
-    "klarna": "Klarna",
-    "adyen": "Adyen",
-    "block": "Block (Square)",
-    "square": "Block (Square)",
-    "wise": "Wise",
-    "n26": "N26",
-    "monzo": "Monzo",
-    "starling": "Starling Bank",
-    "rappi": "Rappi",
-    "nubank": "Nubank",
-    "itau": "Banco Itau",
-    "bradesco": "Banco Bradesco",
-    "bcp": "BCP",
-    "openpay": "Openpay",
-    "kavak": "Kavak",
-    "linio": "Linio",
+    "fjordbank": "Fjordbank",
+    "stripeway": "Stripeway",
+    "shopifold": "Shopifold",
+    "spotifire": "Spotifire",
+    "klarnix": "Klarnix",
+    "adynox": "Adynox",
+    "blockstone": "Blockstone",
+    "wisetide": "Wisetide",
+    "novobank": "Novobank",
+    "monzaro": "Monzaro",
+    "starlit": "Starlit Bank",
+    "rappix": "Rappix",
+    "nubo": "Nubo",
+    "itaurus": "Banco Itaurus",
+    "bravesco": "Banco Bravesco",
+    "bcprime": "BCPrime",
+    "openpay": "Openpay (demo)",
+    "kavalry": "Kavalry",
+    "linario": "Linario",
 }
 
 
@@ -138,7 +128,7 @@ def _company_for_domain(domain: str) -> Optional[Dict[str, Any]]:
         return None
     if domain in DOMAIN_TO_COMPANY_ID:
         return synthetic.find_company(DOMAIN_TO_COMPANY_ID[domain])
-    # Soft-match: company name vs domain stem (e.g. "revolut" in "revolut.com").
+    # Soft-match: company name vs domain stem (e.g. "northwindpay" in "northwindpay.example").
     stem = domain.split(".")[0]
     for c in synthetic.companies():
         cid = (c.get("id") or "").replace("-", "")

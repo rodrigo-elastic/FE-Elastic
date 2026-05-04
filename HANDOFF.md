@@ -9,7 +9,7 @@ Hackathon: FY27 SKO FE Summit. Submission deadline: **2026-05-10 23:59 ET**. Sin
 ## What is already built
 
 ### Three core agents
-- `backend/app/agents/pre_meeting.py` - account brief generator (SEC EDGAR live API for MELI and Santander, news fixtures with verifiable URLs, Wikipedia, MEDDPICC primer, BANT, Force-field analysis).
+- `backend/app/agents/pre_meeting.py` - account brief generator (SEC EDGAR live API path retained for any future real public-company demo; current fictional accounts have no CIK; news fixtures with fictional URLs, MEDDPICC primer, BANT, Force-field analysis).
 - `backend/app/agents/live_meeting.py` - per-turn alerts (competitor mentions, MEDDPICC capture, unanswered questions, risk).
 - `backend/app/agents/post_meeting.py` - summary, action items, MEDDPICC update, follow-up email draft, full Salesforce sync (six writes: Opportunity MEDDPICC fields, ContentNote, ContentDocumentLink, Competitor update, Deal_Health update, Slack post).
 
@@ -32,7 +32,7 @@ Each Claude-backed tool has an expert persona prompt with knowledge pack: Marta 
 - Elastic brand: Lochmara primary + cluster accent palette. Multi-color gradient on hero title.
 
 ### Infra and integrations
-- `backend/app/integrations/google_calendar_mock.py` - mock GCal events with consultant-mixed cases (Accenture, KPMG, Deloitte, Capgemini) for the smart resolver demo.
+- `backend/app/integrations/google_calendar_mock.py` - mock GCal events with fictional consultant-mixed cases (Pinnacle Consulting, Helix Advisory, Apex Advisory, Vega Consulting) for the smart resolver demo.
 - `backend/app/services/company_resolver.py` - smart resolver that filters internal Elastic, deprioritises 17+ consulting firms, falls back to title-keyword.
 - `backend/app/integrations/sec_edgar.py` - real SEC EDGAR HTTP client (User-Agent set per SEC policy).
 - `backend/app/integrations/salesforce_mock.py` - REST-shaped SFDC mock with capitalized fields and `runtime/salesforce.log`.
@@ -42,10 +42,10 @@ Each Claude-backed tool has an expert persona prompt with knowledge pack: Marta 
 - 30 tests, 100% passing in mock mode. Run with: `PYTHONPATH=backend .venv/bin/python -m pytest backend/tests -q`.
 - Conftest isolates tests to `tmp_path` for `runtime_dir` and unreachable ES URL.
 
-### Three demo accounts (real companies, no PII)
-- Revolut (private, no CIK) - news from revolut.com/news, Reuters, Wikipedia.
-- Mercado Libre (CIK 0001099590, ticker MELI) - 10-K from sec.gov, Reuters, Wikipedia.
-- Banco Santander (CIK 0000891478, ticker SAN) - 6-K, 20-F from sec.gov, Reuters, Wikipedia.
+### Three demo accounts (fictional, no real customer data)
+- Northwind Pay (fintech, EU banking licence Q3 2025, no CIK) - all news, employees, and figures are illustrative demo content.
+- Mercado Atlas (LATAM e-commerce + fintech, no CIK) - all news, employees, and figures are illustrative demo content.
+- Banco Atlántico (Spanish banking group, no CIK) - all news, employees, and figures are illustrative demo content.
 
 ---
 
@@ -196,5 +196,5 @@ PYTHONPATH=backend python -m scripts.sync_agent_builder
 - Persistent sidebar visible from every page
 - Anthropic key in `.env` (rotate before transferring)
 - Elastic Agent Builder: scaffolded, needs Kibana 9 + Enterprise to go live
-- Demo data: Revolut, Mercado Libre, Santander, with verifiable URLs only
+- Demo data: fictional accounts (Northwind Pay, Mercado Atlas, Banco Atlántico) with illustrative .example URLs only
 - Languages: English, Spanish, Japanese, German, French

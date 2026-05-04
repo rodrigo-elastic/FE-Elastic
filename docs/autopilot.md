@@ -13,7 +13,7 @@ presenter typing anything. Designed for the hackathon stage.
 3. Seven steps run in order:
    1. **Intro (0 to 2s)** confetti and the first caption.
    2. **Quick Research (2 to 7s)** real `POST /agents/pre-meeting/ad-hoc` for
-      Banco Santander on Haiku 4.5. Spinner shown until the brief lands.
+      Banco Atlántico on Haiku 4.5. Spinner shown until the brief lands.
    3. **Brief view (7 to 12s)** loads `/meeting.html?id=<returned>&adhoc=1` in
       the panel iframe so judges see the rendered brief.
    4. **Field Assistant (12 to 18s)** real `POST /agent-builder/converse` with
@@ -49,7 +49,7 @@ Each autopilot run executes two real LLM calls:
 
 | Call | Model | Approx cost |
 | --- | --- | --- |
-| Pre-meeting ad-hoc brief (Banco Santander) | Haiku 4.5 | $0.03 to $0.05 |
+| Pre-meeting ad-hoc brief (Banco Atlántico) | Haiku 4.5 | $0.03 to $0.05 |
 | Field Assistant chained POC plan plus TCO calc | Haiku 4.5 (server default) | $0.02 to $0.05 |
 
 Total expected cost: **$0.05 to $0.10 per autopilot run**. The script never

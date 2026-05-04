@@ -18,7 +18,7 @@ flowchart TB
         Tools["7 FE tools<br/>backend/app/api/routes_tools.py<br/>POC, SPL, compliance, stack,<br/>code, cost, capacity"]
         FEBrain["FE Brain RAG<br/>backend/app/api/routes_tools.py<br/>knowledge-search"]
         MCP["MCP server<br/>backend/app/api/routes_mcp.py<br/>9 tools (7 FE + 2 RAG)"]
-        Repos["Synthetic fixtures<br/>backend/data/synthetic/<br/>Revolut / MELI / Santander"]
+        Repos["Synthetic fixtures<br/>backend/data/synthetic/<br/>Northwind Pay / Mercado Atlas / Banco Atlántico"]
         Runtime["Runtime artifacts<br/>runtime/*.log, *.jsonl, briefs/, emails/"]
     end
 

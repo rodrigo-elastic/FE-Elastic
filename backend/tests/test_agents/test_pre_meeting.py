@@ -18,10 +18,10 @@ from app.config import settings
 
 def test_pre_meeting_runs_end_to_end():
     agent = PreMeetingAgent()
-    record = asyncio.run(agent.run({"meeting_id": "revolut-mtg-001"}))
+    record = asyncio.run(agent.run({"meeting_id": "northwind-mtg-001"}))
 
-    assert record["meeting_id"] == "revolut-mtg-001"
-    assert record["company_id"] == "revolut"
+    assert record["meeting_id"] == "northwind-mtg-001"
+    assert record["company_id"] == "northwind"
     assert "headline" in record and len(record["headline"]) > 10
     assert isinstance(record["sections"], list) and len(record["sections"]) >= 4
 
@@ -34,7 +34,7 @@ def test_pre_meeting_runs_end_to_end():
     last_line = slack_log.read_text(encoding="utf-8").strip().splitlines()[-1]
     payload = json.loads(last_line)
     assert payload["channel"] == "#fe-copilot-briefs"
-    assert "Revolut" in payload["text"]
+    assert "Northwind Pay" in payload["text"]
 
 
 def test_pre_meeting_unknown_meeting_raises():

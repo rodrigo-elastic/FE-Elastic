@@ -71,7 +71,7 @@ timestamps are within the same day as the audit, 2026-05-04 UTC).
 | demo-gdpr-audit-customer-dashboard                  |     10 |  4 |           6 |        0 |    0 |     0 | demo-gdpr-* 4,717                |  READY  |
 | demo-supply-chain-attack-dashboard                  |     10 |  4 |           6 |        0 |    0 |     0 | demo-supplychain-* 7,275         |  READY  |
 | demo-supply-chain-attack-customer-dashboard         |     10 |  4 |           6 |        0 |    0 |     0 | demo-supplychain-* 7,275         |  READY  |
-| fec-revolut-mtg-prev-001                            |      8 |  8 |           0 |        0 |    0 |     0 | n/a (markdown only)              |  READY  |
+| fec-northwind-mtg-prev-001                            |      8 |  8 |           0 |        0 |    0 |     0 | n/a (markdown only)              |  READY  |
 
 Totals: 11 dashboards, 104 panels, 0 empty panels detected, 0 missing
 saved objects, 0 dangling Lens references.
@@ -96,7 +96,7 @@ saved objects, 0 dangling Lens references.
   switching the audit to a recursive walk those panels resolved with
   inline rows of 47, 168, 6, and 8+12 respectively. No empty panels
   remain.
-- **fec-revolut-mtg-prev-001.** This is an all-markdown customer-fit
+- **fec-northwind-mtg-prev-001.** This is an all-markdown customer-fit
   dashboard (8 markdown panels, no charts). It does not have
   `timeRestore` set (timeFrom and timeTo are null) but does not need it
   because it has no time-bound visualizations. Verdict READY.

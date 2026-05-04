@@ -113,6 +113,26 @@ class ElasticsearchRepo:
             pass
         log.info("es.battlecards_seeded", count=len(cards))
 
+    def reseed_battlecards(self) -> Dict[str, Any]:
+        """Force-reindex every card from the seed file. Used when the schema changes
+        (for example when verticals are added) and the existing index is stale."""
+        if not self._available or not BATTLECARDS_SEED_PATH.exists():
+            return {"ok": False, "reason": "es_unavailable_or_no_seed"}
+        cards = json.loads(BATTLECARDS_SEED_PATH.read_text(encoding="utf-8"))
+        indexed = 0
+        for card in cards:
+            try:
+                self._client.index(index=INDEX_BATTLECARDS, id=card["id"], document=card, refresh=False)
+                indexed += 1
+            except Exception as exc:
+                log.warning("es.battlecard_reseed_failed", id=card.get("id"), error=str(exc))
+        try:
+            self._client.indices.refresh(index=INDEX_BATTLECARDS)
+        except Exception:
+            pass
+        log.info("es.battlecards_reseeded", count=indexed, total=len(cards))
+        return {"ok": True, "indexed": indexed, "total": len(cards)}
+
     # ------------------------------------------------------------------ briefs
 
     def index_brief(self, record: Dict[str, Any]) -> bool:
@@ -224,7 +244,7 @@ class ElasticsearchRepo:
         try:
             res = self._client.search(
                 index=INDEX_BATTLECARDS,
-                body={"size": 50, "query": {"match_all": {}}, "sort": [{"competitor_slug": "asc"}]},
+                body={"size": 200, "query": {"match_all": {}}, "sort": [{"competitor_slug": "asc"}]},
             )
             return [hit["_source"] for hit in res["hits"]["hits"]]
         except Exception:

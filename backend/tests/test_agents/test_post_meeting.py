@@ -17,9 +17,9 @@ from app.config import settings
 
 def test_post_meeting_runs_end_to_end():
     agent = PostMeetingAgent()
-    record = asyncio.run(agent.run({"meeting_id": "revolut-mtg-prev-001"}))
+    record = asyncio.run(agent.run({"meeting_id": "northwind-mtg-prev-001"}))
 
-    assert record["meeting_id"] == "revolut-mtg-prev-001"
+    assert record["meeting_id"] == "northwind-mtg-prev-001"
     assert isinstance(record["action_items"], list) and len(record["action_items"]) >= 1
     assert all("source_quote" in a for a in record["action_items"])
 
@@ -33,7 +33,7 @@ def test_post_meeting_runs_end_to_end():
     subjects = {r["Subject"] for r in task_records}
     assert all(a["title"] in subjects for a in record["action_items"])
     # Each task carries the meeting id as WhatId so the dashboard can link tasks back.
-    matching = [r for r in task_records if r.get("WhatId") == "revolut-mtg-prev-001"]
+    matching = [r for r in task_records if r.get("WhatId") == "northwind-mtg-prev-001"]
     assert len(matching) >= len(record["action_items"])
 
     # Extended SF sync should also include a ContentNote and a MEDDPICC update.
@@ -42,7 +42,7 @@ def test_post_meeting_runs_end_to_end():
     assert "Opportunity.update.meddpicc" in actions_seen
 
     # Email draft persisted.
-    email_path = settings.runtime_dir / "emails" / "revolut-mtg-prev-001.json"
+    email_path = settings.runtime_dir / "emails" / "northwind-mtg-prev-001.json"
     assert email_path.exists()
     email = json.loads(email_path.read_text(encoding="utf-8"))
     assert email["subject"]
@@ -51,7 +51,7 @@ def test_post_meeting_runs_end_to_end():
 
 def test_post_meeting_meddpicc_categories_are_valid():
     agent = PostMeetingAgent()
-    record = asyncio.run(agent.run({"meeting_id": "revolut-mtg-prev-001"}))
+    record = asyncio.run(agent.run({"meeting_id": "northwind-mtg-prev-001"}))
     valid = {
         "Metrics",
         "Economic Buyer",

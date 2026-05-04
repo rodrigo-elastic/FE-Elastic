@@ -38,7 +38,7 @@ Stop pinging Slack.
 
 FE Brain.
 
-Hybrid retrieval over four hundred seven Elastic doc chunks.
+Hybrid retrieval over nine hundred fifty two Elastic doc chunks.
 
 Cited answers in ten seconds.
 

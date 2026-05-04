@@ -25,11 +25,11 @@ SAY (ES): "Seis reuniones al dia. Treinta minutos de prep cada una. Quince horas
 ## [0:25] Pre-meeting
 
 CLICK: Pre-meeting research tab.
-TYPE: Mercado Libre, Fintech, Enterprise, Splunk AWS Datadog, August renewal observability consolidation.
+TYPE: Mercado Atlas, Fintech, Enterprise, Splunk AWS Datadog, August renewal observability consolidation.
 CLICK: Generate brief. Scroll. Click Download. Show `runtime/slack.log`.
 
-SAY (EN): "Mercado Libre. Live ten-K from SEC EDGAR. News with verifiable URLs. Wikipedia. Out comes a structured brief. Why now. Pain. Discovery. Talk track vs Datadog. Risks. Drops to Slack and PDF, one hour pre-meeting. Two cents per run on Haiku 4.5."
-SAY (ES): "Mercado Libre. Diez-K en vivo desde SEC EDGAR. Noticias con URLs verificables. Wikipedia. Sale un brief estructurado. Por que ahora. Dolor. Discovery. Talk track contra Datadog. Riesgos. Cae a Slack y PDF una hora antes. Dos centavos por run en Haiku 4.5."
+SAY (EN): "Mercado Atlas. Live ten-K from SEC EDGAR. News with verifiable URLs. Wikipedia. Out comes a structured brief. Why now. Pain. Discovery. Talk track vs Datadog. Risks. Drops to Slack and PDF, one hour pre-meeting. Two cents per run on Haiku 4.5."
+SAY (ES): "Mercado Atlas. Diez-K en vivo desde SEC EDGAR. Noticias con URLs verificables. Wikipedia. Sale un brief estructurado. Por que ahora. Dolor. Discovery. Talk track contra Datadog. Riesgos. Cae a Slack y PDF una hora antes. Dos centavos por run en Haiku 4.5."
 
 ---
 

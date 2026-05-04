@@ -13,14 +13,14 @@ from app.services import pdf_builder
 
 def _fixtures():
     company = {
-        "id": "revolut",
-        "name": "Revolut",
+        "id": "northwind",
+        "name": "Northwind Pay",
         "industry": "Manufacturing",
         "size": "Mid-Market 1k-5k",
         "tech_stack": {"observability": ["Datadog"], "search": [], "cloud": ["AWS"], "other": []},
     }
     meeting = {
-        "id": "revolut-mtg-001",
+        "id": "northwind-mtg-001",
         "title": "Acme x Elastic discovery",
         "start_time": "2026-05-03T10:00:00+00:00",
     }
@@ -36,7 +36,7 @@ def _fixtures():
 def test_render_html_includes_company_and_headline():
     company, meeting, brief = _fixtures()
     html = pdf_builder.render_html(company=company, meeting=meeting, brief=brief)
-    assert "Revolut" in html
+    assert "Northwind Pay" in html
     assert brief["headline"] in html
     assert "renewal date locks in Q3" in html
 

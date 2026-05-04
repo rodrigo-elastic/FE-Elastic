@@ -18,8 +18,8 @@ from app.agents.pre_meeting import PreMeetingAgent
 from app.repositories import synthetic
 from app.services import transcript_parser
 
-PRE_MEETING_DEFAULT = "revolut-mtg-001"
-POST_MEETING_DEFAULT = "revolut-mtg-prev-001"
+PRE_MEETING_DEFAULT = "northwind-mtg-001"
+POST_MEETING_DEFAULT = "northwind-mtg-prev-001"
 
 
 async def _run(pre_id: str, post_id: str) -> dict:

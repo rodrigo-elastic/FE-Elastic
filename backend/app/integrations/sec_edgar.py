@@ -23,7 +23,7 @@ INTERESTING_FORMS = (
     "8-K",      # material events: M&A, leadership changes, regulatory actions
     "10-K",     # annual report (US)
     "10-Q",     # quarterly report (US)
-    "20-F",     # annual report (foreign private issuers, e.g. Banco Santander)
+    "20-F",     # annual report (foreign private issuers)
     "6-K",      # current reports for foreign private issuers
     "DEF 14A",  # proxy / compensation / governance
 )

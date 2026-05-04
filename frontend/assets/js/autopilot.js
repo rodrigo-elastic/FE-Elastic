@@ -317,12 +317,12 @@
     setCaption(1, "Pre-meeting brief: SEC EDGAR + news + Wikipedia...");
     showPanel("/");
     const body = {
-      company_name: "Banco Santander",
+      company_name: "Banco Atlántico",
       industry: "Banking",
       size: "Enterprise",
       tech_stack: "Splunk, AWS, ServiceNow",
-      notes: "Autopilot demo run. Pre-meeting research for a UK retail-banking conversation.",
-      meeting_title: "Banco Santander pre-meeting (autopilot)",
+      notes: "Autopilot demo run. Pre-meeting research for a fictional retail-banking conversation.",
+      meeting_title: "Banco Atlántico pre-meeting (autopilot)",
       model: "claude-haiku-4-5",
     };
     const t0 = performance.now();

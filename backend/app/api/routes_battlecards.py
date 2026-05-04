@@ -58,3 +58,14 @@ async def get_by_competitor(name: str) -> dict:
     if not card:
         raise HTTPException(status_code=404, detail=f"no battlecard for '{name}'")
     return card
+
+
+@router.post("/reseed")
+async def reseed_battlecards() -> dict:
+    """Force-reindex all cards from the seed file. Idempotent. Used when the seed
+    schema evolves (for example after the vertical/is_main_competitor expansion)."""
+    es = get_es_repo()
+    if not es.available:
+        # Fall back to seed-only mode; nothing to do.
+        return {"ok": False, "reason": "es_unavailable", "seed_count": len(_load_seed())}
+    return es.reseed_battlecards()

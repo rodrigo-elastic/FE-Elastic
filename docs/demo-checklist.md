@@ -20,7 +20,7 @@ Run in order. If any check fails, stop and fix.
 7. [ ] Integration smoke: `PYTHONPATH=backend python -m scripts.integration_smoke`. GO across all checks (Anthropic, Elasticsearch, Kibana, Agent Builder, workflows, ad-hoc, RAG). Do not record on any RED.
 8. [ ] Re-seed the 5 scenarios: `for s in black-friday-outage credential-stuffing noisy-microservice gdpr-audit-timeline supply-chain-attack; do curl -sS -X POST http://127.0.0.1:8123/api/v1/demo-data/$s/seed -o /dev/null -w "$s: %{http_code}\n"; done`. All 5 return 200.
 9. [ ] Sync Agent Builder and workflows: `PYTHONPATH=backend python -m scripts.sync_agent_builder` returns ok for the 11 `fec_*` tools and `fec_field_assistant`. Then `curl -sS -X POST http://127.0.0.1:8123/api/v1/workflows/sync | jq` returns ok and `curl -sS http://127.0.0.1:8123/api/v1/workflows/status | jq '.workflows'` shows both rules registered.
-10. [ ] Reset localStorage: in DevTools console run `localStorage.clear()` on `/`, `/fe-brain.html`, `/meeting.html?id=santander-mtg-prev-001`, `/battlecards.html`, `/demo-data.html`, `/workflow-demo.html`. Close DevTools.
+10. [ ] Reset localStorage: in DevTools console run `localStorage.clear()` on `/`, `/fe-brain.html`, `/meeting.html?id=atlantico-mtg-prev-001`, `/battlecards.html`, `/demo-data.html`, `/workflow-demo.html`. Close DevTools.
 11. [ ] Open the 7 tabs from `docs/storyboard.md` in pre-flight order, plus the terminal pane ready for `tail -f runtime/salesforce.log`. Pin every tab. Browser zoom 110 percent. Hide bookmarks bar (`Cmd Shift B`).
 12. [ ] Autopilot dry-run: click "Show me the magic". The 7-step run completes inside 27 s with zero failed steps. Card reports a brief id and cost under ten cents. Refresh the homepage.
 13. [ ] Pre-prime Workflow 2: 90 s before recording, click "Fire demo transcript" once on `/workflow-demo.html` so the orphan `[Auto]` wave is in flight when B6 starts.
@@ -56,7 +56,7 @@ Per-beat rules:
 ## C. Post-recording (5 items)
 
 1. [ ] Trim head and tail to the first frame of the slate and the last frame of the GitHub URL hold.
-2. [ ] Captions: enable Loom auto-captions, then proofread against `docs/demo-script.md`. Fix vendor names (Datadog, Splunk, Cribl, Banco Santander, MEDDPICC, ES dot Q L, ELSER). Add the autopilot caption strings as on-screen text in post if Loom misses them.
+2. [ ] Captions: enable Loom auto-captions, then proofread against `docs/demo-script.md`. Fix vendor names (Datadog, Splunk, Cribl, Banco Atlántico, MEDDPICC, ES dot Q L, ELSER). Add the autopilot caption strings as on-screen text in post if Loom misses them.
 3. [ ] Upload to Google Drive (`Elastic > FE > FY27 SKO Hackathon > Submissions`). Sharing: "Anyone at Elastic with the link".
 4. [ ] Verify the share link opens in incognito Chrome without a password prompt (SSO redirect is fine).
 5. [ ] Paste the Drive link into the "Demo URL" placeholder at the top of `docs/submission.md`. Commit locally.

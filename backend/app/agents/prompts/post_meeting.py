@@ -365,10 +365,10 @@ _INITECH_MOCK = {
 }
 
 
-_REVOLUT_MOCK = {
+_NORTHWIND_MOCK = {
     "summary": (
-        "Revolut is consolidating observability + SIEM ahead of a November 1 Datadog renewal "
-        "(approx $4M annual). UK banking licence (July 2024) raises the audit bar. Sarah Chen "
+        "Northwind Pay is consolidating observability + SIEM ahead of a November 1 Datadog renewal "
+        "(approx $4M annual). EU banking licence (Q3 2025) raises the audit bar. Sarah Chen "
         "(VP Engineering) sponsors; CTO signs; Mike Taylor (Platform Lead) runs the technical eval. "
         "Decision by end of Q3 2026 with a 6 month migration window."
     ),
@@ -383,18 +383,18 @@ _REVOLUT_MOCK = {
             "source_quote": "I will send a POC plan covering ingest at 80k EPS, SIEM coverage to MITRE ATT&CK, and a Datadog cost comparison.",
         },
         {
-            "title": "Draft FCA regulatory mapping for the architecture council",
+            "title": "Draft EU banking regulatory mapping for the architecture council",
             "owner_name": "Rodrigo (Elastic FE)",
             "owner_email": "rodrigo.careaga@elastic.co",
             "due_date": "2026-05-12",
             "impact": "high",
-            "description": "FCA expectations on audit-grade observability post UK banking licence; map to native Elastic controls.",
-            "source_quote": "I will also draft a regulatory mapping for the FCA expectations.",
+            "description": "EU banking expectations on audit-grade observability post EU banking licence; map to native Elastic controls.",
+            "source_quote": "I will also draft a regulatory mapping for the EU banking expectations.",
         },
         {
-            "title": "Loop in Revolut procurement before the technical follow-up",
-            "owner_name": "Sarah Chen (Revolut VP Engineering)",
-            "owner_email": "sarah.chen@revolut.example",
+            "title": "Loop in Northwind Pay procurement before the technical follow-up",
+            "owner_name": "Sarah Chen (Northwind Pay VP Engineering)",
+            "owner_email": "sarah.chen@northwindpay.example",
             "due_date": "2026-05-13",
             "impact": "med",
             "description": "Avoid the two-week procurement stall they hit last engagement.",
@@ -415,7 +415,7 @@ _REVOLUT_MOCK = {
         {"competitor": "Splunk", "context": "Currently used for security; one of three observability tools the team wants to consolidate."},
     ],
     "follow_up_email": {
-        "subject": "Recap and next step: Revolut x Elastic POC plan",
+        "subject": "Recap and next step: Northwind Pay x Elastic POC plan",
         "body_markdown": (
             "Hi Sarah and Mike,\n\n"
             "Thanks for the time today. Recap and what is coming this week:\n\n"
@@ -425,9 +425,9 @@ _REVOLUT_MOCK = {
             "- POC must prove sustained 80k EPS ingest. Without that, no movement.\n\n"
             "**What I am sending by Friday**\n"
             "1. POC plan (ingest, SIEM coverage to MITRE ATT&CK, storage cost modelling).\n"
-            "2. FCA regulatory mapping deck.\n\n"
+            "2. EU banking regulatory mapping deck.\n\n"
             "**Next step**\n"
-            "Tuesday afternoon UK time for the technical follow-up; I will introduce procurement at the same time.\n\n"
+            "Tuesday afternoon EU time for the technical follow-up; I will introduce procurement at the same time.\n\n"
             "Thanks,\n"
             "Rodrigo"
         ),
@@ -435,16 +435,16 @@ _REVOLUT_MOCK = {
 }
 
 
-_MELI_MOCK = {
+_MERCADO_ATLAS_MOCK = {
     "summary": (
-        "Mercado Libre is running a three-way evaluation (Elastic, OpenSearch, Datadog renewal) ahead "
+        "Mercado Atlas is running a three-way evaluation (Elastic, OpenSearch, Datadog renewal) ahead "
         "of a September 1 Datadog renewal (approx $6M annual). Search relevance has plateaued; semantic "
         "relevance is the lever. Lucia Fernandez (Director of Engineering) sponsors; CTO signs; Diego "
         "Alvarez (Search Tech Lead) is the technical champion."
     ),
     "action_items": [
         {
-            "title": "Send search relevance benchmark and ELSER quality assessment at MELI catalog scale",
+            "title": "Send search relevance benchmark and ELSER quality assessment at Mercado Atlas catalog scale",
             "owner_name": "Rodrigo (Elastic FE)",
             "owner_email": "rodrigo.careaga@elastic.co",
             "due_date": "2026-05-09",
@@ -463,8 +463,8 @@ _MELI_MOCK = {
         },
         {
             "title": "Book technical deep dive next Wednesday with Diego's search team",
-            "owner_name": "Lucia Fernandez (MELI Director of Engineering)",
-            "owner_email": "lucia.fernandez@mercadolibre.example",
+            "owner_name": "Lucia Fernandez (Mercado Atlas Director of Engineering)",
+            "owner_email": "lucia.fernandez@mercadoatlas.example",
             "due_date": "2026-05-13",
             "impact": "med",
             "description": "Cover dense vector ingest throughput, ELSER, and Sao Paulo to Buenos Aires CCR latency.",
@@ -485,7 +485,7 @@ _MELI_MOCK = {
         {"competitor": "OpenSearch", "context": "Internal champions exist; needs a clean head-to-head."},
     ],
     "follow_up_email": {
-        "subject": "Recap and next step: Mercado Libre x Elastic search relevance plus migration plan",
+        "subject": "Recap and next step: Mercado Atlas x Elastic search relevance plus migration plan",
         "body_markdown": (
             "Hi Lucia and Diego,\n\n"
             "Thanks for the time today. Recap and what is coming this week:\n\n"
@@ -505,46 +505,46 @@ _MELI_MOCK = {
 }
 
 
-_SANTANDER_MOCK = {
+_ATLANTICO_MOCK = {
     "summary": (
-        "Santander is running a three-way bake-off (Elastic, Sumo Logic, Splunk renewal) ahead of "
-        "the March 2027 Splunk renewal at ~12M euros annual. The 'Gravity' multi-cloud platform "
+        "Banco Atlántico is running a three-way bake-off (Elastic, Sumo Logic, Splunk renewal) ahead of "
+        "the March 2027 Splunk renewal at ~12M euros annual. The 'Atlas Multi-Cloud' platform "
         "needs one observability layer across AWS, Azure, GCP, and the private cloud. Carlos Ruiz "
         "(MD Tech) sponsors; CIO Group Tech signs; Marina Lopez (Architecture Lead) is the champion."
     ),
     "action_items": [
         {
-            "title": "Splunk to Elastic migration playbook with cost model and Gravity integration plan",
+            "title": "Splunk to Elastic migration playbook with cost model and Atlas Multi-Cloud integration plan",
             "owner_name": "Rodrigo (Elastic FE)",
             "owner_email": "rodrigo.careaga@elastic.co",
             "due_date": "2026-05-09",
             "impact": "high",
-            "description": "Anchor cost model to 10 year ECB / Bank of Spain audit retention and the 30 percent reduction board target.",
-            "source_quote": "I'll send a Splunk to Elastic migration playbook plus regulatory mapping for ECB, BoS, and FCA reporting controls.",
+            "description": "Anchor cost model to 10 year ECB / local central bank audit retention and the 30 percent reduction board target.",
+            "source_quote": "I'll send a Splunk to Elastic migration playbook plus regulatory mapping for ECB, local central bank, and FCA reporting controls.",
         },
         {
-            "title": "Regulatory mapping for ECB, Bank of Spain, and FCA reporting",
+            "title": "Regulatory mapping for ECB, local central bank, and FCA reporting",
             "owner_name": "Rodrigo (Elastic FE)",
             "owner_email": "rodrigo.careaga@elastic.co",
             "due_date": "2026-05-12",
             "impact": "high",
-            "description": "Map native Elastic controls (frozen tier, RBAC, SAML, audit log) to ECB, BoS, and UK FCA reporting requirements.",
-            "source_quote": "Frozen tier on object storage at 10 year retention, role based access at index level, SAML federation with our internal IDP, and clean integration with Gravity.",
+            "description": "Map native Elastic controls (frozen tier, RBAC, SAML, audit log) to ECB, local central bank, and UK FCA reporting requirements.",
+            "source_quote": "Frozen tier on object storage at 10 year retention, role based access at index level, SAML federation with our internal IDP, and clean integration with Atlas Multi-Cloud.",
         },
         {
             "title": "Book technical deep dive next Wednesday with Marina's architecture team",
-            "owner_name": "Carlos Ruiz (Santander MD Tech)",
-            "owner_email": "carlos.ruiz@santander.example",
+            "owner_name": "Carlos Ruiz (Banco Atlántico MD Tech)",
+            "owner_email": "carlos.ruiz@bancoatlantico.example",
             "due_date": "2026-05-13",
             "impact": "med",
-            "description": "Frozen tier at 10 year retention, RBAC, SAML federation, and Gravity multi-cloud integration.",
+            "description": "Frozen tier at 10 year retention, RBAC, SAML federation, and Atlas Multi-Cloud integration.",
             "source_quote": "Can we book a deep dive with Marina's architecture team next Wednesday?",
         },
     ],
     "meddpicc_signals": [
         {"category": "Metrics", "quote": "Audit reporting from 21 days to under 7. Storage cost down 35 percent. Zero high severity logging incidents during peak trading windows.", "note": "Three quantified success metrics."},
         {"category": "Economic Buyer", "quote": "I sponsor it. CIO Group Tech signs.", "note": "Carlos sponsors; CIO Group Tech signs."},
-        {"category": "Decision Criteria", "quote": "Frozen tier on object storage at 10 year retention, role based access at index level, SAML federation with our internal IDP, and clean integration with Gravity.", "note": None},
+        {"category": "Decision Criteria", "quote": "Frozen tier on object storage at 10 year retention, role based access at index level, SAML federation with our internal IDP, and clean integration with Atlas Multi-Cloud.", "note": None},
         {"category": "Decision Process", "quote": "Architecture council reviews. Marina is the technical champion. Decision in Q4 2026.", "note": None},
         {"category": "Identify Pain", "quote": "We also had a 90 minute trading platform slowdown last quarter. Log ingestion lag was a contributing factor.", "note": "Quantified business impact."},
         {"category": "Champion", "quote": "Marina is the technical champion.", "note": "Marina Lopez is the architecture champion."},
@@ -555,17 +555,17 @@ _SANTANDER_MOCK = {
         {"competitor": "Sumo Logic", "context": "Also evaluated in the three-way bake-off."},
     ],
     "follow_up_email": {
-        "subject": "Recap and next step: Santander x Elastic Splunk migration playbook",
+        "subject": "Recap and next step: Banco Atlántico x Elastic Splunk migration playbook",
         "body_markdown": (
             "Hi Carlos and Marina,\n\n"
             "Thanks for the time today. Recap and what is coming this week:\n\n"
             "**What we agreed on**\n"
             "- Splunk renewal March 2027 is the forcing date; board mandate 30 percent cost reduction.\n"
             "- Twelve month success metrics: audit reporting cycle from 21 days to under 7; storage cost down 35 percent; zero high severity logging incidents.\n"
-            "- Technical bar: frozen tier at 10 year retention, index level RBAC, SAML federation with internal IDP, clean Gravity integration.\n\n"
+            "- Technical bar: frozen tier at 10 year retention, index level RBAC, SAML federation with internal IDP, clean Atlas Multi-Cloud integration.\n\n"
             "**What I am sending by Friday**\n"
             "1. Splunk to Elastic migration playbook with cost model.\n"
-            "2. Regulatory mapping for ECB, Bank of Spain, and FCA controls.\n\n"
+            "2. Regulatory mapping for ECB, local central bank, and FCA controls.\n\n"
             "**Next step**\n"
             "Wednesday next week for the technical deep dive with Marina's architecture team.\n\n"
             "Thanks,\n"
@@ -576,19 +576,19 @@ _SANTANDER_MOCK = {
 
 
 _MOCKS = {
-    "revolut": _REVOLUT_MOCK,
-    "mercado-libre": _MELI_MOCK,
-    "santander": _SANTANDER_MOCK,
+    "northwind": _NORTHWIND_MOCK,
+    "mercado-atlas": _MERCADO_ATLAS_MOCK,
+    "atlantico": _ATLANTICO_MOCK,
     "acme-001": _ACME_MOCK,
     "globex-002": _GLOBEX_MOCK,
     "initech-003": _INITECH_MOCK,
 }
 
 
-def mock_response(company_id: str = "revolut") -> dict:
+def mock_response(company_id: str = "northwind") -> dict:
     """Offline-mode result keyed by company. Hand-written so the demo runs without the Anthropic API.
 
-    Real-customer keys (revolut, mercado-libre, santander) are the canonical demo set.
+    Fictional demo keys (northwind, mercado-atlas, atlantico) are the canonical demo set.
     Legacy keys (acme-001, globex-002, initech-003) remain for backwards compatibility.
     """
-    return _MOCKS.get(company_id, _REVOLUT_MOCK)
+    return _MOCKS.get(company_id, _NORTHWIND_MOCK)

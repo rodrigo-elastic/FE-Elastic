@@ -20,7 +20,7 @@ Pin in order. `Cmd <number>` chains the demo.
 
 1. `http://127.0.0.1:8123/` (Homepage, autopilot CTA. B0, B1, B7.)
 2. `http://127.0.0.1:8123/fe-brain.html` (B2.)
-3. `http://127.0.0.1:8123/meeting.html?id=santander-mtg-prev-001` (Backup meeting view if the autopilot's freshly minted id misbehaves. B3 normally lives on the autopilot's redirect target.)
+3. `http://127.0.0.1:8123/meeting.html?id=atlantico-mtg-prev-001` (Backup meeting view if the autopilot's freshly minted id misbehaves. B3 normally lives on the autopilot's redirect target.)
 4. `http://127.0.0.1:8123/battlecards.html` (B4.)
 5. `http://127.0.0.1:8123/demo-data.html` (B5.)
 6. `http://127.0.0.1:8123/workflow-demo.html` (B6.)
@@ -35,7 +35,7 @@ Terminal pane (right one third), cwd `/Users/rodrigocareaga/Downloads/FE-Elastic
 | # | Time | Beat | URL / pane | Click sequence | Overlay caption | VO cue | Pain anchored |
 |---|---|---|---|---|---|---|---|
 | 01 | 0:00 - 0:08 | B0 Title | Keynote slate | Hold the slate. No clicks. | FE Copilot. 11 personas. 5 scenarios. 2 workflows. | "six hours a week, back" | 6 hours per FE per week of unbilled toil. |
-| 02 | 0:08 - 0:17 | B1 Autopilot | `/` | Click "Show me the magic". Steps 1 to 2 fire. | Quick Research, Banco Santander. SEC EDGAR. | (silent) | 40 minute pre-meeting brief collapses to 90 seconds. |
+| 02 | 0:08 - 0:17 | B1 Autopilot | `/` | Click "Show me the magic". Steps 1 to 2 fire. | Quick Research, Banco Atlántico. SEC EDGAR. | (silent) | 40 minute pre-meeting brief collapses to 90 seconds. |
 | 03 | 0:17 - 0:26 | B1 Autopilot | iframe `/meeting.html` | Steps 3 to 4. Brief renders, Field Assistant auto-runs. | Auro chains POV plan and TCO. | (silent) | POV plan and TCO that normally take half a day. |
 | 04 | 0:26 - 0:35 | B1 Autopilot | iframe `/workflow-demo.html` plus card | Steps 5 to 7. Card: "Demo complete. ~$0.07". | Workflow fires. SFDC plus Slack. Done. | (silent) | Salesforce hygiene that gets skipped on Friday night. |
 | 05 | 0:35 - 0:45 | B2 FE Brain | `/fe-brain.html` | Cmd 2. Click chip "Set up semantic_text with ELSER on Elastic Cloud". | ELSER hybrid. 407 chunks. | "stop pinging Slack" | 5 to 10 daily Slack pings for ES-QL or ELSER syntax. |
@@ -69,7 +69,7 @@ Terminal pane (right one third), cwd `/Users/rodrigocareaga/Downloads/FE-Elastic
 ## Common pitfalls and fallbacks
 
 1. **Autopilot times out at step 2.** Anthropic 429 or cold cache. Autopilot catches it and continues; presenter stays muted. If step 3 panel is blank for 3+ s, cut and restart from B0.
-2. **Field Assistant chip in B3 returns empty.** localStorage stuck. DevTools, `localStorage.clear()`, refresh, click again. Hard fallback: backup meeting tab `meeting.html?id=santander-mtg-prev-001`.
+2. **Field Assistant chip in B3 returns empty.** localStorage stuck. DevTools, `localStorage.clear()`, refresh, click again. Hard fallback: backup meeting tab `meeting.html?id=atlantico-mtg-prev-001`.
 3. **Workflow orphan wave does not fire inside B6.** Kibana .es-query rules poll every 60 s. Pre-prime by firing the demo transcript 90 s before recording so the `[Auto]` wave lands inside the window.
 4. **Kibana 401s in B5.** `KIBANA_API_KEY` expired. Re-export and restart uvicorn. Hard fallback: skip the Kibana scroll and stay on `/demo-data.html`.
 5. **Battlecard chat returns the wrong card content.** Cross-talk in the embedded thread. Refresh `/battlecards.html`, click Splunk, click chip again. Hard fallback: switch to Datadog or Dynatrace; structure is identical.

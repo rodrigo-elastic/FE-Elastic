@@ -14,6 +14,23 @@
     activeSlug: null,
     miniMounted: null, // slug currently mounted into the chat panel
     lastFocus: null,
+    vertical: "all",          // active vertical chip; "all" or one of the 4 keys
+    mainsOnly: true,          // toggle defaults on per sprint spec
+    searchQuery: "",          // last applied search string
+  };
+
+  const VERTICAL_LABELS = {
+    direct_search_vector: "Search / Vector",
+    observability_logs: "Observability / Logs",
+    ai_search_ecommerce: "AI Search / E-commerce",
+    security_siem_xdr: "Security / SIEM",
+  };
+
+  const VERTICAL_I18N = {
+    direct_search_vector: "bc.vert.direct_search_vector.short",
+    observability_logs: "bc.vert.observability_logs.short",
+    ai_search_ecommerce: "bc.vert.ai_search_ecommerce.short",
+    security_siem_xdr: "bc.vert.security_siem_xdr.short",
   };
 
   // ---------------------------------------------------------------- helpers
@@ -103,14 +120,40 @@
 
   // -------------------------------------------------------------- grid view
 
+  function verticalLabel(key) {
+    if (!key) return "";
+    if (window.t && typeof t === "function") {
+      const i18nKey = VERTICAL_I18N[key];
+      if (i18nKey) {
+        const v = t(i18nKey);
+        if (v && v !== i18nKey) return v;
+      }
+    }
+    return VERTICAL_LABELS[key] || key;
+  }
+
   function renderCard(card) {
     const slug = slugOf(card);
+    const vertical = card.vertical || "";
     const root = el("a", {
       href: "#" + encodeURIComponent(slug),
-      class: "bc-card",
+      class: "bc-card" + (vertical ? " bc-card-v-" + vertical.replace(/_/g, "-") : ""),
       "data-slug": slug,
+      "data-vertical": vertical,
+      "data-main": card.is_main_competitor ? "1" : "0",
       "aria-label": `Open ${card.competitor || "competitor"} battlecard`,
     });
+
+    const badges = el("div", { class: "bc-card-badges", "aria-hidden": "true" });
+    if (vertical) {
+      badges.appendChild(
+        el("span", { class: "bc-vbadge bc-vbadge-" + vertical.replace(/_/g, "-") }, verticalLabel(vertical))
+      );
+    }
+    if (card.is_main_competitor) {
+      badges.appendChild(el("span", { class: "bc-vbadge bc-vbadge-main" }, "main"));
+    }
+    root.appendChild(badges);
 
     root.appendChild(
       el("div", { class: "bc-card-head" }, [
@@ -182,25 +225,69 @@
   }
 
   function applyFilter(query) {
-    const q = (query || "").toLowerCase().trim();
-    if (!q) {
-      STATE.filtered = STATE.cards.slice();
-    } else {
-      STATE.filtered = STATE.cards.filter((c) => {
-        const hay = [
-          c.competitor || "",
-          c.competitor_slug || "",
-          c.tagline || "",
-        ].join(" ").toLowerCase();
-        return hay.includes(q);
-      });
-    }
+    if (typeof query === "string") STATE.searchQuery = query;
+    const q = (STATE.searchQuery || "").toLowerCase().trim();
+    const vertical = STATE.vertical || "all";
+    const mainsOnly = !!STATE.mainsOnly;
+
+    STATE.filtered = STATE.cards.filter((c) => {
+      if (vertical !== "all" && (c.vertical || "") !== vertical) return false;
+      if (mainsOnly && !c.is_main_competitor) return false;
+      if (!q) return true;
+      const hay = [
+        c.competitor || "",
+        c.competitor_slug || "",
+        c.tagline || "",
+        c.vertical || "",
+      ].join(" ").toLowerCase();
+      return hay.includes(q);
+    });
+
     const counter = $("#bc-result-count");
     if (counter) {
-      if (!q) counter.textContent = "";
-      else counter.textContent = `${STATE.filtered.length} of ${STATE.cards.length} match`;
+      const total = STATE.cards.length;
+      const shown = STATE.filtered.length;
+      const parts = [];
+      if (q || vertical !== "all" || mainsOnly) {
+        parts.push(`${shown} of ${total}`);
+      }
+      counter.textContent = parts.join(" ");
     }
+    refreshChipCounts();
     renderList(STATE.filtered);
+  }
+
+  // Recompute the count badge on each chip. Counts respect the mains-only toggle
+  // (so the user sees the same population that clicking the chip will produce)
+  // but ignore the search box, so the chips do not flicker as the user types.
+  function refreshChipCounts() {
+    const mainsOnly = !!STATE.mainsOnly;
+    const totals = { all: 0, direct_search_vector: 0, observability_logs: 0, ai_search_ecommerce: 0, security_siem_xdr: 0 };
+    for (const c of STATE.cards) {
+      if (mainsOnly && !c.is_main_competitor) continue;
+      totals.all += 1;
+      if (c.vertical && totals.hasOwnProperty(c.vertical)) totals[c.vertical] += 1;
+    }
+    document.querySelectorAll(".bc-chip-count").forEach((node) => {
+      const key = node.getAttribute("data-count-for");
+      if (key && totals.hasOwnProperty(key)) node.textContent = String(totals[key]);
+    });
+  }
+
+  function setVertical(key) {
+    const next = key || "all";
+    STATE.vertical = next;
+    document.querySelectorAll(".bc-chip").forEach((btn) => {
+      const isActive = (btn.getAttribute("data-vertical") || "all") === next;
+      btn.classList.toggle("is-active", isActive);
+      btn.setAttribute("aria-pressed", isActive ? "true" : "false");
+    });
+    applyFilter();
+  }
+
+  function setMainsOnly(on) {
+    STATE.mainsOnly = !!on;
+    applyFilter();
   }
 
   // ------------------------------------------------------------ markdown
@@ -238,7 +325,22 @@
       adv.forEach((a) => lines.push(`- ${a}`));
       lines.push("");
     }
-    const objs = Array.isArray(card.common_objections) ? card.common_objections : [];
+    const proofs = Array.isArray(card.proof_points) ? card.proof_points : [];
+    if (proofs.length) {
+      lines.push("## Proof points");
+      proofs.forEach((p) => {
+        lines.push(`- ${p.metric || ""}${p.source ? ` (source: ${p.source})` : ""}`);
+      });
+      lines.push("");
+    }
+    if (card.pricing_anchor) {
+      lines.push("## Pricing anchor");
+      lines.push(card.pricing_anchor);
+      lines.push("");
+    }
+    const objs = (Array.isArray(card.objection_handlers) && card.objection_handlers.length
+      ? card.objection_handlers
+      : Array.isArray(card.common_objections) ? card.common_objections : []);
     if (objs.length) {
       lines.push("## Common objections");
       objs.forEach((o) => {
@@ -247,13 +349,27 @@
         lines.push("");
       });
     }
+    const gotchas = Array.isArray(card.gotchas) ? card.gotchas : [];
+    if (gotchas.length) {
+      lines.push("## Honest gotchas");
+      gotchas.forEach((g) => lines.push(`- ${g}`));
+      lines.push("");
+    }
     const dq = Array.isArray(card.discovery_questions) ? card.discovery_questions : [];
     if (dq.length) {
       lines.push("## Discovery to confirm");
       dq.forEach((q, i) => lines.push(`${i + 1}. ${q}`));
       lines.push("");
     }
-    lines.push("");
+    if (card.clincher) {
+      lines.push("## Clincher");
+      lines.push(card.clincher);
+      lines.push("");
+    }
+    if (card.vertical) {
+      lines.push(`*Vertical: ${card.vertical}${card.is_main_competitor ? " (main competitor)" : ""}*`);
+      lines.push("");
+    }
     lines.push("Generated by FE Copilot Battlecards.");
     return lines.join("\n");
   }
@@ -371,7 +487,22 @@
       lines.push("### Elastic counter-positioning");
       adv.forEach((a) => lines.push(`- ${a}`));
     }
-    const objs = Array.isArray(card.common_objections) ? card.common_objections : [];
+    const proofs = Array.isArray(card.proof_points) ? card.proof_points : [];
+    if (proofs.length) {
+      lines.push("");
+      lines.push("### Proof points");
+      proofs.forEach((p) => {
+        lines.push(`- ${p.metric || ""}${p.source ? " [source: " + p.source + "]" : ""}`);
+      });
+    }
+    if (card.pricing_anchor) {
+      lines.push("");
+      lines.push("### Pricing anchor");
+      lines.push(card.pricing_anchor);
+    }
+    const objs = (Array.isArray(card.objection_handlers) && card.objection_handlers.length
+      ? card.objection_handlers
+      : Array.isArray(card.common_objections) ? card.common_objections : []);
     if (objs.length) {
       lines.push("");
       lines.push("### Common objections");
@@ -379,6 +510,17 @@
         lines.push(`Q: ${o.q || ""}`);
         lines.push(`A: ${o.a || ""}`);
       });
+    }
+    const gotchas = Array.isArray(card.gotchas) ? card.gotchas : [];
+    if (gotchas.length) {
+      lines.push("");
+      lines.push("### Honest gotchas (where the competitor genuinely beats Elastic)");
+      gotchas.forEach((g) => lines.push(`- ${g}`));
+    }
+    if (card.clincher) {
+      lines.push("");
+      lines.push(`### Clincher`);
+      lines.push(card.clincher);
     }
     const dq = Array.isArray(card.discovery_questions) ? card.discovery_questions : [];
     if (dq.length) {
@@ -397,7 +539,21 @@
     const wrap = el("div", { class: "bc-hero" });
     wrap.appendChild(el("div", { class: "bc-hero-glyph", "aria-hidden": "true" }, glyphFor(name)));
     const block = el("div", { class: "bc-hero-text" });
-    block.appendChild(el("div", { class: "bc-hero-eyebrow" }, "Battlecard"));
+    const eyebrow = el("div", { class: "bc-hero-eyebrow" }, "Battlecard");
+    if (card.vertical) {
+      eyebrow.appendChild(
+        el("span", {
+          class: "bc-vbadge bc-vbadge-" + String(card.vertical).replace(/_/g, "-"),
+          style: "margin-left:10px",
+        }, verticalLabel(card.vertical))
+      );
+    }
+    if (card.is_main_competitor) {
+      eyebrow.appendChild(
+        el("span", { class: "bc-vbadge bc-vbadge-main", style: "margin-left:6px" }, "main")
+      );
+    }
+    block.appendChild(eyebrow);
     block.appendChild(el("h1", { class: "bc-hero-title" }, [
       el("span", { class: "bc-hero-vs" }, "Elastic vs "),
       el("span", { class: "bc-hero-name" }, name),
@@ -475,7 +631,38 @@
       );
     }
 
-    const objs = Array.isArray(card.common_objections) ? card.common_objections : [];
+    // Proof points (new schema). Optional.
+    const proofs = Array.isArray(card.proof_points) ? card.proof_points : [];
+    if (proofs.length) {
+      const list = el("ul", { class: "bc-proof-list" });
+      proofs.forEach((p) => {
+        const li = el("li", { class: "bc-proof-item" });
+        li.appendChild(el("span", { class: "bc-proof-metric" }, p.metric || ""));
+        if (p.source) li.appendChild(el("span", { class: "bc-proof-source" }, "source: " + p.source));
+        list.appendChild(li);
+      });
+      wrap.appendChild(
+        el("section", { class: "bc-block" }, [
+          el("div", { class: "bc-block-lbl" }, "Proof points"),
+          list,
+        ])
+      );
+    }
+
+    // Pricing anchor (new schema). Optional.
+    if (card.pricing_anchor) {
+      wrap.appendChild(
+        el("section", { class: "bc-block bc-block-price" }, [
+          el("div", { class: "bc-block-lbl" }, "Pricing anchor"),
+          el("p", { class: "bc-pain-body" }, card.pricing_anchor),
+        ])
+      );
+    }
+
+    // Objections: prefer new objection_handlers, fall back to common_objections.
+    const objs = (Array.isArray(card.objection_handlers) && card.objection_handlers.length
+      ? card.objection_handlers
+      : Array.isArray(card.common_objections) ? card.common_objections : []);
     if (objs.length) {
       const list = el("dl", { class: "bc-obj-grid" });
       objs.forEach((o) => {
@@ -490,6 +677,17 @@
       );
     }
 
+    // Gotchas (new schema). Optional. Honest limits, not weaknesses to hide.
+    const gotchas = Array.isArray(card.gotchas) ? card.gotchas : [];
+    if (gotchas.length) {
+      wrap.appendChild(
+        el("section", { class: "bc-block bc-block-gotchas" }, [
+          el("div", { class: "bc-block-lbl" }, "Honest gotchas"),
+          el("ul", { class: "bc-adv-list bc-gotcha-list" }, gotchas.map((g) => el("li", {}, g))),
+        ])
+      );
+    }
+
     const dq = Array.isArray(card.discovery_questions) ? card.discovery_questions : [];
     if (dq.length) {
       wrap.appendChild(
@@ -498,6 +696,16 @@
           el("ol", { class: "bc-dq-list" }, dq.map((q) =>
             el("li", { class: "bc-dq-item" }, q)
           )),
+        ])
+      );
+    }
+
+    // Clincher (new schema). Optional one-line closer.
+    if (card.clincher) {
+      wrap.appendChild(
+        el("section", { class: "bc-block bc-block-clincher" }, [
+          el("div", { class: "bc-block-lbl" }, "Clincher"),
+          el("p", { class: "bc-clincher-body" }, card.clincher),
         ])
       );
     }
@@ -712,14 +920,31 @@
 
   function bindSearch() {
     const input = $("#bc-search");
-    if (!input) return;
-    input.addEventListener("input", (ev) => applyFilter(ev.target.value || ""));
-    input.addEventListener("keydown", (ev) => {
-      if (ev.key === "Escape" && input.value) {
-        input.value = "";
-        applyFilter("");
-      }
-    });
+    if (input) {
+      input.addEventListener("input", (ev) => applyFilter(ev.target.value || ""));
+      input.addEventListener("keydown", (ev) => {
+        if (ev.key === "Escape" && input.value) {
+          input.value = "";
+          applyFilter("");
+        }
+      });
+    }
+  }
+
+  function bindVerticalFilter() {
+    const row = $("#bc-chip-row");
+    if (row) {
+      row.addEventListener("click", (ev) => {
+        const btn = ev.target.closest && ev.target.closest(".bc-chip");
+        if (!btn) return;
+        ev.preventDefault();
+        setVertical(btn.getAttribute("data-vertical") || "all");
+      });
+    }
+    const toggle = $("#bc-main-toggle");
+    if (toggle) {
+      toggle.addEventListener("change", () => setMainsOnly(toggle.checked));
+    }
   }
 
   // ----------------------------------------------------------------- load
@@ -755,6 +980,7 @@
 
   function init() {
     bindSearch();
+    bindVerticalFilter();
     bindRouting();
     bindDetailToolbar();
     routeFromHash(); // shows grid until data arrives or hash is empty
