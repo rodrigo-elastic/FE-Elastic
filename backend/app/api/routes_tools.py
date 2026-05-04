@@ -594,6 +594,42 @@ async def knowledge_search_endpoint(payload: KnowledgeSearchRequest) -> Dict[str
     return await run_knowledge_search(payload)
 
 
+@router.get("/knowledge-search/health")
+def knowledge_search_health() -> Dict[str, Any]:
+    """Lightweight corpus stats for the FE Brain hero pill. Returns
+    `documents` (chunk count in fec-knowledge), `urls` (count of seeded source
+    URLs in data/seed/knowledge_seed_urls.txt), and `available` (true when ES
+    is reachable). Never raises so the FE Brain page can render the pill
+    even on a degraded backend."""
+    docs: Optional[int] = None
+    urls: Optional[int] = None
+    available = False
+    try:
+        from app.repositories.elasticsearch_repo import get_repo as get_es_repo
+        repo = get_es_repo()
+        if repo.available:
+            available = True
+            try:
+                resp = repo._client.count(index="fec-knowledge")
+                docs = int(resp.get("count", 0)) if isinstance(resp, dict) else int(getattr(resp, "body", {}).get("count", 0))
+            except Exception:
+                docs = None
+    except Exception:
+        pass
+    try:
+        from pathlib import Path as _P
+        seed_path = _P(__file__).resolve().parents[3] / "data" / "seed" / "knowledge_seed_urls.txt"
+        if seed_path.exists():
+            with open(seed_path, "r", encoding="utf-8") as fh:
+                urls = sum(
+                    1 for line in fh
+                    if line.strip() and not line.lstrip().startswith("#")
+                )
+    except Exception:
+        pass
+    return {"available": available, "documents": docs, "urls": urls}
+
+
 # ============================================================ Troubleshoot ===========
 
 
