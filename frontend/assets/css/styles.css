@@ -2635,7 +2635,56 @@ body.has-tools-rail .container {
   padding: 14px 12px;
   box-shadow: var(--shadow-sm);
   overflow-y: auto;
+  overflow-x: hidden;
   z-index: 5;
+  transition: width 180ms ease;
+}
+
+/* Desktop collapse toggle: chevron pinned at top-right of the rail. Only
+   visible above 768px since mobile uses the topbar hamburger. */
+.tools-rail-collapse-btn {
+  position: sticky;
+  top: 0;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel-2);
+  color: var(--ink-2);
+  cursor: pointer;
+  z-index: 1;
+}
+.tools-rail-collapse-btn:hover { background: var(--panel-3); color: var(--ink); }
+@media (max-width: 768px) {
+  .tools-rail-collapse-btn { display: none; }
+}
+
+/* Collapsed (icon-only) state: 56px wide, hide labels, center icons. */
+.tools-sidebar.is-collapsed { width: 56px; padding: 14px 6px; }
+.tools-sidebar.is-collapsed .tools-sidebar-lbl { display: none; }
+.tools-sidebar.is-collapsed .tools-nav-pill {
+  justify-content: center;
+  padding: 8px 6px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.tools-sidebar.is-collapsed .tools-nav-pill > *:not(.tools-nav-icon) { display: none; }
+.tools-sidebar.is-collapsed .tools-nav-pill {
+  font-size: 0;
+}
+.tools-sidebar.is-collapsed .tools-nav-icon { font-size: 14px; }
+/* Reclaim space: when rail is collapsed, the main container's left padding
+   shrinks from 268px to 96px (56 width + 20 gap + 20 breathing). */
+body.has-tools-rail.is-rail-collapsed .container {
+  padding-left: 96px;
+}
+body.portal-page.has-tools-rail.is-rail-collapsed .container {
+  padding-left: 96px;
 }
 .tools-sidebar-lbl {
   font-size: 10.5px;

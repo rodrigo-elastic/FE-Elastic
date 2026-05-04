@@ -448,7 +448,41 @@
     if (!aside) return;
     render(aside);
     buildSidebarToggle(aside);
+    buildRailCollapseToggle(aside);
     buildThemeToggle();
+  }
+
+  // ============================================================
+  // Desktop collapse toggle (icon-only rail). Persists in localStorage so the
+  // user's preference survives navigation. Mobile path uses the off-canvas
+  // hamburger from buildSidebarToggle and ignores the collapse state.
+  // ============================================================
+  function buildRailCollapseToggle(aside) {
+    if (aside.querySelector(".tools-rail-collapse-btn")) return;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "tools-rail-collapse-btn";
+    btn.setAttribute("aria-controls", aside.id || "tools-sidebar");
+    btn.setAttribute("aria-pressed", "false");
+    function applyState(collapsed) {
+      aside.classList.toggle("is-collapsed", collapsed);
+      document.body.classList.toggle("is-rail-collapsed", collapsed);
+      btn.setAttribute("aria-pressed", collapsed ? "true" : "false");
+      btn.setAttribute("aria-label", collapsed ? "Expand navigation" : "Collapse navigation");
+      btn.setAttribute("title", collapsed ? "Expand navigation" : "Collapse navigation");
+      btn.innerHTML = collapsed
+        ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="9 6 15 12 9 18"/></svg>'
+        : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="15 6 9 12 15 18"/></svg>';
+    }
+    btn.addEventListener("click", function () {
+      const next = !aside.classList.contains("is-collapsed");
+      try { localStorage.setItem("fec.rail.collapsed", next ? "1" : "0"); } catch (_e) {}
+      applyState(next);
+    });
+    aside.appendChild(btn);
+    let initial = false;
+    try { initial = localStorage.getItem("fec.rail.collapsed") === "1"; } catch (_e) {}
+    applyState(initial);
   }
 
   if (document.readyState === "loading") {
