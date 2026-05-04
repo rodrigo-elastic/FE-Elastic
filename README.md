@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="assets/sko-fy27-banner.png" alt="FY27 Sales Kickoff. May 11 to 14, 2026. Las Vegas, Nevada." width="1100" />
-</p>
+<p align="center"><strong>FY27 Sales Kickoff</strong> | May 11 to 14, 2026 . Las Vegas, Nevada</p>
 
 <p align="center">
   <img src="assets/hero-dashboard.png" alt="FE Copilot. Field Engineers, finally go home on time. Twelve MCP tools, five demo scenarios, six hours per FE per week saved." width="1100" />

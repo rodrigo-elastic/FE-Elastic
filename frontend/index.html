@@ -41,14 +41,29 @@
       border-radius: 3px;
     }
     .demo-banner-close:hover { background: rgba(133, 100, 4, 0.12); }
-    .sko-banner { display: block; width: 100%; line-height: 0; }
-    .sko-banner img { display: block; width: 100%; height: auto; max-height: 96px; object-fit: cover; object-position: center; }
+    .sko-banner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: #1a5fff;
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      text-align: center;
+    }
+    .sko-banner-sep { opacity: 0.55; }
+    .sko-banner-meta { font-weight: 500; opacity: 0.95; }
   </style>
 </head>
 <body>
-  <a class="sko-banner" href="#" aria-label="FY27 Sales Kickoff, May 11 to 14, 2026, Las Vegas, Nevada">
-    <img src="/assets/sko-fy27-banner.png" alt="FY27 Sales Kickoff. May 11 to 14, 2026. Las Vegas, Nevada." />
-  </a>
+  <div class="sko-banner" role="note" aria-label="FY27 Sales Kickoff event">
+    <span>FY27 Sales Kickoff</span>
+    <span class="sko-banner-sep">|</span>
+    <span class="sko-banner-meta">May 11 to 14, 2026 . Las Vegas, Nevada</span>
+  </div>
   <header class="topbar">
     <a class="brand" href="/" aria-label="FE Copilot home">
       <img class="logo-elastic" src="/assets/img/elastic/logo-horizontal-white.svg" alt="Elastic" />
