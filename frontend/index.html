@@ -12,6 +12,8 @@
   <title>FE Copilot</title>
   <link rel="stylesheet" href="/assets/css/styles.css" />
   <link rel="icon" type="image/svg+xml" href="/assets/img/elastic/glyph-cluster-color.svg" />
+  <link rel="stylesheet" href="/assets/css/command-palette.css" />
+  <link rel="stylesheet" href="/assets/css/autopilot.css" />
 </head>
 <body>
   <header class="topbar">
@@ -60,6 +62,14 @@
           <h2 data-i18n="qr.title">Quick research</h2>
           <p class="muted small" style="margin: 4px 0 0 0" data-i18n="qr.subtitle">Research any account in 10 seconds. Only what you type leaves the boundary.</p>
         </div>
+      </div>
+      <div class="qr-templates" aria-labelledby="qr-templates-label">
+        <div class="qr-templates-head">
+          <span class="qr-templates-lbl" id="qr-templates-label" data-i18n="tpl.label">Start from a template</span>
+          <span class="muted small" data-i18n="tpl.hint">Pre-fills industry, size, stack notes, context, and model. Just add the company name.</span>
+        </div>
+        <div class="qr-templates-row" id="qr-templates-row" role="list"></div>
+        <div class="qr-applied-host" id="qr-applied-host" aria-live="polite" aria-atomic="true"></div>
       </div>
       <form id="qr-form" class="qr-form" onsubmit="return false;">
         <div class="qr-row">
@@ -279,5 +289,7 @@
   <script src="/assets/js/ui.js"></script>
   <script src="/assets/js/tools-rail.js"></script>
   <script src="/assets/js/app.js"></script>
+  <script src="/assets/js/command-palette.js"></script>
+  <script src="/assets/js/autopilot.js"></script>
 </body>
 </html>

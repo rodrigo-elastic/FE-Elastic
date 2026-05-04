@@ -8,7 +8,7 @@ __copyright__ = "Copyright 2026, Rodrigo Careaga"
 __version__ = "0.1.0"
 __status__ = "Development"
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -171,3 +171,43 @@ class TroubleshootOut(BaseModel):
     quick_remediations: List[TroubleshootRemediation]
     escalation_path: str
     caveats: List[str]
+
+
+# ============================================================ ORCHESTRATOR ============
+
+
+class OrchestratorPick(BaseModel):
+    """One tool selection emitted by Auro at planning time."""
+    tool: str
+    rationale: str
+    input_json: str  # JSON-encoded input arguments. Parsed server-side before execution.
+
+
+class OrchestratorPlanOut(BaseModel):
+    """Step-1 planning output: which tools to call and with what inputs."""
+    plan: str
+    picks: List[OrchestratorPick]
+
+
+class OrchestratorSynthesisOut(BaseModel):
+    """Step-3 synthesis output: unified narrative + suggested follow-ups."""
+    synthesis: str
+    follow_ups: List[str]
+
+
+class OrchestratorInvocation(BaseModel):
+    """One executed tool slot in the orchestrator response."""
+    tool: str
+    rationale: str
+    input: Dict[str, Any]
+    output_summary: str
+    ok: bool
+    error: Optional[str] = None
+
+
+class OrchestratorOut(BaseModel):
+    """Final response shape for POST /tools/orchestrator."""
+    plan: str
+    tools_invoked: List[OrchestratorInvocation]
+    synthesis: str
+    follow_ups: List[str]

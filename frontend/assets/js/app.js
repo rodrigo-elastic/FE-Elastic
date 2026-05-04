@@ -7,12 +7,65 @@
 
 let ALL_MEETINGS = [];
 
+// Prefab industry templates for one-click prefill of the Quick Research form.
+// The catalog also lives at /data/seed/industry_templates.json (kept in sync by hand).
+// Tile UI strings (name, tagline) are i18n keyed; form-field copy stays English so the
+// agent gets stable signal regardless of FE locale.
+const INDUSTRY_TEMPLATES = [
+  {
+    id: "banking",
+    accent: "blue",
+    icon:
+      '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 10l9-6 9 6"/><path d="M5 10v8"/><path d="M9 10v8"/><path d="M15 10v8"/><path d="M19 10v8"/><path d="M3 21h18"/></svg>',
+    fields: {
+      industry: "Banking & Financial Services",
+      size: "10000+ employees",
+      tech_stack:
+        "Splunk for SIEM + observability, Datadog APM, Oracle + DB2 mainframe, Java/Kotlin microservices, Kafka, AWS + on-prem",
+      notes:
+        "Regulatory pressure from DORA, PCI DSS, SOX, FCA SYSC. Splunk renewal in 2027 ~$5M annual. Looking to consolidate SIEM + observability + search into one platform. Compliance audit in Q3.",
+      model: "claude-sonnet-4-6",
+    },
+  },
+  {
+    id: "retail",
+    accent: "pink",
+    icon:
+      '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/><path d="M3 4h2.2l2.4 11.2a2 2 0 0 0 2 1.6h7.5a2 2 0 0 0 2-1.55L21 8H6"/></svg>',
+    fields: {
+      industry: "E-commerce & Retail",
+      size: "1000-5000 employees",
+      tech_stack:
+        "Shopify Plus, Klaviyo, Datadog observability, Algolia search, AWS, Snowflake for analytics, microservices in Go and Node.js",
+      notes:
+        "Black Friday peak handling is critical. Cart abandonment > 30%. Looking for unified observability + search relevance + customer 360. Currently overspending on Datadog ($800k/year).",
+      model: "claude-sonnet-4-6",
+    },
+  },
+  {
+    id: "healthcare",
+    accent: "teal",
+    icon:
+      '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20.8 11.5a4.6 4.6 0 0 0-7.8-3.3L12 9.2l-1-1A4.6 4.6 0 0 0 3.2 11.5c0 1.6.7 3 1.8 4.1L12 22l7-6.4c1.1-1.1 1.8-2.5 1.8-4.1z"/><path d="M12 11v5"/><path d="M9.5 13.5h5"/></svg>',
+    fields: {
+      industry: "Healthcare & Life Sciences",
+      size: "5000-10000 employees",
+      tech_stack:
+        "Epic EHR, MuleSoft, Java + .NET, Splunk, Microsoft Sentinel for SOC, Azure-first cloud, FHIR APIs",
+      notes:
+        "HIPAA + HITRUST + GDPR (EU patients). 7-year retention mandates. SOC needs UEBA. Considering Elastic for SIEM consolidation; pilot needed before fiscal year end.",
+      model: "claude-sonnet-4-6",
+    },
+  },
+];
+
 (async function init() {
   applyI18n();
   renderLangPicker(document.getElementById("lang-host"));
   bindKeyboard();
   bindEntryTabs();
   bindQuickResearch();
+  renderQuickResearchTemplates();
   bindTranscriptUpload();
   await loadInfo();
   await loadCalendar();
@@ -475,6 +528,114 @@ function bindQuickResearch() {
       submit.innerHTML = label;
     }
   });
+}
+
+function renderQuickResearchTemplates() {
+  const row = document.getElementById("qr-templates-row");
+  if (!row) return;
+  row.innerHTML = "";
+  INDUSTRY_TEMPLATES.forEach((tpl) => {
+    const name = t(`tpl.${tpl.id}.name`, tpl.id);
+    const tagline = t(`tpl.${tpl.id}.tagline`, "");
+    const useLabel = t("tpl.use", "Use this template");
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `qr-template qr-template-${tpl.accent}`;
+    btn.setAttribute("role", "listitem");
+    btn.setAttribute(
+      "aria-label",
+      `${useLabel}: ${name}. ${tagline}`.trim()
+    );
+    btn.dataset.tplId = tpl.id;
+
+    btn.innerHTML = `
+      <span class="qr-template-icon" aria-hidden="true">${tpl.icon}</span>
+      <span class="qr-template-body">
+        <span class="qr-template-name">${escapeHtml(name)}</span>
+        <span class="qr-template-tagline">${escapeHtml(tagline)}</span>
+      </span>
+      <span class="qr-template-cta">
+        <span class="qr-template-cta-label">${escapeHtml(useLabel)}</span>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="9 18 15 12 9 6"/></svg>
+      </span>
+    `;
+
+    btn.addEventListener("click", () => applyIndustryTemplate(tpl));
+    row.appendChild(btn);
+  });
+}
+
+function applyIndustryTemplate(tpl) {
+  const f = tpl.fields || {};
+  const industry = document.getElementById("qr-industry");
+  const size = document.getElementById("qr-size");
+  const stack = document.getElementById("qr-stack");
+  const notes = document.getElementById("qr-notes");
+  const model = document.getElementById("qr-model");
+  const name = document.getElementById("qr-name");
+
+  if (industry) industry.value = f.industry || "";
+  if (size) size.value = f.size || "";
+  if (stack) stack.value = f.tech_stack || "";
+  if (notes) notes.value = f.notes || "";
+  if (model && f.model) {
+    const exists = Array.from(model.options).some((o) => o.value === f.model);
+    model.value = exists ? f.model : "";
+  }
+
+  // Visually mark the active tile.
+  document.querySelectorAll(".qr-template").forEach((el) => {
+    el.classList.toggle("is-active", el.dataset.tplId === tpl.id);
+  });
+
+  // Focus the company-name input so the FE can keep typing.
+  if (name) {
+    name.focus();
+    try {
+      name.scrollIntoView({ behavior: "smooth", block: "center" });
+    } catch (e) {
+      /* old browsers */
+    }
+  }
+
+  showTemplateAppliedPill(tpl);
+}
+
+function showTemplateAppliedPill(tpl) {
+  const host = document.getElementById("qr-applied-host");
+  if (!host) return;
+  const name = t(`tpl.${tpl.id}.name`, tpl.id);
+  const text = t("tpl.applied", "Template applied").replace("{name}", name);
+  host.innerHTML = "";
+  const pill = document.createElement("span");
+  pill.className = `qr-applied-pill qr-applied-${tpl.accent}`;
+  pill.innerHTML = `
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="20 6 9 17 4 12"/></svg>
+    <span>${escapeHtml(text)}</span>
+  `;
+  host.appendChild(pill);
+  // Force a reflow so the fade-out transition triggers reliably.
+  // eslint-disable-next-line no-unused-expressions
+  pill.offsetHeight;
+  pill.classList.add("is-show");
+  clearTimeout(host._fadeTimer);
+  host._fadeTimer = setTimeout(() => {
+    pill.classList.remove("is-show");
+    pill.classList.add("is-hide");
+    setTimeout(() => {
+      if (host.contains(pill)) host.removeChild(pill);
+    }, 320);
+  }, 2000);
+}
+
+function escapeHtml(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 async function loadHistory() {

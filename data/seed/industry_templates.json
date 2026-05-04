@@ -1,0 +1,42 @@
+{
+  "_comment": "Prefab industry templates for the FE Copilot Quick Research flow. Loaded inline by frontend/assets/js/app.js (INDUSTRY_TEMPLATES). i18n keys for the tile UI live in frontend/assets/js/i18n.js (tpl.<id>.name and tpl.<id>.tagline). Form-field copy is intentionally English so the agent receives a stable signal regardless of the FE's chosen UI locale.",
+  "version": 1,
+  "templates": [
+    {
+      "id": "banking",
+      "icon": "bank",
+      "accent": "blue",
+      "fields": {
+        "industry": "Banking & Financial Services",
+        "size": "10000+ employees",
+        "tech_stack": "Splunk for SIEM + observability, Datadog APM, Oracle + DB2 mainframe, Java/Kotlin microservices, Kafka, AWS + on-prem",
+        "notes": "Regulatory pressure from DORA, PCI DSS, SOX, FCA SYSC. Splunk renewal in 2027 ~$5M annual. Looking to consolidate SIEM + observability + search into one platform. Compliance audit in Q3.",
+        "model": "claude-sonnet-4-6"
+      }
+    },
+    {
+      "id": "retail",
+      "icon": "cart",
+      "accent": "pink",
+      "fields": {
+        "industry": "E-commerce & Retail",
+        "size": "1000-5000 employees",
+        "tech_stack": "Shopify Plus, Klaviyo, Datadog observability, Algolia search, AWS, Snowflake for analytics, microservices in Go and Node.js",
+        "notes": "Black Friday peak handling is critical. Cart abandonment > 30%. Looking for unified observability + search relevance + customer 360. Currently overspending on Datadog ($800k/year).",
+        "model": "claude-sonnet-4-6"
+      }
+    },
+    {
+      "id": "healthcare",
+      "icon": "health",
+      "accent": "teal",
+      "fields": {
+        "industry": "Healthcare & Life Sciences",
+        "size": "5000-10000 employees",
+        "tech_stack": "Epic EHR, MuleSoft, Java + .NET, Splunk, Microsoft Sentinel for SOC, Azure-first cloud, FHIR APIs",
+        "notes": "HIPAA + HITRUST + GDPR (EU patients). 7-year retention mandates. SOC needs UEBA. Considering Elastic for SIEM consolidation; pilot needed before fiscal year end.",
+        "model": "claude-sonnet-4-6"
+      }
+    }
+  ]
+}

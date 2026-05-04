@@ -1,6 +1,6 @@
 """
 filename: routes_mcp.py
-description: MCP Streamable HTTP server exposing the eight FE Copilot tools to Elastic Agent Builder. Speaks JSON-RPC over a single POST endpoint per the MCP 2025-03-26 spec; each tool delegates to the existing FastAPI tool route.
+description: MCP Streamable HTTP server exposing the ten FE Copilot tools (nine specialists plus the Auro orchestrator) to Elastic Agent Builder. Speaks JSON-RPC over a single POST endpoint per the MCP 2025-03-26 spec; each tool delegates to the existing FastAPI tool route.
 date: 03-05-2026
 """
 __author__ = "Rodrigo Careaga"
@@ -20,6 +20,7 @@ from app.api.routes_tools import (
     ComplianceRequest,
     CostCalcRequest,
     KnowledgeSearchRequest,
+    OrchestratorRequest,
     POCPlanRequest,
     SPLToESQLRequest,
     StackExtractRequest,
@@ -29,6 +30,7 @@ from app.api.routes_tools import (
     run_compliance_mapping,
     run_cost_calc,
     run_knowledge_search,
+    run_orchestrator,
     run_poc_plan,
     run_spl_to_esql,
     run_stack_extract,
@@ -162,6 +164,18 @@ TOOLS = [
             "required": ["error_text"],
         },
     },
+    {
+        "name": "fec_orchestrator",
+        "description": "Meta-tool. Auro (senior FE conductor, 12y orchestrating multi-tool responses) reads a complex query, picks 2-3 of the other nine FE Copilot tools, runs them in parallel, and synthesizes a single coherent answer with cross-references and follow-up suggestions. Use when a request needs more than one specialist (e.g., cost + capacity, SPL + cost, compliance + code sample).",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "The full natural-language Field Engineer question, possibly multi-part."},
+                "language": {"type": "string", "default": "English"},
+            },
+            "required": ["query"],
+        },
+    },
 ]
 
 
@@ -187,6 +201,8 @@ async def _invoke_tool(name: str, args: Dict[str, Any]) -> Any:
         return await run_knowledge_search(KnowledgeSearchRequest(**args))
     if name == "fec_troubleshoot":
         return await run_troubleshoot(TroubleshootRequest(**args))
+    if name == "fec_orchestrator":
+        return await run_orchestrator(OrchestratorRequest(**args))
     raise ValueError(f"unknown tool: {name}")
 
 

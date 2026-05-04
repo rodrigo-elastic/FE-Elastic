@@ -584,7 +584,7 @@ If the Field Engineer's question is in a non-English language, answer in that la
 - Cite only the snippets in the user message. Do not pull in URLs, version numbers, or feature names that are not in the snippets.
 - Never invent features. If a setting is not named in the snippets, do not name it. If a CLI is not shown in the snippets, do not show it.
 - Use Elastic-canonical naming: Elasticsearch (not "elastic search"), ES|QL (not "ESQL"), EQL (not "Elastic Query Language" or "Event Query Language" inline; just write EQL), ILM (not "Index Lifecycle Manager" the first time, then once you have written ILM keep using ILM), semantic_text (not "Semantic Text").
-- Never use the em dash character or the en dash character. Use plain hyphens. Use commas, colons, or periods for clause breaks.
+- Never use the em dash character (U+2014, written as a long dash) or the en dash character (U+2013) anywhere in your output. This is a hard format rule with zero exceptions. For parenthetical clauses use a comma, a colon, parentheses, or split into two sentences. For ranges write "10 to 50 GB" using the word "to", not "10 - 50 GB" with a long dash. Before you emit your final answer, scan it once and replace any em or en dash with a comma, the word "to", or a sentence split.
 - Cite at most 5 sources. If you write `[n]` in the answer, make sure `citations[n-1]` exists in the JSON output, with matching `n`, `url`, `title`, `section_heading`, and a short `snippet`.
 - Keep the answer between 80 and 350 words. Field Engineers read on phones between meetings.
 - If the snippets are empty or clearly unrelated to the query, return a short answer that says so and points the user at the closest doc URL from the snippets (or, if none, suggest https://www.elastic.co/docs/ as the entry point). Never deflect to a human.
@@ -657,7 +657,11 @@ def render_knowledge_search_prompt(query: str, hits: list) -> str:
         "mismatch instead. If a number, threshold, MITRE code, or sizing figure is not in the "
         "cited snippets, prefix it with `Rule of thumb:` and do not attach a `[n]` to it. "
         "Never close an answer by telling the Field Engineer to ask their SA or Elastic Support; "
-        "name the missing fact and propose the closest doc URL instead."
+        "name the missing fact and propose the closest doc URL instead. "
+        "Final format check: scan your draft for em dashes (U+2014, the long dash) and en dashes "
+        "(U+2013) before emitting. Replace every one with a comma, the word \"to\" for ranges, "
+        "parentheses, or a sentence split. The output must contain zero em dashes and zero en "
+        "dashes."
     )
     return "\n".join(parts)
 
@@ -841,5 +845,195 @@ def render_troubleshoot_prompt(error_text: str, context: str = "") -> str:
         "Emit exactly 3 ES|QL diagnostic queries that the FE can paste straight into Kibana Discover. "
         "Each query must be syntactically valid, use real ECS field paths, and pair with a concrete `expected_signal`. "
         "Order remediations by risk; mark destructive ones reversible=false."
+    )
+    return "\n".join(parts)
+
+
+# ============================================================ ORCHESTRATOR ============
+
+ORCHESTRATOR_TOOL_CATALOG = """## Tool catalogue you can chain (the only nine tools you may pick from)
+
+1. fec_poc_plan
+   - Persona: Marta (Sr Solutions Architect, 12y POV).
+   - Use when: the FE needs a concrete 4-8 week POV/POC plan for a specific customer.
+   - Hard requirement: REQUIRES a meeting_id that already has a saved post-meeting record. If the user query does not name a synthetic meeting_id (a string that looks like `<company>-mtg-...`), DO NOT pick this tool.
+   - Input shape: {"meeting_id": "<string>", "language": "<string, optional>"}.
+
+2. fec_spl_to_esql
+   - Persona: Diego (ex-Splunk consultant, 200+ migrations).
+   - Use when: the FE pastes or quotes a Splunk SPL query and needs the ES|QL equivalent.
+   - Input shape: {"spl": "<the SPL query>", "language": "<optional>"}.
+   - Note: EQL (Event Query Language) is NOT SPL. If the user mentions an EQL query, do not route it here; route to fec_knowledge_search instead.
+
+3. fec_compliance
+   - Persona: Priya (ex-PwC, CISA + CISSP).
+   - Use when: the user asks about regulations (DORA, HIPAA, PCI DSS, GDPR, SOX, NIS2, ISO 27001, SOC 2, FCA SYSC, MAS TRM, FedRAMP, EBA, FFIEC) and how Elastic maps to them.
+   - Input shape: {"regulations": ["<reg1>", "<reg2>"], "industry": "<short industry tag>", "language": "<optional>"}.
+
+4. fec_stack_extract
+   - Persona: Aiko (FE Discovery Analyst, 9y).
+   - Use when: the user pastes a transcript or dossier and wants the canonical tech stack pulled out.
+   - Input shape: {"text": "<raw text, at least 20 chars>", "language": "<optional>"}.
+
+5. fec_code_sample
+   - Persona: Kenji (SDK cookbook author).
+   - Use when: the user asks for a runnable Elastic SDK snippet in a specific language.
+   - Input shape: {"language": "<Python|TypeScript|Java|Go|Ruby>", "use_case": "<short use case>"}.
+
+6. fec_cost_calc
+   - Pure compute. No persona; just a calculator.
+   - Use when: the user mentions ingest GB/day plus retention months, or asks about Elastic vs Splunk vs Datadog cost.
+   - Input shape: {"ingest_gb_day": <number>, "retention_months": <int>, "hot_pct": <opt>, "warm_pct": <opt>, "frozen_pct": <opt>, "current_spend_annual_usd": <opt>}.
+   - If the user gives only a vague hint (e.g. "around 5 TB a day for a year"), translate to numbers (ingest_gb_day=5000, retention_months=12).
+
+7. fec_capacity
+   - Pure compute. No persona; just a calculator.
+   - Use when: the user mentions peak indexing EPS, hot data GB, replicas, or QPS, and wants a cluster topology.
+   - Input shape: {"peak_indexing_eps": <int>, "hot_data_gb": <int>, "warm_data_gb": <opt>, "replicas": <opt>, "peak_qps": <opt>}.
+   - If the user provides ingest_gb_day but not EPS, estimate EPS from ingest (rule of thumb: 1 KB per event so eps ~= ingest_gb_day * 1024 * 1024 / 86400).
+
+8. fec_knowledge_search
+   - Persona: Mei (ex-Elastic enablement docs lead).
+   - Use when: the user asks a product-specific how-to or what-is question that the public Elastic docs would answer (ILM, ES|QL syntax, semantic_text, detection rules, EQL, sizing).
+   - Input shape: {"query": "<the natural-language question>", "top_k": <int, default 5>}.
+
+9. fec_troubleshoot
+   - Persona: Ravi (ex-Elastic Support, 1000+ tickets).
+   - Use when: the user pastes an error message, log snippet, or describes a stack failure.
+   - Input shape: {"error_text": "<verbatim error or log line>", "context": "<optional FE-side context>", "language": "<optional>"}.
+"""
+
+
+ORCHESTRATOR_SYSTEM = """You are Auro, a senior Elastic Field Engineer with 12 years orchestrating multi-tool responses for complex customer scenarios. Your superpower is knowing exactly which tools to chain and how to glue their outputs into one coherent response. You never call more than 3 tools (more is noise). You always explain WHY you picked each tool. You never use em or en dashes. You answer in the user's language but keep tool names in their original casing.
+
+# Your method (planning step)
+1. Read the FE's query carefully. Pick out the distinct asks: cost question, capacity question, SPL translation, compliance mapping, troubleshooting, code sample, docs lookup, POV plan, stack extraction.
+2. Pick AT MOST 3 tools from the catalogue. Two is often enough; three is the hard cap. Picking one tool is fine when the query has a single clear ask, but in that case the orchestrator is overkill and you should still note it.
+3. For each pick, justify in one sentence WHY this tool over another (e.g., "fec_capacity over fec_cost_calc because the user explicitly named EPS and shard count").
+4. Generate the EXACT input each tool needs, extracted from the query. If the user says "5 TB a day for a year", convert: ingest_gb_day=5000, retention_months=12. If the user pastes an SPL block, extract just the SPL text. If the user mentions a meeting id like "revolut-mtg-prev-001", use it for fec_poc_plan; otherwise DO NOT pick fec_poc_plan.
+5. If you cannot extract clean inputs for a tool, do not pick it. Skipping a tool is better than calling it with garbage.
+
+# Hard constraints
+- Maximum 3 tools per orchestrator run. Prefer 2 when 2 suffices.
+- Never pick fec_poc_plan unless the user query names a synthetic meeting_id.
+- Never invent customer-specific facts in the plan (no hallucinated meeting ids, no invented SPL).
+- Never use the em dash or en dash character. Use commas, colons, or periods.
+- Output via the json_schema response format only.
+
+""" + ORCHESTRATOR_TOOL_CATALOG
+
+
+ORCHESTRATOR_PLAN_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "plan": {
+            "type": "string",
+            "description": "1-3 sentence narrative explaining which tools you picked and why, in plain prose."
+        },
+        "picks": {
+            "type": "array",
+            "description": "Between 1 and 3 tool picks. Each entry names the tool and the exact input arguments to pass.",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+                    "tool": {
+                        "type": "string",
+                        "enum": [
+                            "fec_poc_plan",
+                            "fec_spl_to_esql",
+                            "fec_compliance",
+                            "fec_stack_extract",
+                            "fec_code_sample",
+                            "fec_cost_calc",
+                            "fec_capacity",
+                            "fec_knowledge_search",
+                            "fec_troubleshoot",
+                        ],
+                    },
+                    "rationale": {
+                        "type": "string",
+                        "description": "One sentence on why this tool is the right pick for this user query."
+                    },
+                    "input_json": {
+                        "type": "string",
+                        "description": "A JSON-encoded string containing the exact input object to pass to the tool. Must be valid JSON and match that tool's input shape."
+                    },
+                },
+                "required": ["tool", "rationale", "input_json"],
+            },
+        },
+    },
+    "required": ["plan", "picks"],
+}
+
+
+ORCHESTRATOR_SYNTHESIS_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "synthesis": {
+            "type": "string",
+            "description": "The unified, customer-ready answer. 200 to 600 words. Cross-reference results from each tool by name (e.g., 'fec_cost_calc shows ...'). Use plain hyphens, never em or en dashes."
+        },
+        "follow_ups": {
+            "type": "array",
+            "description": "Two or three suggested next questions the FE could ask to deepen the conversation.",
+            "items": {"type": "string"},
+        },
+    },
+    "required": ["synthesis", "follow_ups"],
+}
+
+
+def render_orchestrator_plan_prompt(query: str, language: str) -> str:
+    """Step 1 user prompt: ask Auro to emit a plan + 1-3 tool picks with inputs."""
+    return (
+        "# Field Engineer query\n"
+        + query.strip()
+        + "\n\n# Output language\n"
+        + (language or "English")
+        + "\n\nApply your planning method now. Pick AT MOST 3 tools. For each pick, "
+        "provide a one-sentence rationale and the exact input as a JSON-encoded string "
+        "(input_json must be valid JSON matching that tool's input shape). "
+        "Do not pick fec_poc_plan unless the query names a synthetic meeting_id like "
+        "`<company>-mtg-...`. Skipping a tool is better than calling it with garbage."
+    )
+
+
+def render_orchestrator_synthesis_prompt(
+    query: str, plan: str, tool_outputs: list, language: str
+) -> str:
+    """Step 3 user prompt: hand Auro the original query plus each tool's compact output, ask for the unified answer."""
+    parts = [
+        "# Original Field Engineer query",
+        query.strip(),
+        "",
+        "# Your earlier plan (verbatim)",
+        plan.strip(),
+        "",
+        "# Tool outputs (each tool ran in parallel; outputs are summarized JSON)",
+    ]
+    for entry in tool_outputs:
+        tool = entry.get("tool")
+        ok = entry.get("ok", True)
+        rationale = entry.get("rationale", "")
+        out_summary = entry.get("output_summary", "")
+        parts.append("")
+        parts.append(f"## Tool: {tool}  (status: {'ok' if ok else 'error'})")
+        if rationale:
+            parts.append(f"Rationale: {rationale}")
+        parts.append("")
+        parts.append("Output summary:")
+        parts.append(out_summary or "(empty)")
+    parts.append("")
+    parts.append(
+        "Now write the unified synthesis. Cross-reference each tool by its name in your prose. "
+        "Be concrete: pull numbers, names, and ES|QL queries from the tool outputs verbatim where useful. "
+        "If two tool outputs disagree or one returned an error, name the gap honestly. "
+        "End with 2-3 follow-up questions an FE could ask next. "
+        f"Write the synthesis in {language or 'English'}, but keep tool names in their original casing. "
+        "Never use the em dash or the en dash character."
     )
     return "\n".join(parts)

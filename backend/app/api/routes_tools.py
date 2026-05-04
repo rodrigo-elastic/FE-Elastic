@@ -22,13 +22,17 @@ from app.agents.prompts import tools as tool_prompts
 from app.agents.schemas import (
     CodeSampleOut,
     ComplianceMappingsOut,
+    OrchestratorInvocation,
+    OrchestratorOut,
+    OrchestratorPlanOut,
+    OrchestratorSynthesisOut,
     POCPlanOut,
     SPLToESQLOut,
     StackExtractOut,
     TroubleshootOut,
 )
 from app.config import settings
-from app.integrations.claude_client import get_service
+from app.integrations.claude_client import MODEL_HAIKU, MODEL_OPUS, get_service
 from app.repositories import synthetic
 from app.services import calculators
 from app.utils.logging import get_logger
@@ -93,6 +97,9 @@ class KnowledgeSearchRequest(BaseModel):
     query: str = Field(..., min_length=2, max_length=2000)
     top_k: int = Field(5, ge=1, le=20)
     model: Optional[str] = Field("", max_length=60)
+    # Optional retrieval mode override. Defaults to the full hybrid + rerank
+    # pipeline. Accepts: "semantic", "hybrid", "hybrid_rerank".
+    mode: Optional[str] = Field("hybrid_rerank", max_length=24)
 
 
 class KnowledgeCitation(BaseModel):
@@ -465,11 +472,32 @@ def _normalize_hits(raw_hits: Any) -> List[Dict[str, Any]]:
     return out
 
 
+def _safe_mode(value: Optional[str]) -> str:
+    """Normalize the requested retrieval mode. Defaults to hybrid_rerank."""
+    allowed = {"semantic", "hybrid", "hybrid_rerank"}
+    v = (value or "hybrid_rerank").strip().lower()
+    return v if v in allowed else "hybrid_rerank"
+
+
+def _repo_search(repo: Any, query: str, top_k: int, mode: str) -> List[Any]:
+    """Call repo.search with mode kwarg if supported, else fall back gracefully.
+
+    Older repo signatures only accept (query, top_k); this keeps backward
+    compatibility while letting the new modes drive retrieval when present.
+    """
+    try:
+        return repo.search(query, top_k, mode=mode) or []
+    except TypeError:
+        # Repo predates the mode argument. Fall back to plain semantic.
+        return repo.search(query, top_k) or []
+
+
 async def run_knowledge_search(payload: KnowledgeSearchRequest) -> Dict[str, Any]:
-    """Semantic search over the Elastic public docs corpus, synthesized by Mei."""
+    """Hybrid + rerank search over the Elastic public docs corpus, synthesized by Mei."""
     query = payload.query.strip()
     top_k = max(1, min(payload.top_k or 5, 20))
-    log.info("tool.knowledge_search.start", query_len=len(query), top_k=top_k)
+    mode = _safe_mode(payload.mode)
+    log.info("tool.knowledge_search.start", query_len=len(query), top_k=top_k, mode=mode)
 
     cls = _load_knowledge_repo()
     repo = None
@@ -478,7 +506,7 @@ async def run_knowledge_search(payload: KnowledgeSearchRequest) -> Dict[str, Any
     if cls is not None:
         try:
             repo = cls()
-            raw_hits = repo.search(query, top_k) or []
+            raw_hits = _repo_search(repo, query, top_k, mode)
         except Exception as exc:
             log.info("knowledge_repo.init_failed", reason=str(exc))
             repo = None
@@ -494,7 +522,7 @@ async def run_knowledge_search(payload: KnowledgeSearchRequest) -> Dict[str, Any
                 continue
             try:
                 repo = cls()
-                raw_hits = repo.search(query, top_k) or []
+                raw_hits = _repo_search(repo, query, top_k, mode)
                 if raw_hits:
                     break
             except Exception as exc:
@@ -532,6 +560,7 @@ async def run_knowledge_search(payload: KnowledgeSearchRequest) -> Dict[str, Any
             "query_len": len(query),
             "top_k": top_k,
             "hit_count": len(hits),
+            "mode": mode,
         },
     )
 
@@ -641,3 +670,264 @@ async def run_troubleshoot(payload: TroubleshootRequest) -> Dict[str, Any]:
         remediations=len(data.get("quick_remediations") or []),
     )
     return data
+
+
+# ============================================================ Orchestrator (Auro) ====
+
+
+class OrchestratorRequest(BaseModel):
+    query: str = Field(..., min_length=5, max_length=8000)
+    language: Optional[str] = Field("English", max_length=40)
+    model: Optional[str] = Field("", max_length=60, description="Synthesis model override; planning always uses Haiku for cost.")
+
+
+# Mock fallback used when no Anthropic key is configured. Picks two tools
+# (a cost calc and a capacity planner) and stitches a fake summary so the
+# UI/MCP path stays demonstrable offline.
+_ORCHESTRATOR_MOCK_PLAN: Dict[str, Any] = {
+    "plan": (
+        "Mock fallback: Auro picked fec_cost_calc and fec_capacity to handle the typical "
+        "FE 'TCO + sizing' double-question. Configure ANTHROPIC_API_KEY to get a real plan."
+    ),
+    "picks": [
+        {
+            "tool": "fec_cost_calc",
+            "rationale": "Mock pick: the query mentions ingest volume and retention, which is a TCO question.",
+            "input_json": json.dumps({"ingest_gb_day": 500, "retention_months": 12}),
+        },
+        {
+            "tool": "fec_capacity",
+            "rationale": "Mock pick: pairing the TCO with a heuristic cluster topology so the FE can quote both numbers.",
+            "input_json": json.dumps({"peak_indexing_eps": 6000, "hot_data_gb": 1500}),
+        },
+    ],
+}
+
+_ORCHESTRATOR_MOCK_SYNTHESIS: Dict[str, Any] = {
+    "synthesis": (
+        "Mock fallback synthesis: configure ANTHROPIC_API_KEY for the real Auro response. "
+        "In a live run, Auro would weave the fec_cost_calc totals and the fec_capacity topology "
+        "into one quote-ready paragraph, naming the savings versus the customer's current spend."
+    ),
+    "follow_ups": [
+        "Do you want this priced against an existing Splunk or Datadog quote?",
+        "Should we add a compliance mapping for the customer's regulated industry?",
+        "Is there a meeting id we should anchor a POV plan to?",
+    ],
+}
+
+
+def _summarize_tool_output(tool: str, payload: Any, max_chars: int = 1800) -> str:
+    """Turn a tool's raw output into a compact JSON-ish string Auro can read.
+
+    Keeps the synthesis prompt bounded; we never want to paste a 30 KB POV plan
+    into the synthesis context. Truncation is marked explicitly so Auro knows.
+    """
+    if isinstance(payload, BaseModel):
+        payload = payload.model_dump()
+    try:
+        text = json.dumps(payload, default=str, ensure_ascii=False, indent=2)
+    except Exception:
+        text = str(payload)
+    if len(text) > max_chars:
+        text = text[:max_chars].rstrip() + f"\n... [truncated; full payload was {len(text)} chars]"
+    return text
+
+
+def _looks_like_meeting_id(text: str) -> bool:
+    """Heuristic the spec calls for: only allow fec_poc_plan when the query names a synthetic meeting id."""
+    import re
+
+    if not text:
+        return False
+    return re.search(r"[a-z0-9_]+-mtg-[a-z0-9_-]+", text.lower()) is not None
+
+
+async def _dispatch_pick(tool: str, args: Dict[str, Any]) -> Any:
+    """Execute one Auro pick by routing into the existing FastAPI tool functions.
+
+    Each branch validates inputs through the same Pydantic request model the
+    public route uses, so bad inputs raise the same HTTPException 422 surface.
+    """
+    if tool == "fec_poc_plan":
+        meeting_id = args.get("meeting_id")
+        if not meeting_id:
+            raise ValueError("fec_poc_plan requires a meeting_id")
+        return await run_poc_plan(meeting_id, POCPlanRequest(language=args.get("language", "English")))
+    if tool == "fec_spl_to_esql":
+        return await run_spl_to_esql(SPLToESQLRequest(**args))
+    if tool == "fec_compliance":
+        return await run_compliance_mapping(ComplianceRequest(**args))
+    if tool == "fec_stack_extract":
+        return await run_stack_extract(StackExtractRequest(**args))
+    if tool == "fec_code_sample":
+        return await run_code_sample(CodeSampleRequest(**args))
+    if tool == "fec_cost_calc":
+        return await run_cost_calc(CostCalcRequest(**args))
+    if tool == "fec_capacity":
+        return await run_capacity(CapacityRequest(**args))
+    if tool == "fec_knowledge_search":
+        return await run_knowledge_search(KnowledgeSearchRequest(**args))
+    if tool == "fec_troubleshoot":
+        return await run_troubleshoot(TroubleshootRequest(**args))
+    raise ValueError(f"unknown tool: {tool}")
+
+
+async def run_orchestrator(payload: OrchestratorRequest) -> Dict[str, Any]:
+    """Auro: plan -> parallel execute -> synthesize. Hard cap of 3 tools per run.
+
+    Cost budget (live mode): planning ~500 input + ~400 output tokens on Haiku 4.5;
+    each picked tool varies (Haiku/Opus per its existing config); synthesis ~2500 input
+    + ~1500 output tokens on Sonnet/Opus.
+    """
+    language = payload.language or "English"
+    query = payload.query.strip()
+    log.info("tool.orchestrator.start", query_len=len(query), language=language)
+
+    service = get_service()
+
+    # ---- Step 1: planning. Forced Haiku for cost. -----------------------------------
+    plan_prompt = (
+        language_preamble(language)
+        + tool_prompts.render_orchestrator_plan_prompt(query, language)
+        + language_instruction(language)
+    )
+    plan_result: OrchestratorPlanOut = service.call_structured(
+        system=tool_prompts.ORCHESTRATOR_SYSTEM,
+        user=plan_prompt,
+        schema=tool_prompts.ORCHESTRATOR_PLAN_SCHEMA,
+        output_model=OrchestratorPlanOut,
+        model=MODEL_HAIKU,
+        max_tokens=1024,
+        effort="medium",  # ignored on Haiku per claude_client._is_haiku
+        mock_payload=_ORCHESTRATOR_MOCK_PLAN,
+        audit_meta={"agent": "tool_orchestrator", "tool": "orchestrator", "stage": "plan"},
+    )
+
+    # Enforce the 3-tool cap and the meeting-id guard for fec_poc_plan.
+    raw_picks = list(plan_result.picks or [])[:3]
+    sanitized_picks = []
+    for p in raw_picks:
+        if p.tool == "fec_poc_plan" and not _looks_like_meeting_id(query):
+            log.info("orchestrator.skip_pick", tool=p.tool, reason="no_meeting_id_in_query")
+            continue
+        sanitized_picks.append(p)
+
+    if not sanitized_picks:
+        # Auro picked nothing usable. Return the plan with an empty execution and a graceful synthesis.
+        return OrchestratorOut(
+            plan=plan_result.plan,
+            tools_invoked=[],
+            synthesis=(
+                "Auro reviewed the query but did not find a clean tool match. "
+                "The original plan is preserved for transparency. Try rephrasing with concrete inputs "
+                "(an SPL block, an ingest GB/day figure, or a meeting id) so Auro can route the request."
+            ),
+            follow_ups=[
+                "Can you share the exact SPL or EQL query you want translated?",
+                "Do you have ingest volume and retention numbers for a TCO comparison?",
+                "Is there a saved meeting id you want to anchor a POV plan to?",
+            ],
+        ).model_dump()
+
+    # ---- Step 2: execute picks in parallel. -----------------------------------------
+    async def _run_one(pick) -> OrchestratorInvocation:
+        try:
+            args = json.loads(pick.input_json) if pick.input_json else {}
+            if not isinstance(args, dict):
+                raise ValueError("input_json must decode to a JSON object")
+        except Exception as exc:
+            return OrchestratorInvocation(
+                tool=pick.tool,
+                rationale=pick.rationale,
+                input={},
+                output_summary=f"(input_json could not be parsed: {exc})",
+                ok=False,
+                error=f"bad input_json: {exc}",
+            )
+        try:
+            result = await _dispatch_pick(pick.tool, args)
+            summary = _summarize_tool_output(pick.tool, result)
+            return OrchestratorInvocation(
+                tool=pick.tool,
+                rationale=pick.rationale,
+                input=args,
+                output_summary=summary,
+                ok=True,
+            )
+        except Exception as exc:
+            log.warning("orchestrator.tool_failed", tool=pick.tool, error=str(exc))
+            return OrchestratorInvocation(
+                tool=pick.tool,
+                rationale=pick.rationale,
+                input=args,
+                output_summary=f"(tool call raised: {exc})",
+                ok=False,
+                error=str(exc),
+            )
+
+    invocations: List[OrchestratorInvocation] = await asyncio.gather(
+        *[_run_one(p) for p in sanitized_picks]
+    )
+
+    # ---- Step 3: synthesis. Default to a stronger model for the unification step. ---
+    synth_inputs = [
+        {
+            "tool": inv.tool,
+            "ok": inv.ok,
+            "rationale": inv.rationale,
+            "output_summary": inv.output_summary,
+        }
+        for inv in invocations
+    ]
+    synth_prompt = (
+        language_preamble(language)
+        + tool_prompts.render_orchestrator_synthesis_prompt(
+            query=query,
+            plan=plan_result.plan,
+            tool_outputs=synth_inputs,
+            language=language,
+        )
+        + language_instruction(language)
+    )
+    synthesis_model = _resolve_model(payload.model)
+    # If the caller did not override and the default is Haiku, bump to Opus for the unification step.
+    if not (payload.model or "").strip() and "haiku" in synthesis_model:
+        synthesis_model = MODEL_OPUS
+
+    synth_result: OrchestratorSynthesisOut = service.call_structured(
+        system=tool_prompts.ORCHESTRATOR_SYSTEM,
+        user=synth_prompt,
+        schema=tool_prompts.ORCHESTRATOR_SYNTHESIS_SCHEMA,
+        output_model=OrchestratorSynthesisOut,
+        model=synthesis_model,
+        max_tokens=2048,
+        effort="high",
+        mock_payload=_ORCHESTRATOR_MOCK_SYNTHESIS,
+        audit_meta={
+            "agent": "tool_orchestrator",
+            "tool": "orchestrator",
+            "stage": "synthesis",
+            "tools_picked": [inv.tool for inv in invocations],
+        },
+    )
+
+    out = OrchestratorOut(
+        plan=plan_result.plan,
+        tools_invoked=invocations,
+        synthesis=synth_result.synthesis,
+        follow_ups=synth_result.follow_ups,
+    )
+
+    log.info(
+        "tool.orchestrator.complete",
+        picks=len(invocations),
+        ok_count=sum(1 for inv in invocations if inv.ok),
+    )
+    return out.model_dump()
+
+
+@router.post("/orchestrator")
+async def orchestrator_endpoint(payload: OrchestratorRequest) -> Dict[str, Any]:
+    """Auro (FE conductor) plans, fan-outs to 1-3 of the other 9 tools, and synthesizes a unified answer."""
+    return await run_orchestrator(payload)
