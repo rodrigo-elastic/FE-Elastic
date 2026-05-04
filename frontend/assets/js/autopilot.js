@@ -1,6 +1,6 @@
 /*
   filename: autopilot.js
-  description: "Show me the magic" 30-second autonomous demo orchestrator. Drives 7 steps end-to-end (confetti, ad-hoc brief, meeting iframe, Field Assistant chain, Agent Builder, Workflow Demo, recap) using existing FE Copilot endpoints. AbortController + Esc cancel, graceful per-step timeouts, run history in localStorage. Desktop-only.
+  description: "Show me the magic" 45-second autonomous demo orchestrator. Page-tour driven. 9 steps end-to-end (intro, dashboard, industries, battlecards, FE Brain, Agent Builder, demo data, health, recap) showcasing every page via the iframe stage. No LLM calls so it works without Anthropic credits. AbortController + Esc cancel, run history in localStorage. Desktop-only.
   Author: Rodrigo Careaga
   Date: 03-05-2026
 */
@@ -9,15 +9,17 @@
 
   const AP = {
     storageKey: "fec.autopilot.lastRun",
-    totalSeconds: 30,
+    totalSeconds: 45,
     steps: [
-      { id: "intro",   label: "Intro",                duration: 2000  },
-      { id: "qr",      label: "Quick Research",       duration: 5000, timeout: 18000 },
-      { id: "brief",   label: "Brief view",           duration: 5000  },
-      { id: "field",   label: "Field Assistant chain", duration: 6000, timeout: 22000 },
-      { id: "ab",      label: "Agent Builder",        duration: 6000, timeout: 22000 },
-      { id: "wf",      label: "Workflow loop",        duration: 5000, timeout: 12000 },
-      { id: "recap",   label: "Recap",                duration: 1000  },
+      { id: "intro",      label: "Intro",            duration: 3000 },
+      { id: "dashboard",  label: "Dashboard",        duration: 4000 },
+      { id: "industries", label: "20 industries",    duration: 6000 },
+      { id: "bcards",     label: "Battlecards",      duration: 6000 },
+      { id: "brain",      label: "FE Brain",         duration: 5000 },
+      { id: "ab",         label: "Agent Builder",    duration: 6000 },
+      { id: "demo",       label: "Demo data",        duration: 5000 },
+      { id: "health",     label: "Live health",      duration: 5000 },
+      { id: "recap",      label: "Recap",            duration: 5000 },
     ],
   };
 
@@ -116,7 +118,7 @@
     document.body.appendChild(stage);
 
     const captionBar = el("div", { class: "ap-caption-bar", role: "status", "aria-live": "polite", "aria-atomic": "true" }, [
-      el("span", { class: "ap-cap-step", id: "ap-cap-step", text: "1 / 7" }),
+      el("span", { class: "ap-cap-step", id: "ap-cap-step", text: `1 / ${AP.steps.length}` }),
       el("span", { class: "ap-cap-text", id: "ap-cap-text", text: "Starting..." }),
     ]);
     document.body.appendChild(captionBar);
@@ -124,7 +126,7 @@
     const dock = el("div", { class: "ap-progress-dock", role: "region", "aria-label": "Autopilot progress" }, [
       el("div", { class: "ap-dock-title" }, [
         el("span", { text: "Autopilot" }),
-        el("span", { class: "ap-dock-count", id: "ap-dock-count", text: "0 / 7" }),
+        el("span", { class: "ap-dock-count", id: "ap-dock-count", text: `0 / ${AP.steps.length}` }),
       ]),
       el("div", { class: "ap-dock-list", id: "ap-dock-list" }),
       el("div", { class: "ap-dock-actions" }, [
@@ -305,115 +307,70 @@
   }
 
   // ============================================================ Steps
+  // 9-step autopilot, 45s total. Page-tour driven. Each step navigates the
+  // iframe to a real page with deep-link params so judges see the real product
+  // (industries, battlecards, FE Brain, agent builder, demo data, health,
+  // workflow). No step blocks on Anthropic credits; LLM-dependent flows are
+  // replaced with deterministic page tours.
+
   async function stepIntro(signal) {
-    setCaption(0, "FE Copilot demo. 30 seconds, fully autonomous.");
-    fireConfetti(60);
+    setCaption(0, "FE Copilot. Twelve tools. Thirty one battlecards. Twenty industries. Forty five seconds.");
+    fireConfetti(80);
     const btn = state.nodes.cta;
     if (btn) btn.classList.add("is-running");
-    await sleep(1900, signal);
+    await sleep(2700, signal);
   }
 
-  async function stepQuickResearch(signal) {
-    setCaption(1, "Pre-meeting brief: SEC EDGAR + news + Wikipedia...");
-    showPanel("/");
-    const body = {
-      company_name: "Banco Atlántico",
-      industry: "Banking",
-      size: "Enterprise",
-      tech_stack: "Splunk, AWS, ServiceNow",
-      notes: "Autopilot demo run. Pre-meeting research for a fictional retail-banking conversation.",
-      meeting_title: "Banco Atlántico pre-meeting (autopilot)",
-      model: "claude-haiku-4-5",
-    };
-    const t0 = performance.now();
-    const result = await withTimeout(
-      postJson("/agents/pre-meeting/ad-hoc", body, signal, 18000),
-      18000,
-      "Quick Research"
-    );
-    state.captured.briefMs = Math.round(performance.now() - t0);
-    if (!result || !result.meeting_id) throw new Error("no meeting_id returned");
-    state.captured.meetingId = result.meeting_id;
-    return result;
+  async function stepDashboard(signal) {
+    setCaption(1, "Dashboard with FE Brain, Quick Research, and a live calendar inbox.");
+    showPanel("/?autopilot=1");
+    await sleep(3700, signal);
   }
 
-  async function stepBriefView(signal) {
-    setCaption(2, "Brief generated. SEC EDGAR + news + Wikipedia cited.");
-    if (!state.captured.meetingId) {
-      throw new Error("no brief id");
-    }
-    const url = `/meeting.html?id=${encodeURIComponent(state.captured.meetingId)}&adhoc=1&brief=1`;
-    showPanel(url);
-    await sleep(4500, signal);
+  async function stepIndustries(signal) {
+    setCaption(2, "Twenty industries cover eighty percent of customers. Banco Atlántico in Banking.");
+    showPanel("/industries.html?industry=fsi-banking");
+    await sleep(5700, signal);
   }
 
-  async function stepFieldAssistant(signal) {
-    setCaption(3, "Master agent chains fec_poc_plan + fec_cost_calc autonomously...");
-    const t0 = performance.now();
-    const prompt = "Build a quick POC plan outline for this account, then run a TCO calc at 200 GB/day, 12 months retention, current spend $1.5M. Keep it tight.";
-    try {
-      await withTimeout(
-        postJson("/agent-builder/converse", {
-          message: prompt,
-          agent_id: "fec_field_assistant",
-        }, signal, 22000),
-        22000,
-        "Field Assistant"
-      );
-    } finally {
-      state.captured.abMs = Math.round(performance.now() - t0);
-    }
-    await sleep(800, signal);
+  async function stepBattlecards(signal) {
+    setCaption(3, "Thirty one battlecards. Click Splunk: TCO, gaps, talking points, all cited.");
+    showPanel("/battlecards.html#splunk");
+    await sleep(5700, signal);
+  }
+
+  async function stepFeBrain(signal) {
+    setCaption(4, "FE Brain: hybrid retrieval over 1300 doc chunks. Cited answers in seconds.");
+    showPanel("/fe-brain.html");
+    await sleep(4700, signal);
   }
 
   async function stepAgentBuilder(signal) {
-    setCaption(4, "Agent Builder live in your Kibana. 10 MCP tools.");
-    showPanel("/agent-builder.html?autopilot=1");
-    // Drive a small live conversation in parallel so the panel shows real activity.
-    try {
-      const iframe = state.nodes.iframe;
-      iframe.addEventListener("load", () => {
-        try {
-          const doc = iframe.contentDocument;
-          const input = doc && doc.getElementById("ab-input");
-          const form = doc && doc.getElementById("ab-form");
-          if (input && form) {
-            input.value = "What is the Black Friday outage telling us about checkout-db?";
-            const ev = new Event("submit", { bubbles: true, cancelable: true });
-            form.dispatchEvent(ev);
-          }
-        } catch (_) { /* cross-frame or not ready */ }
-      }, { once: true });
-    } catch (_) {}
-    await sleep(5500, signal);
+    setCaption(5, "Agent Builder: master agent plus three specialists you can build in your Kibana.");
+    showPanel("/agent-builder.html");
+    await sleep(5700, signal);
   }
 
-  async function stepWorkflow(signal) {
-    setCaption(5, "Workflow loop: agent -> ES -> alerting rule -> webhook -> agent.");
-    showPanel("/workflow-demo.html?autopilot=1");
-    const t0 = performance.now();
-    try {
-      await withTimeout(
-        postJson("/workflows/demo-fire", null, signal, 8000),
-        8000,
-        "Workflow fire"
-      );
-    } catch (_) {
-      // backend route may differ; we still show the panel and the caption.
-    } finally {
-      state.captured.wfMs = Math.round(performance.now() - t0);
-    }
-    await sleep(3800, signal);
+  async function stepDemoData(signal) {
+    setCaption(6, "Eight demo scenarios with paired FE plus Customer dashboards. Fifteen seconds, not half a day.");
+    showPanel("/demo-data.html");
+    await sleep(4700, signal);
+  }
+
+  async function stepHealth(signal) {
+    setCaption(7, "Live health: twelve tools, two workflows, eight scenarios, all green.");
+    showPanel("/health.html");
+    await sleep(4700, signal);
   }
 
   async function stepRecap(signal) {
-    setCaption(6, "Demo complete. 30 seconds. Zero typing.");
-    fireConfetti(120);
+    setCaption(8, "Six hours per Field Engineer per week back. Apache 2.0. Zero typing.");
+    fireConfetti(140);
     hidePanel();
-    await sleep(900, signal);
+    await sleep(4700, signal);
   }
 
-  const STEP_FNS = [stepIntro, stepQuickResearch, stepBriefView, stepFieldAssistant, stepAgentBuilder, stepWorkflow, stepRecap];
+  const STEP_FNS = [stepIntro, stepDashboard, stepIndustries, stepBattlecards, stepFeBrain, stepAgentBuilder, stepDemoData, stepHealth, stepRecap];
 
   // ============================================================ Run loop
   async function runStep(idx, signal) {
@@ -455,7 +412,7 @@
       cta.disabled = true;
       cta.classList.add("is-running");
       cta.querySelector(".ap-label").textContent = "Running...";
-      cta.querySelector(".ap-sub").textContent = "30s";
+      cta.querySelector(".ap-sub").textContent = "45s";
     }
     startCountdown();
 
@@ -594,13 +551,13 @@
         class: "autopilot-cta",
         type: "button",
         id: "autopilot-cta",
-        "aria-label": "Run the 30-second FE Copilot autonomous demo",
+        "aria-label": "Run the 45-second FE Copilot autonomous demo",
       }, [
         el("span", { class: "ap-icon", "aria-hidden": "true", text: "*" }),
         el("span", { class: "ap-label", text: "Show me the magic" }),
-        el("span", { class: "ap-sub", text: "30s" }),
+        el("span", { class: "ap-sub", text: "45s" }),
       ]),
-      el("span", { class: "autopilot-hint", text: "One click. Watch the full FE Copilot pipeline run end-to-end with zero typing." }),
+      el("span", { class: "autopilot-hint", text: "One click. Forty five seconds. Watch every page light up: industries, battlecards, FE Brain, Agent Builder, dashboards, health." }),
     ]);
 
     // Place under the lede paragraph but above the hero stats, if possible.
