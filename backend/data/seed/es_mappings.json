@@ -155,5 +155,51 @@
         "company_id": { "type": "keyword" }
       }
     }
+  },
+  "fec-renewal-signals": {
+    "mappings": {
+      "properties": {
+        "@timestamp": { "type": "date" },
+        "account_id": { "type": "keyword" },
+        "account_name": { "type": "keyword" },
+        "signal_type": { "type": "keyword" },
+        "severity": { "type": "keyword" },
+        "arr_usd": { "type": "long" },
+        "renewal_date": { "type": "date" },
+        "owner_name": { "type": "keyword" },
+        "owner_email": { "type": "keyword" },
+        "summary": { "type": "text" },
+        "evidence": { "type": "text" },
+        "source": { "type": "keyword" }
+      }
+    }
+  },
+  "fec-renewal-plays": {
+    "mappings": {
+      "properties": {
+        "@timestamp": { "type": "date" },
+        "play_id": { "type": "keyword" },
+        "account_id": { "type": "keyword" },
+        "account_name": { "type": "keyword" },
+        "severity": { "type": "keyword" },
+        "arr_usd": { "type": "long" },
+        "top_3_signals": { "type": "keyword" },
+        "retention_play": { "type": "text" },
+        "tactics": {
+          "type": "nested",
+          "properties": {
+            "title": { "type": "text" },
+            "description": { "type": "text" },
+            "owner_role": { "type": "keyword" }
+          }
+        },
+        "owner": { "type": "keyword" },
+        "owner_email": { "type": "keyword" },
+        "due_date": { "type": "keyword" },
+        "salesforce_task_id": { "type": "keyword" },
+        "generated_by": { "type": "keyword" },
+        "generated_at": { "type": "date" }
+      }
+    }
   }
 }

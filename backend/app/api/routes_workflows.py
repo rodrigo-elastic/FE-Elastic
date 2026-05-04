@@ -10,6 +10,7 @@ __status__ = "Development"
 
 import json
 import os
+import time
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
@@ -1266,6 +1267,83 @@ async def workflow_orphan_demo_fire() -> Dict[str, Any]:
         "indexed_at": now,
         "note": "Kibana orphan-action rule polls every 60s; the orphan webhook should fire within ~1 minute.",
     }
+
+
+@router.post("/renewal-at-risk")
+async def workflow_renewal_at_risk(request: Request) -> Dict[str, Any]:
+    """Receive a renewal-at-risk webhook (3 plus signals on an account in 14 days),
+    draft a retention play via the Renewal Defender service, persist it to
+    fec-renewal-plays, and return the play. Deterministic by default; gracefully
+    degrades when Anthropic credits are exhausted."""
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    account_id = (body or {}).get("account_id") or "unknown-account"
+    signals = (body or {}).get("signals") or []
+    account_name = (body or {}).get("account_name")
+    arr_usd = (body or {}).get("arr_usd")
+    owner = (body or {}).get("owner")
+    owner_email = (body or {}).get("owner_email")
+    renewal_date = (body or {}).get("renewal_date")
+
+    from app.services import renewal_defender
+
+    play = renewal_defender.draft_renewal_play(
+        account_id=account_id,
+        signals=signals,
+        account_name=account_name,
+        arr_usd=arr_usd,
+        owner=owner,
+        owner_email=owner_email,
+        renewal_date=renewal_date,
+    )
+
+    persisted = False
+    try:
+        from app.repositories.elasticsearch_repo import get_repo as get_es_repo
+        repo = get_es_repo()
+        if repo.available:
+            doc_id = f"{account_id}-{int(time.time())}"
+            repo._client.index(index="fec-renewal-plays", id=doc_id, document=play, refresh=False)
+            persisted = True
+    except Exception as exc:
+        log.warning("workflows.renewal_at_risk.persist_failed", error=str(exc))
+
+    return {"ok": True, "play": play, "persisted": persisted}
+
+
+@router.post("/renewal-demo-fire")
+async def workflow_renewal_demo_fire() -> Dict[str, Any]:
+    """Demo trigger for the renewal workflow. Pulls 3 signals for Northwind Pay
+    and POSTs them at the renewal-at-risk handler. Used by the workflow-demo
+    page Fire button so judges see the loop close end-to-end."""
+    sample_signals = [
+        {"signal_type": "competitor_mention", "severity": "high",
+         "summary": "Splunk rep visited the customer twice in 14 days."},
+        {"signal_type": "usage_drop_30pct", "severity": "high",
+         "summary": "Daily ingest dropped 32% week-over-week on the dev cluster."},
+        {"signal_type": "exec_change", "severity": "medium",
+         "summary": "VP Engineering departed; replacement onboarding now."},
+    ]
+    from app.services import renewal_defender
+    play = renewal_defender.draft_renewal_play(
+        account_id="northwind-pay",
+        signals=sample_signals,
+        account_name="Northwind Pay",
+        arr_usd=900000,
+        owner="Field Engineering",
+        renewal_date="2026-09-30",
+    )
+    try:
+        from app.repositories.elasticsearch_repo import get_repo as get_es_repo
+        repo = get_es_repo()
+        if repo.available:
+            doc_id = f"northwind-pay-{int(time.time())}"
+            repo._client.index(index="fec-renewal-plays", id=doc_id, document=play, refresh=True)
+    except Exception as exc:
+        log.warning("workflows.renewal_demo_fire.persist_failed", error=str(exc))
+    return {"ok": True, "play": play}
 
 
 @router.get("/sfdc-auto-tasks")

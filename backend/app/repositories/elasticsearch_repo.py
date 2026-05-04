@@ -21,7 +21,12 @@ INDEX_BRIEFS = "fec-briefs"
 INDEX_POST = "fec-post-meetings"
 INDEX_AUDIT = "fec-audit"
 INDEX_BATTLECARDS = "fec-battlecards"
+INDEX_RENEWAL_SIGNALS = "fec-renewal-signals"
+INDEX_RENEWAL_PLAYS = "fec-renewal-plays"
 BATTLECARDS_SEED_PATH = Path(__file__).resolve().parents[2] / "data" / "seed" / "battlecards.json"
+RENEWAL_SIGNALS_SEED_PATH = (
+    Path(__file__).resolve().parents[2] / "data" / "seed" / "renewal_signals.json"
+)
 
 MAPPINGS_PATH = Path(__file__).resolve().parents[2] / "data" / "seed" / "es_mappings.json"
 
@@ -74,7 +79,14 @@ class ElasticsearchRepo:
             return {}
         mappings = _load_mappings()
         status: Dict[str, str] = {}
-        for idx in (INDEX_BRIEFS, INDEX_POST, INDEX_AUDIT, INDEX_BATTLECARDS):
+        for idx in (
+            INDEX_BRIEFS,
+            INDEX_POST,
+            INDEX_AUDIT,
+            INDEX_BATTLECARDS,
+            INDEX_RENEWAL_SIGNALS,
+            INDEX_RENEWAL_PLAYS,
+        ):
             try:
                 if not self._client.indices.exists(index=idx):
                     body = mappings.get(idx, {})
@@ -90,6 +102,11 @@ class ElasticsearchRepo:
             self._seed_battlecards_if_empty()
         except Exception as exc:
             log.warning("es.battlecards_seed_failed", error=str(exc))
+        # Seed renewal signals if that index is empty (gives the alerting rule data to fire on).
+        try:
+            self._seed_renewal_signals_if_empty()
+        except Exception as exc:
+            log.warning("es.renewal_signals_seed_failed", error=str(exc))
         return status
 
     def _seed_battlecards_if_empty(self) -> None:
@@ -112,6 +129,47 @@ class ElasticsearchRepo:
         except Exception:
             pass
         log.info("es.battlecards_seeded", count=len(cards))
+
+    def _seed_renewal_signals_if_empty(self) -> None:
+        """Seed `fec-renewal-signals` from disk on first run so the alerting rule has data to fire on."""
+        if not self._available or not RENEWAL_SIGNALS_SEED_PATH.exists():
+            return
+        try:
+            count = self._client.count(index=INDEX_RENEWAL_SIGNALS).get("count", 0)
+        except Exception:
+            count = 0
+        if count > 0:
+            return
+        try:
+            signals = json.loads(RENEWAL_SIGNALS_SEED_PATH.read_text(encoding="utf-8"))
+        except Exception as exc:
+            log.warning("es.renewal_signals_load_failed", error=str(exc))
+            return
+        from datetime import datetime as _dt, timezone as _tz
+
+        now_iso = _dt.now(_tz.utc).isoformat()
+        for sig in signals:
+            try:
+                body = dict(sig)
+                # Stamp every seed doc with @timestamp so the rule's time window catches it.
+                body.setdefault("@timestamp", now_iso)
+                self._client.index(
+                    index=INDEX_RENEWAL_SIGNALS,
+                    id=sig.get("id") or sig.get("account_id"),
+                    document=body,
+                    refresh=False,
+                )
+            except Exception as exc:
+                log.warning(
+                    "es.renewal_signal_index_failed",
+                    id=sig.get("id"),
+                    error=str(exc),
+                )
+        try:
+            self._client.indices.refresh(index=INDEX_RENEWAL_SIGNALS)
+        except Exception:
+            pass
+        log.info("es.renewal_signals_seeded", count=len(signals))
 
     def reseed_battlecards(self) -> Dict[str, Any]:
         """Force-reindex every card from the seed file. Used when the schema changes

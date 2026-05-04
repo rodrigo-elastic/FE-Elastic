@@ -29,6 +29,7 @@ from app.api import (
     routes_mcp,
     routes_meetings,
     routes_salesforce,
+    routes_stats,
     routes_tools,
     routes_workflows,
 )
@@ -85,6 +86,7 @@ app.include_router(routes_kibana.router, prefix="/api/v1")
 app.include_router(routes_demo_data.router, prefix="/api/v1")
 app.include_router(routes_workflows.router, prefix="/api/v1")
 app.include_router(routes_industries.router, prefix="/api/v1")
+app.include_router(routes_stats.router, prefix="/api/v1")
 
 # Serve the markdown docs folder (compliance.md, architecture.md, etc.) before the catch-all frontend mount.
 docs_path = Path(__file__).resolve().parents[2] / "docs"

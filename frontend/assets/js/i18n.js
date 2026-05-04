@@ -34,6 +34,11 @@ const I18N_STRINGS = {
     "stats.past": "Past meetings",
     "stats.briefs": "Briefs generated",
     "stats.agents": "Chained agents",
+    "savings.hours_saved": "hours saved this week",
+    "savings.team_avg": "hr/FE/week (team avg)",
+    "savings.top_tool": "top contributor",
+    "savings.delta": "vs last week",
+    "savings.demo_note": "(demo data, audit log warming up)",
 
     "tab.qr": "Pre-meeting research",
     "tab.tr": "Analyze transcript",

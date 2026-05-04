@@ -1,0 +1,261 @@
+/*
+  filename: onboarding.css
+  description: First-visit onboarding tour. Five-step overlay with arrow callouts that walks judges
+  through autopilot, FE Brain, Agent Builder, demo data, and the hours-saved hero widget. Persists
+  dismissal in localStorage so it only fires once. Keyboard accessible (Tab, Enter, Esc).
+  Author: Rodrigo Careaga
+  Date: 04-05-2026
+*/
+
+/* ============================================================
+   Backdrop with cutout. We use a single fixed full-screen layer
+   and stack a CSS mask via a clip-path "evenodd" SVG-like trick.
+   For simplicity and broad browser support we use box-shadow on a
+   transparent rect to draw the dimmer everywhere except the cutout.
+   ============================================================ */
+.fec-onboard-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9500;
+  pointer-events: none;
+  font-family: inherit;
+  color: var(--ink);
+}
+
+/* The cutout is a transparent box whose huge box-shadow paints the dim. */
+.fec-onboard-cutout {
+  position: absolute;
+  border-radius: 10px;
+  background: transparent;
+  border: 3px solid #1B8FE5; /* Lochmara hover - high-contrast in both themes */
+  box-shadow:
+    0 0 0 9999px rgba(0, 0, 0, 0.55),
+    0 0 0 6px rgba(27, 143, 229, 0.25);
+  pointer-events: none;
+  transition: top 200ms ease, left 200ms ease, width 200ms ease, height 200ms ease;
+}
+
+/* The clickable shield catches clicks outside the card. */
+.fec-onboard-shield {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  background: transparent;
+}
+
+/* ============================================================ Card */
+.fec-onboard-card {
+  position: absolute;
+  width: 320px;
+  max-width: calc(100vw - 32px);
+  background: var(--bg-elev, #ffffff);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.35),
+    0 2px 8px rgba(0, 0, 0, 0.18);
+  padding: 16px 16px 14px 16px;
+  pointer-events: auto;
+  transition: top 200ms ease, left 200ms ease, opacity 200ms ease;
+  font-size: 13px;
+  line-height: 1.45;
+}
+[data-theme="dark"] .fec-onboard-card {
+  background: #161a21;
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.fec-onboard-counter {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted, #62676f);
+  background: var(--bg, #f7f8fa);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 8px;
+  letter-spacing: 0.02em;
+}
+[data-theme="dark"] .fec-onboard-counter {
+  background: rgba(255, 255, 255, 0.06);
+  color: #cfd2d6;
+}
+
+.fec-onboard-title {
+  margin: 0 60px 6px 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.fec-onboard-body {
+  margin: 0 0 14px 0;
+  color: var(--ink-2, var(--ink));
+}
+
+.fec-onboard-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.fec-onboard-actions .fec-onboard-skip {
+  font-size: 12px;
+  color: var(--muted, #62676f);
+  background: transparent;
+  border: 0;
+  padding: 4px 6px;
+  cursor: pointer;
+  border-radius: 4px;
+  font-family: inherit;
+}
+.fec-onboard-actions .fec-onboard-skip:hover { color: var(--ink); text-decoration: underline; }
+.fec-onboard-actions .fec-onboard-skip:focus-visible {
+  outline: 2px solid #1B8FE5;
+  outline-offset: 2px;
+}
+
+.fec-onboard-nav { display: inline-flex; gap: 6px; }
+
+.fec-onboard-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  border: 1px solid var(--border);
+  background: var(--panel-2, #ffffff);
+  color: var(--ink);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+.fec-onboard-btn:hover:not(:disabled) {
+  background: var(--panel-3, #f0f2f5);
+  border-color: var(--border-strong);
+}
+.fec-onboard-btn:focus-visible {
+  outline: 2px solid #1B8FE5;
+  outline-offset: 2px;
+}
+.fec-onboard-btn[disabled] { opacity: 0.45; cursor: not-allowed; }
+
+.fec-onboard-btn.primary {
+  background: linear-gradient(180deg, #0077CC 0%, #005FA8 100%);
+  border-color: rgba(0, 119, 204, 0.6);
+  color: #ffffff;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.18);
+}
+.fec-onboard-btn.primary:hover {
+  background: linear-gradient(180deg, #1B8FE5 0%, #0077CC 100%);
+  border-color: #0077CC;
+}
+
+[data-theme="dark"] .fec-onboard-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #e6e8eb;
+}
+[data-theme="dark"] .fec-onboard-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.10);
+}
+
+/* ============================================================ Arrow */
+.fec-onboard-arrow {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.15));
+}
+/* Default: arrow points up (card is below target). */
+.fec-onboard-arrow.up {
+  border-left: 9px solid transparent;
+  border-right: 9px solid transparent;
+  border-bottom: 9px solid var(--bg-elev, #ffffff);
+  top: -8px;
+}
+.fec-onboard-arrow.down {
+  border-left: 9px solid transparent;
+  border-right: 9px solid transparent;
+  border-top: 9px solid var(--bg-elev, #ffffff);
+  bottom: -8px;
+}
+.fec-onboard-arrow.left {
+  border-top: 9px solid transparent;
+  border-bottom: 9px solid transparent;
+  border-right: 9px solid var(--bg-elev, #ffffff);
+  left: -8px;
+}
+.fec-onboard-arrow.right {
+  border-top: 9px solid transparent;
+  border-bottom: 9px solid transparent;
+  border-left: 9px solid var(--bg-elev, #ffffff);
+  right: -8px;
+}
+[data-theme="dark"] .fec-onboard-arrow.up { border-bottom-color: #161a21; }
+[data-theme="dark"] .fec-onboard-arrow.down { border-top-color: #161a21; }
+[data-theme="dark"] .fec-onboard-arrow.left { border-right-color: #161a21; }
+[data-theme="dark"] .fec-onboard-arrow.right { border-left-color: #161a21; }
+
+/* ============================================================ Replay pill */
+.fec-onboard-replay {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 9400;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--bg-elev, #ffffff);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+}
+.fec-onboard-replay:hover {
+  transform: translateY(-1px);
+  border-color: #1B8FE5;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
+}
+.fec-onboard-replay:focus-visible {
+  outline: 2px solid #1B8FE5;
+  outline-offset: 2px;
+}
+[data-theme="dark"] .fec-onboard-replay {
+  background: #161a21;
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #e6e8eb;
+}
+.fec-onboard-replay svg { opacity: 0.85; }
+
+/* ============================================================ Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .fec-onboard-cutout,
+  .fec-onboard-card,
+  .fec-onboard-replay {
+    transition: none !important;
+  }
+}
+
+/* ============================================================ Print */
+@media print {
+  .fec-onboard-overlay,
+  .fec-onboard-replay { display: none !important; }
+}

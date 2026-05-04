@@ -118,6 +118,18 @@
         <div class="hero-stat blue"><div class="num" id="stat-past">-</div><div class="lbl" data-i18n="stats.past">Past meetings</div></div>
         <div class="hero-stat pink"><div class="num" id="stat-briefs">-</div><div class="lbl" data-i18n="stats.briefs">Briefs generated</div></div>
       </div>
+      <div class="hero-savings" id="hero-savings" aria-live="polite" hidden>
+        <div class="hs-headline">
+          <span class="hs-num" id="hs-hours">--</span>
+          <span class="hs-label" data-i18n="savings.hours_saved">hours saved this week</span>
+        </div>
+        <div class="hs-meta">
+          <span class="hs-pill"><span id="hs-team-avg">--</span> <span data-i18n="savings.team_avg">hr/FE/week (team avg)</span></span>
+          <span class="hs-pill"><span id="hs-top-tool">--</span> <span data-i18n="savings.top_tool">top contributor</span></span>
+          <span class="hs-pill hs-delta" id="hs-delta-pill"><span id="hs-delta">--</span> <span data-i18n="savings.delta">vs last week</span></span>
+        </div>
+        <div class="hs-foot muted small" id="hs-foot" hidden></div>
+      </div>
     </section>
 
     <div class="entry-tabs" role="tablist" aria-label="Entry mode">
@@ -370,6 +382,7 @@
   <script src="/assets/js/ui.js"></script>
   <script src="/assets/js/tools-rail.js"></script>
   <script src="/assets/js/app.js"></script>
+  <script src="/assets/js/dashboard-stats.js"></script>
   <script src="/assets/js/command-palette.js"></script>
   <script src="/assets/js/autopilot.js"></script>
 </body>
