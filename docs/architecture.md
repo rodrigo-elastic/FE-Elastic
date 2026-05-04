@@ -1,81 +1,128 @@
 # FE Copilot Architecture
 
-Three chained agents process Field Engineer meetings end to end.
+This page is the single source of truth for how FE Copilot is wired. Every box in the diagram below maps to a file path in this repo, and every arrow maps to an HTTP call, an SDK call, or a file write you can `tail` while the demo runs.
 
-## High-level flow
+> The README links here. If you only have time for one diagram, this is the one.
+
+## System diagram
 
 ```mermaid
-flowchart LR
-    Cal["Calendar (mock)"] --> Pre[Pre-Meeting Researcher<br/>Opus 4.7 + adaptive thinking + effort:high]
-    Pre --> Slack["Slack mock<br/>(runtime/slack.log)"]
-    Pre --> PDF["Account Brief PDF<br/>(WeasyPrint, HTML fallback)"]
+flowchart TB
+    subgraph User["FE Workspace"]
+        Browser["Browser<br/>frontend/*.html<br/>8 pages, 5 languages"]
+    end
 
-    Tx["Live transcript turn"] --> Live[Live Companion<br/>Haiku 4.5]
-    Live --> Alerts["Whisper alerts<br/>competitor / MEDDPICC / question / risk"]
+    subgraph Backend["FE Copilot backend (FastAPI on :8123)"]
+        API["FastAPI router<br/>backend/app/api/routes_*.py<br/>15 routers"]
+        Agents["3 agents<br/>backend/app/agents/<br/>pre / live / post"]
+        Tools["7 FE tools<br/>backend/app/api/routes_tools.py<br/>POC, SPL, compliance, stack,<br/>code, cost, capacity"]
+        FEBrain["FE Brain RAG<br/>backend/app/api/routes_tools.py<br/>knowledge-search"]
+        MCP["MCP server<br/>backend/app/api/routes_mcp.py<br/>9 tools (7 FE + 2 RAG)"]
+        Repos["Synthetic fixtures<br/>backend/data/synthetic/<br/>Revolut / MELI / Santander"]
+        Runtime["Runtime artifacts<br/>runtime/*.log, *.jsonl, briefs/, emails/"]
+    end
 
-    PT["Past transcript"] --> Post[Post-Meeting Action Engine<br/>Opus 4.7 + adaptive thinking + effort:high]
-    Post --> SF["Salesforce mock<br/>(runtime/salesforce.log)"]
-    Post --> Email["Follow-up email draft<br/>(runtime/emails/...)"]
-    Post --> ES["Elasticsearch index"]
+    subgraph Elastic["Elastic Cloud 9.3.4"]
+        ES["Elasticsearch<br/>fec-knowledge index<br/>160 chunks, ELSER embeddings"]
+        Kibana["Kibana"]
+        AB["Agent Builder<br/>master agent: fec_field_assistant"]
+        Workflow["Kibana Workflow<br/>fec-transcript-inbox watcher"]
+        Dash["6 customer-fit dashboards<br/>FE + Customer tabs"]
+    end
+
+    subgraph Anthropic["Anthropic Claude API"]
+        Haiku["Haiku 4.5<br/>live alerts, cheap default"]
+        Sonnet["Sonnet 4.6"]
+        Opus["Opus 4.7<br/>pre + post meeting deep reasoning"]
+    end
+
+    subgraph External["Public sources"]
+        SEC["SEC EDGAR<br/>10-K, 6-K, 20-F"]
+        News["News + Wikipedia fixtures<br/>verifiable URLs"]
+    end
+
+    subgraph Tunnel["Public tunnel"]
+        Ngrok["ngrok https tunnel<br/>backend reachable from Kibana Cloud"]
+    end
+
+    Browser -->|HTTPS| API
+    API --> Agents
+    API --> Tools
+    API --> FEBrain
+    API --> MCP
+    Agents --> Repos
+    Agents --> Anthropic
+    Tools --> Anthropic
+    FEBrain --> ES
+    FEBrain --> Anthropic
+    Agents --> Runtime
+    Agents --> SEC
+    Agents --> News
+
+    Kibana --> AB
+    AB -->|MCP / HTTPS| Ngrok
+    Ngrok --> MCP
+    Workflow -->|webhook| Ngrok
+    Ngrok -->|/workflows/triggered| API
+    Browser --> Dash
+    API -->|create dashboard| Kibana
 ```
 
-## Models (cheap by default, swappable per agent)
+## Component descriptions
 
-Default for every agent is `claude-haiku-4-5` (cheapest tier: $1 / $5 per 1M tokens). A full end-to-end pipeline run on Haiku costs roughly **$0.02 per meeting**. Set the env vars below to upgrade individual agents to Sonnet 4.6 or Opus 4.7 when intelligence matters more than cost.
+**Browser frontend.** Eight static HTML pages served by FastAPI from `frontend/`: dashboard, meeting workspace, tools rail, FE Brain, Agent Builder chat, demo data, workflow demo, and a per-meeting view. No framework, no build step. The persistent left sidebar (`frontend/assets/js/tools-rail.js`) is injected into every page. Five languages are wired through `frontend/assets/js/i18n.js` (English, Spanish, Japanese, German, French).
 
-```
-# .env
-MODEL_DEFAULT=claude-haiku-4-5      # cheapest; default for all agents
-MODEL_PRE_MEETING=                  # leave blank to use MODEL_DEFAULT
-MODEL_POST_MEETING=                 # e.g. claude-opus-4-7
-MODEL_LIVE_MEETING=                 # e.g. claude-haiku-4-5
-```
+**FastAPI backend.** Single Uvicorn process on port 8123 (`backend/app/main.py`). Fifteen routers under `backend/app/api/routes_*.py`: agents, tools, briefs, meetings, calendar, salesforce, audit, demo-data, kibana, mcp, agent-builder, workflows, battlecards, health, plus a static mount for `frontend/`. Pydantic models in `backend/app/models/` enforce schema at the boundary; structlog writes a JSON line per request.
 
-| Agent | Cheap default | When to upgrade | Why |
-|---|---|---|---|
-| Pre-Meeting Researcher | `claude-haiku-4-5` | `claude-opus-4-7` | Deeper synthesis across news + transcripts + tickets when budget allows. |
-| Post-Meeting Action Engine | `claude-haiku-4-5` | `claude-opus-4-7` | Grounded extraction (verbatim quotes) and MEDDPICC tagging benefit from reasoning. |
-| Live Companion | `claude-haiku-4-5` | (stay on Haiku) | Per-turn alerts must be sub-second; `effort` errors on Haiku 4.5, and adaptive thinking is unsupported anyway. |
+**Three agents.** `backend/app/agents/pre_meeting.py`, `live_meeting.py`, `post_meeting.py`. Each agent inherits a base `Agent` class that calls `ClaudeService.call_structured` with a frozen system prompt, a JSON schema, and a per-meeting dossier. Mock mode (`ANTHROPIC_API_KEY` blank) returns hand-written payloads so the demo runs offline.
 
-The Anthropic SDK wrapper (`app.integrations.claude_client`) is model-aware: it omits `thinking` / `effort` automatically when the configured model is Haiku, so flipping a single env var flips the request shape without code changes.
+**Seven FE tools.** Expert-persona Claude wrappers exposed at `/api/v1/tools/{poc-plan, spl-to-esql, compliance-mapping, stack-extract, code-sample, cost-calc, capacity}`. Personas: Marta (POV architect), Diego (ex-Splunk), Priya (ex-PwC compliance), Aiko (Discovery analyst), Kenji (SDK cookbook author). All persona prompts live in `backend/app/agents/prompts/tools.py`.
 
-## Reliability and offline mode
+**FE Brain RAG.** A retrieval-augmented Q+A surface over the official Elastic documentation. The `fec-knowledge` index in Elastic Cloud holds 160 chunks with ELSER sparse embeddings; `/api/v1/tools/knowledge-search` retrieves the top chunks and feeds them to Claude, with citations rendered in the UI.
 
-- `ClaudeService` enters mock mode automatically when `ANTHROPIC_API_KEY` is empty or the placeholder. Each prompt module ships hand-written mock payloads keyed by `company_id`, so the demo runs end-to-end without internet.
-- Prompt caching uses `cache_control: {type: "ephemeral"}` on the stable system block. The volatile dossier (the per-meeting context) is rendered into the user message, which keeps the cache prefix intact across calls.
-- WeasyPrint is best-effort: if Cairo/Pango are missing on the host, the PDF builder writes the rendered HTML instead and the rest of the demo continues.
-- All mocked integrations (Slack, Salesforce, Calendar) write or read JSON files under `runtime/` so the demo has tangible artifacts to show.
+**MCP server.** `backend/app/api/routes_mcp.py` exposes the seven tools plus the two RAG endpoints (search and ask) as Model Context Protocol tools at `/api/v1/mcp/*`. Nine tools total, declared with JSON schemas Kibana Agent Builder can introspect.
 
-## Components
+**Elastic Cloud 9.3.4.** A real Elasticsearch + Kibana deployment. Beyond the RAG index, Kibana hosts the master Agent Builder agent `fec_field_assistant`, six live customer-fit dashboards generated from meeting context, and a Workflow rule that watches `fec-transcript-inbox`.
 
-- `backend/app/agents/`: `Agent` base class plus three concrete agents.
-- `backend/app/agents/prompts/`: frozen system prompts plus JSON schemas plus offline mocks per agent.
-- `backend/app/integrations/claude_client.py`: Anthropic SDK wrapper. Handles caching, structured output, mock mode, model-aware kwargs (no `effort` on Haiku, no `temperature` on Opus 4.7).
-- `backend/app/repositories/synthetic.py`: read-only access over the synthetic JSON fixtures (cached).
-- `backend/app/services/`: PDF builder (Jinja + WeasyPrint with HTML fallback), transcript helpers, email persistence.
-- `backend/app/api/`: FastAPI routers (`/meetings`, `/agents`, `/briefs`, `/health`).
-- `frontend/`: plain HTML + JS dashboard served by FastAPI; no framework, no build step.
-- `infra/docker-compose.yml`: local Elasticsearch and Kibana.
+**Agent Builder.** Kibana 9.x Agent Builder declares the nine MCP tools and one master agent; declaration script lives in `backend/scripts/sync_agent_builder.py`. The master agent reasons across tools, so a single prompt like "translate this SPL and price it at 200 GB/day" chains `fec_spl_to_esql` then `fec_cost_calc` automatically.
 
-## Quick Research (ad-hoc accounts)
+**Kibana Workflow.** A scheduled rule polls `fec-transcript-inbox` every minute. When a new transcript document lands, the rule fires a webhook to the FE Copilot backend at `/api/v1/workflows/triggered`. The post-meeting agent runs end to end with no human in the loop. Logged to `runtime/workflows.log`.
 
-`POST /api/v1/agents/pre-meeting/ad-hoc` accepts a tiny user-typed payload (`company_name` plus optional `industry`, `size`, `tech_stack`, `notes`, `meeting_title`) and runs the Pre-Meeting agent against a transient dossier built only from those fields. Nothing else leaves the boundary. The result is persisted under `runtime/briefs/ad-hoc-<slug>-<timestamp>.json` with both the company and meeting snapshots so the dashboard can read it back without a synthetic fixture.
+**ngrok tunnel.** Because Kibana Cloud cannot reach `localhost`, we expose the backend over an `ngrok https` tunnel. The tunnel URL is plumbed into both the Agent Builder tool registration and the Kibana Workflow webhook target.
 
-This is the primary path for extrapolating the demo to a real customer name without seeding synthetic data first.
+**Anthropic Claude.** Three model tiers in use. Haiku 4.5 is the cheap default (one cent per pre-meeting brief, sub-second live alerts). Opus 4.7 is enabled per agent via `MODEL_PRE_MEETING` / `MODEL_POST_MEETING` for the deep reasoning beats. Prompt caching is on the stable system block (`backend/app/integrations/claude_client.py`).
 
-## Audit and compliance surface
+**Runtime artifacts.** Every mocked integration writes a tangible file: `runtime/slack.log`, `runtime/salesforce.log`, `runtime/audit.jsonl`, `runtime/briefs/*.json`, `runtime/emails/*.html`, `runtime/workflows.log`. Tail any of them during the demo to prove the pipeline ran.
 
-Every Claude call goes through `ClaudeService.call_structured`, which appends a structured row to `runtime/audit.jsonl`:
+## Data flow: three hero scenarios
 
-```
-{"ts":"2026-05-03T08:31:39+00:00","model":"claude-haiku-4-5","mode":"live",
- "input_tokens":2006,"output_tokens":1285,"cache_read_input_tokens":0,
- "cache_creation_input_tokens":0,"agent":"pre_meeting",
- "meeting_id":"acme-mtg-001","company_id":"acme-001"}
-```
+### Scenario 1: Pre-meeting brief (one hour before the call)
 
-Exposed via `GET /api/v1/audit?limit=N`. The dashboard footer shows running totals. See `docs/compliance.md` for the full data-flow story.
+1. The dashboard `/` reads `/api/v1/calendar/upcoming` and surfaces the meeting card.
+2. The FE clicks "Run Pre-Meeting". The browser POSTs to `/api/v1/agents/pre-meeting/{meeting_id}`.
+3. `pre_meeting.py` builds a dossier from `backend/data/synthetic/` and pulls live data from SEC EDGAR (`backend/app/integrations/sec_edgar.py`) plus news fixtures with verifiable URLs.
+4. `ClaudeService` calls Claude (Haiku by default, Opus 4.7 when budget allows) with a structured-output schema.
+5. The brief is persisted as JSON under `runtime/briefs/`, rendered in the UI, posted to `#fe-copilot-briefs` via the Slack mock, and built into a PDF via WeasyPrint with HTML fallback.
 
-## Synthetic data deterministic anchor
+### Scenario 2: Live alerts during the call
 
-`scripts/generate_synthetic_data.py` anchors every timestamp to `NOW = 2026-05-02 09:00 UTC` and seeds `random` to `42` so output is byte-identical across runs. That keeps demos reproducible and tests stable.
+1. The meeting view at `/meeting.html?id=...` opens a transcript replay.
+2. For each turn the browser POSTs to `/api/v1/agents/live/{meeting_id}/turn`.
+3. `live_meeting.py` runs Haiku 4.5 once per turn against a tight prompt that asks for competitor mentions, MEDDPICC slot tags, unanswered questions, and risk flags. Per-turn cost: a fraction of a cent.
+4. Alerts render inline under the turn that produced them. Each alert links back to the source quote so a human can verify what fired the alert.
+5. The Field Assistant mini-chat under the transcript is plumbed to the same MCP server the Agent Builder uses, so chip questions ("what should I say next?") get the same grounded answers.
+
+### Scenario 3: Post-meeting sync (one click after the call)
+
+1. The FE clicks "Run Post-Meeting". The browser POSTs to `/api/v1/agents/post-meeting/{meeting_id}`.
+2. `post_meeting.py` runs a longer Claude call (Opus 4.7 by default) producing a structured payload: summary, action items with verbatim quotes, MEDDPICC update, competitor mentions, follow-up email body.
+3. The agent then writes six records via the Salesforce mock: Opportunity MEDDPICC fields, ContentNote, ContentDocumentLink, Competitor record, Deal_Health update, plus a Slack post. Each write is a JSON line in `runtime/salesforce.log` with an `_action` discriminator.
+4. The follow-up email is saved to `runtime/emails/` and surfaced in the UI with a copy button.
+5. The closed-loop variant: when a transcript document lands in `fec-transcript-inbox`, the Kibana Workflow triggers `/api/v1/workflows/triggered` over the ngrok tunnel, which calls the same post-meeting code path. Zero clicks, zero swivel chair.
+
+## Why this shape wins
+
+- The backend is deliberately one process so the demo never depends on a service mesh.
+- Mock mode means a judge can clone, `pip install`, and run the full pipeline without an Anthropic key.
+- The Elastic surface (Agent Builder, Workflows, dashboards, RAG) all reach the same backend over one ngrok tunnel, so the wow-factor demo on the work laptop is the same code as the demo on the personal laptop.
+- Every Claude call lands in `runtime/audit.jsonl` with token counts, model, and mode (mock vs live). That is the compliance story for an Elastic customer.

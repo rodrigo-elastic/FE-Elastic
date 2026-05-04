@@ -1567,6 +1567,283 @@ def _vega_panel(panel_id: str, x: int, y: int, w: int, h: int,
     }
 
 
+# ============================================================ Lens helpers ========
+
+
+def _ensure_data_view(index: str, dv_id: str) -> Optional[str]:
+    """Idempotently ensure a Kibana data view (index pattern) exists for `index`.
+
+    Returns the data view id on success, or None if Kibana rejected the request
+    (in which case callers should fall back to the inline-data Vega version).
+
+    Strategy:
+      1. GET /api/data_views/data_view/<dv_id>. If 200, done.
+      2. Otherwise POST /api/data_views/data_view with the desired id. The
+         response code is 200 on success, 409 if it already exists (race), or
+         4xx/5xx on real failure.
+    """
+    get_url = _kbn_url(f"/api/data_views/data_view/{dv_id}")
+    post_url = _kbn_url("/api/data_views/data_view")
+    try:
+        with httpx.Client(timeout=30.0) as client:
+            resp = client.get(get_url, headers=_kbn_headers())
+            if resp.status_code == 200:
+                return dv_id
+            body = {
+                "data_view": {
+                    "id": dv_id,
+                    "name": index,
+                    "title": index,
+                    "timeFieldName": "@timestamp",
+                },
+                "override": True,
+            }
+            resp = client.post(post_url, headers=_kbn_headers(), json=body)
+            if resp.status_code in (200, 201):
+                return dv_id
+            if resp.status_code == 409:
+                return dv_id
+            log.warning("black_friday.data_view.create.failed",
+                        dv_id=dv_id, status=resp.status_code,
+                        body=resp.text[:300])
+            return None
+    except Exception as exc:
+        log.warning("black_friday.data_view.create.exception",
+                    dv_id=dv_id, error=str(exc))
+        return None
+
+
+def _lens_p99_panel(panel_id: str, x: int, y: int, w: int, h: int,
+                    title: str, dv_id: str) -> Dict[str, Any]:
+    """Lens line chart: avg(latency.p99_ms) over @timestamp, broken down by
+    service.name. Live, time-picker aware, filterable, drilldown-friendly.
+
+    Schema validated against Kibana 9.3.4 Lens saved-object format. The same
+    `attributes` blob is what Kibana returns when you export a Lens by-value
+    panel from a dashboard, so this is round-trip safe.
+    """
+    attributes = {
+        "title": title,
+        "description": "",
+        "visualizationType": "lnsXY",
+        "type": "lens",
+        "references": [
+            {
+                "name": "indexpattern-datasource-layer-layer1",
+                "type": "index-pattern",
+                "id": dv_id,
+            },
+        ],
+        "state": {
+            "datasourceStates": {
+                "formBased": {
+                    "layers": {
+                        "layer1": {
+                            "columnOrder": ["x_col", "split_col", "metric_col"],
+                            "columns": {
+                                "x_col": {
+                                    "label": "@timestamp",
+                                    "dataType": "date",
+                                    "operationType": "date_histogram",
+                                    "sourceField": "@timestamp",
+                                    "isBucketed": True,
+                                    "scale": "interval",
+                                    "params": {"interval": "auto",
+                                               "includeEmptyRows": True,
+                                               "dropPartials": False},
+                                },
+                                "split_col": {
+                                    "label": "Top values of service.name",
+                                    "dataType": "string",
+                                    "operationType": "terms",
+                                    "sourceField": "service.name",
+                                    "isBucketed": True,
+                                    "scale": "ordinal",
+                                    "params": {
+                                        "size": 10,
+                                        "orderBy": {"type": "column",
+                                                     "columnId": "metric_col"},
+                                        "orderDirection": "desc",
+                                        "otherBucket": False,
+                                        "missingBucket": False,
+                                        "parentFormat": {"id": "terms"},
+                                    },
+                                },
+                                "metric_col": {
+                                    "label": "Average of latency.p99_ms",
+                                    "dataType": "number",
+                                    "operationType": "average",
+                                    "sourceField": "latency.p99_ms",
+                                    "isBucketed": False,
+                                    "scale": "ratio",
+                                    "params": {"format": {"id": "number",
+                                                           "params": {"decimals": 0,
+                                                                       "suffix": " ms"}}},
+                                },
+                            },
+                            "incompleteColumns": {},
+                        },
+                    },
+                },
+            },
+            "visualization": {
+                "preferredSeriesType": "line",
+                "layers": [
+                    {
+                        "layerId": "layer1",
+                        "accessors": ["metric_col"],
+                        "position": "top",
+                        "seriesType": "line",
+                        "showGridlines": False,
+                        "layerType": "data",
+                        "xAccessor": "x_col",
+                        "splitAccessor": "split_col",
+                    },
+                ],
+                "title": title,
+                "legend": {"isVisible": True, "position": "right"},
+                "valueLabels": "hide",
+                "fittingFunction": "None",
+                "axisTitlesVisibilitySettings": {"x": True, "yLeft": True,
+                                                  "yRight": True},
+                "tickLabelsVisibilitySettings": {"x": True, "yLeft": True,
+                                                  "yRight": True},
+                "labelsOrientation": {"x": 0, "yLeft": 0, "yRight": 0},
+                "gridlinesVisibilitySettings": {"x": True, "yLeft": True,
+                                                "yRight": True},
+            },
+            "filters": [],
+            "query": {"language": "kuery", "query": ""},
+        },
+    }
+
+    return {
+        "type": "lens",
+        "panelIndex": panel_id,
+        "gridData": {"x": x, "y": y, "w": w, "h": h, "i": panel_id},
+        "version": "9.3.4",
+        "embeddableConfig": {
+            "enhancements": {},
+            "attributes": attributes,
+        },
+        "title": title,
+    }
+
+
+def _lens_funnel_panel(panel_id: str, x: int, y: int, w: int, h: int,
+                       title: str, dv_id: str) -> Dict[str, Any]:
+    """Lens dual-line chart on the funnel metrics from checkout-svc rollups.
+
+    x=@timestamp (date_histogram auto), two y series:
+      - avg(funnel.cart_abandonment_rate)
+      - avg(funnel.payment_success_rate)
+    Filter pinned to service.name = checkout-svc so only the funnel bucket
+    contributes (other services do not emit the funnel.* fields).
+    """
+    attributes = {
+        "title": title,
+        "description": "",
+        "visualizationType": "lnsXY",
+        "type": "lens",
+        "references": [
+            {
+                "name": "indexpattern-datasource-layer-layer1",
+                "type": "index-pattern",
+                "id": dv_id,
+            },
+        ],
+        "state": {
+            "datasourceStates": {
+                "formBased": {
+                    "layers": {
+                        "layer1": {
+                            "columnOrder": ["x_col", "abandon_col", "success_col"],
+                            "columns": {
+                                "x_col": {
+                                    "label": "@timestamp",
+                                    "dataType": "date",
+                                    "operationType": "date_histogram",
+                                    "sourceField": "@timestamp",
+                                    "isBucketed": True,
+                                    "scale": "interval",
+                                    "params": {"interval": "auto",
+                                               "includeEmptyRows": True,
+                                               "dropPartials": False},
+                                },
+                                "abandon_col": {
+                                    "label": "Cart abandonment rate",
+                                    "dataType": "number",
+                                    "operationType": "average",
+                                    "sourceField": "funnel.cart_abandonment_rate",
+                                    "isBucketed": False,
+                                    "scale": "ratio",
+                                    "params": {"format": {"id": "percent",
+                                                           "params": {"decimals": 0}}},
+                                },
+                                "success_col": {
+                                    "label": "Payment success rate",
+                                    "dataType": "number",
+                                    "operationType": "average",
+                                    "sourceField": "funnel.payment_success_rate",
+                                    "isBucketed": False,
+                                    "scale": "ratio",
+                                    "params": {"format": {"id": "percent",
+                                                           "params": {"decimals": 0}}},
+                                },
+                            },
+                            "incompleteColumns": {},
+                        },
+                    },
+                },
+            },
+            "visualization": {
+                "preferredSeriesType": "line",
+                "layers": [
+                    {
+                        "layerId": "layer1",
+                        "accessors": ["abandon_col", "success_col"],
+                        "position": "top",
+                        "seriesType": "line",
+                        "showGridlines": False,
+                        "layerType": "data",
+                        "xAccessor": "x_col",
+                        "yConfig": [
+                            {"forAccessor": "abandon_col", "color": "#c44"},
+                            {"forAccessor": "success_col", "color": "#0a6e3f"},
+                        ],
+                    },
+                ],
+                "title": title,
+                "legend": {"isVisible": True, "position": "right"},
+                "valueLabels": "hide",
+                "fittingFunction": "Linear",
+                "axisTitlesVisibilitySettings": {"x": True, "yLeft": True,
+                                                  "yRight": True},
+                "tickLabelsVisibilitySettings": {"x": True, "yLeft": True,
+                                                  "yRight": True},
+                "labelsOrientation": {"x": 0, "yLeft": 0, "yRight": 0},
+                "gridlinesVisibilitySettings": {"x": True, "yLeft": True,
+                                                "yRight": True},
+            },
+            "filters": [],
+            "query": {"language": "kuery",
+                      "query": "service.name : \"checkout-svc\""},
+        },
+    }
+
+    return {
+        "type": "lens",
+        "panelIndex": panel_id,
+        "gridData": {"x": x, "y": y, "w": w, "h": h, "i": panel_id},
+        "version": "9.3.4",
+        "embeddableConfig": {
+            "enhancements": {},
+            "attributes": attributes,
+        },
+        "title": title,
+    }
+
+
 def _switcher_markdown(active: str, fe_url: str, customer_url: str) -> str:
     """Build a markdown switcher with two anchor-tag buttons. Kibana 9 markdown
     panels render inline anchor tags and basic inline styles, so we can give the
@@ -1750,7 +2027,8 @@ def _shared_vega_specs() -> Dict[str, Dict[str, Any]]:
 
 
 def _build_panels(view: str, specs: Dict[str, Dict[str, Any]],
-                  kpi_md: str, fe_url: str, customer_url: str) -> List[Dict[str, Any]]:
+                  kpi_md: str, fe_url: str, customer_url: str,
+                  lens_dv_id: Optional[str] = None) -> List[Dict[str, Any]]:
     """Assemble the panel list for one dashboard.
 
     Layout (48 wide grid):
@@ -1760,6 +2038,13 @@ def _build_panels(view: str, specs: Dict[str, Dict[str, Any]],
       row 26 - h=10  - KPI markdown (12w) + funnel (36w)            [funnel h=14]
       row 40 - h=14  - recovery timeline (24w) + cart lost (24w)
       row 54 - h=12  - closing narrative (full width)
+
+    When `lens_dv_id` is provided, the p99 and funnel panels are upgraded to
+    Lens visualizations backed by the live demo-blackfriday-metrics index.
+    Lens panels respond to the dashboard time picker and global filters,
+    where inline-data Vega panels are frozen at seed time. If `lens_dv_id`
+    is None (data view creation failed), the panels fall back to the
+    inline-data Vega versions, which are visually identical and always render.
     """
     if view == "fe":
         intro_md = _fe_header_markdown()
@@ -1774,16 +2059,33 @@ def _build_panels(view: str, specs: Dict[str, Dict[str, Any]],
 
     switcher_md = _switcher_markdown(view, fe_url, customer_url)
 
+    if lens_dv_id:
+        p99_panel = _lens_p99_panel(
+            "p99", 0, 12, 24, 14,
+            "p99 latency by service (live)", lens_dv_id,
+        )
+        funnel_panel = _lens_funnel_panel(
+            "funnel", 12, 26, 36, 14,
+            "Funnel: abandonment vs payment success (live)", lens_dv_id,
+        )
+    else:
+        p99_panel = _vega_panel(
+            "p99", 0, 12, 24, 14,
+            "p99 latency by service", specs["p99"],
+        )
+        funnel_panel = _vega_panel(
+            "funnel", 12, 26, 36, 14,
+            "Funnel: abandonment vs payment success", specs["funnel"],
+        )
+
     panels = [
         _markdown_panel("switcher", 0, 0, 48, 4, switcher_md, "View switcher"),
         _markdown_panel("hdr", 0, 4, 48, 8, intro_md, intro_title),
-        _vega_panel("p99", 0, 12, 24, 14,
-                    "p99 latency by service", specs["p99"]),
+        p99_panel,
         _vega_panel("err", 24, 12, 24, 14,
                     "Errors by service over time", specs["errors"]),
         _markdown_panel("kpi", 0, 26, 12, 14, kpi_md, "Outage KPIs"),
-        _vega_panel("funnel", 12, 26, 36, 14,
-                    "Funnel: abandonment vs payment success", specs["funnel"]),
+        funnel_panel,
         _vega_panel("recovery", 0, 40, 24, 14,
                     "Recovery timeline by anomaly window", specs["recovery"]),
         _vega_panel("cart_lost", 24, 40, 24, 14,
@@ -1793,25 +2095,28 @@ def _build_panels(view: str, specs: Dict[str, Dict[str, Any]],
     return panels
 
 
-def get_dashboard_panels() -> List[Dict[str, Any]]:
+def get_dashboard_panels(lens_dv_id: Optional[str] = None) -> List[Dict[str, Any]]:
     """FE-view dashboard panels. Kept for backwards compatibility with any
     existing caller that imports this function. Customer view uses the
-    parallel `get_customer_panels()` companion."""
+    parallel `get_customer_panels()` companion. Pass `lens_dv_id` to upgrade
+    the p99 and funnel panels to live Lens visualizations."""
     specs = _shared_vega_specs()
     kpi_md = _kpi_markdown()
     fe_url = _dashboard_url(DASHBOARD_ID)
     customer_url = _dashboard_url(CUSTOMER_DASHBOARD_ID)
-    return _build_panels("fe", specs, kpi_md, fe_url, customer_url)
+    return _build_panels("fe", specs, kpi_md, fe_url, customer_url,
+                         lens_dv_id=lens_dv_id)
 
 
-def get_customer_panels() -> List[Dict[str, Any]]:
+def get_customer_panels(lens_dv_id: Optional[str] = None) -> List[Dict[str, Any]]:
     """Customer-view dashboard panels. Same Vega specs as the FE view; the only
     differences are the markdown panels framing the charts as a postmortem."""
     specs = _shared_vega_specs()
     kpi_md = _kpi_markdown()
     fe_url = _dashboard_url(DASHBOARD_ID)
     customer_url = _dashboard_url(CUSTOMER_DASHBOARD_ID)
-    return _build_panels("customer", specs, kpi_md, fe_url, customer_url)
+    return _build_panels("customer", specs, kpi_md, fe_url, customer_url,
+                         lens_dv_id=lens_dv_id)
 
 
 # ============================================================ Seeder ===============
@@ -1881,10 +2186,10 @@ def _create_one_dashboard(dashboard_id: str, title: str, description: str,
     return dashboard_id, _dashboard_url(dashboard_id)
 
 
-def _create_dashboard() -> Tuple[str, str]:
+def _create_dashboard(lens_dv_id: Optional[str] = None) -> Tuple[str, str]:
     """Create the FE-view dashboard. Title prefixed with [FE] so the user can
     spot it in Kibana's dashboard list. Reuses the shared Vega specs."""
-    panels = get_dashboard_panels()
+    panels = get_dashboard_panels(lens_dv_id=lens_dv_id)
     title = f"[FE] {SCENARIO_TITLE} - Field Engineer view"
     description = (
         "Field Engineer view of the Black Friday outage. Includes MEDDPICC "
@@ -1894,11 +2199,11 @@ def _create_dashboard() -> Tuple[str, str]:
     return _create_one_dashboard(DASHBOARD_ID, title, description, panels)
 
 
-def _create_customer_dashboard() -> Tuple[str, str]:
+def _create_customer_dashboard(lens_dv_id: Optional[str] = None) -> Tuple[str, str]:
     """Create the customer-facing postmortem dashboard. Same Vega panels as the
     FE view (literally the same inline values), wrapped in clean executive
     language. Idempotent: delete-then-create."""
-    panels = get_customer_panels()
+    panels = get_customer_panels(lens_dv_id=lens_dv_id)
     title = f"[Customer] {SCENARIO_TITLE} - Postmortem"
     description = (
         "Customer-facing postmortem of the Black Friday outage. Same data and "
@@ -1950,6 +2255,19 @@ def seed() -> Dict[str, Any]:
         except Exception as exc:
             log.warning("black_friday.refresh.failed", index=index, error=str(exc))
 
+    # Ensure the Lens data view exists before building the dashboard. If this
+    # fails we fall back to the inline-data Vega panels (lens_dv_id stays None),
+    # so the dashboard still renders correctly.
+    metrics_index = INDICES["metrics"]
+    lens_dv_id = _ensure_data_view(metrics_index, f"{metrics_index}-dv")
+    if lens_dv_id:
+        log.info("black_friday.data_view.ready", dv_id=lens_dv_id,
+                 index=metrics_index)
+    else:
+        log.warning("black_friday.data_view.fallback",
+                    index=metrics_index,
+                    note="Lens upgrade skipped, using inline-data Vega panels.")
+
     # Dashboards: idempotent recreate of BOTH the FE and Customer views.
     # Each create is wrapped so a failure on one does not block the other.
     fe_id: Optional[str] = None
@@ -1959,18 +2277,38 @@ def seed() -> Dict[str, Any]:
 
     _delete_dashboard(DASHBOARD_ID)
     try:
-        fe_id, fe_url = _create_dashboard()
-        log.info("black_friday.dashboard.fe.created", id=fe_id, url=fe_url)
+        fe_id, fe_url = _create_dashboard(lens_dv_id=lens_dv_id)
+        log.info("black_friday.dashboard.fe.created", id=fe_id, url=fe_url,
+                 lens=bool(lens_dv_id))
     except Exception as exc:
         log.warning("black_friday.dashboard.fe.failed", error=str(exc))
+        # If Lens upgrade caused the failure, retry once with inline-Vega only
+        # so we never leave the user with a broken dashboard.
+        if lens_dv_id is not None:
+            try:
+                fe_id, fe_url = _create_dashboard(lens_dv_id=None)
+                log.info("black_friday.dashboard.fe.created.fallback",
+                         id=fe_id, url=fe_url)
+                lens_dv_id = None  # downgrade for the customer view too
+            except Exception as exc2:
+                log.warning("black_friday.dashboard.fe.fallback.failed",
+                            error=str(exc2))
 
     _delete_dashboard(CUSTOMER_DASHBOARD_ID)
     try:
-        customer_id, customer_url = _create_customer_dashboard()
+        customer_id, customer_url = _create_customer_dashboard(lens_dv_id=lens_dv_id)
         log.info("black_friday.dashboard.customer.created",
-                 id=customer_id, url=customer_url)
+                 id=customer_id, url=customer_url, lens=bool(lens_dv_id))
     except Exception as exc:
         log.warning("black_friday.dashboard.customer.failed", error=str(exc))
+        if lens_dv_id is not None:
+            try:
+                customer_id, customer_url = _create_customer_dashboard(lens_dv_id=None)
+                log.info("black_friday.dashboard.customer.created.fallback",
+                         id=customer_id, url=customer_url)
+            except Exception as exc2:
+                log.warning("black_friday.dashboard.customer.fallback.failed",
+                            error=str(exc2))
 
     elapsed = round(time.time() - started, 2)
     return {
@@ -1984,6 +2322,8 @@ def seed() -> Dict[str, Any]:
         "fe_dashboard_url": fe_url,
         "customer_dashboard_id": customer_id,
         "customer_dashboard_url": customer_url,
+        "lens_data_view_id": lens_dv_id,
+        "lens_panels_enabled": bool(lens_dv_id),
         "elapsed_seconds": elapsed,
         "anomaly_windows": [
             {"label": w["label"], "start": w["start"].isoformat(),

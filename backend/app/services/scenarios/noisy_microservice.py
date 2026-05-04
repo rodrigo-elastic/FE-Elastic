@@ -65,6 +65,7 @@ INDICES: Dict[str, str] = {
 
 DASHBOARD_ID: str = "demo-noisy-microservice-dashboard"
 CUSTOMER_DASHBOARD_ID: str = "demo-noisy-microservice-customer-dashboard"
+DATA_VIEW_ID: str = "demo-noisy-traces-dv"
 
 
 # ============================================================ Domain constants ======
@@ -1442,21 +1443,268 @@ def _vega_panel(panel_id: str, x: int, y: int, w: int, h: int, title: str, spec:
     }
 
 
-def _build_chart_panels(now: datetime, prefix: str) -> List[Dict[str, Any]]:
-    """Return the shared Vega chart panels. Both dashboards use this exact set;
+def _lens_panel(panel_id: str, x: int, y: int, w: int, h: int, *,
+                title: str, lens_attributes: Dict[str, Any],
+                data_view_id: str) -> Dict[str, Any]:
+    """Build a Lens visualization panel that lives inline in `panelsJSON`.
+
+    Kibana 9.3 accepts a Lens embeddable directly inside dashboard panelsJSON
+    when its `attributes.state` carries the full Lens persisted state. The
+    `references` array binds every `indexpattern-datasource-layer-*` to the
+    shared data view that we create at seed time, so the chart resolves at
+    render time without a separate Lens saved object.
+    """
+    layer_id = lens_attributes.get("__layer_id", "layer-default")
+    references = [
+        {
+            "id": data_view_id,
+            "type": "index-pattern",
+            "name": f"indexpattern-datasource-layer-{layer_id}",
+        },
+    ]
+    # Drop the helper key before serialising.
+    attrs = {k: v for k, v in lens_attributes.items() if k != "__layer_id"}
+    return {
+        "type": "lens",
+        "panelIndex": panel_id,
+        "gridData": {"x": x, "y": y, "w": w, "h": h, "i": panel_id},
+        "version": "9.3.4",
+        "embeddableConfig": {
+            "enhancements": {},
+            "attributes": {
+                "title": title,
+                "description": "",
+                "visualizationType": attrs["visualizationType"],
+                "state": attrs["state"],
+                "references": references,
+            },
+        },
+        "title": title,
+    }
+
+
+def _lens_errors_by_service(data_view_id: str) -> Dict[str, Any]:
+    """Lens horizontal-bar: count of failure events grouped by service.name.
+
+    Drives the demo headline (the 80/20 reveal) and supports drag-to-filter
+    drilldown to a single service straight from the dashboard.
+    """
+    layer_id = "layer-errors-by-service"
+    col_y = "col-svc"
+    col_x = "col-count"
+    state = {
+        "datasourceStates": {
+            "formBased": {
+                "layers": {
+                    layer_id: {
+                        "columns": {
+                            col_y: {
+                                "label": "service.name",
+                                "dataType": "string",
+                                "operationType": "terms",
+                                "scale": "ordinal",
+                                "sourceField": "service.name",
+                                "isBucketed": True,
+                                "params": {
+                                    "size": 10,
+                                    "orderBy": {"type": "column", "columnId": col_x},
+                                    "orderDirection": "desc",
+                                    "otherBucket": False,
+                                    "missingBucket": False,
+                                    "parentFormat": {"id": "terms"},
+                                },
+                            },
+                            col_x: {
+                                "label": "Errors",
+                                "dataType": "number",
+                                "operationType": "count",
+                                "isBucketed": False,
+                                "scale": "ratio",
+                                "sourceField": "___records___",
+                            },
+                        },
+                        "columnOrder": [col_y, col_x],
+                        "incompleteColumns": {},
+                    },
+                },
+            },
+        },
+        "internalReferences": [],
+        "filters": [],
+        "query": {"language": "kuery", "query": "event.outcome : \"failure\""},
+        "visualization": {
+            "preferredSeriesType": "bar_horizontal",
+            "legend": {"isVisible": False, "position": "right"},
+            "valueLabels": "show",
+            "fittingFunction": "None",
+            "axisTitlesVisibilitySettings": {"x": True, "yLeft": True, "yRight": True},
+            "tickLabelsVisibilitySettings": {"x": True, "yLeft": True, "yRight": True},
+            "labelsOrientation": {"x": 0, "yLeft": 0, "yRight": 0},
+            "gridlinesVisibilitySettings": {"x": True, "yLeft": True, "yRight": True},
+            "layers": [
+                {
+                    "layerId": layer_id,
+                    "accessors": [col_x],
+                    "position": "top",
+                    "seriesType": "bar_horizontal",
+                    "showGridlines": False,
+                    "layerType": "data",
+                    "xAccessor": col_y,
+                },
+            ],
+        },
+    }
+    return {
+        "__layer_id": layer_id,
+        "visualizationType": "lnsXY",
+        "state": state,
+    }
+
+
+def _lens_error_rate_over_time(data_view_id: str) -> Dict[str, Any]:
+    """Lens line chart: error-count over time bucketed at the dashboard interval,
+    broken down by service.name. Pairs with the time picker for live drilldowns
+    of the deployment-regression jumps.
+    """
+    layer_id = "layer-error-rate-over-time"
+    col_x = "col-time"
+    col_break = "col-svc"
+    col_y = "col-errors"
+    state = {
+        "datasourceStates": {
+            "formBased": {
+                "layers": {
+                    layer_id: {
+                        "columns": {
+                            col_x: {
+                                "label": "@timestamp",
+                                "dataType": "date",
+                                "operationType": "date_histogram",
+                                "sourceField": "@timestamp",
+                                "isBucketed": True,
+                                "scale": "interval",
+                                "params": {"interval": "auto", "includeEmptyRows": True,
+                                            "dropPartials": False},
+                            },
+                            col_break: {
+                                "label": "service.name",
+                                "dataType": "string",
+                                "operationType": "terms",
+                                "scale": "ordinal",
+                                "sourceField": "service.name",
+                                "isBucketed": True,
+                                "params": {
+                                    "size": 10,
+                                    "orderBy": {"type": "column", "columnId": col_y},
+                                    "orderDirection": "desc",
+                                    "otherBucket": False,
+                                    "missingBucket": False,
+                                    "parentFormat": {"id": "terms"},
+                                },
+                            },
+                            col_y: {
+                                "label": "Errors",
+                                "dataType": "number",
+                                "operationType": "count",
+                                "isBucketed": False,
+                                "scale": "ratio",
+                                "sourceField": "___records___",
+                            },
+                        },
+                        "columnOrder": [col_break, col_x, col_y],
+                        "incompleteColumns": {},
+                    },
+                },
+            },
+        },
+        "internalReferences": [],
+        "filters": [],
+        "query": {"language": "kuery", "query": "event.outcome : \"failure\""},
+        "visualization": {
+            "preferredSeriesType": "line",
+            "legend": {"isVisible": True, "position": "right"},
+            "valueLabels": "hide",
+            "fittingFunction": "None",
+            "curveType": "LINEAR",
+            "axisTitlesVisibilitySettings": {"x": False, "yLeft": True, "yRight": True},
+            "tickLabelsVisibilitySettings": {"x": True, "yLeft": True, "yRight": True},
+            "labelsOrientation": {"x": 0, "yLeft": 0, "yRight": 0},
+            "gridlinesVisibilitySettings": {"x": True, "yLeft": True, "yRight": True},
+            "layers": [
+                {
+                    "layerId": layer_id,
+                    "accessors": [col_y],
+                    "position": "top",
+                    "seriesType": "line",
+                    "showGridlines": False,
+                    "layerType": "data",
+                    "xAccessor": col_x,
+                    "splitAccessor": col_break,
+                },
+            ],
+        },
+    }
+    return {
+        "__layer_id": layer_id,
+        "visualizationType": "lnsXY",
+        "state": state,
+    }
+
+
+def _build_chart_panels(now: datetime, prefix: str,
+                        data_view_id: str = None) -> List[Dict[str, Any]]:
+    """Return the shared chart panels. Both dashboards use this exact set;
     only the surrounding markdown changes between FE and Customer views.
 
     Layout (48-wide grid, starting at y=12 to leave room for switcher + intro):
         row 1 (y=12): errors-by-service (24x14)  +  error-rate-over-time (24x14)
         row 2 (y=26): top-error-types (24x12)    +  deploy-timeline (24x12)
         row 3 (y=38): error-budget-burn (48x12)
+
+    The first two panels are upgraded to Lens when `data_view_id` is provided
+    (creates a native SRE feel: drag-to-filter, time-picker drilldowns). They
+    fall back to inline-data Vega if the Lens build raises. Panels c3, c4, c5
+    stay inline-data Vega - they layer rules + areas which Lens does not
+    express as cleanly.
     """
     panels: List[Dict[str, Any]] = []
-    panels.append(_vega_panel(f"{prefix}-c1", 0, 12, 24, 14,
-                              "Errors by service", _spec_errors_by_service()))
-    panels.append(_vega_panel(f"{prefix}-c2", 24, 12, 24, 14,
-                              "Error rate by service over time",
-                              _spec_error_rate_over_time()))
+
+    # ---- c1: errors by service (Lens with Vega fallback) ----
+    c1_built = False
+    if data_view_id:
+        try:
+            panels.append(_lens_panel(
+                f"{prefix}-c1", 0, 12, 24, 14,
+                title="Errors by service (failures, last 7d)",
+                lens_attributes=_lens_errors_by_service(data_view_id),
+                data_view_id=data_view_id,
+            ))
+            c1_built = True
+        except Exception as exc:
+            log.warning("noisy_microservice.lens_c1.failed", error=str(exc))
+    if not c1_built:
+        panels.append(_vega_panel(f"{prefix}-c1", 0, 12, 24, 14,
+                                  "Errors by service", _spec_errors_by_service()))
+
+    # ---- c2: error rate by service over time (Lens with Vega fallback) ----
+    c2_built = False
+    if data_view_id:
+        try:
+            panels.append(_lens_panel(
+                f"{prefix}-c2", 24, 12, 24, 14,
+                title="Error rate by service over time (failures)",
+                lens_attributes=_lens_error_rate_over_time(data_view_id),
+                data_view_id=data_view_id,
+            ))
+            c2_built = True
+        except Exception as exc:
+            log.warning("noisy_microservice.lens_c2.failed", error=str(exc))
+    if not c2_built:
+        panels.append(_vega_panel(f"{prefix}-c2", 24, 12, 24, 14,
+                                  "Error rate by service over time",
+                                  _spec_error_rate_over_time()))
+
+    # ---- c3, c4, c5: stay as inline-data Vega ----
     panels.append(_vega_panel(f"{prefix}-c3", 0, 26, 24, 12,
                               "Top error types - checkout-service",
                               _spec_top_error_types()))
@@ -1471,29 +1719,31 @@ def _build_chart_panels(now: datetime, prefix: str) -> List[Dict[str, Any]]:
 
 def get_dashboard_panels() -> List[Dict[str, Any]]:
     """Backwards-compatible accessor used by the demo-data API. Returns the FE
-    view panel set (the historical default for SCENARIO_ID -> DASHBOARD_ID)."""
-    return _build_fe_panels(_now())
+    view panel set (the historical default for SCENARIO_ID -> DASHBOARD_ID).
+    Vega-only build (no Lens) so this entry point keeps working even when the
+    data view has not been created yet."""
+    return _build_fe_panels(_now(), data_view_id=None)
 
 
-def _build_fe_panels(now: datetime) -> List[Dict[str, Any]]:
+def _build_fe_panels(now: datetime, data_view_id: str = None) -> List[Dict[str, Any]]:
     panels: List[Dict[str, Any]] = []
     panels.append(_markdown_panel("fe-switch", 0, 0, 48, 4, _md_switcher("fe"),
                                   "View switcher"))
     panels.append(_markdown_panel("fe-intro", 0, 4, 48, 8, _md_fe_intro(),
                                   "Noisy microservice - FE prep & talk track"))
-    panels.extend(_build_chart_panels(now, prefix="fe"))
+    panels.extend(_build_chart_panels(now, prefix="fe", data_view_id=data_view_id))
     panels.append(_markdown_panel("fe-close", 0, 50, 48, 12, _md_fe_closing(),
                                   "How Elastic catches this earlier + stack traces"))
     return panels
 
 
-def _build_customer_panels(now: datetime) -> List[Dict[str, Any]]:
+def _build_customer_panels(now: datetime, data_view_id: str = None) -> List[Dict[str, Any]]:
     panels: List[Dict[str, Any]] = []
     panels.append(_markdown_panel("cu-switch", 0, 0, 48, 4, _md_switcher("customer"),
                                   "View switcher"))
     panels.append(_markdown_panel("cu-intro", 0, 4, 48, 8, _md_customer_intro(),
                                   "Service health report"))
-    panels.extend(_build_chart_panels(now, prefix="cu"))
+    panels.extend(_build_chart_panels(now, prefix="cu", data_view_id=data_view_id))
     panels.append(_markdown_panel("cu-close", 0, 50, 48, 12, _md_customer_closing(),
                                   "Recommendations & engineering scoreboard"))
     return panels
@@ -1554,29 +1804,114 @@ def _kbn_headers() -> Dict[str, str]:
     }
 
 
+def _ensure_data_view() -> str:
+    """Create (or refresh) the `demo-noisy-traces-dv` data view used by every
+    Lens panel. Returns the data-view id. Raises on hard failure so the caller
+    can fall back to an all-Vega build."""
+    dv_id = DATA_VIEW_ID
+    body = {
+        "data_view": {
+            "id": dv_id,
+            "title": INDICES["traces"],
+            "name": "demo - noisy-microservice traces",
+            "timeFieldName": "@timestamp",
+        },
+        "override": True,
+    }
+    with httpx.Client(timeout=30.0) as client:
+        # Best-effort delete to keep this idempotent across reruns.
+        try:
+            client.delete(_kbn_url(f"/api/data_views/data_view/{dv_id}"),
+                          headers=_kbn_headers())
+        except Exception:
+            pass
+        resp = client.post(
+            _kbn_url("/api/data_views/data_view"),
+            headers=_kbn_headers(), json=body,
+        )
+        if resp.status_code >= 400:
+            log.warning("noisy_microservice.dataview.fallback_path",
+                        status=resp.status_code, body=resp.text[:300])
+            # Fallback: write the saved object directly so Lens still resolves.
+            body2 = [{
+                "id": dv_id,
+                "type": "index-pattern",
+                "attributes": {
+                    "title": INDICES["traces"],
+                    "name": "demo - noisy-microservice traces",
+                    "timeFieldName": "@timestamp",
+                },
+            }]
+            resp2 = client.post(
+                _kbn_url("/api/saved_objects/_bulk_create?overwrite=true"),
+                headers=_kbn_headers(), json=body2,
+            )
+            if resp2.status_code >= 400:
+                raise RuntimeError(
+                    f"Kibana data view create failed: "
+                    f"{resp2.status_code} {resp2.text[:300]}"
+                )
+    return dv_id
+
+
+def _collect_lens_references(panels: List[Dict[str, Any]],
+                              data_view_id: str) -> List[Dict[str, str]]:
+    """Walk the inline panels and emit dashboard-level references for every
+    Lens panel. The reference name `<panelIndex>:indexpattern-datasource-...`
+    pattern is what Kibana 9.x expects when the embeddable lives inline."""
+    refs: List[Dict[str, str]] = []
+    seen = set()
+    for p in panels:
+        if p.get("type") != "lens":
+            continue
+        embeddable_refs = (p.get("embeddableConfig") or {}).get("attributes", {}).get("references", [])
+        for r in embeddable_refs:
+            key = (p["panelIndex"], r["name"], r["id"])
+            if key in seen:
+                continue
+            seen.add(key)
+            refs.append({
+                "id": r["id"],
+                "type": r["type"],
+                "name": f"{p['panelIndex']}:{r['name']}",
+            })
+    # Always include a default search-source binding so the dashboard query
+    # bar resolves against the same index pattern.
+    refs.append({
+        "id": data_view_id, "type": "index-pattern",
+        "name": "kibanaSavedObjectMeta.searchSourceJSON.index",
+    })
+    return refs
+
+
 def _post_dashboard(dashboard_id: str, title: str, description: str,
-                    panels: List[Dict[str, Any]]) -> Dict[str, Any]:
+                    panels: List[Dict[str, Any]],
+                    data_view_id: str = None) -> Dict[str, Any]:
     panels_json = json.dumps(panels, ensure_ascii=False)
     options_json = json.dumps({
         "useMargins": True, "hidePanelTitles": False,
         "syncColors": False, "syncCursor": False, "syncTooltips": False,
     })
     search_source_json = json.dumps({"query": {"language": "kuery", "query": ""}, "filter": []})
-    body = [{
+    attributes: Dict[str, Any] = {
+        "title": title,
+        "description": description,
+        "panelsJSON": panels_json,
+        "optionsJSON": options_json,
+        "timeRestore": True,
+        "timeFrom": "now-7d/d",
+        "timeTo": "now",
+        "version": 1,
+        "kibanaSavedObjectMeta": {"searchSourceJSON": search_source_json},
+    }
+    body_entry: Dict[str, Any] = {
         "id": dashboard_id,
         "type": "dashboard",
-        "attributes": {
-            "title": title,
-            "description": description,
-            "panelsJSON": panels_json,
-            "optionsJSON": options_json,
-            "timeRestore": True,
-            "timeFrom": "now-7d/d",
-            "timeTo": "now",
-            "version": 1,
-            "kibanaSavedObjectMeta": {"searchSourceJSON": search_source_json},
-        },
-    }]
+        "attributes": attributes,
+    }
+    if data_view_id:
+        body_entry["references"] = _collect_lens_references(panels, data_view_id)
+    body = [body_entry]
     url = _kbn_url("/api/saved_objects/_bulk_create?overwrite=true")
     with httpx.Client(timeout=45.0) as client:
         resp = client.post(url, headers=_kbn_headers(), json=body)
@@ -1586,31 +1921,34 @@ def _post_dashboard(dashboard_id: str, title: str, description: str,
         "dashboard_url": settings.kibana_url.rstrip("/") + f"/app/dashboards#/view/{dashboard_id}",
         "status": resp.status_code,
         "panel_count": len(panels),
+        "lens_panel_count": sum(1 for p in panels if p.get("type") == "lens"),
     }
 
 
-def _create_fe_dashboard() -> Dict[str, Any]:
+def _create_fe_dashboard(data_view_id: str = None) -> Dict[str, Any]:
     now = _now()
-    panels = _build_fe_panels(now)
+    panels = _build_fe_panels(now, data_view_id=data_view_id)
     title = "[FE] Noisy Microservice - One Bad Apple"
     description = (
         f"Field-Engineer prep view for the {_FICT_COMPANY} noisy-microservice scenario. "
         "Talk track, MEDDPICC framing, and 'how Elastic catches this earlier' playbook. "
         f"Backed by {INDICES['traces']}, {INDICES['logs']}, and {INDICES['deployments']}."
     )
-    return _post_dashboard(DASHBOARD_ID, title, description, panels)
+    return _post_dashboard(DASHBOARD_ID, title, description, panels,
+                           data_view_id=data_view_id)
 
 
-def _create_customer_dashboard() -> Dict[str, Any]:
+def _create_customer_dashboard(data_view_id: str = None) -> Dict[str, Any]:
     now = _now()
-    panels = _build_customer_panels(now)
+    panels = _build_customer_panels(now, data_view_id=data_view_id)
     title = "[Customer] Noisy Microservice - Service Health Report"
     description = (
         f"Customer-facing service-health report for the {_FICT_COMPANY} noisy-microservice "
         "scenario. SRE / Engineering Manager view: error budget burn, MTTR vs target, "
         "deploy regressions identified, and recommended next steps."
     )
-    return _post_dashboard(CUSTOMER_DASHBOARD_ID, title, description, panels)
+    return _post_dashboard(CUSTOMER_DASHBOARD_ID, title, description, panels,
+                           data_view_id=data_view_id)
 
 
 # Legacy alias so any external caller that imports `_create_dashboard` keeps working.
@@ -1651,21 +1989,43 @@ def seed() -> Dict[str, Any]:
     fe_dashboard: Dict[str, Any] = None
     customer_dashboard: Dict[str, Any] = None
     dashboard_error = None
+    data_view_id: str = None
     if settings.kibana_api_key:
+        # Best-effort data-view create. If it fails, both dashboards still
+        # build with all-Vega panels - the dashboard never breaks.
         try:
-            fe_dashboard = _create_fe_dashboard()
+            data_view_id = _ensure_data_view()
+        except Exception as exc:
+            log.warning("noisy_microservice.dataview.failed", error=str(exc))
+            data_view_id = None
+
+        try:
+            fe_dashboard = _create_fe_dashboard(data_view_id=data_view_id)
         except httpx.HTTPStatusError as exc:
             dashboard_error = f"FE Kibana {exc.response.status_code}: {exc.response.text[:300]}"
             log.warning("noisy_microservice.fe_dashboard.failed", error=dashboard_error)
+            # Last-resort retry with no Lens panels so the demo never blanks.
+            if data_view_id is not None:
+                try:
+                    fe_dashboard = _create_fe_dashboard(data_view_id=None)
+                    dashboard_error = (dashboard_error or "") + " (recovered with all-Vega FE panels)"
+                except Exception as exc2:
+                    log.warning("noisy_microservice.fe_dashboard.fallback_failed", error=str(exc2))
         except Exception as exc:
             dashboard_error = f"FE Kibana request failed: {exc}"
             log.warning("noisy_microservice.fe_dashboard.failed", error=str(exc))
         try:
-            customer_dashboard = _create_customer_dashboard()
+            customer_dashboard = _create_customer_dashboard(data_view_id=data_view_id)
         except httpx.HTTPStatusError as exc:
             err = f"Customer Kibana {exc.response.status_code}: {exc.response.text[:300]}"
             dashboard_error = (dashboard_error + " | " + err) if dashboard_error else err
             log.warning("noisy_microservice.customer_dashboard.failed", error=err)
+            if data_view_id is not None:
+                try:
+                    customer_dashboard = _create_customer_dashboard(data_view_id=None)
+                    dashboard_error = (dashboard_error or "") + " (recovered with all-Vega Customer panels)"
+                except Exception as exc2:
+                    log.warning("noisy_microservice.customer_dashboard.fallback_failed", error=str(exc2))
         except Exception as exc:
             err = f"Customer Kibana request failed: {exc}"
             dashboard_error = (dashboard_error + " | " + err) if dashboard_error else err
@@ -1683,6 +2043,7 @@ def seed() -> Dict[str, Any]:
         "dashboard": fe_dashboard,                  # legacy key - FE view
         "fe_dashboard": fe_dashboard,
         "customer_dashboard": customer_dashboard,
+        "data_view_id": data_view_id,
         "dashboard_error": dashboard_error,
         "started_at": started.isoformat(),
         "finished_at": finished.isoformat(),

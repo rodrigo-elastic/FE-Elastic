@@ -1770,14 +1770,295 @@ def _md_customer_closing() -> str:
     )
 
 
+# ----- Lens helpers (live time-picker drama) -----------------------------------------
+#
+# The two highest-value SOC-analyst panels (logins-per-minute time series and
+# top-IPs by failure count) are rendered as Lens visualisations so the time
+# picker, drag-zoom, and breakdown legends all work natively. The remaining
+# panels stay as inline-data Vega-Lite for resilience. If the Lens saved-object
+# spec is rejected by this Kibana version, `_build_panels` falls back to the
+# pre-existing Vega panel for that slot so the dashboard never breaks.
+
+CREDSTUFF_AUTH_DATA_VIEW_ID: str = "demo-credstuff-auth-dv"
+CREDSTUFF_AUTH_INDEX_PATTERN: str = "demo-credstuff-auth"
+
+
+def _ensure_data_view(
+    *,
+    dv_id: str = CREDSTUFF_AUTH_DATA_VIEW_ID,
+    title: str = CREDSTUFF_AUTH_INDEX_PATTERN,
+    name: str = "demo credstuff auth",
+) -> Optional[str]:
+    """Idempotently create a dedicated auth-only data view used by the Lens
+    panels. Returns the data view id, or None if creation failed (caller should
+    fall back to Vega)."""
+    body = {
+        "data_view": {
+            "id": dv_id,
+            "title": title,
+            "name": name,
+            "timeFieldName": "@timestamp",
+        },
+        "override": True,
+    }
+    with httpx.Client(timeout=30.0) as client:
+        try:
+            client.delete(_kbn_url(f"/api/data_views/data_view/{dv_id}"),
+                          headers=_kbn_headers())
+        except Exception:
+            pass
+        try:
+            resp = client.post(_kbn_url("/api/data_views/data_view"),
+                               headers=_kbn_headers(), json=body)
+            if resp.status_code < 400:
+                return dv_id
+            log.warning("credstuff.lens_dv.fallback",
+                        status=resp.status_code, body=resp.text[:300])
+            body2 = [{
+                "id": dv_id,
+                "type": "index-pattern",
+                "attributes": {
+                    "title": title,
+                    "name": name,
+                    "timeFieldName": "@timestamp",
+                },
+            }]
+            resp2 = client.post(_kbn_url("/api/saved_objects/_bulk_create?overwrite=true"),
+                                headers=_kbn_headers(), json=body2)
+            if resp2.status_code < 400:
+                return dv_id
+            log.warning("credstuff.lens_dv.create_failed",
+                        status=resp2.status_code, body=resp2.text[:300])
+        except Exception as exc:
+            log.warning("credstuff.lens_dv.exception", error=str(exc))
+    return None
+
+
+def _lens_logins_timeseries_attrs(data_view_id: str, title: str) -> Dict[str, Any]:
+    """Lens XY two-line time series (success vs failure) broken down by event.outcome.
+
+    Layout: x = @timestamp date_histogram (auto interval), y = count of records,
+    breakdown = terms on event.outcome. SOC analysts get native drag-zoom and
+    follow the global time picker."""
+    layer_id = "layer_logins_ts"
+    col_x = "col_x_ts"
+    col_y = "col_y_count"
+    col_split = "col_split_outcome"
+    return {
+        "title": title,
+        "description": "",
+        "visualizationType": "lnsXY",
+        "state": {
+            "datasourceStates": {
+                "formBased": {
+                    "layers": {
+                        layer_id: {
+                            "columnOrder": [col_x, col_split, col_y],
+                            "columns": {
+                                col_x: {
+                                    "label": "@timestamp",
+                                    "dataType": "date",
+                                    "operationType": "date_histogram",
+                                    "sourceField": "@timestamp",
+                                    "isBucketed": True,
+                                    "scale": "interval",
+                                    "params": {"interval": "auto", "includeEmptyRows": True},
+                                },
+                                col_split: {
+                                    "label": "Top values of event.outcome",
+                                    "dataType": "string",
+                                    "operationType": "terms",
+                                    "sourceField": "event.outcome",
+                                    "isBucketed": True,
+                                    "scale": "ordinal",
+                                    "params": {
+                                        "size": 4,
+                                        "orderBy": {"type": "column", "columnId": col_y},
+                                        "orderDirection": "desc",
+                                        "otherBucket": False,
+                                        "missingBucket": False,
+                                        "parentFormat": {"id": "terms"},
+                                    },
+                                },
+                                col_y: {
+                                    "label": "Count of records",
+                                    "dataType": "number",
+                                    "operationType": "count",
+                                    "sourceField": "___records___",
+                                    "isBucketed": False,
+                                    "scale": "ratio",
+                                },
+                            },
+                            "incompleteColumns": {},
+                        }
+                    }
+                }
+            },
+            "visualization": {
+                "legend": {"isVisible": True, "position": "right"},
+                "valueLabels": "hide",
+                "fittingFunction": "None",
+                "axisTitlesVisibilitySettings": {"x": True, "yLeft": True, "yRight": True},
+                "tickLabelsVisibilitySettings": {"x": True, "yLeft": True, "yRight": True},
+                "labelsOrientation": {"x": 0, "yLeft": 0, "yRight": 0},
+                "gridlinesVisibilitySettings": {"x": True, "yLeft": True, "yRight": True},
+                "preferredSeriesType": "line",
+                "layers": [
+                    {
+                        "layerId": layer_id,
+                        "accessors": [col_y],
+                        "position": "top",
+                        "seriesType": "line",
+                        "showGridlines": False,
+                        "layerType": "data",
+                        "xAccessor": col_x,
+                        "splitAccessor": col_split,
+                    }
+                ],
+            },
+            "query": {"query": "", "language": "kuery"},
+            "filters": [],
+        },
+        "references": [
+            {
+                "type": "index-pattern",
+                "id": data_view_id,
+                "name": f"indexpattern-datasource-layer-{layer_id}",
+            }
+        ],
+    }
+
+
+def _lens_top_ips_failures_attrs(data_view_id: str, title: str) -> Dict[str, Any]:
+    """Lens horizontal bar chart: top 10 source IPs filtered to event.outcome:failure."""
+    layer_id = "layer_top_ips"
+    col_split = "col_split_ip"
+    col_y = "col_y_count"
+    return {
+        "title": title,
+        "description": "",
+        "visualizationType": "lnsXY",
+        "state": {
+            "datasourceStates": {
+                "formBased": {
+                    "layers": {
+                        layer_id: {
+                            "columnOrder": [col_split, col_y],
+                            "columns": {
+                                col_split: {
+                                    "label": "Top values of source.ip",
+                                    "dataType": "ip",
+                                    "operationType": "terms",
+                                    "sourceField": "source.ip",
+                                    "isBucketed": True,
+                                    "scale": "ordinal",
+                                    "params": {
+                                        "size": 10,
+                                        "orderBy": {"type": "column", "columnId": col_y},
+                                        "orderDirection": "desc",
+                                        "otherBucket": False,
+                                        "missingBucket": False,
+                                        "parentFormat": {"id": "terms"},
+                                    },
+                                },
+                                col_y: {
+                                    "label": "Failed logins",
+                                    "dataType": "number",
+                                    "operationType": "count",
+                                    "sourceField": "___records___",
+                                    "isBucketed": False,
+                                    "scale": "ratio",
+                                },
+                            },
+                            "incompleteColumns": {},
+                        }
+                    }
+                }
+            },
+            "visualization": {
+                "legend": {"isVisible": True, "position": "right"},
+                "valueLabels": "hide",
+                "fittingFunction": "None",
+                "axisTitlesVisibilitySettings": {"x": True, "yLeft": True, "yRight": True},
+                "tickLabelsVisibilitySettings": {"x": True, "yLeft": True, "yRight": True},
+                "labelsOrientation": {"x": 0, "yLeft": 0, "yRight": 0},
+                "gridlinesVisibilitySettings": {"x": False, "yLeft": True, "yRight": True},
+                "preferredSeriesType": "bar_horizontal",
+                "layers": [
+                    {
+                        "layerId": layer_id,
+                        "accessors": [col_y],
+                        "position": "top",
+                        "seriesType": "bar_horizontal",
+                        "showGridlines": False,
+                        "layerType": "data",
+                        "xAccessor": col_split,
+                    }
+                ],
+            },
+            "query": {"query": "event.outcome : \"failure\"", "language": "kuery"},
+            "filters": [],
+        },
+        "references": [
+            {
+                "type": "index-pattern",
+                "id": data_view_id,
+                "name": f"indexpattern-datasource-layer-{layer_id}",
+            }
+        ],
+    }
+
+
+def _lens_panel(
+    panel_id: str,
+    x: int,
+    y: int,
+    w: int,
+    h: int,
+    title: str,
+    attributes: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Build a byValue Lens dashboard panel.
+
+    The Lens visualisation is embedded inline in the dashboard saved object;
+    no separate Lens saved-object is created. The panel-level references are
+    duplicated from the attributes.references so Kibana resolves the data
+    view both at the panel level and inside the Lens state."""
+    refs = attributes.get("references", [])
+    panel_refs = []
+    for ref in refs:
+        panel_refs.append({
+            "type": ref["type"],
+            "id": ref["id"],
+            "name": f"{panel_id}:{ref['name']}",
+        })
+    return {
+        "type": "lens",
+        "panelIndex": panel_id,
+        "gridData": {"x": x, "y": y, "w": w, "h": h, "i": panel_id},
+        "version": "9.3.4",
+        "panelRefName": None,
+        "embeddableConfig": {
+            "enhancements": {},
+            "attributes": attributes,
+        },
+        "title": title,
+        "panelConfig": {},
+        "references": panel_refs,
+    }
+
+
 # ----- Panels assembly ---------------------------------------------------------------
 
 
-def _build_panels(view: str) -> List[Dict[str, Any]]:
-    """Build the 8-panel layout for either the FE or Customer dashboard.
+def _build_panels(view: str, lens_data_view_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Build the panel layout for either the FE or Customer dashboard.
 
-    Both views share the same Vega panels (same inline `data.values`); only
-    the surrounding markdown changes.
+    Both views share the same chart panels; only the surrounding markdown
+    narrative differs. Two panels (logins-per-minute time series and
+    top-IPs-by-failure bar) render as Lens when `lens_data_view_id` is
+    provided. If Lens attribute construction raises, those slots fall back
+    to inline-data Vega-Lite so the dashboard never breaks.
     """
     breaches = get_breach_table()
     kpi = _compute_time_to_first_breach()
@@ -1793,6 +2074,39 @@ def _build_panels(view: str) -> List[Dict[str, Any]]:
     spec_failure_reasons = _vega_failure_reasons()
     spec_targeted = _vega_targeted_users()
 
+    # Try to build the two Lens panels. Each is wrapped in its own try/except so
+    # one failure does not lose the other. On failure we fall back to the
+    # equivalent inline-data Vega panel so the dashboard always renders.
+    lens_logins_panel: Optional[Dict[str, Any]] = None
+    lens_top_ips_panel: Optional[Dict[str, Any]] = None
+    if lens_data_view_id:
+        try:
+            attrs_logins = _lens_logins_timeseries_attrs(
+                lens_data_view_id,
+                "Logins over time - success vs failure (Lens, drag to zoom)",
+            )
+            lens_logins_panel = _lens_panel(
+                "p_line", 0, 26, 48, 14,
+                "Logins over time - success vs failure (Lens, drag to zoom)",
+                attrs_logins,
+            )
+        except Exception as exc:
+            log.warning("credstuff.lens_logins.fallback_to_vega", error=str(exc))
+            lens_logins_panel = None
+        try:
+            attrs_top_ips = _lens_top_ips_failures_attrs(
+                lens_data_view_id,
+                "Top source IPs by failed login (Lens)",
+            )
+            lens_top_ips_panel = _lens_panel(
+                "p_ips", 24, 12, 24, 14,
+                "Top source IPs by failed login (Lens)",
+                attrs_top_ips,
+            )
+        except Exception as exc:
+            log.warning("credstuff.lens_top_ips.fallback_to_vega", error=str(exc))
+            lens_top_ips_panel = None
+
     panels: List[Dict[str, Any]] = []
 
     # Row 1: switcher (full width, h=4)
@@ -1803,16 +2117,22 @@ def _build_panels(view: str) -> List[Dict[str, Any]]:
     panels.append(_markdown_panel("intro", 0, 4, 48, 8, intro_md,
                                   "Overview"))
 
-    # Row 3: heatmap (24w, h=14) + top IPs (24w, h=14)
+    # Row 3: heatmap (24w, h=14) + top IPs (24w, h=14) - top IPs is Lens when available
     panels.append(_vega_panel("p_heat", 0, 12, 24, 14,
                               "Failures by hour x source country", spec_heatmap))
-    panels.append(_vega_panel("p_ips", 24, 12, 24, 14,
-                              "Top 10 source IPs by failures", spec_top_ips))
+    if lens_top_ips_panel is not None:
+        panels.append(lens_top_ips_panel)
+    else:
+        panels.append(_vega_panel("p_ips", 24, 12, 24, 14,
+                                  "Top 10 source IPs by failures", spec_top_ips))
 
-    # Row 4: full-width line chart (48w, h=14)
-    panels.append(_vega_panel("p_line", 0, 26, 48, 14,
-                              "Logins per 5-min bucket - success vs failure",
-                              spec_logins))
+    # Row 4: full-width line chart (48w, h=14) - Lens when available
+    if lens_logins_panel is not None:
+        panels.append(lens_logins_panel)
+    else:
+        panels.append(_vega_panel("p_line", 0, 26, 48, 14,
+                                  "Logins per 5-min bucket - success vs failure",
+                                  spec_logins))
 
     # Row 5: failure-reason bar (16w, h=12) + targeted users bar (16w, h=12)
     #         + ASN donut (16w, h=12)
@@ -1839,8 +2159,9 @@ def _build_panels(view: str) -> List[Dict[str, Any]]:
 
 def get_dashboard_panels() -> List[Dict[str, Any]]:
     """Backwards-compatible: returns the FE-view panel layout (same panels the
-    legacy dashboard rendered, now with switcher + new charts)."""
-    return _build_panels("fe")
+    legacy dashboard rendered, now with switcher + new charts). Without a
+    Lens-capable data view this falls back to the all-Vega layout."""
+    return _build_panels("fe", lens_data_view_id=None)
 
 
 # ============================================================ Kibana helpers =======
@@ -1911,8 +2232,14 @@ def _create_one_dashboard(
     title: str,
     description: str,
     panels: List[Dict[str, Any]],
+    extra_data_view_ids: Optional[List[str]] = None,
 ) -> str:
-    """Idempotently create a single dashboard with the given panels."""
+    """Idempotently create a single dashboard with the given panels.
+
+    Lens panels embed their own per-panel references but Kibana also
+    flattens panel references onto the dashboard saved object. We collect
+    every unique panel-level reference and merge them with the top-level
+    search-source data view reference so the dashboard validates."""
     panels_json = json.dumps(panels, ensure_ascii=False)
     options_json = json.dumps({
         "useMargins": True,
@@ -1924,6 +2251,19 @@ def _create_one_dashboard(
     search_source_json = json.dumps(
         {"query": {"language": "kuery", "query": ""}, "filter": []}
     )
+
+    references: List[Dict[str, str]] = [
+        {"id": data_view_id, "type": "index-pattern",
+         "name": "kibanaSavedObjectMeta.searchSourceJSON.index"},
+    ]
+    seen_ref_keys = {(ref["type"], ref["id"], ref["name"]) for ref in references}
+    for panel in panels:
+        for ref in panel.get("references", []) or []:
+            key = (ref.get("type"), ref.get("id"), ref.get("name"))
+            if None in key or key in seen_ref_keys:
+                continue
+            references.append({"id": ref["id"], "type": ref["type"], "name": ref["name"]})
+            seen_ref_keys.add(key)
 
     body = [{
         "id": dashboard_id,
@@ -1940,10 +2280,7 @@ def _create_one_dashboard(
             "version": 1,
             "kibanaSavedObjectMeta": {"searchSourceJSON": search_source_json},
         },
-        "references": [
-            {"id": data_view_id, "type": "index-pattern",
-             "name": "kibanaSavedObjectMeta.searchSourceJSON.index"},
-        ],
+        "references": references,
     }]
     with httpx.Client(timeout=30.0) as client:
         # Best-effort delete first for idempotency.
@@ -1964,10 +2301,17 @@ def _create_one_dashboard(
     return dashboard_id
 
 
-def _create_dashboard(data_view_id: str) -> Dict[str, str]:
-    """Create both the FE and Customer dashboards. Returns a dict of ids."""
-    fe_panels = _build_panels("fe")
-    cu_panels = _build_panels("customer")
+def _create_dashboard(
+    data_view_id: str,
+    lens_data_view_id: Optional[str] = None,
+) -> Dict[str, str]:
+    """Create both the FE and Customer dashboards. Returns a dict of ids.
+
+    When `lens_data_view_id` is provided the two highest-value panels render
+    as Lens visualisations using that data view; otherwise every panel falls
+    back to the legacy inline-data Vega layout."""
+    fe_panels = _build_panels("fe", lens_data_view_id=lens_data_view_id)
+    cu_panels = _build_panels("customer", lens_data_view_id=lens_data_view_id)
 
     fe_id = _create_one_dashboard(
         data_view_id=data_view_id,
@@ -2040,7 +2384,10 @@ def seed() -> Dict[str, Any]:
             pass
 
     data_view_id = _create_data_view()
-    dashboard_ids = _create_dashboard(data_view_id)
+    # Auth-only data view used by the Lens panels. Idempotent. If it cannot be
+    # created the dashboards still render via Vega fallback.
+    lens_dv_id = _ensure_data_view()
+    dashboard_ids = _create_dashboard(data_view_id, lens_data_view_id=lens_dv_id)
 
     fe_id = dashboard_ids.get("fe", DASHBOARD_ID)
     cu_id = dashboard_ids.get("customer", CUSTOMER_DASHBOARD_ID)
@@ -2051,6 +2398,7 @@ def seed() -> Dict[str, Any]:
         "indices": counts,
         "doc_count": sum(counts.values()),
         "data_view_id": data_view_id,
+        "lens_data_view_id": lens_dv_id,
         "dashboard_id": fe_id,
         "dashboard_url": _dashboard_url(fe_id),
         "fe_dashboard_id": fe_id,

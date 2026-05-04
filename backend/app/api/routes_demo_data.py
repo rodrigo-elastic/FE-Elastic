@@ -13,7 +13,13 @@ from typing import Any, Dict, List
 from fastapi import APIRouter, HTTPException
 
 from app.config import settings
-from app.services.scenarios import black_friday, credential_stuffing, noisy_microservice
+from app.services.scenarios import (
+    black_friday,
+    credential_stuffing,
+    gdpr_audit,
+    noisy_microservice,
+    supply_chain_attack,
+)
 from app.utils.logging import get_logger
 
 log = get_logger(__name__)
@@ -26,6 +32,8 @@ SCENARIOS = {
     black_friday.SCENARIO_ID: black_friday,
     credential_stuffing.SCENARIO_ID: credential_stuffing,
     noisy_microservice.SCENARIO_ID: noisy_microservice,
+    gdpr_audit.SCENARIO_ID: gdpr_audit,
+    supply_chain_attack.SCENARIO_ID: supply_chain_attack,
 }
 
 
