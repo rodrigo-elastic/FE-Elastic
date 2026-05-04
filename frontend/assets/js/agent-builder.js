@@ -1,19 +1,95 @@
 /*
   filename: agent-builder.js
-  description: Drives the Agent Builder chat panel. Loads status, sends messages to /api/v1/agent-builder/converse, persists conversation_id in localStorage, renders reasoning + tool-call steps inline.
+  description: Drives the Agent Builder workbench. Loads status + the agent roster from Kibana via the FastAPI passthrough, lets the user build new specialist agents (system prompt + tool picker) that get persisted server-side, and routes chat to whichever agent is selected in the sidebar. Conversation_id is keyed per agent in localStorage.
   Author: Rodrigo Careaga
   Date: 03-05-2026
 */
 (function () {
-  const STORAGE_KEY = "fec.agent_builder.conversation_id";
+  const STORAGE_PREFIX = "fec.agent_builder.conv.";
+  const SELECTED_KEY = "fec.agent_builder.selected_agent";
+  const MASTER_AGENT_ID = "fec_field_assistant";
+  const USER_AGENT_PREFIX = "fec_user_";
+
   const $ = (sel) => document.querySelector(sel);
+  const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+  // Suggested prompts per FEC tool. Used to build chips above the chat that reflect what the
+  // currently selected agent can actually do. Keep these short and FE-flavored.
+  const TOOL_PROMPTS = {
+    fec_poc_plan: "Draft a 6 week POV plan for Banco Atlántico focused on SIEM consolidation",
+    fec_spl_to_esql: "Translate this SPL to ES|QL: index=web | stats count by host",
+    fec_compliance: "Map DORA and PCI DSS to Elastic native controls for a UK retail bank",
+    fec_stack_extract: "Extract the tech stack from this transcript: 'we run Splunk Enterprise, Datadog APM, AWS, Kafka, Java services'",
+    fec_code_sample: "Show a Python sample to bulk-index 1000 docs into Elastic with the official client",
+    fec_cost_calc: "Calculate Elastic vs Splunk cost at 200 GB/day, 12 months retention, current spend $1.5M",
+    fec_capacity: "Plan a cluster for 50000 EPS peak indexing and 5TB hot data",
+    fec_knowledge_search: "How do I configure semantic_text with ELSER in Elasticsearch 8.15?",
+    fec_troubleshoot: "I am seeing 429 too_many_requests on bulk indexing, what should I check?",
+    fec_compare: "Compare Elastic vs Datadog for an e-commerce observability use case",
+    fec_orchestrator: "Build a security POV for a fintech: compliance + cost + cluster sizing",
+    fec_proposal: "Generate a one-page proposal for Banco Atlántico, include the 60 hour POV",
+  };
+
+  // Friendly labels for the tool picker. Falls back to the raw id when the tool is unknown locally.
+  const TOOL_LABELS = {
+    fec_poc_plan: "POC plan generator (Marta)",
+    fec_spl_to_esql: "SPL to ES|QL (Diego)",
+    fec_compliance: "Compliance mapper (Priya)",
+    fec_stack_extract: "Tech stack extractor (Aiko)",
+    fec_code_sample: "SDK code sample (Kenji)",
+    fec_cost_calc: "TCO calculator",
+    fec_capacity: "Cluster capacity planner",
+    fec_knowledge_search: "Docs knowledge search (Mei)",
+    fec_troubleshoot: "Troubleshooter (Ravi)",
+    fec_compare: "Competitive comparison (Sloane)",
+    fec_orchestrator: "Orchestrator (Auro)",
+    fec_proposal: "One-page proposal (Carmen)",
+  };
 
   const state = {
-    conversationId: localStorage.getItem(STORAGE_KEY) || null,
     inFlight: false,
     kibanaUrl: null,
-    agentId: "fec_field_assistant",
+    agentId: localStorage.getItem(SELECTED_KEY) || MASTER_AGENT_ID,
+    agents: [],
+    tools: [],
+    conversationId: null,
   };
+
+  // ============================================================ Render helpers
+  function el(tag, attrs = {}, children = []) {
+    const node = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) {
+      if (k === "class") node.className = v;
+      else if (k === "html") node.innerHTML = v;
+      else if (k.startsWith("on") && typeof v === "function") node.addEventListener(k.slice(2), v);
+      else if (v != null) node.setAttribute(k, v);
+    }
+    (Array.isArray(children) ? children : [children]).forEach((c) => {
+      if (c == null) return;
+      node.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
+    });
+    return node;
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
+  // Lightweight Markdown-ish renderer. Handles **bold**, `code`, ```fenced```, bullets, line breaks.
+  function renderMarkdown(text) {
+    let html = escapeHtml(text);
+    html = html.replace(/```([\s\S]*?)```/g, (_, code) => `<pre><code>${code}</code></pre>`);
+    html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
+    html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    html = html.replace(/^- (.+)$/gm, "<li>$1</li>");
+    html = html.replace(/(?:<li>[\s\S]*?<\/li>\n?)+/g, (m) => `<ul>${m}</ul>`);
+    html = html.replace(/\n{2,}/g, "<br><br>");
+    html = html.replace(/\n/g, "<br>");
+    return html;
+  }
 
   // ============================================================ Status
   async function loadStatus() {
@@ -41,42 +117,148 @@
     }
   }
 
-  // ============================================================ Render helpers
-  function el(tag, attrs = {}, children = []) {
-    const node = document.createElement(tag);
-    for (const [k, v] of Object.entries(attrs)) {
-      if (k === "class") node.className = v;
-      else if (k === "html") node.innerHTML = v;
-      else node.setAttribute(k, v);
+  // ============================================================ Sidebar (agents list)
+  function getAgentToolIds(agent) {
+    if (!agent || !agent.configuration) return [];
+    const tools = agent.configuration.tools || [];
+    const out = [];
+    for (const block of tools) {
+      const ids = (block && block.tool_ids) || [];
+      ids.forEach((id) => {
+        if (id && !out.includes(id)) out.push(id);
+      });
     }
-    (Array.isArray(children) ? children : [children]).forEach((c) => {
-      if (c == null) return;
-      node.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
+    return out;
+  }
+
+  function findAgent(id) {
+    return state.agents.find((a) => a && a.id === id) || null;
+  }
+
+  function renderSidebar() {
+    const list = $("#ab-sidebar-list");
+    if (!list) return;
+    list.innerHTML = "";
+    if (!state.agents.length) {
+      list.appendChild(el("div", { class: "ab-empty ab-empty-sm" }, "No agents yet."));
+      return;
+    }
+    // Master agent first, then user agents alphabetically.
+    const sorted = state.agents.slice().sort((a, b) => {
+      const am = a.id === MASTER_AGENT_ID ? 0 : 1;
+      const bm = b.id === MASTER_AGENT_ID ? 0 : 1;
+      if (am !== bm) return am - bm;
+      return (a.name || a.id).localeCompare(b.name || b.id);
     });
-    return node;
+    sorted.forEach((agent) => {
+      const isMaster = agent.id === MASTER_AGENT_ID;
+      const isUser = agent.id && agent.id.startsWith(USER_AGENT_PREFIX);
+      const toolIds = getAgentToolIds(agent);
+      const card = el("div", {
+        class: `ab-agent-card ${state.agentId === agent.id ? "is-active" : ""}`,
+        role: "listitem",
+        "data-agent-id": agent.id,
+      });
+      const head = el("div", { class: "ab-agent-head" });
+      head.appendChild(el("span", { class: "ab-agent-name" }, agent.name || agent.id));
+      if (isMaster) {
+        head.appendChild(el("span", { class: "ab-agent-pill ab-agent-pill-master", "data-i18n": "ab.master_pill" }, t("ab.master_pill", "master")));
+      }
+      card.appendChild(head);
+      const meta = el("div", { class: "ab-agent-meta" });
+      meta.appendChild(el("span", { class: "ab-agent-tool-count" }, `${toolIds.length} tool${toolIds.length === 1 ? "" : "s"}`));
+      meta.appendChild(el("span", { class: "ab-agent-id" }, agent.id));
+      card.appendChild(meta);
+      if (agent.description) {
+        card.appendChild(el("div", { class: "ab-agent-desc" }, agent.description));
+      }
+      card.addEventListener("click", (ev) => {
+        if (ev.target.closest(".ab-agent-trash")) return;
+        selectAgent(agent.id);
+      });
+      if (isUser) {
+        const trash = el(
+          "button",
+          {
+            type: "button",
+            class: "ab-agent-trash",
+            title: t("ab.delete_confirm", "Delete this agent?"),
+            "aria-label": "Delete agent",
+          },
+          "Trash"
+        );
+        trash.innerHTML =
+          '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1.4 13.4a2 2 0 0 1-2 1.6H8.4a2 2 0 0 1-2-1.6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>';
+        trash.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          deleteAgent(agent);
+        });
+        card.appendChild(trash);
+      }
+      list.appendChild(card);
+    });
   }
 
-  function escapeHtml(s) {
-    return String(s == null ? "" : s)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
+  function renderSuggestedChips() {
+    const host = $("#ab-suggested");
+    if (!host) return;
+    host.innerHTML = "";
+    const agent = findAgent(state.agentId);
+    const toolIds = getAgentToolIds(agent);
+    // Pick up to 6 chips that map to tools the selected agent has access to.
+    const candidates = [];
+    toolIds.forEach((tid) => {
+      const prompt = TOOL_PROMPTS[tid];
+      if (prompt) candidates.push({ tid, prompt });
+    });
+    if (!candidates.length) {
+      // Fallback for agents we cannot introspect or that opted into all tools.
+      Object.entries(TOOL_PROMPTS).slice(0, 4).forEach(([tid, prompt]) => candidates.push({ tid, prompt }));
+    }
+    const limit = Math.min(6, Math.max(4, candidates.length));
+    candidates.slice(0, limit).forEach(({ tid, prompt }) => {
+      const chip = el(
+        "button",
+        { type: "button", class: "ab-chip", "data-prompt": prompt, title: tid },
+        TOOL_LABELS[tid] || tid
+      );
+      chip.addEventListener("click", () => {
+        $("#ab-input").value = prompt;
+        send(prompt);
+      });
+      host.appendChild(chip);
+    });
   }
 
-  // Lightweight Markdown-ish renderer for the assistant body. Handles **bold**, `code`,
-  // ```fenced blocks```, bulleted lists. Anything fancier degrades gracefully to plain text.
-  function renderMarkdown(text) {
-    let html = escapeHtml(text);
-    html = html.replace(/```([\s\S]*?)```/g, (_, code) => `<pre><code>${code}</code></pre>`);
-    html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
-    html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-    html = html.replace(/^- (.+)$/gm, "<li>$1</li>");
-    html = html.replace(/(?:<li>[\s\S]*?<\/li>\n?)+/g, (m) => `<ul>${m}</ul>`);
-    html = html.replace(/\n{2,}/g, "<br><br>");
-    html = html.replace(/\n/g, "<br>");
-    return html;
+  // ============================================================ Selection + chat scaffold
+  function conversationStorageKey(agentId) {
+    return STORAGE_PREFIX + agentId;
   }
 
+  function selectAgent(agentId) {
+    if (!agentId || agentId === state.agentId && state.conversationId !== null) {
+      // Same agent already selected and chat is initialized; no-op.
+      if (agentId === state.agentId) return;
+    }
+    state.agentId = agentId;
+    localStorage.setItem(SELECTED_KEY, agentId);
+    state.conversationId = localStorage.getItem(conversationStorageKey(agentId)) || null;
+    const pillAgent = $("#ab-pill-agent");
+    if (pillAgent) pillAgent.textContent = `agent: ${agentId}`;
+    $$(".ab-agent-card").forEach((c) => {
+      c.classList.toggle("is-active", c.getAttribute("data-agent-id") === agentId);
+    });
+    renderSuggestedChips();
+    const chat = $("#ab-chat");
+    chat.innerHTML = "";
+    const agent = findAgent(agentId);
+    const friendly = agent ? (agent.name || agentId) : agentId;
+    chat.appendChild(
+      el("div", { class: "ab-empty" }, `Talking to ${friendly}. Pick a chip above or type your own message.`)
+    );
+  }
+
+  // ============================================================ Chat rendering
   function renderUserMessage(text) {
     const chat = $("#ab-chat");
     chat.appendChild(
@@ -92,7 +274,7 @@
     const chat = $("#ab-chat");
     const node = el("div", { class: "ab-msg ab-msg-assistant", "data-loading": "1" }, [
       el("div", { class: "ab-msg-role" }, "FE Copilot"),
-      el("div", { class: "ab-loader" }, "Thinking…"),
+      el("div", { class: "ab-loader" }, "Thinking..."),
     ]);
     chat.appendChild(node);
     scrollChat();
@@ -139,7 +321,7 @@
     const steps = renderSteps(payload.steps);
     if (steps) slot.appendChild(steps);
     if (payload.stats) {
-      const stats = `${payload.stats.input_tokens ?? "?"} in / ${payload.stats.output_tokens ?? "?"} out · ${payload.stats.ttft_ms ?? "?"}ms first token · model: ${payload.stats.model || "?"}`;
+      const stats = `${payload.stats.input_tokens ?? "?"} in / ${payload.stats.output_tokens ?? "?"} out . ${payload.stats.ttft_ms ?? "?"}ms first token . model: ${payload.stats.model || "?"}`;
       slot.appendChild(el("div", { class: "ab-msg-stats" }, stats));
     }
     slot.removeAttribute("data-loading");
@@ -158,13 +340,13 @@
     if (composer) composer.scrollIntoView({ behavior: "smooth", block: "end" });
   }
 
-  // ============================================================ Send loop
+  // ============================================================ Send
   async function send(text) {
-    if (state.inFlight || !text.trim()) return;
+    if (state.inFlight || !text || !text.trim()) return;
     state.inFlight = true;
     const sendBtn = $("#ab-send");
     sendBtn.disabled = true;
-    sendBtn.textContent = "Sending…";
+    sendBtn.textContent = "Sending...";
 
     renderUserMessage(text);
     const slot = renderLoading();
@@ -175,7 +357,7 @@
       const res = await apiPost("/agent-builder/converse", body);
       if (res && res.conversation_id) {
         state.conversationId = res.conversation_id;
-        localStorage.setItem(STORAGE_KEY, state.conversationId);
+        localStorage.setItem(conversationStorageKey(state.agentId), state.conversationId);
       }
       const msg = (res && res.response && res.response.message) || res?.message || "(no response)";
       const stats = res
@@ -198,19 +380,215 @@
     }
   }
 
-  // ============================================================ Wire up
   function reset() {
     state.conversationId = null;
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(conversationStorageKey(state.agentId));
     const chat = $("#ab-chat");
     chat.innerHTML = "";
     chat.appendChild(
-      el("div", { class: "ab-empty" }, "New thread started. Ask the Field Assistant anything.")
+      el("div", { class: "ab-empty" }, "New thread started. Ask the selected agent anything.")
     );
   }
 
+  // ============================================================ Roster + tools
+  async function loadAgents(preferAgentId) {
+    try {
+      const res = await apiGet("/agent-builder/agents");
+      const agents = (res && Array.isArray(res.agents)) ? res.agents : [];
+      state.agents = agents;
+      // If the selected agent disappeared (e.g., just deleted), fall back to master.
+      const ids = agents.map((a) => a && a.id).filter(Boolean);
+      const target = preferAgentId && ids.includes(preferAgentId)
+        ? preferAgentId
+        : ids.includes(state.agentId)
+        ? state.agentId
+        : MASTER_AGENT_ID;
+      state.agentId = target;
+      localStorage.setItem(SELECTED_KEY, target);
+      renderSidebar();
+      // Initial selection: hydrate conversation_id for this agent and render scaffolding.
+      state.conversationId = localStorage.getItem(conversationStorageKey(target)) || null;
+      const pillAgent = $("#ab-pill-agent");
+      if (pillAgent) pillAgent.textContent = `agent: ${target}`;
+      renderSuggestedChips();
+    } catch (e) {
+      const list = $("#ab-sidebar-list");
+      if (list) {
+        list.innerHTML = "";
+        list.appendChild(el("div", { class: "ab-empty ab-empty-sm" }, "Could not load agents."));
+      }
+    }
+  }
+
+  async function loadTools() {
+    try {
+      const res = await apiGet("/agent-builder/tools");
+      state.tools = (res && Array.isArray(res.tools)) ? res.tools : [];
+    } catch (e) {
+      state.tools = [];
+    }
+  }
+
+  // ============================================================ Modal: create agent
+  function slugify(name) {
+    return String(name || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "")
+      .slice(0, 40);
+  }
+
+  function clearFieldErrors() {
+    $$("#ab-modal-form .ab-field-error").forEach((n) => (n.textContent = ""));
+    const status = $("#ab-f-status");
+    if (status) {
+      status.textContent = "";
+      status.classList.remove("is-err");
+    }
+  }
+
+  function setFieldError(name, message) {
+    const node = document.querySelector(`#ab-modal-form [data-error-for="${name}"]`);
+    if (node) node.textContent = message || "";
+  }
+
+  function openModal() {
+    const modal = $("#ab-modal");
+    if (!modal) return;
+    clearFieldErrors();
+    $("#ab-f-name").value = "";
+    $("#ab-f-slug").value = "";
+    $("#ab-f-description").value = "";
+    $("#ab-f-prompt").value = "";
+    $("#ab-f-prompt-count").textContent = "0";
+    // Build the tool checkboxes from the latest tool roster (alphabetical).
+    const grid = $("#ab-f-tools");
+    grid.innerHTML = "";
+    const toolIds = (state.tools || []).map((tt) => tt && tt.id).filter(Boolean);
+    toolIds.sort();
+    if (!toolIds.length) {
+      grid.appendChild(el("div", { class: "ab-empty-sm" }, "No tools available."));
+    }
+    toolIds.forEach((tid) => {
+      const id = "tool-" + tid;
+      const wrap = el("label", { class: "ab-tool-check", for: id });
+      const cb = el("input", { type: "checkbox", id, value: tid });
+      wrap.appendChild(cb);
+      wrap.appendChild(el("span", { class: "ab-tool-check-name" }, TOOL_LABELS[tid] || tid));
+      wrap.appendChild(el("span", { class: "ab-tool-check-id" }, tid));
+      grid.appendChild(wrap);
+    });
+    modal.hidden = false;
+    setTimeout(() => $("#ab-f-name").focus(), 30);
+  }
+
+  function closeModal() {
+    const modal = $("#ab-modal");
+    if (modal) modal.hidden = true;
+  }
+
+  async function submitModal() {
+    clearFieldErrors();
+    const name = $("#ab-f-name").value.trim();
+    const slugRaw = $("#ab-f-slug").value.trim().toLowerCase();
+    const description = $("#ab-f-description").value.trim();
+    const systemPrompt = $("#ab-f-prompt").value;
+    const toolIds = $$('#ab-f-tools input[type="checkbox"]:checked').map((c) => c.value);
+
+    let bad = false;
+    if (name.length < 3 || name.length > 80) {
+      setFieldError("name", "3 to 80 characters required.");
+      bad = true;
+    }
+    if (!/^[a-z0-9_]{3,40}$/.test(slugRaw)) {
+      setFieldError("slug", t("ab.errors.slug_invalid", "Slug must be lowercase letters, digits, underscore (3-40 chars)."));
+      bad = true;
+    }
+    if (description.length < 10 || description.length > 400) {
+      setFieldError("description", "10 to 400 characters required.");
+      bad = true;
+    }
+    if (systemPrompt.length < 50 || systemPrompt.length > 8000) {
+      setFieldError("system_prompt", "50 to 8000 characters required.");
+      bad = true;
+    }
+    if (toolIds.length < 1 || toolIds.length > 12) {
+      setFieldError("tool_ids", "Pick at least 1 tool (max 12).");
+      bad = true;
+    }
+    if (bad) return;
+
+    const status = $("#ab-f-status");
+    const submit = $("#ab-f-submit");
+    submit.disabled = true;
+    status.textContent = "Creating in your Kibana cluster...";
+    try {
+      const res = await apiPost("/agent-builder/agents", {
+        name,
+        slug: slugRaw,
+        description,
+        system_prompt: systemPrompt,
+        tool_ids: toolIds,
+      });
+      const newId = (res && res.agent_id) || (USER_AGENT_PREFIX + slugRaw);
+      status.textContent = `Created ${newId}.`;
+      closeModal();
+      await loadAgents(newId);
+      selectAgent(newId);
+    } catch (e) {
+      status.textContent = "Error: " + (e.message || String(e));
+      status.classList.add("is-err");
+    } finally {
+      submit.disabled = false;
+    }
+  }
+
+  async function deleteAgent(agent) {
+    if (!agent || !agent.id) return;
+    if (!agent.id.startsWith(USER_AGENT_PREFIX)) return;
+    const msg = t("ab.delete_confirm", "Delete this agent? This removes it from your Kibana cluster.");
+    if (!window.confirm(`${msg}\n\n${agent.name || agent.id}`)) return;
+    try {
+      const res = await fetch(`/api/v1/agent-builder/agents/${encodeURIComponent(agent.id)}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) {
+        let detail = String(res.status);
+        try {
+          const j = await res.json();
+          if (j && j.detail) detail = j.detail;
+        } catch (_) {}
+        throw new Error(detail);
+      }
+      // If we just deleted the selected agent, fall back to master.
+      const next = agent.id === state.agentId ? MASTER_AGENT_ID : state.agentId;
+      await loadAgents(next);
+      selectAgent(next);
+    } catch (e) {
+      window.alert("Could not delete agent: " + (e.message || String(e)));
+    }
+  }
+
+  // ============================================================ Wire up
   function init() {
+    if (typeof applyI18n === "function") applyI18n();
+    if (typeof renderLangPicker === "function") renderLangPicker(document.getElementById("lang-host"));
+
     loadStatus();
+    Promise.all([loadAgents(state.agentId), loadTools()]).then(() => {
+      // After both finish, re-render chips so the picker reflects the live tool roster.
+      renderSuggestedChips();
+      // Initial chat scaffolding for the persisted selected agent.
+      const chat = $("#ab-chat");
+      if (chat && !chat.children.length) {
+        const agent = findAgent(state.agentId);
+        const friendly = agent ? (agent.name || state.agentId) : state.agentId;
+        chat.appendChild(
+          el("div", { class: "ab-empty" }, `Talking to ${friendly}. Pick a chip above or type your own message.`)
+        );
+      }
+    });
 
     $("#ab-form").addEventListener("submit", () => {
       const txt = $("#ab-input").value;
@@ -223,19 +601,31 @@
       }
     });
     $("#ab-reset").addEventListener("click", reset);
-    document.querySelectorAll(".ab-chip").forEach((b) => {
-      b.addEventListener("click", () => {
-        const p = b.getAttribute("data-prompt") || "";
-        $("#ab-input").value = p;
-        send(p);
-      });
-    });
 
-    if (!state.conversationId) {
-      $("#ab-chat").appendChild(
-        el("div", { class: "ab-empty" }, "Pick a suggested prompt above or type your own to start.")
-      );
-    }
+    $("#ab-new-agent").addEventListener("click", openModal);
+    $$("[data-ab-close]").forEach((b) => b.addEventListener("click", closeModal));
+    $("#ab-modal-form").addEventListener("submit", (ev) => {
+      ev.preventDefault();
+      submitModal();
+    });
+    // Auto-derive the slug as the user types the name, until they edit the slug manually.
+    let slugDirty = false;
+    const slugInput = $("#ab-f-slug");
+    slugInput.addEventListener("input", () => { slugDirty = true; });
+    $("#ab-f-name").addEventListener("input", (ev) => {
+      if (!slugDirty) slugInput.value = slugify(ev.target.value);
+    });
+    const promptArea = $("#ab-f-prompt");
+    promptArea.addEventListener("input", () => {
+      $("#ab-f-prompt-count").textContent = String(promptArea.value.length);
+    });
+    // ESC closes the modal.
+    document.addEventListener("keydown", (ev) => {
+      if (ev.key === "Escape") {
+        const modal = $("#ab-modal");
+        if (modal && !modal.hidden) closeModal();
+      }
+    });
   }
 
   if (document.readyState === "loading") {

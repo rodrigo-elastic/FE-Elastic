@@ -1,6 +1,6 @@
 <!--
   filename: agent-builder.html
-  description: FE Copilot - Agent Builder chat panel. Talks to Elastic Agent Builder via the FastAPI converse passthrough; renders reasoning + tool-call steps in line.
+  description: FE Copilot - Agent Builder workbench. Sidebar lists every agent that lives in your Elastic cluster (master + user-built). Right pane chats with the selected agent; new agents can be created from a modal that POSTs to the FastAPI passthrough, which calls Kibana Agent Builder and persists the agent server-side.
   Author: Rodrigo Careaga
   Date: 03-05-2026
 -->
@@ -33,43 +33,98 @@
       <h1>Agent Builder <span class="grad">live in your Elastic cluster.</span></h1>
       <p class="lede">
         FE Copilot talks to Elastic Agent Builder over MCP. The master agent <code>fec_field_assistant</code>
-        owns the seven FE Copilot tools and decides which ones to chain for each request. Every response
-        is generated server-side in your own Kibana, with the steps and tool calls captured below.
+        ships with the twelve FE Copilot tools. You can also build your own specialist agents in the
+        sidebar; each one is persisted in your Kibana cluster, not in this webapp.
       </p>
       <div class="ab-meta" id="ab-meta">
-        <span class="ab-pill ab-pill-muted" id="ab-pill-status">Connecting…</span>
+        <span class="ab-pill ab-pill-muted" id="ab-pill-status">Connecting...</span>
         <span class="ab-pill ab-pill-muted" id="ab-pill-agent">agent: fec_field_assistant</span>
-        <span class="ab-pill ab-pill-muted" id="ab-pill-tools">7 MCP tools</span>
+        <span class="ab-pill ab-pill-muted" id="ab-pill-tools">12 MCP tools</span>
         <a class="ab-pill ab-pill-link" id="ab-pill-kibana" href="#" target="_blank" rel="noreferrer">Open in Kibana</a>
       </div>
     </section>
 
-    <section class="ab-suggested" aria-label="Suggested prompts">
-      <h2 class="visually-hidden">Suggested prompts</h2>
-      <button class="ab-chip" type="button" data-prompt='Translate this SPL: index=web | stats count by host'>Translate SPL → ES|QL</button>
-      <button class="ab-chip" type="button" data-prompt='Calculate Elastic vs Splunk cost at 200 GB/day, 12 months retention, current spend $1.5M'>TCO at 200 GB/day</button>
-      <button class="ab-chip" type="button" data-prompt='Plan a cluster for 50000 EPS peak indexing and 5TB hot data'>Cluster sizing</button>
-      <button class="ab-chip" type="button" data-prompt='Translate this SPL: index=web | stats count by host. THEN tell me the Elastic cost at 200GB/day for 12 months.'>Chain: SPL + cost</button>
-      <button class="ab-chip" type="button" data-prompt='Map DORA and PCI DSS to Elastic native controls for a UK retail bank'>Compliance mapping</button>
-      <button class="ab-chip" type="button" data-prompt='Generate a Python code sample to bulk-index 1000 documents into Elastic'>Code sample</button>
-    </section>
+    <section class="ab-layout">
+      <aside class="ab-sidebar" aria-label="Your agents">
+        <div class="ab-sidebar-head">
+          <h2 class="ab-sidebar-title" data-i18n="ab.your_agents">Your agents</h2>
+          <button type="button" class="ab-new-btn" id="ab-new-agent" data-i18n-title="ab.create_new" title="Create a new agent">
+            <span aria-hidden="true">+</span>
+            <span class="visually-hidden" data-i18n="ab.create_new">New agent</span>
+          </button>
+        </div>
+        <div class="ab-sidebar-list" id="ab-sidebar-list" role="list" aria-live="polite"></div>
+      </aside>
 
-    <section class="ab-chat" id="ab-chat" aria-live="polite" aria-label="Conversation"></section>
+      <div class="ab-main">
+        <section class="ab-suggested" id="ab-suggested" aria-label="Suggested prompts"></section>
 
-    <form id="ab-form" class="ab-composer" onsubmit="return false" aria-label="Send message to Field Engineering Assistant">
-      <label class="ab-input-wrap" for="ab-input">
-        <span class="visually-hidden">Message</span>
-        <textarea id="ab-input" rows="2" placeholder="Ask the Field Engineering Assistant…" aria-label="Message" aria-describedby="ab-hint"></textarea>
-      </label>
-      <div class="ab-actions">
-        <button type="button" class="btn ghost" id="ab-reset" title="Start a new conversation">New thread</button>
-        <button type="submit" class="btn primary" id="ab-send">Send</button>
+        <section class="ab-chat" id="ab-chat" aria-live="polite" aria-label="Conversation"></section>
+
+        <form id="ab-form" class="ab-composer" onsubmit="return false" aria-label="Send message to the selected agent">
+          <label class="ab-input-wrap" for="ab-input">
+            <span class="visually-hidden">Message</span>
+            <textarea id="ab-input" rows="2" placeholder="Ask the selected agent..." aria-label="Message" aria-describedby="ab-hint"></textarea>
+          </label>
+          <div class="ab-actions">
+            <button type="button" class="btn ghost" id="ab-reset" title="Start a new conversation">New thread</button>
+            <button type="submit" class="btn primary" id="ab-send">Send</button>
+          </div>
+          <p class="ab-hint" id="ab-hint">Cmd/Ctrl + Enter to send. Conversation persists in this browser only.</p>
+        </form>
       </div>
-      <p class="ab-hint" id="ab-hint">Cmd/Ctrl + Enter to send. Conversation persists in this browser only.</p>
-    </form>
+    </section>
 
     <section id="toast-host"></section>
   </main>
+
+  <div class="ab-modal" id="ab-modal" hidden role="dialog" aria-modal="true" aria-labelledby="ab-modal-title">
+    <div class="ab-modal-backdrop" data-ab-close></div>
+    <div class="ab-modal-card" role="document">
+      <header class="ab-modal-head">
+        <h3 id="ab-modal-title" data-i18n="ab.modal.title">Create a specialist agent</h3>
+        <button type="button" class="ab-modal-close" data-ab-close aria-label="Close">x</button>
+      </header>
+      <form id="ab-modal-form" class="ab-modal-form" onsubmit="return false">
+        <label class="ab-field">
+          <span class="ab-field-label" data-i18n="ab.modal.name">Name</span>
+          <input type="text" id="ab-f-name" maxlength="80" minlength="3" required autocomplete="off" />
+          <span class="ab-field-error" data-error-for="name"></span>
+        </label>
+        <label class="ab-field">
+          <span class="ab-field-label" data-i18n="ab.modal.slug">Slug</span>
+          <span class="ab-slug-row">
+            <span class="ab-slug-prefix">fec_user_</span>
+            <input type="text" id="ab-f-slug" maxlength="40" minlength="3" pattern="[a-z0-9_]{3,40}" required autocomplete="off" />
+          </span>
+          <span class="ab-field-error" data-error-for="slug"></span>
+        </label>
+        <label class="ab-field">
+          <span class="ab-field-label" data-i18n="ab.modal.description">Description</span>
+          <textarea id="ab-f-description" maxlength="400" minlength="10" rows="2" required></textarea>
+          <span class="ab-field-error" data-error-for="description"></span>
+        </label>
+        <label class="ab-field">
+          <span class="ab-field-label">
+            <span data-i18n="ab.modal.system_prompt">System prompt</span>
+            <span class="ab-counter"><span id="ab-f-prompt-count">0</span> / 8000</span>
+          </span>
+          <textarea id="ab-f-prompt" maxlength="8000" minlength="50" rows="9" class="ab-mono" required></textarea>
+          <span class="ab-field-error" data-error-for="system_prompt"></span>
+        </label>
+        <fieldset class="ab-field ab-tools-field">
+          <legend class="ab-field-label" data-i18n="ab.modal.tools">Tools</legend>
+          <div id="ab-f-tools" class="ab-tools-grid" role="group" aria-label="Tool picker"></div>
+          <span class="ab-field-error" data-error-for="tool_ids"></span>
+        </fieldset>
+        <div class="ab-modal-actions">
+          <button type="button" class="btn ghost" data-ab-close data-i18n="ab.modal.cancel">Cancel</button>
+          <button type="submit" class="btn primary" id="ab-f-submit" data-i18n="ab.modal.create">Create agent</button>
+        </div>
+        <p class="ab-modal-status" id="ab-f-status" aria-live="polite"></p>
+      </form>
+    </div>
+  </div>
 
   <script src="/assets/js/i18n.js"></script>
   <script src="/assets/js/api.js"></script>

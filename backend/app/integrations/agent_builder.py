@@ -69,8 +69,11 @@ def _request(method: str, path: str, body: Optional[Dict[str, Any]] = None) -> D
 
 def list_tools() -> List[Dict[str, Any]]:
     out = _request("GET", "/api/agent_builder/tools")
-    if isinstance(out, dict) and "data" in out:
-        return out.get("data") or []
+    if isinstance(out, dict):
+        # Kibana 9.x returns {"results": [...]}; older snapshots used {"data": [...]}.
+        for key in ("results", "data"):
+            if key in out:
+                return out.get(key) or []
     if isinstance(out, list):
         return out
     return []
@@ -106,8 +109,11 @@ def execute_tool(tool_id: str, params: Dict[str, Any]) -> Dict[str, Any]:
 
 def list_agents() -> List[Dict[str, Any]]:
     out = _request("GET", "/api/agent_builder/agents")
-    if isinstance(out, dict) and "data" in out:
-        return out.get("data") or []
+    if isinstance(out, dict):
+        # Kibana 9.x returns {"results": [...]}; older snapshots used {"data": [...]}.
+        for key in ("results", "data"):
+            if key in out:
+                return out.get(key) or []
     if isinstance(out, list):
         return out
     return []

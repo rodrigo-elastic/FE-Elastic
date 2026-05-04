@@ -96,6 +96,8 @@ https://github.com/rodrigo-elastic/FE-Elastic
 4. Send: "Generate a 1-page proposal for Banco Atlántico, include POV hours"
 5. Trace pane shows fec_proposal called with structured input. Output is a renderable HTML proposal.
 
+Users can create their own agents from `/agent-builder.html`. Master agent (`fec_field_assistant`) cannot be deleted. User agents are persisted in your Kibana cluster, not in this webapp.
+
 Verification commands (terminal):
 
 ```bash
