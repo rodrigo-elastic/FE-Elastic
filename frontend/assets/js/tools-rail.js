@@ -41,6 +41,13 @@
       icon:
         '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 11v6c0 1.7 4 3 9 3s9-1.3 9-3v-6"/></svg>',
     },
+    {
+      id: "battlecards",
+      label: "Battlecards",
+      href: "/battlecards.html",
+      icon:
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="13" height="15" rx="2"/><path d="M8 5V3h6v2"/><path d="M16 8h4a1 1 0 0 1 1 1v10a2 2 0 0 1-2 2h-3"/><path d="M7 10h5"/><path d="M7 14h5"/></svg>',
+    },
   ];
 
   const TOOLS = [
@@ -71,6 +78,9 @@
   }
   function isDemoDataPage() {
     return /\/demo-data(\.html)?$/.test(location.pathname);
+  }
+  function isBattlecardsPage() {
+    return /\/battlecards(\.html)?$/.test(location.pathname) || document.body.classList.contains("battlecards-page");
   }
 
   function ensureBodyClass() {
@@ -108,6 +118,7 @@
     if (p.id === "fe-brain" && isFeBrainPage()) { a.classList.add("active"); isActive = true; }
     if (p.id === "workflow" && isWorkflowPage()) { a.classList.add("active"); isActive = true; }
     if (p.id === "demo-data" && isDemoDataPage()) { a.classList.add("active"); isActive = true; }
+    if (p.id === "battlecards" && isBattlecardsPage()) { a.classList.add("active"); isActive = true; }
     if (isActive) a.setAttribute("aria-current", "page");
     const ico = document.createElement("span");
     ico.className = "tools-nav-icon";

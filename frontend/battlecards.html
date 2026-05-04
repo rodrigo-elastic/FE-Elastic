@@ -1,0 +1,86 @@
+<!--
+  filename: battlecards.html
+  description: FE Copilot - Battlecards page. Browse competitor counter-positioning live from the fec-battlecards Elasticsearch index, with client-side search and a click-to-expand detail modal.
+  Author: Rodrigo Careaga
+  Date: 03-05-2026
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FE Copilot - Battlecards</title>
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+  <link rel="stylesheet" href="/assets/css/agent-builder.css" />
+  <link rel="stylesheet" href="/assets/css/battlecards.css" />
+  <link rel="icon" type="image/svg+xml" href="/assets/img/elastic/glyph-cluster-color.svg" />
+</head>
+<body class="battlecards-page">
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="FE Copilot home">
+      <img class="logo-elastic" src="/assets/img/elastic/logo-horizontal-white.svg" alt="Elastic" />
+      <span class="brand-sep">/</span>
+      <span class="name">FE <span class="accent">Copilot</span></span>
+      <span class="tag">Battlecards</span>
+    </a>
+    <div class="right">
+      <div class="lang-host" id="lang-host"></div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <h1>Counter-positioning <span class="grad">at your fingertips.</span></h1>
+      <p class="lede">
+        Every competitor we see in the field, distilled into a battlecard. When the customer says
+        "Splunk is fine" or "we already use Datadog", you have the talking points, proof, and
+        objection-handling ready to go. Live from the <code>fec-battlecards</code> Elastic index.
+      </p>
+      <div class="bc-page-meta" id="bc-meta">
+        <span class="ab-pill ab-pill-muted" id="bc-pill-count" aria-live="polite">Loading cards...</span>
+        <span class="ab-pill ab-pill-muted" id="bc-pill-source">source: fec-battlecards</span>
+      </div>
+    </section>
+
+    <section class="bc-page-toolbar" aria-label="Search competitors">
+      <label class="bc-page-search" for="bc-search">
+        <span class="visually-hidden">Search competitors</span>
+        <svg class="bc-page-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="bc-search" type="search" placeholder="Search competitors..." autocomplete="off" aria-label="Search competitors by name or tagline" />
+      </label>
+      <span class="muted small" id="bc-result-count" aria-live="polite"></span>
+    </section>
+
+    <section class="bc-grid" id="bc-grid" aria-label="Competitor battlecards">
+      <p class="muted">Loading battlecards...</p>
+    </section>
+
+    <section id="toast-host"></section>
+  </main>
+
+  <div class="bc-modal" id="bc-modal" role="dialog" aria-modal="true" aria-labelledby="bc-modal-title" hidden>
+    <div class="bc-modal-scrim" data-bc-close aria-hidden="true"></div>
+    <div class="bc-modal-panel" role="document">
+      <header class="bc-modal-head">
+        <div class="bc-modal-title-wrap">
+          <span class="bc-modal-glyph" id="bc-modal-glyph" aria-hidden="true"></span>
+          <div>
+            <h2 id="bc-modal-title" class="bc-modal-title"></h2>
+            <p id="bc-modal-tagline" class="bc-modal-tagline"></p>
+          </div>
+        </div>
+        <button type="button" class="bc-modal-close" data-bc-close aria-label="Close battlecard">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12"/><path d="M18 6 6 18"/></svg>
+        </button>
+      </header>
+      <div class="bc-modal-body" id="bc-modal-body"></div>
+    </div>
+  </div>
+
+  <script src="/assets/js/i18n.js"></script>
+  <script src="/assets/js/api.js"></script>
+  <script src="/assets/js/ui.js"></script>
+  <script src="/assets/js/tools-rail.js"></script>
+  <script src="/assets/js/battlecards.js"></script>
+</body>
+</html>

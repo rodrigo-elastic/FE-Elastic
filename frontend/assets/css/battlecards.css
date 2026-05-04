@@ -1,0 +1,332 @@
+/*
+  filename: battlecards.css
+  description: Page-level styles for /battlecards.html. Reuses the existing .bc-tp / .bc-obj / .bc-dq / .bc-pain / .bc-section-lbl primitives from styles.css for inner card content; adds a dedicated grid, glyph, search bar, card hover, and the click-to-expand modal. All new classes are prefixed with bc-page- or use the bc-grid / bc-card / bc-modal / bc-quote / bc-counter buckets to avoid colliding with the embedded battlecard widget shipped on the meeting page.
+  Author: Rodrigo Careaga
+  Date: 03-05-2026
+*/
+
+/* ============================================================ Hero meta */
+.bc-page-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+/* ============================================================ Toolbar */
+.bc-page-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 22px 0 14px;
+}
+.bc-page-search {
+  position: relative;
+  flex: 1 1 320px;
+  max-width: 480px;
+  display: flex;
+  align-items: center;
+}
+.bc-page-search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(255, 255, 255, 0.55);
+  pointer-events: none;
+}
+.bc-page-search input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--ink);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 11px 14px 11px 40px;
+  font: 14px/1.4 Inter, system-ui, sans-serif;
+  transition: border-color .15s, box-shadow .15s;
+}
+.bc-page-search input:focus {
+  outline: none;
+  border-color: rgba(0, 119, 204, 0.55);
+  box-shadow: 0 0 0 2px rgba(0, 119, 204, 0.18);
+}
+.bc-page-search input::placeholder { color: rgba(255, 255, 255, 0.45); }
+
+/* ============================================================ Page grid */
+.bc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 18px;
+  margin-bottom: 36px;
+}
+.bc-grid:empty + .bc-empty,
+.bc-grid .bc-empty { width: 100%; }
+
+/* ============================================================ Page card */
+.bc-card {
+  background: linear-gradient(180deg, var(--panel-2) 0%, var(--panel) 100%);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--pink);
+  border-radius: var(--radius-lg);
+  padding: 18px 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  transition: transform .15s var(--easing, ease), border-color .15s, box-shadow .2s;
+}
+.bc-card:hover,
+.bc-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(240, 78, 152, 0.5);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.32);
+  outline: none;
+}
+.bc-card:focus-visible {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(0, 119, 204, 0.35), 0 14px 32px rgba(0, 0, 0, 0.32);
+}
+.bc-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px dashed var(--border);
+  padding-bottom: 12px;
+}
+.bc-card-glyph {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: 0.04em;
+  background: linear-gradient(135deg, rgba(240, 78, 152, 0.22), rgba(0, 119, 204, 0.22));
+  border: 1px solid rgba(240, 78, 152, 0.35);
+  color: var(--ink);
+  text-transform: uppercase;
+}
+.bc-card-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--ink);
+  margin: 0 0 3px;
+  letter-spacing: -0.005em;
+}
+.bc-card-tagline {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  line-height: 1.4;
+  margin: 0;
+}
+.bc-card-quotes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.bc-quote {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  font-style: italic;
+  padding: 7px 10px;
+  background: rgba(240, 78, 152, 0.06);
+  border-left: 2px solid var(--pink);
+  border-radius: 0 6px 6px 0;
+  line-height: 1.45;
+}
+.bc-counter {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.bc-counter li {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  line-height: 1.45;
+  padding-left: 18px;
+  position: relative;
+}
+.bc-counter li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 7px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--teal);
+  box-shadow: 0 0 0 3px rgba(0, 191, 179, 0.18);
+}
+.bc-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.02em;
+}
+.bc-card-foot-cta {
+  color: var(--primary);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.bc-card-foot-cta::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
+  display: inline-block;
+}
+
+/* ============================================================ Empty state */
+.bc-empty {
+  text-align: center;
+  padding: 48px 24px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  border-radius: 14px;
+}
+.bc-empty strong { color: var(--ink); display: block; margin-bottom: 6px; font-size: 15px; }
+
+/* ============================================================ Modal */
+.bc-modal[hidden] { display: none; }
+.bc-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.bc-modal-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(8, 11, 16, 0.72);
+  backdrop-filter: blur(2px);
+}
+.bc-modal-panel {
+  position: relative;
+  width: min(840px, 100%);
+  max-height: calc(100vh - 48px);
+  background: linear-gradient(180deg, var(--panel-2) 0%, var(--panel) 100%);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--pink);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+  animation: bc-modal-in .18s ease-out;
+}
+@keyframes bc-modal-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+  to   { opacity: 1; transform: none; }
+}
+.bc-modal-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.bc-modal-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+}
+.bc-modal-glyph {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  background: linear-gradient(135deg, rgba(240, 78, 152, 0.25), rgba(0, 119, 204, 0.25));
+  border: 1px solid rgba(240, 78, 152, 0.4);
+  color: var(--ink);
+  text-transform: uppercase;
+}
+.bc-modal-title {
+  font-size: 20px;
+  margin: 0 0 4px;
+  color: var(--ink);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.bc-modal-tagline {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin: 0;
+  line-height: 1.4;
+}
+.bc-modal-close {
+  appearance: none;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.78);
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.bc-modal-close:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ink);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+.bc-modal-body {
+  padding: 18px 20px 22px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.bc-modal-body .bc-section + .bc-section { margin-top: 0; }
+
+/* ============================================================ Mobile */
+@media (max-width: 768px) {
+  .bc-grid { grid-template-columns: 1fr; gap: 14px; }
+  .bc-card { padding: 16px; }
+  .bc-page-toolbar { gap: 8px; }
+  .bc-page-search { max-width: 100%; flex: 1 1 100%; }
+  .bc-modal { padding: 0; }
+  .bc-modal-panel {
+    width: 100%;
+    max-height: 100vh;
+    height: 100vh;
+    border-radius: 0;
+    border-top-width: 3px;
+  }
+  .bc-modal-head { padding: 14px 16px; }
+  .bc-modal-body { padding: 14px 16px 20px; }
+  .bc-modal-title { font-size: 18px; }
+}
+
+/* Body scroll lock helper used by JS while modal is open. */
+body.bc-modal-open { overflow: hidden; }

@@ -20,7 +20,7 @@
       <img class="logo-elastic" src="/assets/img/elastic/logo-horizontal-white.svg" alt="Elastic" />
       <span class="brand-sep">/</span>
       <span class="name">FE <span class="accent">Copilot</span></span>
-      <span class="tag">Demo Data</span>
+      <span class="tag" data-i18n="topbar.tag.demo">Demo Data</span>
     </a>
     <div class="right">
       <div class="lang-host" id="lang-host"></div>
@@ -29,8 +29,8 @@
 
   <main class="container">
     <section class="hero">
-      <h1>Realistic demo data <span class="grad">on demand.</span></h1>
-      <p class="lede">
+      <h1><span data-i18n="dd.title.1">Realistic demo data</span> <span class="grad" data-i18n="dd.title.2">on demand.</span></h1>
+      <p class="lede" data-i18n="dd.lede">
         One click seeds a story-driven dataset into your live Elastic cluster and creates a Kibana dashboard
         that narrates it: Black Friday outage, credential stuffing attack, or noisy microservice. Use them
         in customer demos when you need real data with real anomalies, not Lorem ipsum.
@@ -38,7 +38,7 @@
     </section>
 
     <section class="dd-grid" id="dd-grid">
-      <p class="muted">Loading scenarios…</p>
+      <p class="muted" data-i18n="dd.loading">Loading scenarios...</p>
     </section>
 
     <section id="toast-host"></section>
@@ -49,5 +49,18 @@
   <script src="/assets/js/ui.js"></script>
   <script src="/assets/js/tools-rail.js"></script>
   <script src="/assets/js/demo-data.js"></script>
+  <script>
+    (function () {
+      function boot() {
+        try { applyI18n(); } catch (e) {}
+        try { renderLangPicker(document.getElementById("lang-host")); } catch (e) {}
+      }
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", boot);
+      } else {
+        boot();
+      }
+    })();
+  </script>
 </body>
 </html>

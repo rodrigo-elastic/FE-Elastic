@@ -46,7 +46,7 @@
       <img class="logo-elastic" src="/assets/img/elastic/logo-horizontal-white.svg" alt="Elastic" />
       <span class="brand-sep">/</span>
       <span class="name">FE <span class="accent">Copilot</span></span>
-      <span class="tag">Workflow</span>
+      <span class="tag" data-i18n="topbar.tag.workflow">Workflow</span>
     </a>
     <div class="right">
       <div class="lang-host" id="lang-host"></div>
@@ -55,48 +55,48 @@
 
   <main class="container">
     <section class="hero">
-      <h1>Workflow <span class="grad">live in Elastic.</span></h1>
+      <h1><span data-i18n="wf.title.1">Workflow</span> <span class="grad" data-i18n="wf.title.2">live in Elastic.</span></h1>
       <p class="lede">
-        FE Copilot ships with a Kibana alerting rule that watches the
-        <code>fec-transcript-inbox</code> Elasticsearch index. When a transcript document lands,
-        the rule fires a <code>.webhook</code> connector back to this backend, which invokes the
-        Post-Meeting agent and writes the deal record to the Salesforce + Slack mocks. End-to-end:
-        <strong>doc → workflow → agent → SFDC + Slack</strong>.
+        <span data-i18n="wf.lede.prefix">FE Copilot ships with a Kibana alerting rule that watches the</span>
+        <code>fec-transcript-inbox</code>
+        <span data-i18n="wf.lede.middle">Elasticsearch index. When a transcript document lands, the rule fires a</span>
+        <code>.webhook</code>
+        <span data-i18n="wf.lede.connector">connector back to this backend, which invokes the Post-Meeting agent and writes the deal record to the Salesforce + Slack mocks. End-to-end:</span>
+        <strong data-i18n="wf.lede.flow">doc to workflow to agent to SFDC + Slack</strong>.
       </p>
       <div class="wf-flow">
-        <div class="wf-step"><span class="num">1.</span><span>Demo button indexes a synthetic transcript into <code>fec-transcript-inbox</code>.</span></div>
-        <div class="wf-step"><span class="num">2.</span><span>Kibana ES-query alerting rule (<code>.es-query</code>, 1-minute schedule) detects the new doc and fires a <code>.webhook</code> action.</span></div>
-        <div class="wf-step"><span class="num">3.</span><span>Webhook hits <code>/api/v1/workflows/triggered</code>; backend looks up the doc, runs the Post-Meeting agent.</span></div>
-        <div class="wf-step"><span class="num">4.</span><span>Agent writes Account, Opportunity, MEDDPICC, deal-health, ContentNote, Slack post to the SFDC + Slack mocks.</span></div>
+        <div class="wf-step"><span class="num">1.</span><span><span data-i18n="wf.step1">Demo button indexes a synthetic transcript into</span> <code>fec-transcript-inbox</code>.</span></div>
+        <div class="wf-step"><span class="num">2.</span><span><span data-i18n="wf.step2.prefix">Kibana ES-query alerting rule (</span><code>.es-query</code><span data-i18n="wf.step2.suffix">, 1-minute schedule) detects the new doc and fires a</span> <code>.webhook</code> <span data-i18n="wf.step2.action">action.</span></span></div>
+        <div class="wf-step"><span class="num">3.</span><span><span data-i18n="wf.step3.prefix">Webhook hits</span> <code>/api/v1/workflows/triggered</code><span data-i18n="wf.step3.suffix">; backend looks up the doc, runs the Post-Meeting agent.</span></span></div>
+        <div class="wf-step"><span class="num">4.</span><span data-i18n="wf.step4">Agent writes Account, Opportunity, MEDDPICC, deal-health, ContentNote, Slack post to the SFDC + Slack mocks.</span></div>
       </div>
     </section>
 
     <div class="wf-grid">
       <section class="wf-card" aria-labelledby="wf-h-status">
-        <h2 id="wf-h-status">Kibana workflow status</h2>
-        <div id="wf-status">Loading…</div>
+        <h2 id="wf-h-status" data-i18n="wf.card.status">Kibana workflow status</h2>
+        <div id="wf-status" data-i18n="wf.loading">Loading...</div>
         <div class="wf-actions">
-          <button class="btn primary" id="wf-sync" type="button">Sync workflow</button>
-          <button class="btn ghost" id="wf-refresh" type="button">Refresh status</button>
+          <button class="btn primary" id="wf-sync" type="button" data-i18n="wf.btn.sync">Sync workflow</button>
+          <button class="btn ghost" id="wf-refresh" type="button" data-i18n="wf.btn.refresh">Refresh status</button>
         </div>
       </section>
 
       <section class="wf-card" aria-labelledby="wf-h-fire">
-        <h2 id="wf-h-fire">Fire a demo transcript</h2>
-        <p style="font-size: 13px; color: rgba(255,255,255,.6); margin: 0 0 10px;">
-          Indexes a Northwind Bank discovery transcript into <code>fec-transcript-inbox</code>.
-          The rule polls every 60 seconds; a webhook fire should arrive within ~1 minute.
+        <h2 id="wf-h-fire" data-i18n="wf.card.fire">Fire a demo transcript</h2>
+        <p style="font-size: 13px; color: rgba(255,255,255,.6); margin: 0 0 10px;" data-i18n="wf.fire.note">
+          Indexes a Northwind Bank discovery transcript into fec-transcript-inbox. The rule polls every 60 seconds; a webhook fire should arrive within ~1 minute.
         </p>
         <div class="wf-actions">
-          <button class="btn primary" id="wf-fire" type="button">Fire demo transcript</button>
-          <button class="btn ghost" id="wf-trigger-now" type="button">Trigger now (skip wait)</button>
+          <button class="btn primary" id="wf-fire" type="button" data-i18n="wf.btn.fire">Fire demo transcript</button>
+          <button class="btn ghost" id="wf-trigger-now" type="button" data-i18n="wf.btn.trigger">Trigger now (skip wait)</button>
         </div>
         <div id="wf-fire-result"></div>
       </section>
 
       <section class="wf-card" style="grid-column: 1 / -1;" aria-labelledby="wf-h-fires">
-        <h2 id="wf-h-fires">Recent webhook fires <span style="font-size: 11px; color: rgba(255,255,255,.4); font-weight: normal; text-transform: none;">(auto-refreshes every 15s)</span></h2>
-        <div class="wf-fires" id="wf-fires"><div class="wf-empty">No fires yet.</div></div>
+        <h2 id="wf-h-fires"><span data-i18n="wf.card.fires">Recent webhook fires</span> <span style="font-size: 11px; color: rgba(255,255,255,.4); font-weight: normal; text-transform: none;" data-i18n="wf.card.fires.note">(auto-refreshes every 15s)</span></h2>
+        <div class="wf-fires" id="wf-fires"><div class="wf-empty" data-i18n="wf.fires.empty">No fires yet.</div></div>
       </section>
     </div>
 
@@ -108,5 +108,18 @@
   <script src="/assets/js/ui.js"></script>
   <script src="/assets/js/tools-rail.js"></script>
   <script src="/assets/js/workflow-demo.js"></script>
+  <script>
+    (function () {
+      function boot() {
+        try { applyI18n(); } catch (e) {}
+        try { renderLangPicker(document.getElementById("lang-host")); } catch (e) {}
+      }
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", boot);
+      } else {
+        boot();
+      }
+    })();
+  </script>
 </body>
 </html>
