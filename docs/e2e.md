@@ -11,7 +11,7 @@ tests/e2e/
   tests/
     dashboard.spec.ts
     quick_research.spec.ts
-    meeting_revolut.spec.ts
+    meeting_northwind.spec.ts
     agent_builder.spec.ts
     demo_data.spec.ts
     workflow_demo.spec.ts

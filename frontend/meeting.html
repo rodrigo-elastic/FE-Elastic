@@ -16,9 +16,10 @@
   <link rel="stylesheet" href="/assets/css/command-palette.css" />
 </head>
 <body>
+  <a class="skip-to-main" href="#main-content" data-i18n="a11y.skip_to_main">Skip to main content</a>
   <header class="topbar">
     <div class="brand">
-      <img class="logo-elastic" src="/assets/img/elastic/logo-horizontal-white.svg" alt="Elastic" />
+      <img class="logo-elastic" src="/assets/img/elastic/logo-horizontal-white.svg" alt="Elastic" width="64" height="22" />
       <span class="brand-sep">/</span>
       <span class="name">FE <span class="accent">Copilot</span></span>
     </div>
@@ -31,7 +32,7 @@
     </div>
   </header>
 
-  <main class="container">
+  <main class="container" id="main-content" tabindex="-1">
     <section class="meeting-header">
       <div class="meta" id="meeting-meta">Loading...</div>
       <h1 id="meeting-title">Loading meeting...</h1>
@@ -40,25 +41,25 @@
     <div id="journey-host"></div>
 
     <nav class="tabs" aria-label="Meeting sections">
-      <button class="tab active" data-tab="brief" type="button" role="tab" aria-selected="true" aria-controls="panel-brief">
+      <button class="tab active" data-tab="brief" type="button" role="tab" id="tab-brief" aria-selected="true" aria-controls="panel-brief">
         <span class="icon" aria-hidden="true">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         </span>
         <span data-i18n="meeting.brief">Pre-Meeting Brief</span>
       </button>
-      <button class="tab" data-tab="post" type="button" role="tab" aria-selected="false" aria-controls="panel-post">
+      <button class="tab" data-tab="post" type="button" role="tab" id="tab-post" aria-selected="false" aria-controls="panel-post">
         <span class="icon" aria-hidden="true">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
         </span>
         <span data-i18n="meeting.post">Post-Meeting</span>
       </button>
-      <button class="tab" data-tab="live" type="button" role="tab" aria-selected="false" aria-controls="panel-live">
+      <button class="tab" data-tab="live" type="button" role="tab" id="tab-live" aria-selected="false" aria-controls="panel-live">
         <span class="icon" aria-hidden="true">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
         </span>
         <span data-i18n="meeting.live">Live Companion</span>
       </button>
-      <button class="tab" data-tab="context" type="button" role="tab" aria-selected="false" aria-controls="panel-context">
+      <button class="tab" data-tab="context" type="button" role="tab" id="tab-context" aria-selected="false" aria-controls="panel-context">
         <span class="icon" aria-hidden="true">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
         </span>
@@ -66,7 +67,7 @@
       </button>
     </nav>
 
-    <section class="panel" id="panel-brief">
+    <section class="panel" id="panel-brief" role="tabpanel" aria-labelledby="tab-brief" tabindex="0">
       <div class="row-between">
         <h2>Account brief</h2>
         <div style="display:flex; gap:8px; align-items:center;">
@@ -101,7 +102,7 @@
       <div id="abm-brief"></div>
     </section>
 
-    <section class="panel" id="panel-post" hidden>
+    <section class="panel" id="panel-post" role="tabpanel" aria-labelledby="tab-post" tabindex="0" hidden>
       <div class="row-between">
         <h2>Post-meeting output</h2>
         <div style="display:flex; gap:8px; align-items:center;">
@@ -124,7 +125,7 @@
       <div id="abm-post"></div>
     </section>
 
-    <section class="panel" id="panel-live" hidden>
+    <section class="panel" id="panel-live" role="tabpanel" aria-labelledby="tab-live" tabindex="0" hidden>
       <div class="row-between">
         <h2>Live companion</h2>
         <div style="display:flex; gap:8px; align-items:center;">
@@ -146,13 +147,13 @@
       <div id="abm-live"></div>
     </section>
 
-    <section class="panel" id="panel-context" hidden>
+    <section class="panel" id="panel-context" role="tabpanel" aria-labelledby="tab-context" tabindex="0" hidden>
       <h2>Context for this account</h2>
       <div id="context" style="margin-top:12px;"></div>
       <div id="abm-context"></div>
     </section>
 
-    <section id="toast-host"></section>
+    <section id="toast-host" role="status" aria-live="polite" aria-atomic="false"></section>
   </main>
 
   <script src="/assets/js/i18n.js"></script>

@@ -394,6 +394,40 @@
     if (callouts.childElementCount) body.appendChild(callouts);
   }
 
+  // Focus-trap helpers for the industries modal (WCAG 2.4.3 Focus Order, ARIA APG dialog pattern).
+  let _indModalLastFocus = null;
+  function _indFocusableInModal() {
+    const modal = document.getElementById("ind-modal");
+    if (!modal) return [];
+    const sel = [
+      "a[href]",
+      "button:not([disabled])",
+      "input:not([disabled]):not([type='hidden'])",
+      "select:not([disabled])",
+      "textarea:not([disabled])",
+      "[tabindex]:not([tabindex='-1'])",
+    ].join(",");
+    return Array.from(modal.querySelectorAll(sel)).filter(
+      (n) => !n.hasAttribute("hidden") && n.offsetParent !== null
+    );
+  }
+  function _indModalKeyTrap(ev) {
+    const modal = document.getElementById("ind-modal");
+    if (!modal || modal.hidden) return;
+    if (ev.key !== "Tab") return;
+    const list = _indFocusableInModal();
+    if (!list.length) return;
+    const first = list[0];
+    const last = list[list.length - 1];
+    if (ev.shiftKey && document.activeElement === first) {
+      ev.preventDefault();
+      last.focus();
+    } else if (!ev.shiftKey && document.activeElement === last) {
+      ev.preventDefault();
+      first.focus();
+    }
+  }
+
   function openModal(id) {
     const industry = STATE.items.find((it) => it.id === id);
     if (!industry) return;
@@ -401,8 +435,11 @@
     renderModal(industry);
     const modal = document.getElementById("ind-modal");
     if (!modal) return;
+    // Remember the trigger so we can restore focus on close.
+    _indModalLastFocus = document.activeElement;
     modal.hidden = false;
     document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", _indModalKeyTrap);
     // Update URL so the modal is shareable.
     try {
       const url = new URL(location.href);
@@ -423,6 +460,7 @@
     if (!modal) return;
     modal.hidden = true;
     document.body.style.overflow = "";
+    document.removeEventListener("keydown", _indModalKeyTrap);
     STATE.activeId = null;
     try {
       const url = new URL(location.href);
@@ -431,6 +469,11 @@
     } catch (_e) {
       /* ignore */
     }
+    // Restore focus to the trigger that opened the modal (WCAG 2.4.3).
+    if (_indModalLastFocus && typeof _indModalLastFocus.focus === "function") {
+      try { _indModalLastFocus.focus(); } catch (_e) { /* ignore */ }
+    }
+    _indModalLastFocus = null;
   }
 
   function bindModal() {

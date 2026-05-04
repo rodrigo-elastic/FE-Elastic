@@ -24,11 +24,20 @@
     return 1 - Math.pow(1 - t, 3);
   }
 
+  function _prefersReducedMotion() {
+    return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  }
   function animateNumber(node, from, to, durationMs) {
     if (!node) return;
+    const decimals = to % 1 !== 0 ? 1 : 0;
+    // WCAG 2.3.3 Animation from Interactions: render the final value
+    // immediately when the user has requested reduced motion.
+    if (_prefersReducedMotion()) {
+      node.textContent = decimals ? to.toFixed(1) : Math.round(to).toString();
+      return;
+    }
     const start = performance.now();
     const delta = to - from;
-    const decimals = to % 1 !== 0 ? 1 : 0;
     function frame(now) {
       const t = Math.min(1, (now - start) / durationMs);
       const v = from + delta * easeOutCubic(t);

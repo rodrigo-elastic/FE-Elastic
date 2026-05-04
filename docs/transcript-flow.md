@@ -44,7 +44,7 @@ POST /api/v1/agents/post-meeting/from-transcript
 Content-Type: application/json
 
 {
-  "company_name": "Globex",
+  "company_name": "Northwind Pay",
   "meeting_title": "Discovery call",
   "industry": "Fintech",
   "size": "Mid-market",
@@ -65,8 +65,8 @@ through to the audit record.
 
 ```json
 {
-  "meeting_id": "transcript-globex-20260503-181203",
-  "company_name": "Globex",
+  "meeting_id": "transcript-northwind-20260503-181203",
+  "company_name": "Northwind Pay",
   "ad_hoc": true,
   "transcript_source": "zoom",
   "summary": "...",

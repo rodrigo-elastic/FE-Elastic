@@ -21,7 +21,7 @@ def _fixtures():
     }
     meeting = {
         "id": "northwind-mtg-001",
-        "title": "Acme x Elastic discovery",
+        "title": "Northwind Pay x Elastic discovery",
         "start_time": "2026-05-03T10:00:00+00:00",
     }
     brief = {

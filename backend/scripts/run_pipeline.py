@@ -1,6 +1,6 @@
 """
 filename: run_pipeline.py
-description: End-to-end smoke test of the agent chain on synthetic data. Runs the Pre-Meeting agent against the upcoming Acme meeting, the Post-Meeting agent against a past Acme meeting, and a single Live alert demo.
+description: End-to-end smoke test of the agent chain on synthetic data. Runs the Pre-Meeting agent against the upcoming Northwind Pay meeting, the Post-Meeting agent against a past Northwind Pay meeting, and a single Live alert demo.
 date: 03-05-2026
 """
 __author__ = "Rodrigo Careaga"

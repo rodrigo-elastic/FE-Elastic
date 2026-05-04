@@ -65,7 +65,7 @@
   <a class="skip-to-main" href="#main-content" data-i18n="a11y.skip_to_main">Skip to main content</a>
   <header class="topbar">
     <a class="brand" href="/" aria-label="FE Copilot home">
-      <img class="logo-elastic" src="/assets/img/elastic/logo-horizontal-white.svg" alt="Elastic" />
+      <img class="logo-elastic" src="/assets/img/elastic/logo-horizontal-white.svg" alt="Elastic" width="64" height="22" />
       <span class="brand-sep">/</span>
       <span class="name">FE <span class="accent">Copilot</span></span>
       <span class="tag">for Field Engineers</span>
@@ -77,8 +77,8 @@
     </span>
     <div class="right">
       <div class="lang-host" id="lang-host"></div>
-      <span class="pill" id="model-pill">Loading model...</span>
-      <span class="pill" id="status" data-i18n="topbar.connecting">Connecting...</span>
+      <span class="pill" id="model-pill" aria-live="polite" aria-atomic="true">Loading model...</span>
+      <span class="pill" id="status" data-i18n="topbar.connecting" aria-live="polite" aria-atomic="true">Connecting...</span>
     </div>
   </header>
 
@@ -286,14 +286,14 @@
     </div>
   </footer>
 
-  <script src="/assets/js/i18n.js"></script>
-  <script src="/assets/js/api.js"></script>
-  <script src="/assets/js/ui.js"></script>
   <script src="/assets/js/tools-rail.js"></script>
-  <script src="/assets/js/app.js"></script>
-  <script src="/assets/js/dashboard-stats.js"></script>
-  <script src="/assets/js/command-palette.js"></script>
-  <script src="/assets/js/autopilot.js"></script>
+  <script defer src="/assets/js/i18n.js"></script>
+  <script defer src="/assets/js/api.js"></script>
+  <script defer src="/assets/js/ui.js"></script>
+  <script defer src="/assets/js/app.js"></script>
+  <script defer src="/assets/js/dashboard-stats.js"></script>
+  <script defer src="/assets/js/command-palette.js"></script>
+  <script defer src="/assets/js/autopilot.js"></script>
   <script>
   /* Portal landing wire-up: dynamic stat pills, autopilot CTA, Quick Research card.
      Failures are silently ignored; the page falls back to the static markup. */
@@ -324,11 +324,20 @@
     // Hours saved this week, painted into the accent pill. Reuses the existing
     // /api/v1/stats/savings endpoint. Animates from 0 on first paint.
     function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+    function prefersReducedMotion() {
+      return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    }
     function animateNumber(node, from, to, durationMs) {
       if (!node) return;
+      var decimals = (to % 1 !== 0) ? 1 : 0;
+      // WCAG 2.3.3: honour the user's reduced-motion preference; render the
+      // final value immediately without an animated count-up.
+      if (prefersReducedMotion()) {
+        node.textContent = decimals ? to.toFixed(1) : Math.round(to).toString();
+        return;
+      }
       var start = performance.now();
       var delta = to - from;
-      var decimals = (to % 1 !== 0) ? 1 : 0;
       function frame(now) {
         var t = Math.min(1, (now - start) / durationMs);
         var v = from + delta * easeOutCubic(t);

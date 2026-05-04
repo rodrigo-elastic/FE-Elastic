@@ -113,7 +113,7 @@
         el("span", { class: "url", id: "ap-panel-url", text: "" }),
         el("button", { class: "ap-panel-reset", id: "ap-panel-reset", type: "button", title: "Reset position", "aria-label": "Reset panel position", text: "Reset" }),
       ]),
-      el("iframe", { id: "ap-panel-iframe", title: "Autopilot panel", "aria-label": "Autopilot panel" }),
+      el("iframe", { id: "ap-panel-iframe", title: "Autopilot panel", "aria-label": "Autopilot panel", loading: "lazy" }),
     ]);
     stage.appendChild(panel);
     document.body.appendChild(stage);

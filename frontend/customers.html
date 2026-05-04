@@ -41,15 +41,15 @@
   <a class="skip-to-main" href="#main-content" data-i18n="a11y.skip_to_main">Skip to main content</a>
   <header class="topbar">
     <a class="brand" href="/" aria-label="FE Copilot home">
-      <img class="logo-elastic" src="/assets/img/elastic/logo-horizontal-white.svg" alt="Elastic" />
+      <img class="logo-elastic" src="/assets/img/elastic/logo-horizontal-white.svg" alt="Elastic" width="64" height="22" />
       <span class="brand-sep">/</span>
       <span class="name">FE <span class="accent">Copilot</span></span>
       <span class="tag">Customers</span>
     </a>
     <div class="right">
       <div class="lang-host" id="lang-host"></div>
-      <span class="pill" id="model-pill">Loading model...</span>
-      <span class="pill" id="status" data-i18n="topbar.connecting">Connecting...</span>
+      <span class="pill" id="model-pill" aria-live="polite" aria-atomic="true">Loading model...</span>
+      <span class="pill" id="status" data-i18n="topbar.connecting" aria-live="polite" aria-atomic="true">Connecting...</span>
     </div>
   </header>
 
@@ -75,13 +75,14 @@
 
     <section class="quick-research transcript-card" id="entry-tr" aria-labelledby="tr-heading" style="margin: 0 0 18px 0">
       <details class="tr-collapsible" id="tr-collapsible">
-        <summary class="tr-cta">
+        <summary class="tr-cta" aria-controls="tr-collapsible-body" aria-expanded="false">
           <span class="tr-cta-icon" aria-hidden="true">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" focusable="false"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           </span>
           <span class="tr-cta-label" data-i18n="customers.transcript.cta">Analyze transcript</span>
           <span class="tr-cta-hint" data-i18n="customers.transcript.cta_open">Hide form</span>
         </summary>
+        <div id="tr-collapsible-body">
         <div class="qr-head" style="margin-top: 14px">
           <div>
             <h2 id="tr-heading" data-i18n="customers.transcript.title">Analyze a meeting transcript</h2>
@@ -153,6 +154,7 @@
             <span class="muted small tr-status" id="tr-status" role="status" aria-live="polite"></span>
           </div>
         </form>
+        </div>
       </details>
     </section>
 
@@ -162,7 +164,7 @@
           <span class="visually-hidden" data-i18n="qr.filter.search">Search</span>
           <svg class="qr-fb-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input type="search" id="qr-fb-search" data-i18n-placeholder="qr.filter.search_placeholder" placeholder="Search customer, title, industry, attendee..." aria-label="Search filter" />
-          <button type="button" class="qr-fb-search-clear" aria-label="Clear search" hidden>x</button>
+          <button type="button" class="qr-fb-search-clear" aria-label="Clear search" hidden><span aria-hidden="true">&times;</span><span class="visually-hidden">Clear</span></button>
         </label>
       </div>
       <div class="qr-fb-row">
@@ -264,13 +266,13 @@
     <section id="toast-host" role="status" aria-live="polite" aria-atomic="false"></section>
   </main>
 
-  <script src="/assets/js/i18n.js"></script>
-  <script src="/assets/js/api.js"></script>
-  <script src="/assets/js/ui.js"></script>
   <script src="/assets/js/tools-rail.js"></script>
-  <script src="/assets/js/app.js"></script>
+  <script defer src="/assets/js/i18n.js"></script>
+  <script defer src="/assets/js/api.js"></script>
+  <script defer src="/assets/js/ui.js"></script>
+  <script defer src="/assets/js/app.js"></script>
   <script defer src="/assets/js/quick-research-filter.js"></script>
-  <script src="/assets/js/command-palette.js"></script>
+  <script defer src="/assets/js/command-palette.js"></script>
   <script>
     (function () {
       document.addEventListener("fec.transcript.analyzed", function () {
@@ -278,6 +280,16 @@
           try { window.QRFilter.refresh(); } catch (e) {}
         }
       });
+      // Mirror native <details> open state onto aria-expanded for AT that key off ARIA.
+      var det = document.getElementById("tr-collapsible");
+      if (det) {
+        var sum = det.querySelector("summary.tr-cta");
+        function syncExpanded() {
+          if (sum) sum.setAttribute("aria-expanded", det.open ? "true" : "false");
+        }
+        det.addEventListener("toggle", syncExpanded);
+        syncExpanded();
+      }
     })();
   </script>
 </body>

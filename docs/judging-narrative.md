@@ -39,5 +39,5 @@ Structured outputs are forced via `output_config.format` with explicit JSON sche
 
 - Scripted 3 minute walkthrough.
 - Deterministic synthetic data anchored to `NOW = 2026-05-02 09:00 UTC` so the same demo plays every time.
-- Three discrete narratives (Acme: consolidation; Globex: regulated finance; Initech: cross-sell), so judges can ask for any of the three.
+- Three discrete narratives (Northwind Pay: consolidation; Banco Atlántico: regulated finance; Mercado Atlas: cross-sell), so judges can ask for any of the three.
 - All run locally with `docker compose` plus `uvicorn`.

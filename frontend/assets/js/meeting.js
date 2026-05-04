@@ -674,8 +674,14 @@ function setupTabs() {
   const tabs = document.querySelectorAll(".tab");
   tabs.forEach((t) =>
     t.addEventListener("click", () => {
-      tabs.forEach((x) => x.classList.remove("active"));
+      // Mirror visual active state into aria-selected so AT users hear the
+      // newly selected tab announced (WCAG 4.1.2 Name/Role/Value).
+      tabs.forEach((x) => {
+        x.classList.remove("active");
+        x.setAttribute("aria-selected", "false");
+      });
       t.classList.add("active");
+      t.setAttribute("aria-selected", "true");
       const target = t.dataset.tab;
       ["brief", "post", "live", "context"].forEach((id) => {
         const panel = document.getElementById(`panel-${id}`);

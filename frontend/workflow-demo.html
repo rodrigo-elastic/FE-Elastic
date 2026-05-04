@@ -42,9 +42,10 @@
   </style>
 </head>
 <body class="workflow-page">
+  <a class="skip-to-main" href="#main-content" data-i18n="a11y.skip_to_main">Skip to main content</a>
   <header class="topbar">
     <a class="brand" href="/" aria-label="FE Copilot home">
-      <img class="logo-elastic" src="/assets/img/elastic/logo-horizontal-white.svg" alt="Elastic" />
+      <img class="logo-elastic" src="/assets/img/elastic/logo-horizontal-white.svg" alt="Elastic" width="64" height="22" />
       <span class="brand-sep">/</span>
       <span class="name">FE <span class="accent">Copilot</span></span>
       <span class="tag" data-i18n="topbar.tag.workflow">Workflow</span>
@@ -54,7 +55,7 @@
     </div>
   </header>
 
-  <main class="container">
+  <main class="container" id="main-content" tabindex="-1">
     <section class="hero">
       <h1><span data-i18n="wf.title.1">Workflow</span> <span class="grad" data-i18n="wf.title.2">live in Elastic.</span></h1>
       <p class="lede">
@@ -142,15 +143,15 @@
       })();
     </script>
 
-    <section id="toast-host"></section>
+    <section id="toast-host" role="status" aria-live="polite" aria-atomic="false"></section>
   </main>
 
-  <script src="/assets/js/i18n.js"></script>
-  <script src="/assets/js/api.js"></script>
-  <script src="/assets/js/ui.js"></script>
   <script src="/assets/js/tools-rail.js"></script>
-  <script src="/assets/js/workflow-demo.js"></script>
-  <script src="/assets/js/command-palette.js"></script>
+  <script defer src="/assets/js/i18n.js"></script>
+  <script defer src="/assets/js/api.js"></script>
+  <script defer src="/assets/js/ui.js"></script>
+  <script defer src="/assets/js/workflow-demo.js"></script>
+  <script defer src="/assets/js/command-palette.js"></script>
   <script>
     (function () {
       function boot() {

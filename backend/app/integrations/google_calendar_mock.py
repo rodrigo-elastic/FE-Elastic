@@ -90,7 +90,7 @@ def _build_events() -> List[Dict[str, Any]]:
             {"email": "rodrigo.careaga@elastic.co"},
             {"email": "broker.lead@vegaconsulting.example"},
             {"email": "engagement.partner@vegaconsulting.example"},
-            {"email": "j.gomez99@gmail.com"},  # Fjordbank contact via personal mail
+            {"email": "j.gomez99@freemail.example"},  # Fjordbank contact via personal mail (RFC 2606 reserved domain)
         ],
         "hangoutLink": "https://meet.google.com/fec-mock-fjord-001",
     },

@@ -97,7 +97,7 @@
         title: t("onboard.step4.title", "Customer-ready demos"),
         body: t(
           "onboard.step4.body",
-          "Eight scenarios with paired FE and Customer dashboards. Ray-Ban-style demos in 15 seconds, not half a day."
+          "Eight scenarios with paired FE and Customer dashboards. Atlas Eyewear-style demos in 15 seconds, not half a day."
         ),
       },
       {

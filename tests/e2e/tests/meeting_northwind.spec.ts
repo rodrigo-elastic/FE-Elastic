@@ -1,18 +1,18 @@
 /*
-  filename: meeting_revolut.spec.ts
-  description: /meeting.html?id=revolut-mtg-prev-001 smoke. Verifies the meeting title contains Revolut, the four Kibana style tabs (Brief / Post / Live / Context) are wired, each tab swap reveals the matching panel, the Field Assistant mini panel renders inside the Brief tab, and the Post tab exposes >=4 suggested prompt buttons via the Field Assistant.
+  filename: meeting_northwind.spec.ts
+  description: /meeting.html?id=northwind-mtg-prev-001 smoke. Verifies the meeting title contains Northwind Pay, the four Kibana style tabs (Brief / Post / Live / Context) are wired, each tab swap reveals the matching panel, the Field Assistant mini panel renders inside the Brief tab, and the Post tab exposes >=4 suggested prompt buttons via the Field Assistant.
   Author: Rodrigo Careaga
   Date: 03-05-2026
 */
 import { test, expect } from "@playwright/test";
 
-test.describe("meeting page revolut-mtg-prev-001", () => {
+test.describe("meeting page northwind-mtg-prev-001", () => {
   test("loads, swaps tabs, renders Field Assistant + suggestions", async ({ page }) => {
-    await page.goto("/meeting.html?id=revolut-mtg-prev-001");
+    await page.goto("/meeting.html?id=northwind-mtg-prev-001");
 
     // Title hydrates from the API.
     const title = page.locator("#meeting-title");
-    await expect(title).toContainText("Revolut", { timeout: 15_000 });
+    await expect(title).toContainText("Northwind", { timeout: 15_000 });
 
     // Four tabs visible.
     const tabs = page.locator(".tabs .tab");

@@ -7,7 +7,7 @@
 <p align="center"><em>Field Engineer Copilot. Twelve MCP tools. Five demo scenarios. Six hours per FE per week back.</em></p>
 
 <p align="center">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License: Apache 2.0" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT" /></a>
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.11%2B-blue.svg" alt="Python 3.11+" /></a>
   <a href="https://www.elastic.co/"><img src="https://img.shields.io/badge/Elastic-9.3-005571.svg?logo=elastic&logoColor=white" alt="Elastic 9.3" /></a>
   <a href="https://www.anthropic.com/"><img src="https://img.shields.io/badge/Built%20on-Anthropic%20Claude-0077CC.svg" alt="Built on Anthropic Claude" /></a>
@@ -50,7 +50,7 @@ Field Engineers run six customer meetings a day and burn fifteen hours a week on
 |---|---|---|
 | Dashboard | [docs/screenshots/dashboard.png](docs/screenshots/dashboard.png) | docs/gifs/dashboard.gif |
 | Meeting (Mercado Atlas) | [docs/screenshots/meeting_meli.png](docs/screenshots/meeting_meli.png) | docs/gifs/meeting.gif |
-| Meeting (Northwind Pay) | [docs/screenshots/meeting_revolut.png](docs/screenshots/meeting_revolut.png) | docs/gifs/live_alerts.gif |
+| Meeting (Northwind Pay) | [docs/screenshots/meeting_northwind.png](docs/screenshots/meeting_northwind.png) | docs/gifs/live_alerts.gif |
 | Tools rail | [docs/screenshots/tools.png](docs/screenshots/tools.png) | docs/gifs/tools.gif |
 | Agent Builder | [docs/screenshots/agent_builder.png](docs/screenshots/agent_builder.png) | docs/gifs/agent_builder.gif |
 | Workflow loop | [docs/screenshots/workflow_demo.png](docs/screenshots/workflow_demo.png) | docs/gifs/workflow.gif |
@@ -155,7 +155,7 @@ PYTHONPATH=backend python -m scripts.run_pipeline
 | # | Page | Path | Who it is for | What it does |
 |---|---|---|---|---|
 | 1 | Dashboard | [`/`](frontend/index.html) | Every FE | Calendar inbox with smart resolver that filters Elastic-internal invites and deprioritizes 17+ consulting firms ([`backend/app/services/company_resolver.py`](backend/app/services/company_resolver.py)). Hero stats, three entry modes (Quick Research, Transcript paste, Calendar). Screenshot: [docs/screenshots/dashboard.png](docs/screenshots/dashboard.png). |
-| 2 | Meeting workspace | [`/meeting.html?id=...`](frontend/meeting.html) | FE running a customer call | Three tabs: pre-meeting brief, live companion, post-meeting actions. Field Assistant mini-chat grounded in the brief and the last 8 transcript turns. Customer journey strip across the top. Screenshot: [docs/screenshots/meeting_revolut.png](docs/screenshots/meeting_revolut.png) (the "revolut" filename is a legacy asset; the demo content now uses the Northwind Pay fictional account). |
+| 2 | Meeting workspace | [`/meeting.html?id=...`](frontend/meeting.html) | FE running a customer call | Three tabs: pre-meeting brief, live companion, post-meeting actions. Field Assistant mini-chat grounded in the brief and the last 8 transcript turns. Customer journey strip across the top. Screenshot: [docs/screenshots/meeting_northwind.png](docs/screenshots/meeting_northwind.png). |
 | 3 | Tools rail | [`/tools.html`](frontend/tools.html) | Every FE | Seven collapsible panels: POC plan, SPL to ES\|QL, Compliance mapper, Stack extractor, Code sample generator, Cost calc, Capacity planner. Each one wraps a Claude expert persona. Screenshot: [docs/screenshots/tools.png](docs/screenshots/tools.png). |
 | 4 | FE Brain | [`/fe-brain.html`](frontend/fe-brain.html) | FE asking docs questions | Retrieval-augmented Q+A grounded in 160 chunks of the official Elastic documentation, indexed in `fec-knowledge` with ELSER embeddings. Citations link back to the source page. Mei (Elastic Docs Lead) curates the corpus. |
 | 5 | Agent Builder | [`/agent-builder.html`](frontend/agent-builder.html) | FE wanting tool chaining | Chat surface for the master agent `fec_field_assistant` running inside Kibana 9.3.4. Streams reasoning steps and tool calls inline. One prompt chains SPL conversion plus cost. Screenshot: [docs/screenshots/agent_builder.png](docs/screenshots/agent_builder.png). |
@@ -204,7 +204,7 @@ FE-Elastic/
   data/                   Demo scenario seeds (Black Friday, Credential Stuffing, Noisy Microservice, ...)
   runtime/                Slack/SFDC logs, audit.jsonl, generated PDFs, email drafts (gitignored)
   HANDOFF.md              Snapshot of project status, transfer notes, next-step priorities
-  LICENSE                 Apache 2.0
+  LICENSE                 MIT
 ```
 
 ## Roadmap
