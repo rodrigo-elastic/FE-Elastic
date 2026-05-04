@@ -131,7 +131,74 @@
       records.push(normalizeBrief(b));
     });
 
-    return records;
+    return sanitizeRecords(records);
+  }
+
+  // -------------------------------------------------------------------------
+  // Sanitizer: drops system / orphan / internal records, keeps only the most
+  // recent timestamp when duplicates share the same id, and warns in DevTools
+  // so it is easy to verify how many records were filtered.
+  // -------------------------------------------------------------------------
+  function isSystemRecord(record) {
+    const rawId = String(record.id || "");
+    // Strip the "cal:" / "mtg:" / "brf:" prefix that normalize* adds so we
+    // match the underlying meeting/event id consistently.
+    const id = rawId.replace(/^(cal|mtg|brf):/, "");
+    const cust = String(record.customer_name || "").trim();
+    const cid = String(record.customer_id || "");
+    const title = String(record.title || "");
+    const systemPrefixes = ["orphan-demo-", "synthetic-", "_internal-", "demo-data-"];
+    if (systemPrefixes.some((p) => id.startsWith(p) || cid.startsWith(p))) return true;
+    if (/FE team weekly sync/i.test(title)) return true;
+    // Calendar events that don't resolve to a real customer flag with
+    // customer_id === "unknown" (see normalizeCalendar). Drop those: an
+    // internal-only meeting or unresolved invite has no place on the Kanban.
+    if (cid === "unknown") return true;
+    if (!cust) return true;
+    const lower = cust.toLowerCase();
+    if (["unresolved", "n/a", "(unknown)"].includes(lower)) return true;
+    if (/^(unknown|placeholder|test)\b/.test(lower)) return true;
+    return false;
+  }
+
+  function sanitizeRecords(records) {
+    const dropped = [];
+    const kept = [];
+    records.forEach((r) => {
+      if (isSystemRecord(r)) {
+        dropped.push(r);
+        return;
+      }
+      kept.push(r);
+    });
+
+    // Dedupe by id, keeping the entry with the most recent timestamp.
+    const byId = new Map();
+    let dupes = 0;
+    kept.forEach((r) => {
+      const id = r.id;
+      if (!id) return;
+      const prev = byId.get(id);
+      if (!prev) {
+        byId.set(id, r);
+        return;
+      }
+      dupes += 1;
+      const ta = prev.timestamp_iso ? new Date(prev.timestamp_iso).getTime() : 0;
+      const tb = r.timestamp_iso ? new Date(r.timestamp_iso).getTime() : 0;
+      if (tb >= ta) byId.set(id, r);
+    });
+
+    const final = Array.from(byId.values());
+    if (dropped.length || dupes) {
+      try {
+        // eslint-disable-next-line no-console
+        console.warn(
+          "[QRFilter] sanitize dropped=" + dropped.length + " duplicates=" + dupes + " kept=" + final.length
+        );
+      } catch (_e) { /* ignore */ }
+    }
+    return final;
   }
 
   function normalizeCalendar(ev) {
