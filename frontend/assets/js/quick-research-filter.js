@@ -68,6 +68,23 @@
     return window.apiGet(path).catch(() => null);
   }
 
+  // Stable per-customer color so the same customer reads as the same color
+  // across stages (Scheduled, Pre-meeting, Post-meeting, Transcript). Hash
+  // the customer_id (or fallback to customer_name lowercased) into 0..9 and
+  // let CSS map [data-customer-color] to a hue. 10 distinct hues is enough
+  // to keep visually distinct tags for typical FE portfolios; collisions are
+  // acceptable in larger lists since the customer name is also rendered.
+  const CUSTOMER_COLOR_BUCKETS = 10;
+  function customerColorIndex(record) {
+    const seed = String(record.customer_id || record.customer_name || "").toLowerCase().trim();
+    if (!seed) return 0;
+    let h = 0;
+    for (let i = 0; i < seed.length; i++) {
+      h = (h * 31 + seed.charCodeAt(i)) | 0;
+    }
+    return Math.abs(h) % CUSTOMER_COLOR_BUCKETS;
+  }
+
   function htmlEscape(s) {
     return String(s == null ? "" : s)
       .replace(/&/g, "&amp;")
@@ -418,6 +435,7 @@
     const li = document.createElement("li");
     li.className = "qr-rec " + (record._is_upcoming ? "upcoming" : "");
     li.dataset.stage = stageKey;
+    li.dataset.customerColor = String(customerColorIndex(record));
 
     const info = document.createElement("div");
     info.className = "info";
@@ -671,12 +689,13 @@
     a.href = record.href || "#";
     if (record.target) a.target = record.target;
     if (record.rel) a.rel = record.rel;
+    a.dataset.customerColor = String(customerColorIndex(record));
     const title = record.customer_name || record.title || tr("qr.records.untitled", "Untitled");
     const subtitle = record.title && record.title !== title ? record.title : (record.industry || "");
     const when = record.timestamp_iso ? new Date(record.timestamp_iso) : null;
     const whenStr = when && !isNaN(when.getTime()) ? when.toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "";
     a.innerHTML =
-      '<div class="qr-kan-card-title">' + htmlEscape(title) + '</div>' +
+      '<div class="qr-kan-card-title"><span class="qr-kan-dot" aria-hidden="true"></span>' + htmlEscape(title) + '</div>' +
       (subtitle ? '<div class="qr-kan-card-sub">' + htmlEscape(subtitle) + '</div>' : '') +
       '<div class="qr-kan-card-meta">' +
       (whenStr ? '<span class="qr-kan-card-date">' + htmlEscape(whenStr) + '</span>' : '') +

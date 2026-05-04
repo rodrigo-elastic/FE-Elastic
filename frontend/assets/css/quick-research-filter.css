@@ -444,3 +444,48 @@
   color: var(--muted);
 }
 .qr-kan-card-att::before { content: "👥 "; opacity: 0.7; }
+
+/* ============================================================ Per-customer color
+   Same customer reads as the same hue across all Kanban columns and the list
+   view. Hash-based modulo over 10 buckets, mapped to a Lochmara-friendly
+   palette. The card uses the hue as a left border accent plus a dot before
+   the title; subtle background tint on hover. */
+.qr-kan-card[data-customer-color="0"], .qr-rec[data-customer-color="0"] { --qr-cust: #0077CC; }
+.qr-kan-card[data-customer-color="1"], .qr-rec[data-customer-color="1"] { --qr-cust: #00BFB3; }
+.qr-kan-card[data-customer-color="2"], .qr-rec[data-customer-color="2"] { --qr-cust: #F04E98; }
+.qr-kan-card[data-customer-color="3"], .qr-rec[data-customer-color="3"] { --qr-cust: #FEC514; }
+.qr-kan-card[data-customer-color="4"], .qr-rec[data-customer-color="4"] { --qr-cust: #93C90E; }
+.qr-kan-card[data-customer-color="5"], .qr-rec[data-customer-color="5"] { --qr-cust: #1BA9F5; }
+.qr-kan-card[data-customer-color="6"], .qr-rec[data-customer-color="6"] { --qr-cust: #F58F2B; }
+.qr-kan-card[data-customer-color="7"], .qr-rec[data-customer-color="7"] { --qr-cust: #7E57C2; }
+.qr-kan-card[data-customer-color="8"], .qr-rec[data-customer-color="8"] { --qr-cust: #E91E63; }
+.qr-kan-card[data-customer-color="9"], .qr-rec[data-customer-color="9"] { --qr-cust: #00ACC1; }
+
+/* Kanban card uses the customer color as a left accent (4px) plus a small
+   dot in the title row. Border-left overrides the default card border on
+   the left edge only; full border still draws on the other 3 sides. */
+.qr-kan-card[data-customer-color] {
+  border-left: 4px solid var(--qr-cust, var(--primary));
+  padding-left: 10px;
+}
+.qr-kan-card[data-customer-color]:hover {
+  border-color: var(--qr-cust, var(--primary));
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--qr-cust, #0077CC) 18%, transparent);
+}
+.qr-kan-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--qr-cust, var(--primary));
+  margin-right: 8px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+/* List view rows also pick up the customer color as a left accent so the
+   same customer is recognizable when the user toggles to List. */
+.qr-rec[data-customer-color] {
+  border-left: 3px solid var(--qr-cust, var(--border));
+  padding-left: 10px;
+}
