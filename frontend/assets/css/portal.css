@@ -14,8 +14,20 @@
    keep the original container width. */
 body.portal-page .container {
   max-width: 1240px;
-  margin: 28px auto 56px auto;
+  margin: 28px 0 56px 0;
   padding: 0 32px;
+}
+/* When the global tools rail is mounted, reserve the left gutter so cards
+   never sit under the sidebar. The rail is 240px wide pinned at left:20px,
+   so 268px (= 240 + 20 + 8 breathing) keeps content clear. */
+body.portal-page.has-tools-rail .container {
+  padding: 0 32px 0 268px;
+  margin: 28px 0 56px 0;
+  max-width: none;
+}
+@media (max-width: 768px) {
+  /* On mobile the rail collapses; restore tight padding. */
+  body.portal-page.has-tools-rail .container { padding: 0 20px; }
 }
 
 /* ============================================================ Welcome row */
