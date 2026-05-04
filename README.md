@@ -248,6 +248,25 @@ What ships in this hackathon submission is opinionated and complete enough to us
 
 The roadmap is intentionally honest: every item lists effort and value, and nothing here is a commitment outside this hackathon. The only commitment in this repository is the code that ships today.
 
+## Complementary tools, not duplicate work
+
+Elastic already pays for excellent competitive intelligence platforms. The 31 battlecards shipped in this repo are scaffolding meant to demonstrate the FE flow, NOT a replacement for the curated research that lives elsewhere. Concretely:
+
+- **Klue**: the source of truth for competitor positioning, win wires, and recent battlecard updates. Klue's research team maintains depth that no hackathon project can match.
+- **Highspot / Showpad**: source of truth for sales collateral, certified pitch decks, and customer references.
+- **Salesforce / Gainsight**: source of truth for account ownership, opportunity stage, and renewal signals.
+- **Slack `#fe-help`, `#competitive`, regional FE channels**: live tribal knowledge.
+
+The intended near-term integration story (already in the roadmap above) is for FE Copilot to **read from these systems, not duplicate them**:
+
+1. The master agent (`fec_field_assistant`) and the user-built specialist agents (Migration Specialist, Compliance Pursuit, RFP Responder) get a `klue_battlecard_lookup` MCP tool that pulls the live Klue card for a given competitor at conversation time. The Sloane (`fec_compare`) persona then synthesizes Klue's facts plus Elastic's positioning into the response, with a citation back to the Klue card so the FE can verify and update at the source.
+2. The `fec_proposal` and `fec_compare` outputs render a "Sources" footer that lists every external system consulted (Klue card id, Highspot doc id, Salesforce account id) so judges and FEs see provenance, not invented intel.
+3. The Renewal defense workflow (`fec_user_renewal_defender`) consumes Salesforce risk signals and Gainsight health scores rather than the synthetic `fec-renewal-signals` index used in the demo.
+
+Why this matters: a hackathon project that overrides Klue would be rejected by every FE who trusts Klue's research. A hackathon project that **routes** Klue into the agent loop, layered with Elastic-specific synthesis and the FE's own meeting context, is genuinely additive. The 31 battlecards in this repo are demo scaffolding to make the agent flow tangible during the 3-minute video; in production they should be replaced by Klue lookups behind the same `fec_compare` and `fec_proposal` tool surface, with no UI change required.
+
+The `data/seed/battlecards.json` file is therefore intentionally fictional and lightweight. Real customer-facing competitive work should always start at Klue and end at Salesforce, with FE Copilot acting as the connective synthesizer in between.
+
 ## Acknowledgements
 
 - The Elastic FE community for fifteen years of pattern matching that this project tries to encode.
