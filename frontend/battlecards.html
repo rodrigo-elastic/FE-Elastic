@@ -1,6 +1,6 @@
 <!--
   filename: battlecards.html
-  description: FE Copilot - Battlecards page. Browse competitor counter-positioning live from the fec-battlecards Elasticsearch index, with client-side search and a click-to-expand detail modal.
+  description: FE Copilot - Battlecards page. Browse competitor counter-positioning live from the fec-battlecards Elasticsearch index. Click a card to load a full-screen detail view (URL hash routing) with the battlecard rendered as a one-page sales kit on the left and an embedded Field Assistant mini chat on the right scoped to that competitor. Top toolbar offers Open in Drive, Print, and Copy Markdown actions.
   Author: Rodrigo Careaga
   Date: 03-05-2026
 -->
@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="/assets/css/command-palette.css" />
 </head>
 <body class="battlecards-page">
-  <header class="topbar">
+  <header class="topbar" id="bc-topbar">
     <a class="brand" href="/" aria-label="FE Copilot home">
       <img class="logo-elastic" src="/assets/img/elastic/logo-horizontal-white.svg" alt="Elastic" />
       <span class="brand-sep">/</span>
@@ -29,7 +29,8 @@
     </div>
   </header>
 
-  <main class="container">
+  <!-- Grid view: list of battlecards. Hidden when a hash slug is active. -->
+  <main class="container" id="bc-grid-view">
     <section class="hero">
       <h1>Counter-positioning <span class="grad">at your fingertips.</span></h1>
       <p class="lede">
@@ -59,29 +60,44 @@
     <section id="toast-host"></section>
   </main>
 
-  <div class="bc-modal" id="bc-modal" role="dialog" aria-modal="true" aria-labelledby="bc-modal-title" hidden>
-    <div class="bc-modal-scrim" data-bc-close aria-hidden="true"></div>
-    <div class="bc-modal-panel" role="document">
-      <header class="bc-modal-head">
-        <div class="bc-modal-title-wrap">
-          <span class="bc-modal-glyph" id="bc-modal-glyph" aria-hidden="true"></span>
-          <div>
-            <h2 id="bc-modal-title" class="bc-modal-title"></h2>
-            <p id="bc-modal-tagline" class="bc-modal-tagline"></p>
-          </div>
-        </div>
-        <button type="button" class="bc-modal-close" data-bc-close aria-label="Close battlecard">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12"/><path d="M18 6 6 18"/></svg>
+  <!-- Detail view: full-screen sales kit for one competitor. Activated by URL hash. -->
+  <section class="bc-detail" id="bc-detail" aria-label="Battlecard detail" hidden>
+    <div class="bc-detail-sticky" aria-label="Battlecard detail toolbar">
+      <div class="bc-detail-crumb" aria-label="breadcrumb">
+        <a href="#" class="bc-detail-crumb-link" id="bc-detail-back-crumb">Battlecards</a>
+        <span class="bc-detail-crumb-sep" aria-hidden="true">/</span>
+        <span class="bc-detail-crumb-current" id="bc-detail-crumb-name">Competitor</span>
+      </div>
+      <div class="bc-detail-actions">
+        <button type="button" class="bc-action-btn" id="bc-back-btn" aria-label="Back to battlecards grid">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+          <span>Back to grid</span>
         </button>
-      </header>
-      <div class="bc-modal-body" id="bc-modal-body"></div>
+        <button type="button" class="bc-action-btn" id="bc-copy-btn" aria-label="Copy battlecard markdown to clipboard">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          <span>Copy Markdown</span>
+        </button>
+        <button type="button" class="bc-action-btn" id="bc-print-btn" aria-label="Print battlecard">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          <span>Print</span>
+        </button>
+        <button type="button" class="bc-action-btn bc-action-primary" id="bc-drive-btn" aria-label="Open in Google Drive (markdown copied to clipboard)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h6"/></svg>
+          <span>Open in Drive</span>
+        </button>
+      </div>
     </div>
-  </div>
+
+    <div class="bc-detail-body" id="bc-detail-body">
+      <!-- Hero strip + content + chat panel injected by battlecards.js -->
+    </div>
+  </section>
 
   <script src="/assets/js/i18n.js"></script>
   <script src="/assets/js/api.js"></script>
   <script src="/assets/js/ui.js"></script>
   <script src="/assets/js/tools-rail.js"></script>
+  <script src="/assets/js/agent-builder-mini.js"></script>
   <script src="/assets/js/battlecards.js"></script>
   <script src="/assets/js/command-palette.js"></script>
 </body>

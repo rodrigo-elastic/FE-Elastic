@@ -1,6 +1,6 @@
 """
 filename: sync_agent_builder.py
-description: Idempotent sync of FE Copilot's MCP server, ten tools, and master agent into Elastic Agent Builder. Creates a .mcp connector pointing at the FE Copilot MCP endpoint, registers ten Agent Builder tools (nine specialist tools plus the Auro orchestrator) referencing that connector, then creates the master agent that orchestrates them. Reads KIBANA_URL and KIBANA_API_KEY from settings; runs in dry-run mode (logs payloads only) when no key is configured. Override the public backend URL with BACKEND_BASE_URL (e.g., an ngrok forwarding URL) when Kibana is remote. Run with: PYTHONPATH=backend python -m scripts.sync_agent_builder.
+description: Idempotent sync of FE Copilot's MCP server, eleven tools, and master agent into Elastic Agent Builder. Creates a .mcp connector pointing at the FE Copilot MCP endpoint, registers eleven Agent Builder tools (nine specialist tools, the Sloane competitive comparison tool, plus the Auro orchestrator) referencing that connector, then creates the master agent that orchestrates them. Reads KIBANA_URL and KIBANA_API_KEY from settings; runs in dry-run mode (logs payloads only) when no key is configured. Override the public backend URL with BACKEND_BASE_URL (e.g., an ngrok forwarding URL) when Kibana is remote. Run with: PYTHONPATH=backend python -m scripts.sync_agent_builder.
 date: 03-05-2026
 """
 __author__ = "Rodrigo Careaga"
@@ -97,8 +97,13 @@ MCP_TOOLS: List[Dict[str, str]] = [
         "name": "FE Copilot - Auro orchestrator (multi-tool conductor)",
         "description": "Meta-tool. Auro (senior FE conductor, 12y orchestrating multi-tool responses) reads a complex query, picks 2-3 of the other nine tools, runs them in parallel, and synthesizes a unified answer with follow-up suggestions. Use when a request needs more than one specialist.",
     },
+    {
+        "id": "fec_compare",
+        "name": "FE Copilot - Elastic vs competitor comparison (Sloane)",
+        "description": "Structured technical and cost comparison between Elastic and a named competitor (Splunk, Datadog, Sumo Logic, AppDynamics, Chronicle, Cribl, Dynatrace, Exabeam, Grafana, Graylog, Honeycomb, Loki, Microsoft Sentinel, New Relic, QRadar). Returns a 6 to 10 axis technical table, an honest gaps list, a cost section grounded in the FE Copilot calculator, and 4 to 6 customer discovery questions. Persona: Sloane, Senior Competitive Architect (15y competitive intelligence at Elastic).",
+    },
 ]
-# Master agent instructions below now reference the Auro orchestrator and the ten-tool catalogue.
+# Master agent instructions below now reference the Auro orchestrator, Sloane, and the eleven-tool catalogue.
 
 
 # ============================================================ Connectors =============
@@ -157,7 +162,7 @@ def upsert_mcp_tool(connector_id: str, tool: Dict[str, str]) -> Dict[str, Any]:
 
 MASTER_AGENT_INSTRUCTIONS = """You are FE Copilot, an Elastic Field Engineering Assistant. You help Elastic Field Engineers prep for customer meetings, recap conversations, and run technical analysis on demand.
 
-You have ten specialized tools, each backed by a dedicated expert persona or pure-compute helper:
+You have eleven specialized tools, each backed by a dedicated expert persona or pure-compute helper:
 - fec_poc_plan: build a Proof-of-Value plan from a customer meeting record (Marta, Sr Solutions Architect).
 - fec_spl_to_esql: translate Splunk SPL to Elastic ES|QL (Diego, ex-Splunk consultant).
 - fec_compliance: map regulations to native Elastic controls (Priya, ex-PwC compliance auditor).
@@ -167,16 +172,17 @@ You have ten specialized tools, each backed by a dedicated expert persona or pur
 - fec_capacity: produce a heuristic Elastic cluster sizing (pure compute).
 - fec_knowledge_search: semantic search over the Elastic public docs corpus, with synthesized answer and [n] citations (Mei, ex-Elastic enablement docs lead).
 - fec_troubleshoot: diagnose an Elastic stack error or log snippet, propose 3 ES|QL diagnostic queries plus quick remediations (Ravi, ex-Elastic support engineer with 1000+ resolved tickets).
-- fec_orchestrator: Auro (senior FE conductor, 12y orchestrating multi-tool responses) plans, picks 2-3 of the other nine tools, runs them in parallel, and synthesizes a unified answer with follow-up suggestions.
+- fec_compare: produce a structured technical and cost comparison between Elastic and a named competitor, grounded in the fec-battlecards index and the cost calculator (Sloane, Senior Competitive Architect with 15 years competitive intelligence at Elastic).
+- fec_orchestrator: Auro (senior FE conductor, 12y orchestrating multi-tool responses) plans, picks 2-3 of the other tools, runs them in parallel, and synthesizes a unified answer with follow-up suggestions.
 
-Pick the right tool for each request. Use fec_orchestrator when the user asks something that requires 2-3 tools chained, OR when you would otherwise call more than 2 tools yourself; let Auro plan it. Combine tools yourself only for simple two-tool combinations (e.g., compliance + cost calc for a security POV; knowledge search to ground a POC plan in current docs; troubleshoot then knowledge search to confirm a remediation). Use fec_knowledge_search whenever the user asks a product-specific question that the public Elastic docs would answer (sizing, ILM, ES|QL syntax, semantic_text setup, detection rules). Use fec_troubleshoot when the user pastes an error message, log snippet, or describes a stack issue that needs diagnosis. Always be honest about gaps, never invent customer-specific details. Never use the em dash character."""
+Pick the right tool for each request. Use fec_compare when the user asks about Elastic vs a specific competitor for either technical or pricing comparison. Use fec_orchestrator when the user asks something that requires 2-3 tools chained, OR when you would otherwise call more than 2 tools yourself; let Auro plan it. Combine tools yourself only for simple two-tool combinations (e.g., compliance + cost calc for a security POV; knowledge search to ground a POC plan in current docs; troubleshoot then knowledge search to confirm a remediation). Use fec_knowledge_search whenever the user asks a product-specific question that the public Elastic docs would answer (sizing, ILM, ES|QL syntax, semantic_text setup, detection rules). Use fec_troubleshoot when the user pastes an error message, log snippet, or describes a stack issue that needs diagnosis. Always be honest about gaps, never invent customer-specific details. Never use the em dash character."""
 
 
 def build_agent_payload() -> Dict[str, Any]:
     return {
         "id": "fec_field_assistant",
         "name": "FE Copilot - Field Assistant",
-        "description": "Elastic Field Engineering Assistant. Wraps the ten FE Copilot tools (POC plan, SPL to ES|QL, compliance mapping, stack extract, code sample, cost calc, capacity planner, docs knowledge search, troubleshooter, Auro orchestrator).",
+        "description": "Elastic Field Engineering Assistant. Wraps the eleven FE Copilot tools (POC plan, SPL to ES|QL, compliance mapping, stack extract, code sample, cost calc, capacity planner, docs knowledge search, troubleshooter, Sloane competitive comparison, Auro orchestrator).",
         "configuration": {
             "instructions": MASTER_AGENT_INSTRUCTIONS,
             "tools": [{"tool_ids": [t["id"] for t in MCP_TOOLS]}],

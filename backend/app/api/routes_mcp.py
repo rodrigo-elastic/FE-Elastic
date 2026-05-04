@@ -1,6 +1,6 @@
 """
 filename: routes_mcp.py
-description: MCP Streamable HTTP server exposing the ten FE Copilot tools (nine specialists plus the Auro orchestrator) to Elastic Agent Builder. Speaks JSON-RPC over a single POST endpoint per the MCP 2025-03-26 spec; each tool delegates to the existing FastAPI tool route.
+description: MCP Streamable HTTP server exposing the eleven FE Copilot tools (nine specialists, the Sloane competitive comparison tool, and the Auro orchestrator) to Elastic Agent Builder. Speaks JSON-RPC over a single POST endpoint per the MCP 2025-03-26 spec; each tool delegates to the existing FastAPI tool route.
 date: 03-05-2026
 """
 __author__ = "Rodrigo Careaga"
@@ -17,6 +17,7 @@ from fastapi.responses import JSONResponse, Response
 from app.api.routes_tools import (
     CapacityRequest,
     CodeSampleRequest,
+    CompareRequest,
     ComplianceRequest,
     CostCalcRequest,
     KnowledgeSearchRequest,
@@ -27,6 +28,7 @@ from app.api.routes_tools import (
     TroubleshootRequest,
     run_capacity,
     run_code_sample,
+    run_compare,
     run_compliance_mapping,
     run_cost_calc,
     run_knowledge_search,
@@ -165,6 +167,26 @@ TOOLS = [
         },
     },
     {
+        "name": "fec_compare",
+        "description": "Structured technical and cost comparison between Elastic and a named competitor (Splunk, Datadog, Sumo Logic, AppDynamics, Chronicle, Cribl, Dynatrace, Exabeam, Grafana, Graylog, Honeycomb, Loki, Microsoft Sentinel, New Relic, QRadar). Returns a 6 to 10 axis technical table, an honest gaps list, a cost section grounded in the FE Copilot calculator, and 4 to 6 customer discovery questions. Persona: Sloane, Senior Competitive Architect (15y competitive intelligence at Elastic).",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "competitor": {"type": "string", "description": "Competitor name (case-insensitive, matched against the fec-battlecards index)."},
+                "dimensions": {
+                    "type": "array",
+                    "items": {"type": "string", "enum": ["technical", "cost"]},
+                    "description": "Subset of ['technical', 'cost']; defaults to both.",
+                },
+                "customer_context": {"type": "string", "description": "Optional industry, scale, or current spend context."},
+                "ingest_gb_day": {"type": "number", "description": "Optional daily ingest in GB; enables real cost calc."},
+                "retention_months": {"type": "integer", "default": 12},
+                "language": {"type": "string", "default": "English"},
+            },
+            "required": ["competitor"],
+        },
+    },
+    {
         "name": "fec_orchestrator",
         "description": "Meta-tool. Auro (senior FE conductor, 12y orchestrating multi-tool responses) reads a complex query, picks 2-3 of the other nine FE Copilot tools, runs them in parallel, and synthesizes a single coherent answer with cross-references and follow-up suggestions. Use when a request needs more than one specialist (e.g., cost + capacity, SPL + cost, compliance + code sample).",
         "inputSchema": {
@@ -201,6 +223,8 @@ async def _invoke_tool(name: str, args: Dict[str, Any]) -> Any:
         return await run_knowledge_search(KnowledgeSearchRequest(**args))
     if name == "fec_troubleshoot":
         return await run_troubleshoot(TroubleshootRequest(**args))
+    if name == "fec_compare":
+        return await run_compare(CompareRequest(**args))
     if name == "fec_orchestrator":
         return await run_orchestrator(OrchestratorRequest(**args))
     raise ValueError(f"unknown tool: {name}")

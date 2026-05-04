@@ -849,6 +849,319 @@ def render_troubleshoot_prompt(error_text: str, context: str = "") -> str:
     return "\n".join(parts)
 
 
+# ============================================================ COMPARE (Sloane) ========
+
+COMPARE_KNOWLEDGE_PACK = """## Competitive intel cheat sheet (your in-head playbook for the 15 cards on file)
+
+### Splunk (Enterprise / Cloud / ES / ITSI)
+- Pricing model: per-GB/day-indexed license (workload pricing also available); ES and ITSI are separately licensed; storage tiers add cost on Cloud.
+- Weaknesses: index-time licensing penalises retention; SPL is proprietary; ES requires extra spend on top of platform; smart-store retrieval still pulls into local cache; long-tail data parked on Splunk archive is hard to query.
+- Strengths: deep CIM data models, mature SOAR, strong Splunk ES content packs.
+
+### Datadog
+- Pricing model: per-host APM/Infra ($31-40/host/month); Logs at $0.10/GB ingest plus retention SKUs ($1.27 per million events past 15 days); separately metered Synthetics, RUM, DBM, CSPM, CWPP.
+- Weaknesses: SKU sprawl makes year-2 bills shock customers; logs-to-metrics conversion is opaque; query language is GUI-led not analyst-led; cardinality limits on custom metrics ($0.05 per 100 extra).
+- Strengths: best-in-class UX, fast onboarding, broad integration catalogue.
+
+### Sumo Logic
+- Pricing model: credit-based (Continuous Tier credits) for ingest plus query; tiers Continuous, Frequent, Infrequent.
+- Weaknesses: query latency on Infrequent tier is high; SIEM features (Cloud SIEM Enterprise) are a separate SKU; threat intel integration is shallow; ILM-equivalent is rigid.
+- Strengths: multi-tenant cloud-native architecture, OOTB compliance dashboards.
+
+### AppDynamics (Cisco)
+- Pricing model: per-agent (Java/.NET/Node) plus add-ons for End User Monitoring, Database, Network. Cisco bundle SKUs (AppD plus ThousandEyes plus Splunk) since 2024.
+- Weaknesses: APM-only, customers still need Splunk or another tool for logs and SIEM; OTel support partial; Business iQ rebuilds rarely use the long-tail of widgets.
+- Strengths: Business iQ business-transaction modelling, mature auto-baselining.
+
+### Google Chronicle (SecOps)
+- Pricing model: bytes-ingested with bundled 12 month retention; SOAR (ex-Siemplify) priced separately per analyst.
+- Weaknesses: detection content marketplace thinner than Elastic and Splunk ES; YARA-L is bespoke; limited support for non-security telemetry; rule tuning UI immature.
+- Strengths: 12 month hot retention as standard, Google-scale ingest, strong threat intel feeds.
+
+### Cribl (Stream / Edge / Search)
+- Pricing model: per-GB per day routed (Stream); Edge per-node; Search and Lake per-GB.
+- Weaknesses: Cribl is a router not a destination; customers still need a SIEM/observability backend; Search is recent and gaps remain on detection and ML; cost stacks on top of the destination license.
+- Strengths: best-in-class data routing and reduction, vendor-neutral, easy Splunk-cost takeout when paired with Elastic.
+
+### Dynatrace
+- Pricing model: Davis Data Units (DDU) and Host Units; Application Security and Logs are separate SKUs.
+- Weaknesses: OneAgent is proprietary and heavy; OTel ingest improving but ergonomics differ from open OTel collectors; logs at scale are expensive on DDU.
+- Strengths: Smartscape topology, Davis AI causal analysis on traces, good auto-instrumentation.
+
+### Exabeam
+- Pricing model: per-user (UEBA) plus per-GB; New-Scale and Fusion SIEM SKUs.
+- Weaknesses: original Smart Timelines tied to legacy data lake; New-Scale migration is recent and disruptive; long-term retention pricing surprises customers; rule authoring is Exabeam-bespoke.
+- Strengths: UEBA-first heritage, identity-context analytics.
+
+### Grafana (Cloud, OSS, Enterprise)
+- Pricing model: per-active-user plus per-metric, per-log-line, per-trace (Loki, Mimir, Tempo). Grafana Cloud Pro and Advanced tiers.
+- Weaknesses: stitched data plane (Loki for logs, Mimir for metrics, Tempo for traces); LogQL is less expressive than ES|QL; alerting at scale needs careful tuning; SIEM/SOC capabilities not native.
+- Strengths: open-source roots, dashboarding gold standard, broad data-source plugin catalogue.
+
+### Graylog
+- Pricing model: per-GB/day (Operations) plus separate Security SKU.
+- Weaknesses: Java-stack ops burden self-hosted; analytics depth shallower than Elastic; ML is limited; ecosystem of integrations smaller.
+- Strengths: search-pipeline UX, pipeline rules are accessible, lower-cost Splunk takeout for log-only use cases.
+
+### Honeycomb
+- Pricing model: per-event ingested with 60-day retention default; Enterprise custom.
+- Weaknesses: traces-only ergonomics; logs and metrics are second-class; SIEM and compliance content absent; pricing surprises on high-cardinality services.
+- Strengths: BubbleUp and high-cardinality query UX, ergonomic for SREs doing distributed-tracing investigations.
+
+### Grafana Loki
+- Pricing model: per-GB ingest plus query units (Grafana Cloud); OSS self-hosted.
+- Weaknesses: label-only indexing means full-text queries scan a lot; chunk store performance degrades on long ranges; not a SIEM; analytics need Mimir or external tools.
+- Strengths: cheap log storage, great for Kubernetes log tail, simple Promtail/Alloy ingest.
+
+### Microsoft Sentinel
+- Pricing model: per-GB ingest into Log Analytics workspace; Sentinel SKU on top; Defender XDR is separate; commitment-tier discounts available.
+- Weaknesses: KQL siloed from non-Azure data; multi-cloud ingest pricey; long-term retention via Archive has slow rehydrate; Sentinel notebooks need Synapse.
+- Strengths: tight integration with Defender and Entra ID, good content pipelines for M365 telemetry.
+
+### New Relic
+- Pricing model: per-user plus per-GB ingested ($0.30 standard, $0.50 Data Plus); 30 day retention default, longer requires Data Plus.
+- Weaknesses: per-user pricing penalises broad SOC and SRE seats; long retention limited; detection/SIEM features absent; query language NRQL is bespoke.
+- Strengths: simple pricing on paper, ingest-first model, good APM agents.
+
+### IBM QRadar (and the Palo Alto/Cortex transition story)
+- Pricing model: EPS-based licensing on QRadar SIEM; Suite SKUs (XDR, SOAR, EDR) priced separately. Note: IBM SIEM business is being transitioned to Palo Alto Cortex XSIAM since 2024.
+- Weaknesses: legacy on-prem heritage, AQL language proprietary; cloud variant lags features; transition uncertainty for existing customers; rule authoring DSM-bound.
+- Strengths: long history of regulated-bank deployments, mature offense management workflow.
+"""
+
+COMPARE_GENERIC_FRAMEWORK = """## Generic competitive framework (use only when no battlecard is on file)
+
+When the FE asks about a competitor not in the 15-card library:
+- State plainly: "I do not have a battlecard on file for <Competitor>; here is a generic framework anchored on Elastic's strengths."
+- Anchor on the data plane axes that consistently win for Elastic: open ECS schema, hot/warm/frozen tiers on object storage, ES|QL plus EQL plus Query DSL, ML anomaly jobs and learning-to-rank, hybrid retrieval (BM25 + ELSER + dense), single-license observability + SIEM + search.
+- For pricing, reason from first principles: name the likely pricing model the competitor uses (per-host, per-GB, per-event, per-user, license-tier capped) and note that Elastic Cloud is GB-month based with no per-host or per-user cap.
+- Do not invent specific dollar figures for the unknown competitor; mark them as null and label `pricing_model_notes` accordingly.
+- Always include 4 to 6 discovery questions even in the generic case.
+"""
+
+COMPARE_SYSTEM = """You are Sloane, a Senior Competitive Architect at Elastic with 15 years of competitive intelligence work.
+
+# Your background and method
+- You have written hundreds of structured comparison briefs for FEs going into late-stage opportunities against Splunk, Datadog, Sumo Logic, Microsoft Sentinel, Chronicle, QRadar, Dynatrace, AppDynamics, New Relic, Honeycomb, Loki, Grafana, Graylog, Cribl and Exabeam.
+- You produce honest, technically grounded comparisons. You never use marketing-team superlatives. You always cite which dimensions favor the competitor and document Elastic gaps openly.
+- You name pricing models precisely: per-host, per-GB-ingested, per-event, per-user, license-tier capped, credit-based, DDU-based, EPS-based. You separate license cost from storage and from add-on SKU cost.
+- You always include 4 to 6 customer discovery questions an FE can use to disqualify or qualify the use case before the next call.
+- You never use the em dash character (U+2014) or the en dash character (U+2013). For ranges write "10 to 50 GB". For parenthetical clauses use commas, colons, parentheses, or split into two sentences.
+
+# How a great Sloane comparison looks
+1. Pick 6 to 10 technical axes. Skew to what FEs actually get pinned on in late-stage deals: data plane unification, ingest model, schema flexibility, query languages, ML and AI capabilities, retention model, agent/collector footprint, RBAC and multi-tenancy, alerting and detections, ecosystem and openness.
+2. For each axis, write one sentence on how Elastic does it and one sentence on how the competitor does it. Then mark a winner: "elastic", "competitor", or "tie". You must pick "competitor" or "tie" at least once when the comparison is genuine; an all-Elastic-wins brief is propaganda, not intelligence.
+3. The `honest_gaps` array names dimensions where Elastic is genuinely behind (for example: Sentinel's Defender XDR coupling, Datadog UX velocity, Honeycomb high-cardinality ergonomics, Chronicle's 12 month hot retention default).
+4. The cost section reasons from the competitor's pricing model precisely. If the user provided ingest_gb_day and the calculator gave an Elastic baseline, use that number verbatim and reason about competitor cost relative to it. If the user did not provide scale, leave dollar fields null, fill `pricing_model_notes` and `hidden_costs` only.
+5. Discovery questions are concrete and falsifiable. Bad: "What are your goals?". Good: "What does your <Competitor> renewal look like in the next 12 months and is the EBC aware of the year-over-year increase?".
+6. `sources` cites the battlecard id (for example, "battlecard-splunk") plus any public doc URLs you reference. Cap at 4 entries.
+
+# Hard rules
+- Never invent specific dollar figures for a competitor when the user did not provide scale or you do not have a public list rate; leave the field null.
+- Cost numbers, when present, must be conservative. Always include the demo-grade label in `pricing_model_notes` if you derived them from heuristics.
+- Hard caps you must respect: 10 technical dimensions max, 8 cost notes max, 6 discovery questions max, 4 sources max.
+- If `dimensions` does not include "technical", set the technical fields to empty (summary "", dimensions [], advantages [], gaps []). If it does not include "cost", set the cost fields to empty (summary "", null dollar fields, empty arrays).
+- `winner` field must be exactly one of "elastic", "competitor", "tie".
+- Never use the em dash or en dash character.
+- Output via the json_schema response format only.
+
+""" + COMPARE_KNOWLEDGE_PACK + "\n" + COMPARE_GENERIC_FRAMEWORK
+
+
+COMPARE_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "competitor": {"type": "string"},
+        "battlecard_used": {"type": "boolean"},
+        "technical": {
+            "type": "object",
+            "additionalProperties": False,
+            "properties": {
+                "summary": {"type": "string"},
+                "dimensions": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": False,
+                        "properties": {
+                            "axis": {"type": "string"},
+                            "elastic": {"type": "string"},
+                            "competitor": {"type": "string"},
+                            "winner": {"type": "string", "enum": ["elastic", "competitor", "tie"]},
+                            "reasoning": {"type": "string"},
+                        },
+                        "required": ["axis", "elastic", "competitor", "winner", "reasoning"],
+                    },
+                },
+                "elastic_advantages": {"type": "array", "items": {"type": "string"}},
+                "competitor_advantages": {"type": "array", "items": {"type": "string"}},
+                "honest_gaps": {"type": "array", "items": {"type": "string"}},
+            },
+            "required": [
+                "summary",
+                "dimensions",
+                "elastic_advantages",
+                "competitor_advantages",
+                "honest_gaps",
+            ],
+        },
+        "cost": {
+            "type": "object",
+            "additionalProperties": False,
+            "properties": {
+                "summary": {"type": "string"},
+                "scenario": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "properties": {
+                        "ingest_gb_day": {"type": "number"},
+                        "retention_months": {"type": "integer"},
+                    },
+                    "required": ["ingest_gb_day", "retention_months"],
+                },
+                "elastic_annual_usd": {"type": ["number", "null"]},
+                "competitor_annual_usd": {"type": ["number", "null"]},
+                "savings_vs_competitor_pct": {"type": ["number", "null"]},
+                "pricing_model_notes": {"type": "array", "items": {"type": "string"}},
+                "hidden_costs": {"type": "array", "items": {"type": "string"}},
+            },
+            "required": [
+                "summary",
+                "scenario",
+                "elastic_annual_usd",
+                "competitor_annual_usd",
+                "savings_vs_competitor_pct",
+                "pricing_model_notes",
+                "hidden_costs",
+            ],
+        },
+        "discovery_questions": {"type": "array", "items": {"type": "string"}},
+        "follow_ups": {"type": "array", "items": {"type": "string"}},
+        "sources": {"type": "array", "items": {"type": "string"}},
+    },
+    "required": [
+        "competitor",
+        "battlecard_used",
+        "technical",
+        "cost",
+        "discovery_questions",
+        "follow_ups",
+        "sources",
+    ],
+}
+
+
+def render_compare_prompt(
+    *,
+    competitor: str,
+    dimensions: list,
+    customer_context: str,
+    ingest_gb_day: float,
+    retention_months: int,
+    battlecard: dict | None,
+    tco_baseline: dict | None,
+) -> str:
+    """Build the Sloane user prompt. Embeds battlecard talking points and the calculator baseline as ground truth."""
+    parts = [
+        f"# Competitor under analysis: {competitor}",
+        f"# Dimensions requested: {', '.join(dimensions) if dimensions else 'technical, cost'}",
+    ]
+    ctx = (customer_context or "").strip()
+    if ctx:
+        parts.append(f"# Customer context\n{ctx}")
+    else:
+        parts.append("# Customer context\n(none provided; treat reasoning as generic and call assumptions out)")
+
+    parts.append("")
+    if battlecard:
+        parts.append(f"# Battlecard on file: {battlecard.get('id', 'unknown')}")
+        tagline = (battlecard.get("tagline") or "").strip()
+        if tagline:
+            parts.append(f"Tagline: {tagline}")
+        key_pain = (battlecard.get("key_pain") or "").strip()
+        if key_pain:
+            parts.append(f"Key pain: {key_pain}")
+        tps = battlecard.get("talking_points") or []
+        if tps:
+            parts.append("\nTalking points (verbatim from the card):")
+            for tp in tps[:6]:
+                angle = tp.get("angle", "")
+                claim = tp.get("claim", "")
+                proof = tp.get("proof", "")
+                parts.append(f"- [{angle}] {claim} Proof: {proof}")
+        adv = battlecard.get("elastic_advantages") or []
+        if adv:
+            parts.append("\nElastic advantages already documented on the card:")
+            for a in adv[:8]:
+                parts.append(f"- {a}")
+        objs = battlecard.get("common_objections") or []
+        if objs:
+            parts.append("\nCommon objections (verbatim) you may have to address:")
+            for o in objs[:6]:
+                q = o.get("q", "")
+                a = o.get("a", "")
+                parts.append(f"- Q: {q}\n  A: {a}")
+        dqs = battlecard.get("discovery_questions") or []
+        if dqs:
+            parts.append("\nExisting discovery questions on the card (you may extend or replace):")
+            for d in dqs[:6]:
+                parts.append(f"- {d}")
+    else:
+        parts.append(
+            "# Battlecard on file: NONE\n"
+            "Apply the generic framework. State plainly that no card exists for this competitor "
+            "and anchor on Elastic's structural strengths. Do not invent specific dollar figures."
+        )
+
+    parts.append("")
+    if tco_baseline:
+        parts.append("# Cost calculator ground truth (Elastic baseline)")
+        parts.append(
+            "The Python cost calculator already ran with the user-supplied scale. "
+            "Use the Elastic total below verbatim; reason about competitor cost relative to it."
+        )
+        elastic = tco_baseline.get("elastic", {})
+        splunk = tco_baseline.get("splunk", {})
+        datadog = tco_baseline.get("datadog", {})
+        parts.append(
+            f"- Elastic 12-month total (demo-grade): ${elastic.get('total_annual_usd', 'n/a')}"
+        )
+        if splunk.get("total_annual_usd") is not None:
+            parts.append(
+                f"- Splunk reference 12-month total (license + storage, demo-grade): ${splunk.get('total_annual_usd')}"
+            )
+        if datadog.get("total_annual_usd") is not None:
+            parts.append(
+                f"- Datadog Logs reference 12-month total (ingest + retention, demo-grade): ${datadog.get('total_annual_usd')}"
+            )
+        for note in tco_baseline.get("notes", [])[:4]:
+            parts.append(f"- Note: {note}")
+        parts.append(
+            f"- Inputs: ingest_gb_day={ingest_gb_day}, retention_months={retention_months}"
+        )
+    elif ingest_gb_day and ingest_gb_day > 0:
+        parts.append(
+            "# Cost calculator ground truth\n(ingest_gb_day was supplied but the calculator was skipped; reason qualitatively)"
+        )
+    else:
+        parts.append(
+            "# Cost calculator ground truth\n"
+            "(no scale numbers supplied; leave elastic_annual_usd, competitor_annual_usd and savings_vs_competitor_pct as null. "
+            "Fill pricing_model_notes and hidden_costs based on the competitor's pricing model only.)"
+        )
+
+    parts.append("")
+    parts.append(
+        "Apply your method now. Pick 6 to 10 technical axes (cap 10). For each axis, name the winner explicitly and call out at least one axis where the competitor wins or ties. "
+        "If the user did not request 'technical' in dimensions, leave the technical block empty. If the user did not request 'cost', leave the cost block empty. "
+        "Echo the scenario object in cost.scenario verbatim with the user-supplied ingest_gb_day and retention_months. "
+        "Generate 4 to 6 discovery questions (cap 6). Cap sources at 4 entries; cite battlecard ids when used. "
+        "Final format check: scan your draft for em dashes (U+2014) and en dashes (U+2013) before emitting and replace each with a comma, the word 'to', or a sentence split."
+    )
+    return "\n".join(parts)
+
+
 # ============================================================ ORCHESTRATOR ============
 
 ORCHESTRATOR_TOOL_CATALOG = """## Tool catalogue you can chain (the only nine tools you may pick from)

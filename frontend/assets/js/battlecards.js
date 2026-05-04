@@ -1,6 +1,6 @@
 /*
   filename: battlecards.js
-  description: Renders the /battlecards.html page. Pulls the full battlecard set from /api/v1/battlecards (live from the fec-battlecards Elastic index, or the seed JSON when ES is unreachable), renders a responsive grid with a glyph + tagline + the customer-quote bullets and Elastic counter-positioning, and opens an accessible click-to-expand modal that shows talking-points, proof, objections, and discovery questions. Search input filters cards client-side by competitor name and tagline. Modal closes on Escape, scrim click, or close button. Empty state if the API returns zero cards.
+  description: Renders the /battlecards.html page. Loads the full battlecard set from /api/v1/battlecards (live from the fec-battlecards Elastic index, or the seed JSON when ES is unreachable). Two view modes driven by location.hash: (1) grid view (no hash) shows a responsive list of cards with client-side search; (2) full-screen detail view (#<slug>) renders the card as a one-page sales kit with hero strip, talking points, objections, and discovery questions on the left, and an embedded Field Assistant mini chat on the right scoped to that competitor (storage key fec.bc.<slug>). Sticky header offers Back to grid, Copy Markdown, Print, and Open in Drive actions. Browser back/forward navigates between modes.
   Author: Rodrigo Careaga
   Date: 03-05-2026
 */
@@ -12,6 +12,7 @@
     filtered: [],
     source: "seed",
     activeSlug: null,
+    miniMounted: null, // slug currently mounted into the chat panel
     lastFocus: null,
   };
 
@@ -43,6 +44,13 @@
 
   function clear(node) { while (node && node.firstChild) node.removeChild(node.firstChild); }
 
+  function escapeHtml(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
   function glyphFor(name) {
     if (!name) return "??";
     const trimmed = String(name).trim();
@@ -52,8 +60,18 @@
     return trimmed.slice(0, 2).toUpperCase();
   }
 
+  function slugOf(card) {
+    if (!card) return "";
+    return String(card.competitor_slug || (card.competitor || "")).toLowerCase().trim();
+  }
+
+  function findCard(slug) {
+    const want = String(slug || "").toLowerCase().trim();
+    if (!want) return null;
+    return STATE.cards.find((c) => slugOf(c) === want) || null;
+  }
+
   // Pull verbatim "When customers say..." quotes from the objections block.
-  // If a card has no objections, fall back to the key_pain string.
   function customerQuotes(card, max) {
     const out = [];
     const objs = Array.isArray(card.common_objections) ? card.common_objections : [];
@@ -61,20 +79,6 @@
       if (o && o.q && out.length < max) out.push(String(o.q));
     }
     if (!out.length && card.key_pain) out.push(String(card.key_pain));
-    return out;
-  }
-
-  // Best-effort proof-point extractor: pulls from talking_points[].proof,
-  // returns an array of {label, detail, href?} ready to render. Numeric and
-  // customer-name fragments are surfaced as labels when we can find them.
-  function proofPoints(card, max) {
-    const out = [];
-    const tps = Array.isArray(card.talking_points) ? card.talking_points : [];
-    for (const tp of tps) {
-      if (!tp || !tp.proof) continue;
-      if (out.length >= max) break;
-      out.push({ label: tp.angle || "Proof", detail: tp.proof });
-    }
     return out;
   }
 
@@ -97,13 +101,14 @@
     }
   }
 
-  // -------------------------------------------------------------- list view
+  // -------------------------------------------------------------- grid view
 
   function renderCard(card) {
-    const root = el("button", {
-      type: "button",
+    const slug = slugOf(card);
+    const root = el("a", {
+      href: "#" + encodeURIComponent(slug),
       class: "bc-card",
-      "data-slug": card.competitor_slug || (card.competitor || "").toLowerCase(),
+      "data-slug": slug,
       "aria-label": `Open ${card.competitor || "competitor"} battlecard`,
     });
 
@@ -141,12 +146,20 @@
 
     root.appendChild(
       el("div", { class: "bc-card-foot" }, [
-        el("span", {}, `${(card.talking_points || []).length} talking points - ${(card.common_objections || []).length} objections`),
+        el("span", {}, `${(card.talking_points || []).length} talking points, ${(card.common_objections || []).length} objections`),
         el("span", { class: "bc-card-foot-cta" }, "Open"),
       ])
     );
 
-    root.addEventListener("click", () => openModal(card));
+    // The href takes care of routing. Only intercept to keep focus / smooth UX.
+    root.addEventListener("click", (ev) => {
+      // Allow modifier-clicks (cmd/ctrl) to behave normally so users can open in
+      // a new tab if they really want a clean URL with the hash.
+      if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
+      ev.preventDefault();
+      STATE.lastFocus = root;
+      location.hash = "#" + encodeURIComponent(slug);
+    });
     return root;
   }
 
@@ -190,87 +203,301 @@
     renderList(STATE.filtered);
   }
 
-  // --------------------------------------------------------------- modal
+  // ------------------------------------------------------------ markdown
 
-  function buildModalBody(card) {
-    const wrap = document.createDocumentFragment();
+  function buildMarkdown(card) {
+    const lines = [];
+    const name = card.competitor || "Competitor";
+    lines.push(`# Battlecard: Elastic vs ${name}`);
+    lines.push("");
+    if (card.tagline) {
+      lines.push(`> ${card.tagline}`);
+      lines.push("");
+    }
+    if (card.key_pain) {
+      lines.push("## Customer pain");
+      lines.push(card.key_pain);
+      lines.push("");
+    }
+    const tps = Array.isArray(card.talking_points) ? card.talking_points : [];
+    if (tps.length) {
+      lines.push("## Talking points");
+      tps.forEach((p, i) => {
+        lines.push(`### ${i + 1}. ${p.angle || "Angle"}`);
+        if (p.claim) lines.push(p.claim);
+        if (p.proof) {
+          lines.push("");
+          lines.push(`**Proof:** ${p.proof}`);
+        }
+        lines.push("");
+      });
+    }
+    const adv = Array.isArray(card.elastic_advantages) ? card.elastic_advantages : [];
+    if (adv.length) {
+      lines.push("## Elastic counter-positioning");
+      adv.forEach((a) => lines.push(`- ${a}`));
+      lines.push("");
+    }
+    const objs = Array.isArray(card.common_objections) ? card.common_objections : [];
+    if (objs.length) {
+      lines.push("## Common objections");
+      objs.forEach((o) => {
+        lines.push(`**Q:** ${o.q || ""}`);
+        lines.push(`**A:** ${o.a || ""}`);
+        lines.push("");
+      });
+    }
+    const dq = Array.isArray(card.discovery_questions) ? card.discovery_questions : [];
+    if (dq.length) {
+      lines.push("## Discovery to confirm");
+      dq.forEach((q, i) => lines.push(`${i + 1}. ${q}`));
+      lines.push("");
+    }
+    lines.push("");
+    lines.push("Generated by FE Copilot Battlecards.");
+    return lines.join("\n");
+  }
+
+  // -------------------------------------------------- clipboard / print
+
+  async function copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch (_) { /* fall through to legacy */ }
+    }
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      return ok;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function markdownToPrintHtml(card, markdown) {
+    // Lightweight renderer: enough to print sections and headings cleanly.
+    let html = escapeHtml(markdown);
+    html = html.replace(/^### (.+)$/gm, "<h3>$1</h3>");
+    html = html.replace(/^## (.+)$/gm, "<h2>$1</h2>");
+    html = html.replace(/^# (.+)$/gm, "<h1>$1</h1>");
+    html = html.replace(/^&gt; (.+)$/gm, "<blockquote>$1</blockquote>");
+    html = html.replace(/^- (.+)$/gm, "<li>$1</li>");
+    html = html.replace(/(?:<li>[\s\S]*?<\/li>\n?)+/g, (m) => `<ul>${m}</ul>`);
+    html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    html = html.replace(/\n{2,}/g, "<br><br>");
+    html = html.replace(/\n/g, "<br>");
+    return html;
+  }
+
+  function printCard(card) {
+    const markdown = buildMarkdown(card);
+    const win = window.open("", "_blank", "width=900,height=1000");
+    if (!win) return;
+    const title = `Battlecard - Elastic vs ${card.competitor || "Competitor"}`;
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title>
+<style>
+  body { font-family: -apple-system, Inter, system-ui, sans-serif; max-width: 760px; margin: 36px auto; padding: 0 24px; color: #1d2128; line-height: 1.55; background: #fff; }
+  h1 { font-size: 24px; margin: 0 0 6px; color: #0077CC; }
+  h2 { font-size: 16px; margin: 22px 0 8px; color: #1d2128; border-bottom: 1px solid #e1e4ea; padding-bottom: 4px; }
+  h3 { font-size: 14px; margin: 14px 0 4px; color: #343741; }
+  blockquote { margin: 0 0 14px; padding: 10px 14px; border-left: 3px solid #F04E98; color: #4b5160; font-style: italic; background: #faf3f7; }
+  ul { padding-left: 20px; }
+  li { margin-bottom: 4px; }
+  strong { color: #1d2128; }
+  .meta { color: #6a7075; font-size: 12px; margin-bottom: 18px; }
+</style></head><body>
+<h1>${escapeHtml(title)}</h1>
+<div class="meta">FE Copilot Battlecards, ${new Date().toLocaleString()}</div>
+<div>${markdownToPrintHtml(card, markdown)}</div>
+<script>setTimeout(() => window.print(), 300);</script>
+</body></html>`;
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+  }
+
+  function flashBtn(btn, ok, doneLabel, failLabel, baseLabel) {
+    if (!btn) return;
+    const span = btn.querySelector("span");
+    const original = baseLabel || (span ? span.textContent : btn.textContent);
+    const label = ok ? doneLabel : failLabel;
+    if (span) span.textContent = label;
+    else btn.textContent = label;
+    btn.classList.toggle("is-ok", !!ok);
+    btn.classList.toggle("is-bad", !ok);
+    setTimeout(() => {
+      if (span) span.textContent = original;
+      else btn.textContent = original;
+      btn.classList.remove("is-ok", "is-bad");
+    }, 1800);
+  }
+
+  // -------------------------------------------------- detail view render
+
+  function buildPreamble(card) {
+    const name = card.competitor || "Competitor";
+    const lines = [];
+    lines.push(`Context: I am preparing for a customer conversation where the competitor is ${name}.`);
+    lines.push("Below is the full FE Copilot battlecard for this competitor. Use it as primary grounding when I ask follow-up questions.");
+    lines.push("");
+    lines.push(`## Competitor: ${name}`);
+    if (card.tagline) lines.push(`Tagline: ${card.tagline}`);
+    if (card.key_pain) {
+      lines.push("");
+      lines.push(`### Customer pain`);
+      lines.push(card.key_pain);
+    }
+    const tps = Array.isArray(card.talking_points) ? card.talking_points : [];
+    if (tps.length) {
+      lines.push("");
+      lines.push("### Talking points");
+      tps.forEach((p, i) => {
+        lines.push(`${i + 1}. ${p.angle || "Angle"}: ${p.claim || ""}`);
+        if (p.proof) lines.push(`   Proof: ${p.proof}`);
+      });
+    }
+    const adv = Array.isArray(card.elastic_advantages) ? card.elastic_advantages : [];
+    if (adv.length) {
+      lines.push("");
+      lines.push("### Elastic counter-positioning");
+      adv.forEach((a) => lines.push(`- ${a}`));
+    }
+    const objs = Array.isArray(card.common_objections) ? card.common_objections : [];
+    if (objs.length) {
+      lines.push("");
+      lines.push("### Common objections");
+      objs.forEach((o) => {
+        lines.push(`Q: ${o.q || ""}`);
+        lines.push(`A: ${o.a || ""}`);
+      });
+    }
+    const dq = Array.isArray(card.discovery_questions) ? card.discovery_questions : [];
+    if (dq.length) {
+      lines.push("");
+      lines.push("### Discovery questions");
+      dq.forEach((q, i) => lines.push(`${i + 1}. ${q}`));
+    }
+    lines.push("");
+    lines.push(`## Sloane competitor positioning (master-agent guidance)`);
+    lines.push(`Sloane is the FE Copilot master agent. Treat the battlecard above as authoritative for ${name}-specific positioning. When the user asks for technical or pricing comparisons, prefer calling the fec_compare tool and the fec_knowledge_search tool. When the user asks Elastic-product questions, use fec_knowledge_search. Keep answers concise and tied to the customer pain and proof points listed above.`);
+    return lines.join("\n");
+  }
+
+  function buildHero(card) {
+    const name = card.competitor || "Competitor";
+    const wrap = el("div", { class: "bc-hero" });
+    wrap.appendChild(el("div", { class: "bc-hero-glyph", "aria-hidden": "true" }, glyphFor(name)));
+    const block = el("div", { class: "bc-hero-text" });
+    block.appendChild(el("div", { class: "bc-hero-eyebrow" }, "Battlecard"));
+    block.appendChild(el("h1", { class: "bc-hero-title" }, [
+      el("span", { class: "bc-hero-vs" }, "Elastic vs "),
+      el("span", { class: "bc-hero-name" }, name),
+    ]));
+    if (card.tagline) {
+      block.appendChild(el("p", { class: "bc-hero-tagline" }, card.tagline));
+    }
+    block.appendChild(el("div", { class: "bc-hero-stats" }, [
+      el("span", { class: "bc-hero-stat" }, [
+        el("strong", {}, String((card.talking_points || []).length)),
+        el("em", {}, "talking points"),
+      ]),
+      el("span", { class: "bc-hero-stat" }, [
+        el("strong", {}, String((card.common_objections || []).length)),
+        el("em", {}, "objections"),
+      ]),
+      el("span", { class: "bc-hero-stat" }, [
+        el("strong", {}, String((card.discovery_questions || []).length)),
+        el("em", {}, "discovery Qs"),
+      ]),
+      el("span", { class: "bc-hero-stat" }, [
+        el("strong", {}, String((card.elastic_advantages || []).length)),
+        el("em", {}, "advantages"),
+      ]),
+    ]));
+    wrap.appendChild(block);
+    return wrap;
+  }
+
+  function buildContent(card) {
+    const wrap = el("div", { class: "bc-content" });
 
     if (card.key_pain) {
       wrap.appendChild(
-        el("div", { class: "bc-pain" }, [
-          el("span", { class: "bc-pain-lbl" }, "Customer pain"),
-          document.createTextNode(card.key_pain),
+        el("div", { class: "bc-block bc-block-pain" }, [
+          el("div", { class: "bc-block-lbl" }, "Customer pain"),
+          el("p", { class: "bc-pain-body" }, card.key_pain),
         ])
       );
     }
 
     const tps = Array.isArray(card.talking_points) ? card.talking_points : [];
     if (tps.length) {
-      const sec = el("div", { class: "bc-section" }, [
-        el("div", { class: "bc-section-lbl" }, "Talking points"),
-      ]);
+      const grid = el("div", { class: "bc-tp-grid" });
       tps.forEach((p, i) => {
-        const det = el("details", { class: "bc-tp" });
-        if (i === 0) det.setAttribute("open", "");
-        det.appendChild(
-          el("summary", {}, [
-            el("span", { class: "bc-tp-angle" }, p.angle || ""),
-            el("span", { class: "bc-tp-claim" }, p.claim || ""),
-            el("span", { class: "chevron bc-tp-chev" }, ""),
-          ])
-        );
-        if (p.proof) det.appendChild(el("div", { class: "bc-tp-proof" }, p.proof));
-        sec.appendChild(det);
+        const tile = el("article", { class: "bc-tp-tile" });
+        tile.appendChild(el("div", { class: "bc-tp-num" }, String(i + 1).padStart(2, "0")));
+        tile.appendChild(el("div", { class: "bc-tp-angle-lg" }, p.angle || "Angle"));
+        if (p.claim) tile.appendChild(el("p", { class: "bc-tp-claim-lg" }, p.claim));
+        if (p.proof) {
+          tile.appendChild(
+            el("div", { class: "bc-tp-proof-lg" }, [
+              el("span", { class: "bc-tp-proof-lbl" }, "PROOF"),
+              el("code", { class: "bc-tp-proof-code" }, p.proof),
+            ])
+          );
+        }
+        grid.appendChild(tile);
       });
-      wrap.appendChild(sec);
+      wrap.appendChild(
+        el("section", { class: "bc-block" }, [
+          el("div", { class: "bc-block-lbl" }, "Talking points"),
+          grid,
+        ])
+      );
     }
 
     const adv = Array.isArray(card.elastic_advantages) ? card.elastic_advantages : [];
     if (adv.length) {
       wrap.appendChild(
-        el("div", { class: "bc-section" }, [
-          el("div", { class: "bc-section-lbl" }, "Elastic counter-positioning"),
-          el("ul", { class: "bc-counter" }, adv.map((a) => el("li", {}, a))),
-        ])
-      );
-    }
-
-    const proofs = proofPoints(card, 5);
-    if (proofs.length) {
-      wrap.appendChild(
-        el("div", { class: "bc-section" }, [
-          el("div", { class: "bc-section-lbl" }, "Proof points"),
-          el("div", {}, proofs.map((p) =>
-            el("div", { class: "bc-tp-proof" }, [
-              el("strong", {}, p.label + ": "),
-              document.createTextNode(p.detail),
-            ])
-          )),
+        el("section", { class: "bc-block" }, [
+          el("div", { class: "bc-block-lbl" }, "Elastic counter-positioning"),
+          el("ul", { class: "bc-adv-list" }, adv.map((a) => el("li", {}, a))),
         ])
       );
     }
 
     const objs = Array.isArray(card.common_objections) ? card.common_objections : [];
     if (objs.length) {
-      const sec = el("details", { class: "bc-section", open: "" });
-      sec.appendChild(el("summary", { class: "bc-section-lbl", style: "cursor:pointer; list-style:none;" }, "Watch out for"));
+      const list = el("dl", { class: "bc-obj-grid" });
       objs.forEach((o) => {
-        sec.appendChild(
-          el("div", { class: "bc-obj" }, [
-            el("div", { class: "bc-obj-q" }, '"' + (o.q || "") + '"'),
-            el("div", { class: "bc-obj-a" }, o.a || ""),
-          ])
-        );
+        list.appendChild(el("dt", { class: "bc-obj-q-lg" }, '"' + (o.q || "") + '"'));
+        list.appendChild(el("dd", { class: "bc-obj-a-lg" }, o.a || ""));
       });
-      wrap.appendChild(sec);
+      wrap.appendChild(
+        el("section", { class: "bc-block" }, [
+          el("div", { class: "bc-block-lbl" }, "Common objections"),
+          list,
+        ])
+      );
     }
 
     const dq = Array.isArray(card.discovery_questions) ? card.discovery_questions : [];
     if (dq.length) {
       wrap.appendChild(
-        el("div", { class: "bc-section" }, [
-          el("div", { class: "bc-section-lbl" }, "Discovery to confirm"),
-          el("ul", { class: "bc-dq" }, dq.map((q) => el("li", {}, q))),
+        el("section", { class: "bc-block" }, [
+          el("div", { class: "bc-block-lbl" }, "Discovery questions"),
+          el("ol", { class: "bc-dq-list" }, dq.map((q) =>
+            el("li", { class: "bc-dq-item" }, q)
+          )),
         ])
       );
     }
@@ -278,61 +505,208 @@
     return wrap;
   }
 
-  function openModal(card) {
-    const modal = $("#bc-modal");
-    if (!modal) return;
-    STATE.activeSlug = card.competitor_slug || (card.competitor || "").toLowerCase();
-    STATE.lastFocus = document.activeElement;
-
-    const title = $("#bc-modal-title");
-    const tagline = $("#bc-modal-tagline");
-    const glyph = $("#bc-modal-glyph");
-    const body = $("#bc-modal-body");
-    if (title) title.textContent = "vs " + (card.competitor || "Competitor");
-    if (tagline) tagline.textContent = card.tagline || "";
-    if (glyph) glyph.textContent = glyphFor(card.competitor);
-    if (body) {
-      clear(body);
-      body.appendChild(buildModalBody(card));
-      body.scrollTop = 0;
+  function mountChat(card) {
+    const slug = slugOf(card);
+    const host = $("#bc-chat-host");
+    if (!host) return;
+    if (STATE.miniMounted === slug) return; // already mounted for this slug
+    if (!window.AgentBuilderMini || typeof AgentBuilderMini.mount !== "function") {
+      host.innerHTML = "";
+      host.appendChild(
+        el("div", { class: "bc-chat-fallback" }, [
+          el("strong", {}, "Field Assistant unavailable"),
+          el("span", {}, "Could not load the embedded chat. Reload the page to retry."),
+        ])
+      );
+      STATE.miniMounted = slug;
+      return;
     }
-
-    modal.hidden = false;
-    document.body.classList.add("bc-modal-open");
-
-    // Focus the close button so Escape / Tab work as expected.
-    const close = modal.querySelector(".bc-modal-close");
-    if (close) close.focus();
+    const name = card.competitor || "Competitor";
+    AgentBuilderMini.mount(host, {
+      title: `Compare Elastic vs ${name}`,
+      contextLabel: name,
+      contextPreamble: buildPreamble(card),
+      storageKey: `fec.bc.${slug}`,
+      suggestions: [
+        { label: "Technical comparison", prompt: `Show me a technical comparison of Elastic vs ${name}. Use the fec_compare tool, then summarise the differences that matter most given the customer pain in the battlecard above.` },
+        { label: "TCO at 200 GB/day", prompt: `Run a TCO comparison of Elastic vs ${name} at 200 GB/day, 12 months retention. Use fec_compare or the cost calculator and show me the line items.` },
+        { label: "Top 3 reasons we win", prompt: `Top 3 reasons we win against ${name} for this customer profile, anchored to the proof points in the battlecard above.` },
+        { label: "Objections we cannot answer well", prompt: `Which ${name} objections do we struggle to counter, and what is the best holding answer? Be candid.` },
+        { label: "Customer discovery questions", prompt: `Give me 5 sharp discovery questions that surface a ${name} replacement opportunity, building on the discovery list above.` },
+      ],
+    });
+    STATE.miniMounted = slug;
   }
 
-  function closeModal() {
-    const modal = $("#bc-modal");
-    if (!modal || modal.hidden) return;
-    modal.hidden = true;
-    document.body.classList.remove("bc-modal-open");
+  function renderDetail(card) {
+    const detail = $("#bc-detail");
+    const grid = $("#bc-grid-view");
+    const body = $("#bc-detail-body");
+    const crumb = $("#bc-detail-crumb-name");
+    if (!detail || !body) return;
+
+    if (crumb) crumb.textContent = card.competitor || "Competitor";
+
+    clear(body);
+
+    // LEFT column: full battlecard rendered as a sales kit.
+    const left = el("div", { class: "bc-detail-main" }, [
+      buildHero(card),
+      buildContent(card),
+    ]);
+
+    // RIGHT column: embedded Field Assistant chat host.
+    const right = el("aside", { class: "bc-detail-chat", "aria-label": "Field Assistant chat scoped to " + (card.competitor || "competitor") }, [
+      el("div", { class: "bc-chat-host", id: "bc-chat-host" }),
+    ]);
+
+    body.appendChild(left);
+    body.appendChild(right);
+
+    // Show / hide.
+    if (grid) grid.hidden = true;
+    detail.hidden = false;
+    document.body.classList.add("bc-detail-open");
+
+    // Update document title for a11y (announces the page change to screen readers).
+    document.title = `Battlecard: Elastic vs ${card.competitor || "Competitor"} - FE Copilot`;
+
+    // Mount the embedded chat. Reset slug tracker if the user navigated to a
+    // different competitor while a previous mini was still in place.
+    STATE.miniMounted = null;
+    mountChat(card);
+
+    // Scroll detail body to top so the user lands on the hero.
+    window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
+
+    // Move focus to the back button so keyboard users land in the new view.
+    const backBtn = $("#bc-back-btn");
+    if (backBtn) {
+      try { backBtn.focus({ preventScroll: true }); } catch (_) { backBtn.focus(); }
+    }
+  }
+
+  function showGrid() {
+    const detail = $("#bc-detail");
+    const grid = $("#bc-grid-view");
+    if (detail) detail.hidden = true;
+    if (grid) grid.hidden = false;
+    document.body.classList.remove("bc-detail-open");
+    document.title = "FE Copilot - Battlecards";
     STATE.activeSlug = null;
-    if (STATE.lastFocus && typeof STATE.lastFocus.focus === "function") {
-      try { STATE.lastFocus.focus(); } catch (_) { /* ignore */ }
+    // Restore focus to the originating card if we still have it.
+    if (STATE.lastFocus && document.body.contains(STATE.lastFocus)) {
+      try { STATE.lastFocus.focus({ preventScroll: true }); } catch (_) { STATE.lastFocus.focus(); }
     }
     STATE.lastFocus = null;
   }
 
-  function bindModal() {
-    const modal = $("#bc-modal");
-    if (!modal) return;
-    modal.addEventListener("click", (ev) => {
-      const t = ev.target;
-      if (!t) return;
-      if (t.closest && t.closest("[data-bc-close]")) {
-        ev.preventDefault();
-        closeModal();
+  function showNotFound(slug) {
+    const detail = $("#bc-detail");
+    const grid = $("#bc-grid-view");
+    const body = $("#bc-detail-body");
+    const crumb = $("#bc-detail-crumb-name");
+    if (!detail || !body) return;
+    if (crumb) crumb.textContent = "Not found";
+    clear(body);
+    body.appendChild(
+      el("div", { class: "bc-detail-empty" }, [
+        el("strong", {}, "No battlecard for that competitor."),
+        el("span", {}, `We could not find a card matching "${slug}". Pick one from the grid.`),
+        el("a", { href: "#", class: "bc-action-btn bc-action-primary", style: "margin-top:14px;display:inline-flex" }, "Back to grid"),
+      ])
+    );
+    if (grid) grid.hidden = true;
+    detail.hidden = false;
+    document.body.classList.add("bc-detail-open");
+    document.title = "Battlecard not found - FE Copilot";
+  }
+
+  // ------------------------------------------------------------- routing
+
+  function routeFromHash() {
+    const hash = decodeURIComponent((location.hash || "").replace(/^#/, "")).toLowerCase().trim();
+    if (!hash) {
+      showGrid();
+      return;
+    }
+    if (!STATE.cards.length) {
+      // Cards have not loaded yet. Defer; load() will re-route once data arrives.
+      STATE.activeSlug = hash;
+      return;
+    }
+    const card = findCard(hash);
+    if (!card) {
+      STATE.activeSlug = null;
+      showNotFound(hash);
+      return;
+    }
+    STATE.activeSlug = hash;
+    renderDetail(card);
+  }
+
+  function bindRouting() {
+    window.addEventListener("hashchange", routeFromHash);
+  }
+
+  // ------------------------------------------------- detail toolbar wire
+
+  function bindDetailToolbar() {
+    const back = $("#bc-back-btn");
+    const crumbBack = $("#bc-detail-back-crumb");
+    const copy = $("#bc-copy-btn");
+    const print = $("#bc-print-btn");
+    const drive = $("#bc-drive-btn");
+
+    function activeCard() {
+      if (!STATE.activeSlug) return null;
+      return findCard(STATE.activeSlug);
+    }
+
+    function goBack(ev) {
+      if (ev) ev.preventDefault();
+      // Clearing the hash via History keeps a clean URL and triggers hashchange.
+      if (location.hash) {
+        history.pushState(null, "", location.pathname + location.search);
+        showGrid();
+      } else {
+        showGrid();
       }
+    }
+
+    if (back) back.addEventListener("click", goBack);
+    if (crumbBack) crumbBack.addEventListener("click", goBack);
+
+    if (copy) copy.addEventListener("click", async () => {
+      const card = activeCard();
+      if (!card) return;
+      const ok = await copyToClipboard(buildMarkdown(card));
+      flashBtn(copy, ok, "Copied", "Failed", "Copy Markdown");
     });
-    document.addEventListener("keydown", (ev) => {
-      if (ev.key === "Escape" && !modal.hidden) {
-        ev.preventDefault();
-        closeModal();
-      }
+
+    if (print) print.addEventListener("click", () => {
+      const card = activeCard();
+      if (!card) return;
+      printCard(card);
+    });
+
+    if (drive) drive.addEventListener("click", () => {
+      const card = activeCard();
+      if (!card) return;
+      // Open Drive inside the user gesture so the popup blocker stays happy.
+      const win = window.open("https://docs.google.com/document/create?usp=openurl", "_blank");
+      const md = buildMarkdown(card);
+      copyToClipboard(md).then((ok) => {
+        flashBtn(drive, ok, "Copied. Paste in Drive.", "Clipboard blocked", "Open in Drive");
+        if (!ok && win) {
+          // Fallback: surface the markdown in the new tab so the user can copy by hand.
+          try {
+            win.document.open();
+            win.document.write(`<pre style="white-space:pre-wrap;font:14px monospace;padding:24px">${escapeHtml(md)}</pre>`);
+            win.document.close();
+          } catch (_) {}
+        }
+      });
     });
   }
 
@@ -356,12 +730,13 @@
       const data = await apiGet("/battlecards");
       STATE.cards = Array.isArray(data && data.items) ? data.items : [];
       STATE.source = (data && data.source) || "seed";
-      // Stable alphabetical sort so the grid does not shuffle on reload.
       STATE.cards.sort((a, b) =>
         String(a.competitor || "").localeCompare(String(b.competitor || ""))
       );
       setMeta(STATE.cards.length, STATE.source);
       applyFilter("");
+      // Re-route now that data is available (handles deep-link to #slug).
+      routeFromHash();
     } catch (err) {
       console.error("battlecards.load", err);
       setMeta(0, "seed");
@@ -370,7 +745,7 @@
         grid.appendChild(
           el("div", { class: "bc-empty" }, [
             el("strong", {}, "Could not load battlecards."),
-            el("span", {}, (err && err.message) || "Network error - check that the backend is running."),
+            el("span", {}, (err && err.message) || "Network error, check that the backend is running."),
           ])
         );
       }
@@ -379,8 +754,10 @@
   }
 
   function init() {
-    bindModal();
     bindSearch();
+    bindRouting();
+    bindDetailToolbar();
+    routeFromHash(); // shows grid until data arrives or hash is empty
     load();
   }
 

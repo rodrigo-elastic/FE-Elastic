@@ -21,6 +21,7 @@ from app.agents.prompts import language_instruction, language_preamble
 from app.agents.prompts import tools as tool_prompts
 from app.agents.schemas import (
     CodeSampleOut,
+    CompareOut,
     ComplianceMappingsOut,
     OrchestratorInvocation,
     OrchestratorOut,
@@ -34,6 +35,10 @@ from app.agents.schemas import (
 from app.config import settings
 from app.integrations.claude_client import MODEL_HAIKU, MODEL_OPUS, get_service
 from app.repositories import synthetic
+from app.repositories.elasticsearch_repo import (
+    BATTLECARDS_SEED_PATH,
+    get_repo as get_es_repo,
+)
 from app.services import calculators
 from app.utils.logging import get_logger
 
@@ -668,6 +673,231 @@ async def run_troubleshoot(payload: TroubleshootRequest) -> Dict[str, Any]:
         causes=len(data.get("likely_causes") or []),
         queries=len(data.get("diagnostic_queries") or []),
         remediations=len(data.get("quick_remediations") or []),
+    )
+    return data
+
+
+# ============================================================ Compare (Sloane) =======
+
+
+class CompareRequest(BaseModel):
+    competitor: str = Field(..., min_length=1, max_length=120)
+    dimensions: Optional[List[str]] = Field(default=None, description="Subset of ['technical', 'cost']; default both")
+    customer_context: Optional[str] = Field("", max_length=4000)
+    ingest_gb_day: Optional[float] = Field(0, ge=0)
+    retention_months: Optional[int] = Field(12, ge=1, le=120)
+    language: Optional[str] = Field("English", max_length=40)
+    model: Optional[str] = Field("", max_length=60)
+
+
+_COMPARE_MOCK: Dict[str, Any] = {
+    "competitor": "Splunk",
+    "battlecard_used": True,
+    "technical": {
+        "summary": "Mock fallback comparison: Elastic is a unified data plane for logs, metrics, traces and SIEM, where Splunk indexes per GB and licenses ES separately.",
+        "dimensions": [
+            {
+                "axis": "Data plane unification",
+                "elastic": "One cluster covers logs, metrics, traces, RUM, security and search.",
+                "competitor": "Splunk Core plus ES plus ITSI is three SKUs and three data models.",
+                "winner": "elastic",
+                "reasoning": "Mock reasoning: a single index lifecycle and one query language reduces operational overhead.",
+            },
+            {
+                "axis": "Mature SOAR content",
+                "elastic": "Webhook-based playbooks and Tines/Torq integrations.",
+                "competitor": "Splunk SOAR has a deep content marketplace and decade-old playbooks.",
+                "winner": "competitor",
+                "reasoning": "Mock reasoning: Splunk SOAR retains a content lead for SOC teams that already invested.",
+            },
+        ],
+        "elastic_advantages": ["Unified data plane", "ES|QL across all signals"],
+        "competitor_advantages": ["Mature SOAR content", "CIM data models embedded"],
+        "honest_gaps": ["SOAR content depth lags Splunk's marketplace today"],
+    },
+    "cost": {
+        "summary": "Mock fallback cost: at 200 GB/day with 12 month retention, Splunk's per-GB-day license dominates while Elastic spreads cost across hot/warm/frozen tiers.",
+        "scenario": {"ingest_gb_day": 200, "retention_months": 12},
+        "elastic_annual_usd": None,
+        "competitor_annual_usd": None,
+        "savings_vs_competitor_pct": None,
+        "pricing_model_notes": [
+            "Splunk: per-GB-day-indexed plus storage; ES and ITSI separately licensed.",
+            "Elastic Cloud: GB-month based across hot, warm and frozen tiers.",
+        ],
+        "hidden_costs": ["Splunk ES SKU surcharge", "Premium support tiers"],
+    },
+    "discovery_questions": [
+        "What is your Splunk renewal date and committed daily indexing volume?",
+        "Are you already paying for Splunk ES, ITSI, or both, on top of Splunk Core?",
+    ],
+    "follow_ups": [
+        "Should we run fec_cost_calc with the customer's exact ingest figure?",
+        "Do you want a POV plan anchored on a single Splunk app migration?",
+    ],
+    "sources": ["battlecard-splunk"],
+}
+
+
+def _load_battlecard_seed_match(competitor: str) -> Optional[Dict[str, Any]]:
+    """Local-seed fallback when Elasticsearch is offline. Mirrors routes_battlecards._match_local."""
+    name_l = (competitor or "").lower().strip()
+    if not name_l or not BATTLECARDS_SEED_PATH.exists():
+        return None
+    try:
+        cards = json.loads(BATTLECARDS_SEED_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    for card in cards:
+        if name_l == card.get("competitor_slug"):
+            return card
+        comp = (card.get("competitor") or "").lower()
+        if comp and (comp in name_l or name_l in comp):
+            return card
+    return None
+
+
+def _resolve_battlecard(competitor: str) -> Optional[Dict[str, Any]]:
+    """Try Elasticsearch first, fall back to seed JSON."""
+    try:
+        es = get_es_repo()
+        if getattr(es, "available", False):
+            card = es.find_battlecard(competitor)
+            if card:
+                return card
+    except Exception as exc:
+        log.info("compare.es_lookup_failed", reason=str(exc))
+    return _load_battlecard_seed_match(competitor)
+
+
+def _enforce_compare_caps(data: Dict[str, Any]) -> Dict[str, Any]:
+    """Hard caps spec: 10 technical dimensions, 8 cost notes, 6 discovery questions, 4 sources."""
+    technical = data.get("technical") or {}
+    if isinstance(technical.get("dimensions"), list):
+        technical["dimensions"] = technical["dimensions"][:10]
+    cost = data.get("cost") or {}
+    if isinstance(cost.get("pricing_model_notes"), list):
+        cost["pricing_model_notes"] = cost["pricing_model_notes"][:8]
+    if isinstance(cost.get("hidden_costs"), list):
+        cost["hidden_costs"] = cost["hidden_costs"][:8]
+    if isinstance(data.get("discovery_questions"), list):
+        data["discovery_questions"] = data["discovery_questions"][:6]
+    if isinstance(data.get("sources"), list):
+        data["sources"] = data["sources"][:4]
+    return data
+
+
+@router.post("/compare")
+async def run_compare(payload: CompareRequest) -> Dict[str, Any]:
+    """Sloane (Senior Competitive Architect, 15y) produces a structured technical and cost comparison versus a named competitor."""
+    competitor = payload.competitor.strip()
+    dims = [d.lower().strip() for d in (payload.dimensions or ["technical", "cost"]) if d]
+    if not dims:
+        dims = ["technical", "cost"]
+    # Filter to allowed values
+    dims = [d for d in dims if d in {"technical", "cost"}] or ["technical", "cost"]
+
+    ingest = float(payload.ingest_gb_day or 0)
+    retention = int(payload.retention_months or 12)
+    language = payload.language or "English"
+
+    log.info(
+        "tool.compare.start",
+        competitor=competitor,
+        dimensions=dims,
+        ingest_gb_day=ingest,
+        retention_months=retention,
+        language=language,
+    )
+
+    battlecard = _resolve_battlecard(competitor)
+    battlecard_used = battlecard is not None
+
+    tco_baseline: Optional[Dict[str, Any]] = None
+    if ingest > 0 and "cost" in dims:
+        try:
+            tco_baseline = calculators.estimate_tco(
+                ingest_gb_day=ingest,
+                retention_months=retention,
+            )
+        except Exception as exc:
+            log.warning("compare.tco_failed", reason=str(exc))
+            tco_baseline = None
+
+    user_prompt = (
+        language_preamble(language)
+        + tool_prompts.render_compare_prompt(
+            competitor=competitor,
+            dimensions=dims,
+            customer_context=payload.customer_context or "",
+            ingest_gb_day=ingest,
+            retention_months=retention,
+            battlecard=battlecard,
+            tco_baseline=tco_baseline,
+        )
+        + language_instruction(language)
+    )
+
+    # Override the mock to echo the scenario the caller actually sent so verification stays meaningful.
+    mock_payload = dict(_COMPARE_MOCK)
+    mock_payload["competitor"] = competitor
+    mock_payload["battlecard_used"] = battlecard_used
+    mock_cost = dict(mock_payload["cost"])
+    mock_cost["scenario"] = {"ingest_gb_day": ingest, "retention_months": retention}
+    mock_payload["cost"] = mock_cost
+
+    result: CompareOut = get_service().call_structured(
+        system=tool_prompts.COMPARE_SYSTEM,
+        user=user_prompt,
+        schema=tool_prompts.COMPARE_SCHEMA,
+        output_model=CompareOut,
+        model=_resolve_model(payload.model),
+        max_tokens=8192,
+        effort="high",
+        mock_payload=mock_payload,
+        audit_meta={
+            "agent": "tool_compare",
+            "tool": "compare",
+            "competitor": competitor,
+            "battlecard_used": battlecard_used,
+            "ingest_gb_day": ingest,
+            "retention_months": retention,
+        },
+    )
+
+    data = result.model_dump()
+    # Ensure server-side truth wins on the scenario echo, the battlecard flag, and the caps.
+    data["competitor"] = competitor
+    data["battlecard_used"] = battlecard_used
+    if isinstance(data.get("cost"), dict):
+        scenario = data["cost"].get("scenario") or {}
+        scenario["ingest_gb_day"] = ingest
+        scenario["retention_months"] = retention
+        data["cost"]["scenario"] = scenario
+        # If the user did not provide scale, force null dollar fields so we never publish hallucinated numbers.
+        if ingest <= 0:
+            data["cost"]["elastic_annual_usd"] = None
+            data["cost"]["competitor_annual_usd"] = None
+            data["cost"]["savings_vs_competitor_pct"] = None
+        # If the calculator ran, pin the Elastic baseline to the calculator number.
+        if tco_baseline is not None:
+            elastic_total = (tco_baseline.get("elastic") or {}).get("total_annual_usd")
+            if elastic_total is not None:
+                data["cost"]["elastic_annual_usd"] = float(elastic_total)
+                comp_total = data["cost"].get("competitor_annual_usd")
+                if isinstance(comp_total, (int, float)) and comp_total > 0:
+                    savings = (1.0 - (float(elastic_total) / float(comp_total))) * 100.0
+                    data["cost"]["savings_vs_competitor_pct"] = round(savings, 2)
+
+    data = _enforce_compare_caps(data)
+
+    log.info(
+        "tool.compare.complete",
+        competitor=competitor,
+        battlecard_used=battlecard_used,
+        dimensions=dims,
+        tech_count=len((data.get("technical") or {}).get("dimensions") or []),
+        discovery_count=len(data.get("discovery_questions") or []),
     )
     return data
 

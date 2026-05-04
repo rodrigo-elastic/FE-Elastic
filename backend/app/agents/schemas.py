@@ -173,6 +173,50 @@ class TroubleshootOut(BaseModel):
     caveats: List[str]
 
 
+# ============================================================ COMPARE (Sloane) ========
+
+
+class CompareTechnicalDimension(BaseModel):
+    axis: str
+    elastic: str
+    competitor: str
+    winner: str = Field(description="elastic | competitor | tie")
+    reasoning: str
+
+
+class CompareTechnical(BaseModel):
+    summary: str
+    dimensions: List[CompareTechnicalDimension]
+    elastic_advantages: List[str]
+    competitor_advantages: List[str]
+    honest_gaps: List[str]
+
+
+class CompareScenario(BaseModel):
+    ingest_gb_day: float
+    retention_months: int
+
+
+class CompareCost(BaseModel):
+    summary: str
+    scenario: CompareScenario
+    elastic_annual_usd: Optional[float] = None
+    competitor_annual_usd: Optional[float] = None
+    savings_vs_competitor_pct: Optional[float] = None
+    pricing_model_notes: List[str]
+    hidden_costs: List[str]
+
+
+class CompareOut(BaseModel):
+    competitor: str
+    battlecard_used: bool
+    technical: CompareTechnical
+    cost: CompareCost
+    discovery_questions: List[str]
+    follow_ups: List[str]
+    sources: List[str]
+
+
 # ============================================================ ORCHESTRATOR ============
 
 
