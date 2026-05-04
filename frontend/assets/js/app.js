@@ -697,6 +697,7 @@ function prettyModel(id) {
 }
 
 function renderList(host, items, isUpcoming) {
+  if (!host) return;
   clear(host);
   if (!items.length) {
     host.appendChild(el("li", { class: "muted empty" }, isUpcoming ? "No upcoming meetings match." : "No past meetings match."));
