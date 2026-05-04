@@ -95,11 +95,52 @@
         <div id="wf-fire-result"></div>
       </section>
 
+      <section class="wf-card" aria-labelledby="wf-h-renewal">
+        <h2 id="wf-h-renewal" data-i18n="wf.card.renewal">Renewal defense</h2>
+        <p style="font-size: 13px; color: rgba(255,255,255,.6); margin: 0 0 10px;" data-i18n="wf.renewal.note">
+          Workflow #3. Three or more risk signals on an account in the last 14 days triggers Sage, the Renewal Defender. Posts a retention play to fec-renewal-plays and auto-creates a Salesforce task for the account owner.
+        </p>
+        <div class="wf-actions">
+          <button class="btn primary" id="wf-fire-renewal" type="button" data-i18n="wf.btn.fire_renewal">Fire renewal signal</button>
+        </div>
+        <div id="wf-renewal-result" style="margin-top:10px;"></div>
+      </section>
+
       <section class="wf-card" style="grid-column: 1 / -1;" aria-labelledby="wf-h-fires">
         <h2 id="wf-h-fires"><span data-i18n="wf.card.fires">Recent webhook fires</span> <span style="font-size: 11px; color: rgba(255,255,255,.4); font-weight: normal; text-transform: none;" data-i18n="wf.card.fires.note">(auto-refreshes every 15s)</span></h2>
         <div class="wf-fires" id="wf-fires"><div class="wf-empty" data-i18n="wf.fires.empty">No fires yet.</div></div>
       </section>
     </div>
+
+    <script>
+      (function(){
+        var btn = document.getElementById("wf-fire-renewal");
+        var out = document.getElementById("wf-renewal-result");
+        if (!btn || !out) return;
+        btn.addEventListener("click", function(){
+          btn.disabled = true;
+          var orig = btn.textContent;
+          btn.textContent = "Firing...";
+          fetch("/api/v1/workflows/renewal-demo-fire", {method:"POST", headers:{"Content-Type":"application/json"}})
+            .then(function(r){ return r.json(); })
+            .then(function(d){
+              var p = (d && d.play) || {};
+              out.innerHTML =
+                "<div style=\"padding:12px;border-radius:8px;background:rgba(0,191,179,.12);border:1px solid rgba(0,191,179,.35);font-size:12.5px;\">" +
+                "<b>" + (p.account_name || "?") + "</b> . severity <b>" + (p.severity || "?") + "</b> . due " + (p.due_date || "?") + "<br>" +
+                "<span style=\"opacity:.8\">" + (p.retention_play || "").slice(0, 320) + "</span>" +
+                "</div>";
+            })
+            .catch(function(e){
+              out.innerHTML = "<div style=\"color:#ffb4b4\">Error: " + (e && e.message ? e.message : "request failed") + "</div>";
+            })
+            .finally(function(){
+              btn.disabled = false;
+              btn.textContent = orig;
+            });
+        });
+      })();
+    </script>
 
     <section id="toast-host"></section>
   </main>
