@@ -44,8 +44,19 @@
     stage: "all",
     range: "all",
     group: "stage",
+    view: "kanban",   // "kanban" (default) | "list"
     hydrated: false,
   };
+
+  function loadViewPref() {
+    try {
+      const v = localStorage.getItem("fec.customers.view");
+      if (v === "list" || v === "kanban") STATE.view = v;
+    } catch (_e) { /* ignore */ }
+  }
+  function saveViewPref() {
+    try { localStorage.setItem("fec.customers.view", STATE.view); } catch (_e) {}
+  }
 
   function tr(key, fallback) {
     if (typeof window.t === "function") return window.t(key, fallback);
@@ -533,8 +544,78 @@
     }
     if (empty) empty.hidden = true;
 
-    const groups = groupRecords(filtered, STATE.group);
-    renderGroups(groups, host);
+    if (STATE.view === "kanban") {
+      renderKanban(filtered, host);
+    } else {
+      const groups = groupRecords(filtered, STATE.group);
+      renderGroups(groups, host);
+    }
+  }
+
+  // Kanban: 4 columns (Scheduled, Pre-meeting, Post-meeting, Transcript)
+  // plus an "Other" column when something does not fit, each column lists
+  // records sorted by timestamp desc. Customer name is the headline; stage
+  // pill is implied by column. Click drills into the same href the list
+  // card uses.
+  function renderKanban(records, host) {
+    host.innerHTML = "";
+    const board = document.createElement("div");
+    board.className = "qr-kanban";
+    const cols = ["scheduled", "pre", "post", "transcript", "other"];
+    const map = new Map();
+    cols.forEach((c) => map.set(c, []));
+    records.forEach((r) => {
+      const k = map.has(r.stage) ? r.stage : "other";
+      map.get(k).push(r);
+    });
+    cols.forEach((c) => {
+      const list = map.get(c).slice().sort(byTimeDesc);
+      // Hide empty Other column to reduce noise.
+      if (c === "other" && list.length === 0) return;
+      const col = document.createElement("section");
+      col.className = "qr-kan-col";
+      col.dataset.stage = c;
+      const head = document.createElement("header");
+      head.className = "qr-kan-head";
+      head.innerHTML =
+        '<span class="qr-kan-title">' +
+        htmlEscape(tr(STAGE_LABELS_KEY[c] || ("qr.records.group." + c), STAGE_LABELS_FALLBACK[c] || c)) +
+        '</span><span class="qr-kan-count">' + list.length + '</span>';
+      col.appendChild(head);
+      const body = document.createElement("div");
+      body.className = "qr-kan-body";
+      if (!list.length) {
+        const e = document.createElement("div");
+        e.className = "qr-kan-empty";
+        e.textContent = tr("qr.kanban.empty", "Nothing here");
+        body.appendChild(e);
+      } else {
+        list.forEach((r) => body.appendChild(renderKanCard(r)));
+      }
+      col.appendChild(body);
+      board.appendChild(col);
+    });
+    host.appendChild(board);
+  }
+
+  function renderKanCard(record) {
+    const a = document.createElement("a");
+    a.className = "qr-kan-card";
+    a.href = record.href || "#";
+    if (record.target) a.target = record.target;
+    if (record.rel) a.rel = record.rel;
+    const title = record.customer_name || record.title || tr("qr.records.untitled", "Untitled");
+    const subtitle = record.title && record.title !== title ? record.title : (record.industry || "");
+    const when = record.timestamp_iso ? new Date(record.timestamp_iso) : null;
+    const whenStr = when && !isNaN(when.getTime()) ? when.toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "";
+    a.innerHTML =
+      '<div class="qr-kan-card-title">' + htmlEscape(title) + '</div>' +
+      (subtitle ? '<div class="qr-kan-card-sub">' + htmlEscape(subtitle) + '</div>' : '') +
+      '<div class="qr-kan-card-meta">' +
+      (whenStr ? '<span class="qr-kan-card-date">' + htmlEscape(whenStr) + '</span>' : '') +
+      (record.attendees && record.attendees.length ? '<span class="qr-kan-card-att">' + record.attendees.length + '</span>' : '') +
+      '</div>';
+    return a;
   }
 
   // -------------------------------------------------------------------------
@@ -550,6 +631,29 @@
   }
 
   function bindControls() {
+    // View toggle (Kanban / List). Persists in localStorage.
+    document.querySelectorAll('[data-qr-view]').forEach((btn) => {
+      const v = btn.getAttribute("data-qr-view");
+      if (v === STATE.view) btn.classList.add("is-active");
+      btn.addEventListener("click", () => {
+        if (STATE.view === v) return;
+        STATE.view = v;
+        saveViewPref();
+        document.querySelectorAll('[data-qr-view]').forEach((b) => {
+          b.classList.toggle("is-active", b.getAttribute("data-qr-view") === v);
+          b.setAttribute("aria-pressed", String(b.getAttribute("data-qr-view") === v));
+        });
+        // The Group-by control is irrelevant in kanban mode (the columns
+        // ARE the grouping). Disable it visually but keep the value so the
+        // user's preference is preserved when switching back to list.
+        const groupSel = document.getElementById("qr-fb-group");
+        if (groupSel) {
+          groupSel.disabled = v === "kanban";
+        }
+        render();
+      });
+    });
+
     const search = document.getElementById("qr-fb-search");
     const clear = document.querySelector(".qr-fb-search-clear");
     if (search) {
@@ -626,6 +730,9 @@
       // non-fatal; legacy sections remain visible if hydrate failed earlier.
     }
   }
+
+  // Read persisted view preference before first render.
+  loadViewPref();
 
   async function hydrate() {
     if (STATE.hydrated) return;

@@ -99,6 +99,17 @@
           </select>
         </label>
 
+        <div class="qr-fb-view" role="group" aria-label="View toggle">
+          <button type="button" class="qr-fb-view-btn" data-qr-view="kanban" aria-pressed="true" title="Kanban view by stage">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="5" height="16" rx="1"/><rect x="10" y="4" width="5" height="10" rx="1"/><rect x="17" y="4" width="4" height="14" rx="1"/></svg>
+            <span data-i18n="qr.view.kanban">Kanban</span>
+          </button>
+          <button type="button" class="qr-fb-view-btn" data-qr-view="list" aria-pressed="false" title="List view grouped by selection">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            <span data-i18n="qr.view.list">List</span>
+          </button>
+        </div>
+
         <span class="qr-fb-counter" id="qr-fb-counter" aria-live="polite"></span>
       </div>
     </section>
