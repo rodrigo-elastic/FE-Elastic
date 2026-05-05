@@ -11,7 +11,7 @@
     storageKey: "fec.autopilot.lastRun",
     totalSeconds: 45,
     steps: [
-      { id: "hook",  label: "7:42 a.m.",        duration: 2000  },
+      { id: "hook",  label: "8:42 a.m.",        duration: 2000  },
       { id: "qr",    label: "Quick Research",    duration: 13000 },
       { id: "brief", label: "Pre-meeting brief", duration: 15000 },
       { id: "fa",    label: "Top 5 questions",   duration: 13000 },
@@ -482,10 +482,57 @@
   // for the top five discovery questions. One workflow. No shortcuts.
 
   async function stepHook(signal) {
-    setCaption(0, "Tuesday. 7:42 a.m.",
-      "Banco Atlantico call in eighteen minutes. One hour of prep. No time.");
+    setCaption(0, "Tuesday. 8:42 a.m.",
+      "Banco Atlántico call in seventeen minutes. One hour of prep. No time.");
     hidePanel();
-    await sleep(2000, signal);
+
+    // Inject clock CSS once per session
+    if (!document.getElementById("ap-clock-style")) {
+      const s = document.createElement("style");
+      s.id = "ap-clock-style";
+      s.textContent = [
+        "@keyframes ap-blink{0%,100%{opacity:1}50%{opacity:0}}",
+        "@keyframes ap-clock-in{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}",
+        "@keyframes ap-clock-out{to{opacity:0;transform:scale(1.02)}}",
+        ".ap-clock-wrap{position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;",
+        "align-items:center;justify-content:center;background:rgba(4,4,10,.97);",
+        "animation:ap-clock-in .22s cubic-bezier(.4,0,.2,1) both}",
+        ".ap-clock-wrap.is-out{animation:ap-clock-out .22s cubic-bezier(.4,0,.2,1) both}",
+        ".ap-clock-day{font-size:clamp(11px,1.1vw,18px);letter-spacing:.25em;text-transform:uppercase;",
+        "color:#4b5563;margin-bottom:18px;font-family:system-ui,sans-serif;font-weight:500}",
+        ".ap-clock-time{font-size:clamp(88px,20vw,240px);font-weight:800;line-height:1;",
+        "font-family:'SF Mono',ui-monospace,'Cascadia Code',monospace;color:#f9fafb;letter-spacing:-.03em}",
+        ".ap-clock-colon{animation:ap-blink 1s step-start infinite;display:inline-block}",
+        ".ap-clock-ampm{font-size:clamp(14px,1.6vw,26px);color:#6b7280;margin-top:14px;",
+        "letter-spacing:.2em;font-family:system-ui,sans-serif;font-weight:500}",
+        ".ap-clock-sub{margin-top:28px;font-size:clamp(11px,1.05vw,16px);color:#00BFB3;",
+        "letter-spacing:.12em;font-family:system-ui,sans-serif;font-weight:600;text-transform:uppercase}",
+      ].join("");
+      document.head.appendChild(s);
+    }
+
+    const wrap = document.createElement("div");
+    wrap.className = "ap-clock-wrap";
+    wrap.innerHTML =
+      '<div class="ap-clock-day">Tuesday</div>' +
+      '<div class="ap-clock-time">8<span class="ap-clock-colon">:</span>42</div>' +
+      '<div class="ap-clock-ampm">AM</div>' +
+      '<div class="ap-clock-sub">Banco Atlántico &nbsp;·&nbsp; 9:00 AM &nbsp;·&nbsp; 17 min</div>';
+    document.body.appendChild(wrap);
+
+    // Ensure cleanup runs on abort (Esc) as well as normal completion
+    let cleaned = false;
+    const cleanup = () => {
+      if (cleaned) return;
+      cleaned = true;
+      wrap.remove();
+    };
+    if (signal) signal.addEventListener("abort", cleanup, { once: true });
+
+    await sleep(1700, signal);
+    wrap.classList.add("is-out");
+    await sleep(240, signal);
+    cleanup();
   }
 
   async function stepQr(signal) {
