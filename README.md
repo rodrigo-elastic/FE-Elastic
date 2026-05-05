@@ -4,9 +4,10 @@
   <img src="assets/hero-dashboard.png" alt="FE Copilot. Field Engineers, finally go home on time. Twelve MCP tools, eight demo scenarios, six hours per FE per week saved." width="1100" />
 </p>
 
-<p align="center"><em>Field Engineer Copilot. Twelve MCP tools. Eight demo scenarios. Six hours per FE per week back.</em></p>
+<p align="center"><em>Field Engineer Copilot. Fourteen MCP tools. Eight demo scenarios. Six hours per FE per week back.</em></p>
 
 <p align="center">
+  <a href="https://github.com/rodrigo-elastic/FE-Elastic/actions/workflows/ci.yml"><img src="https://github.com/rodrigo-elastic/FE-Elastic/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT" /></a>
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.11%2B-blue.svg" alt="Python 3.11+" /></a>
   <a href="https://www.elastic.co/"><img src="https://img.shields.io/badge/Elastic-9.3-005571.svg?logo=elastic&logoColor=white" alt="Elastic 9.3" /></a>

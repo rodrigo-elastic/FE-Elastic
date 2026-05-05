@@ -74,3 +74,78 @@ jobs:
             echo "::error::Found em-dash or en-dash characters. Replace with ASCII '-' or rephrase."
             exit 1
           fi
+
+  smoke:
+    name: Integration smoke (backend + MCP + frontend)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PYTHONPATH: backend
+      APP_PORT: "8123"
+      APP_HOST: "127.0.0.1"
+      APP_ENV: "ci"
+      LOG_LEVEL: "WARNING"
+      RUNTIME_DIR: "./runtime"
+      ANTHROPIC_API_KEY: ""
+      MODEL_DEFAULT: "claude-haiku-4-5"
+      ELASTICSEARCH_URL: ""
+      ELASTICSEARCH_API_KEY: ""
+      KIBANA_URL: ""
+      KIBANA_API_KEY: ""
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
+      - name: Install backend requirements
+        run: pip install -r backend/requirements.txt
+
+      - name: Start backend in background
+        run: |
+          mkdir -p runtime
+          PYTHONPATH=backend nohup python -m uvicorn app.main:app \
+            --host 127.0.0.1 --port 8123 \
+            > runtime/uvicorn.log 2>&1 &
+          echo $! > runtime/uvicorn.pid
+
+      - name: Wait for /api/v1/health
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8123/api/v1/health > /dev/null; then
+              echo "backend up after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::backend failed to come up in 30s"
+          tail -n 200 runtime/uvicorn.log || true
+          exit 1
+
+      - name: Run integration smoke
+        run: PYTHONPATH=backend python backend/scripts/integration_smoke.py
+
+      - name: Upload smoke report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-smoke-report
+          path: |
+            docs/integration-smoke-report.md
+            runtime/uvicorn.log
+          if-no-files-found: ignore
+
+      - name: Stop backend
+        if: always()
+        run: |
+          if [ -f runtime/uvicorn.pid ]; then
+            kill "$(cat runtime/uvicorn.pid)" 2>/dev/null || true
+          fi
