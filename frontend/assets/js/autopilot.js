@@ -11,14 +11,11 @@
     storageKey: "fec.autopilot.lastRun",
     totalSeconds: 45,
     steps: [
-      { id: "hook",  label: "7:42 a.m.",        duration: 1000 },
-      { id: "qr",    label: "Quick Research",    duration: 7000 },
-      { id: "brief", label: "Pre-meeting brief", duration: 7000 },
-      { id: "fa",    label: "Top 5 questions",   duration: 8000 },
-      { id: "ws",    label: "Workspace",         duration: 8000 },
-      { id: "ab",    label: "Agent Builder",     duration: 7000 },
-      { id: "bc",    label: "Battlecards",       duration: 5000 },
-      { id: "recap", label: "Recap",             duration: 2000 },
+      { id: "hook",  label: "7:42 a.m.",        duration: 2000  },
+      { id: "qr",    label: "Quick Research",    duration: 13000 },
+      { id: "brief", label: "Pre-meeting brief", duration: 15000 },
+      { id: "fa",    label: "Top 5 questions",   duration: 13000 },
+      { id: "recap", label: "Ready.",            duration: 2000  },
     ],
   };
 
@@ -479,134 +476,116 @@
   }
 
   // ============================================================ Steps
-  // 8-step UI-driven demo, 45s total. Types, clicks, and scrolls inside a
-  // same-origin iframe. No autopilot step blocks on Anthropic credits; the
-  // Field Assistant chip fires a live request but the step resolves on a
-  // fixed timer whether or not the response finishes streaming.
+  // 5-step pre-meeting prep story, 45s total. Follows one FE with 18 minutes
+  // before a Banco Atlantico call: types the account name, picks the FSI Banking
+  // template, generates the brief, reads through it, then asks the Field Assistant
+  // for the top five discovery questions. One workflow. No shortcuts.
 
   async function stepHook(signal) {
     setCaption(0, "Tuesday. 7:42 a.m.",
-      "Banco Atlantico call at 8:00. Splunk renewal on their desk. Eighteen minutes.");
-    hidePanel();
-    await sleep(1000, signal);
-  }
-
-  async function stepQr(signal) {
-    setCaption(1, "Quick Research. London Bank.",
-      "FSI Banking template. One click to fill context.");
-    await navTo("/quick-research.html", signal);
-
-    // Type company name fast
-    const nameInput = await waitForEl("#qr-name", 3000, signal);
-    if (nameInput) await typeInto(nameInput, "London Bank", 45, signal);
-    await sleep(180, signal);
-
-    // Click Banking & Financial Services template
-    const tplBtn = await waitForEl('[data-tpl-id="banking"]', 2500, signal);
-    if (tplBtn) { iframeClick(tplBtn); await sleep(700, signal); }
-
-    setCaption(1, "Brief generating. FSI Banking template applied.",
-      "DORA obligations. Splunk TCO delta. Tier-1 EU bank personas.");
-    await sleep(500, signal);
-
-    // Jump to a pre-existing meeting so there is no API wait
-    await navTo("/meeting.html?id=northwind-mtg-prev-001&brief=1", signal);
-  }
-
-  async function stepBrief(signal) {
-    setCaption(2, "Pre-meeting brief. DORA. Splunk TCO. GDPR.",
-      "Before the first slide. Every section sourced, every risk mapped.");
-    await sleep(500, signal);
-    await iframeScrollBy(360, signal);
-    await iframeScrollBy(420, signal);
-    await iframeScrollBy(480, signal);
-    await iframeScrollBy(520, signal);
-    await iframeScrollBy(380, signal);
-  }
-
-  async function stepFa(signal) {
-    setCaption(3, "Field Assistant. Top 5 discovery questions.",
-      "Anchored to MEDDPICC. Grounded in the brief. In seconds.");
-
-    // Scroll back to the top so the Field Assistant chips are visible
-    const doc = iframeDoc();
-    if (doc) { (doc.scrollingElement || doc.documentElement).scrollTo({ top: 0, behavior: "smooth" }); }
-    await sleep(600, signal);
-
-    const chip = await waitForEl(".abm-chip", 3000, signal);
-    if (chip) {
-      chip.scrollIntoView({ behavior: "smooth", block: "center" });
-      await sleep(380, signal);
-      iframeClick(chip);
-      await sleep(300, signal);
-    }
-
-    // Let the streaming response run; move on regardless after the window
-    await sleep(6500, signal);
-  }
-
-  async function stepWs(signal) {
-    setCaption(4, "Workspace. London Bank.",
-      "Every brief, every meeting. Scroll the timeline. Salesforce stays the system of record.");
-    await navTo("/workspace.html", signal);
-
-    // Type in the search bar to demonstrate live filtering
-    const searchInput = await waitForEl("#qr-fb-search", 3000, signal);
-    if (searchInput) {
-      await typeInto(searchInput, "London", 55, signal);
-      await sleep(480, signal);
-    }
-    await iframeScrollBy(320, signal);
-    await sleep(380, signal);
-
-    // Switch to post-meeting view to show MEDDPICC output
-    setCaption(4, "Post-meeting. MEDDPICC extracted. Salesforce updated.",
-      "Economic Buyer, Champion, Competition. Elastic Workflow pushed it automatically.");
-    await navTo("/meeting.html?id=northwind-mtg-prev-001&post=1", signal);
-    await sleep(380, signal);
-    await iframeScrollBy(450, signal);
-    await iframeScrollBy(420, signal);
-  }
-
-  async function stepAb(signal) {
-    setCaption(5, "Agent Builder. Three context-driven agents.",
-      "Native MCP and A2A. RFP Responder, Migration Specialist, Compliance Pursuit. Your Kibana cluster.");
-    await navTo("/agent-builder.html", signal);
-    await sleep(400, signal);
-    await iframeScrollBy(320, signal);
-    await sleep(480, signal);
-
-    // Click "new agent" to show the creation form
-    const newBtn = await waitForEl("#ab-new-agent", 2000, signal);
-    if (newBtn) {
-      newBtn.scrollIntoView({ behavior: "smooth", block: "center" });
-      await sleep(380, signal);
-      iframeClick(newBtn);
-      await sleep(2600, signal);
-    } else {
-      await sleep(3400, signal);
-    }
-  }
-
-  async function stepBc(signal) {
-    setCaption(6, "Thirty-one battlecards. Ranked by marketshare.",
-      "Splunk. Datadog. CrowdStrike. TCO, talking points, objection handlers. In the room when you need them.");
-    await navTo("/battlecards.html", signal);
-    await sleep(380, signal);
-    await iframeScrollBy(460, signal);
-    await iframeScrollBy(480, signal);
-    await iframeScrollBy(460, signal);
-  }
-
-  async function stepRecap(signal) {
-    setCaption(7, "Six hours per FE per week back.",
-      "That's what we just took back. Move pilots to real-world impact.");
-    fireConfetti(140);
+      "Banco Atlantico call in eighteen minutes. One hour of prep. No time.");
     hidePanel();
     await sleep(2000, signal);
   }
 
-  const STEP_FNS = [stepHook, stepQr, stepBrief, stepFa, stepWs, stepAb, stepBc, stepRecap];
+  async function stepQr(signal) {
+    setCaption(1, "Quick Research. Banco Atlántico.",
+      "FSI Banking template. Fill it in. Generate the brief.");
+    await navTo("/quick-research.html", signal);
+
+    await sleep(350, signal);
+    const nameInput = await waitForEl("#qr-name", 3000, signal);
+    if (nameInput) await typeInto(nameInput, "Banco Atlántico", 68, signal);
+    await sleep(480, signal);
+
+    // Pick the Banking & Financial Services template - watch the fields fill
+    const tplBtn = await waitForEl('[data-tpl-id="banking"]', 2500, signal);
+    if (tplBtn) { iframeClick(tplBtn); await sleep(950, signal); }
+
+    // Add context in the notes field - a real FE would jot this down
+    const notes = await waitForEl("#qr-notes", 1000, signal);
+    if (notes) {
+      await sleep(200, signal);
+      await typeInto(notes, "Splunk renewal on desk. DORA deadline June.", 42, signal);
+      await sleep(320, signal);
+    }
+
+    setCaption(1, "Generating. FSI Banking. DORA. Splunk TCO.",
+      "Every section sourced in seconds.");
+
+    // Click Generate and wait for the page to navigate to meeting.html.
+    // If the API responds in time we get the real brief; otherwise we fall back
+    // to a pre-existing demo meeting so the demo never stalls.
+    const submitBtn = await waitForEl("#qr-submit", 1000, signal);
+    const loadP = waitForLoad(signal, 6500);
+    if (submitBtn) iframeClick(submitBtn);
+
+    try {
+      await loadP;
+      await sleep(280, signal);
+      const win = state.nodes.iframe.contentWindow;
+      if (win && !win.location.pathname.includes("meeting")) {
+        await navTo("/meeting.html?id=northwind-mtg-prev-001&brief=1", signal);
+      }
+    } catch (e) {
+      if (e && e.name === "AbortError") throw e;
+      await navTo("/meeting.html?id=northwind-mtg-prev-001&brief=1", signal);
+    }
+  }
+
+  async function stepBrief(signal) {
+    setCaption(2, "Pre-meeting brief ready.",
+      "DORA obligations. Splunk TCO delta. Key personas. Cited.");
+    await sleep(1100, signal);
+
+    // Read through each section at human pace - pause on the dense parts
+    await iframeScrollBy(290, signal); await sleep(420, signal);
+    await iframeScrollBy(330, signal); await sleep(820, signal); // DORA - read it
+    await iframeScrollBy(360, signal); await sleep(420, signal);
+    setCaption(2, "DORA deadline. Splunk TCO. Tier-1 EU bank.",
+      "Sourced. No manual research.");
+    await sleep(360, signal);
+    await iframeScrollBy(370, signal); await sleep(640, signal); // Splunk TCO - read it
+    await iframeScrollBy(350, signal); await sleep(820, signal); // news signals - read it
+    await iframeScrollBy(330, signal); await sleep(420, signal);
+    await iframeScrollBy(310, signal); await sleep(540, signal);
+    await iframeScrollBy(290, signal); await sleep(720, signal); // key personas - read it
+    await iframeScrollBy(270, signal); await sleep(520, signal);
+    await sleep(480, signal);
+  }
+
+  async function stepFa(signal) {
+    setCaption(3, "Field Assistant. Top 5 questions to ask.",
+      "MEDDPICC-anchored. Grounded in the brief just generated.");
+
+    // Scroll back up so the chip row is visible
+    const doc = iframeDoc();
+    if (doc) { (doc.scrollingElement || doc.documentElement).scrollTo({ top: 0, behavior: "smooth" }); }
+    await sleep(680, signal);
+
+    const chip = await waitForEl(".abm-chip", 3000, signal);
+    if (chip) {
+      chip.scrollIntoView({ behavior: "smooth", block: "center" });
+      await sleep(520, signal);
+      iframeClick(chip);
+      await sleep(380, signal);
+      setCaption(3, "Streaming. Five questions. Ready for the call.",
+        "Economic Buyer. Champion. Competition angle. Pricing objection. Technical fit.");
+    }
+
+    // Let the response stream - this is the wow moment
+    await sleep(10500, signal);
+  }
+
+  async function stepRecap(signal) {
+    setCaption(4, "Eighteen minutes. That's all it took.",
+      "Brief. Questions. Walk into the call. That's what we just took back.");
+    fireConfetti(100);
+    hidePanel();
+    await sleep(2000, signal);
+  }
+
+  const STEP_FNS = [stepHook, stepQr, stepBrief, stepFa, stepRecap];
 
   // ============================================================ Run loop
   async function runStep(idx, signal) {
@@ -741,8 +720,8 @@
     const sectionsClean = AP.steps.length - state.failures.length;
     const elapsedStr = `${(elapsedMs / 1000).toFixed(1)}s`;
     const card = el("div", { class: "ap-complete", role: "dialog", "aria-modal": "true", "aria-label": "Autopilot complete" }, [
-      el("h3", { text: "That's what we just took back." }),
-      el("p", { text: "Fourteen MCP tools. Thirty-one battlecards. Twenty industries. Eight demo scenarios. MIT licensed. Take it home." }),
+      el("h3", { text: "Eighteen minutes. That's all it took." }),
+      el("p", { text: "Account research. Pre-meeting brief. Five discovery questions. Everything a Tier-1 EU bank call needs - before the coffee is cold." }),
       el("div", { class: "ap-stat-row" }, [
         el("div", { class: "ap-stat" }, [
           el("strong", { text: elapsedStr }),
@@ -815,7 +794,7 @@
         el("span", { class: "ap-label", text: "Show me the magic" }),
         el("span", { class: "ap-sub", text: "45s" }),
       ]),
-      el("span", { class: "autopilot-hint", text: "One click. Forty-five seconds. Pre-meeting brief, FE Brain, GDPR agent, MEDDPICC, Kibana dashboards." }),
+      el("span", { class: "autopilot-hint", text: "One click. Forty-five seconds. Account research, pre-meeting brief, discovery questions. All before the call." }),
     ]);
 
     // Place under the lede paragraph but above the hero stats, if possible.
