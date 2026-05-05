@@ -160,7 +160,7 @@ Total spoken words: 232. Silent autopilot: 42 s. Demo click time: 46 s. Math clo
 | Browser offline | Friendly "Network unavailable" toast (no service worker, partial mitigation) |
 | Backend dies overnight | Restart command: `pkill -f 'uvicorn.*8123'; PYTHONPATH=backend nohup .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8123 > /tmp/fec-backend.log 2>&1 &` |
 | Real customer name leak | W12A rename + W21 cleanup + W23B compliance audit; 0 leaks in user-facing copy |
-| Em-dash leak (looks AI-generated) | 0 hits across 230+ files in every smoke run; `—`/`–` literal escapes used in any audit script that needs to mention them |
+| Em-dash leak (looks AI-generated) | 0 hits across 230+ files in every smoke run; unicode escapes (`\x{2014}`, `\x{2013}`) used in any audit script that needs to scan for them |
 
 ---
 
