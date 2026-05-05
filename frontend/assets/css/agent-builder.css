@@ -1057,7 +1057,7 @@
 @media (max-width: 768px) {
   /* Suggested chips: full-width tappable rows so prompts are not 12px wide. */
   .ab-suggested { flex-direction: column; align-items: stretch; gap: 8px; }
-  .ab-chip { width: 100%; padding: 10px 14px; font-size: 13.5px; text-align: left; }
+  .ab-chip { width: 100%; padding: 12px 14px; font-size: 13.5px; text-align: left; min-height: 44px; }
 
   /* Chat surface: messages take full width; user bubble loses 80% cap. */
   .ab-msg-user, .ab-msg-assistant { max-width: 100%; align-self: stretch; }
@@ -1072,9 +1072,9 @@
   /* Mini embed: composer becomes single column. */
   .abm-host { padding: 12px; }
   .abm-composer { grid-template-columns: 1fr; }
-  .abm-send { width: 100%; }
+  .abm-send { width: 100%; min-height: 44px; }
   .abm-suggestions { flex-direction: column; align-items: stretch; }
-  .abm-chip { width: 100%; text-align: left; padding: 8px 12px; font-size: 12.5px; }
+  .abm-chip { width: 100%; text-align: left; padding: 10px 12px; font-size: 12.5px; min-height: 40px; }
   .abm-chat { max-height: none; }
 
   /* Demo data cards: single column, comfortable padding. */
@@ -1082,6 +1082,39 @@
   .dd-card { padding: 16px; }
   .dd-actions { flex-wrap: wrap; }
   .dd-actions .btn { flex: 1 1 auto; }
+
+  /* Modal close (create / edit agent dialog): inflate to 36 px square plus
+     a transparent hit pad so total touch area clears 44 px. */
+  .ab-modal-card { padding: 22px 18px 18px; }
+  .ab-modal-close {
+    position: relative;
+    width: 36px;
+    height: 36px;
+  }
+  .ab-modal-close::before { content: ""; position: absolute; inset: -4px; }
+  .ab-modal-actions { flex-wrap: wrap; }
+  .ab-modal-actions .btn { flex: 1 1 auto; min-height: 44px; }
+
+  /* Agent list trash icon. Visual stays 32x32; ::before pseudo doubles the
+     tappable area without growing the rendered button. */
+  .ab-agent-trash {
+    position: absolute;
+    width: 32px;
+    height: 32px;
+  }
+  .ab-agent-trash::before { content: ""; position: absolute; inset: -6px; }
+
+  /* Tool bundle and tool-section-select buttons sit on a chip row; ensure
+     they clear 36 px on mobile. */
+  .ab-tool-bundle { padding: 8px 12px; min-height: 36px; }
+  .ab-tool-section-select { padding: 8px 6px; min-height: 36px; }
+  .ab-tool-search-clear {
+    width: 28px;
+    height: 28px;
+    font-size: 13px;
+  }
+  .ab-tool-search-clear::before { content: ""; position: absolute; inset: -8px; }
+  .ab-tool-search input[type="search"] { font-size: 14px; min-height: 44px; }
 }
 
 /* ============================================================ Selected tools summary */

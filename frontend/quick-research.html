@@ -38,8 +38,13 @@
     .demo-banner { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 8px 16px; background: #fff3cd; color: #856404; font-size: 12px; line-height: 1.4; border-bottom: 1px solid #f5e2a4; text-align: center; }
     .demo-banner.is-hidden { display: none; }
     .demo-banner-text { flex: 1; max-width: 1100px; }
-    .demo-banner-close { background: transparent; border: 0; color: #856404; font-size: 14px; cursor: pointer; padding: 2px 6px; line-height: 1; border-radius: 3px; }
+    .demo-banner-close { position: relative; background: transparent; border: 0; color: #856404; font-size: 16px; cursor: pointer; padding: 6px 10px; line-height: 1; border-radius: 4px; min-width: 32px; min-height: 32px; }
+    .demo-banner-close::before { content: ""; position: absolute; inset: -6px; }
     .demo-banner-close:hover { background: rgba(133, 100, 4, 0.12); }
+    @media (max-width: 768px) {
+      .demo-banner { font-size: 13px; padding: 8px 12px; gap: 8px; text-align: left; }
+      .demo-banner-close { padding: 8px 12px; min-width: 36px; min-height: 36px; }
+    }
   </style>
 </head>
 <body class="quick-research-page">

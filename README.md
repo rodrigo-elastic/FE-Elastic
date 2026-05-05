@@ -75,7 +75,26 @@ Persistent left sidebar on every page (`frontend/assets/js/tools-rail.js`). Five
 
 ### Reusability
 
-One codebase, every FE segment. The same three agents serve SMB, Mid-market, Enterprise, and Public Sector because the dossier abstraction (`backend/app/repositories/synthetic.py`) is segment-agnostic. The twelve tools (POC plan, SPL to ES|QL, compliance mapping, stack extract, code sample, cost calc, capacity, knowledge search, troubleshoot, compare, orchestrator, proposal) are the daily-driver utilities every FE asks for in chat. Each persona prompt (Marta, Diego, Priya, Aiko, Kenji, Mei, Ravi, Sloane, Auro, Carmen) is a frozen system block in `backend/app/agents/prompts/tools.py` that any FE can fork. Three demo accounts ship as fictional placeholders: Northwind Pay, Mercado Atlas, Banco Atlántico. Eight demo scenarios ship today: Black Friday, Credential Stuffing, Noisy Microservice, GDPR audit, Supply chain attack, FSI banking fraud, Healthcare HIPAA audit, Government CDM.
+One codebase, every FE segment. The same three agents serve SMB, Mid-market, Enterprise, and Public Sector because the dossier abstraction (`backend/app/repositories/synthetic.py`) is segment-agnostic. The twelve tools (POC plan, SPL to ES|QL, compliance mapping, stack extract, code sample, cost calc, capacity, knowledge search, troubleshoot, compare, orchestrator, proposal) are the daily-driver utilities every FE asks for in chat. Each persona prompt (Marta, Diego, Priya, Aiko, Kenji, Mei, Ravi, Sloane, Auro, Carmen, Lyra, Sage) is a frozen system block in `backend/app/agents/prompts/tools.py` (plus the Renewal Defender service in `backend/app/services/renewal_defender.py`) that any FE can fork. Three demo accounts ship as fictional placeholders: Northwind Pay, Mercado Atlas, Banco Atlántico. Eight demo scenarios ship today: Black Friday, Credential Stuffing, Noisy Microservice, GDPR audit, Supply chain attack, FSI banking fraud, Healthcare HIPAA audit, Government CDM.
+
+The full persona roster (12 named expert personas, one frozen prompt each):
+
+| Persona | Tool | One-line role |
+|---|---|---|
+| Marta | `fec_poc_plan` | Senior POV Architect, builds 4-8 week proof-of-value plans |
+| Diego | `fec_spl_to_esql` | Ex-Splunk consultant, 10 years on SPL, translates to ES\|QL |
+| Priya | `fec_compliance` | Ex-PwC compliance, maps DORA/HIPAA/PCI to Elastic controls |
+| Aiko | `fec_stack_extract` | Discovery analyst, pulls tech stacks from raw transcripts |
+| Kenji | `fec_code_sample` | SDK cookbook author, writes runnable Elastic samples |
+| Lyra | `fec_cost_calc` | Senior Pricing Architect, defends TCO vs Splunk and Datadog |
+| Mei | `fec_knowledge_search` | Ex-Elastic enablement docs lead, runs FE Brain hybrid retrieval |
+| Ravi | `fec_troubleshoot` | Ex-Elastic support, 1000+ tickets resolved, ES\|QL diagnostics |
+| Sloane | `fec_compare` | Senior Competitive Architect, structured Elastic vs competitor |
+| Auro | `fec_orchestrator` | Senior FE Conductor, routes to multiple specialists in parallel |
+| Carmen | `fec_proposal` | Senior Pursuit Lead, drafts one-page customer proposals |
+| Sage | `renewal_defender` (workflow) | Senior Renewal Architect, retention plays for at-risk accounts |
+
+Two of the twelve MCP tools (`fec_capacity` and the calculator side of `fec_cost_calc`) are pure deterministic compute and intentionally have no persona: they are sized as calculators, not opinion engines. Lyra's persona owns the narrative wrapper around the cost calculator output.
 
 ### Demo Quality
 
@@ -241,7 +260,7 @@ What ships in this hackathon submission is opinionated and complete enough to us
 - **Salesforce CTI integration**: detect when a FE is on a customer call, auto-launch the live companion, auto-fill the post-meeting record from the call transcript. Closes the "manually start the live mode" friction.
 - **More demo data scenarios**: search relevance regression, vector search quality decay, multi-tenant noisy neighbour, regional failover replay, identity provider migration. Each scenario is a story that maps a customer pain to the corresponding Elastic capability.
 - **Active monitoring of the FE Copilot itself**: `fec-audit` already feeds the self-observability dashboard. Add SLO burn alerts on token spend per FE, anomaly detection on tool failure rates, weekly cost reports per region. Closes the meta loop: Elastic monitors Elastic monitoring Elastic.
-- **Open-sourcing the persona pack**: extract the persona prompts (Marta, Diego, Priya, Aiko, Kenji, Mei, Ravi, Auro, Sloane, Carmen, plus the future ones) into a separate repo so other companies can adapt them. Each persona becomes a community-maintained YAML with versioning.
+- **Open-sourcing the persona pack**: extract the persona prompts (Marta, Diego, Priya, Aiko, Kenji, Lyra, Mei, Ravi, Sloane, Auro, Carmen, Sage, plus the future ones) into a separate repo so other companies can adapt them. Each persona becomes a community-maintained YAML with versioning.
 
 ### Stretch ideas (parking lot, not committed)
 
@@ -291,13 +310,29 @@ The `docs/` directory has the long-form material. The pieces most worth opening:
 
 QA reports from W19 onward (`docs/qa-w19*.md` through `docs/qa-w27*.md`) and the FE Brain corpus audits (`docs/fe-brain-*.md`, `docs/battlecards-*.md`) are kept in `docs/` as a working archive of audit waves; they are referenced from `docs/qa-overnight-batches.md` and `docs/qa-w26a-copy.md` rather than from this README.
 
+## About the maker
+
+<p align="center">
+  <img src="assets/avatar-rodrigo.jpg" alt="Rodrigo Careaga" width="160" />
+</p>
+
+> Drop a 400x400 JPG at `assets/avatar-rodrigo.jpg` to fill the placeholder above. The README renders the file inline once it lands in the repo; no build step needed.
+
+**Rodrigo Careaga** is a Senior Customer Architect at Elastic working out of EMEA. He built FE Copilot in ten days for the FY27 SKO FE Summit Hackathon, on top of the same Field Engineer playbook he runs every week with real customers.
+
+- LinkedIn: [linkedin.com/in/rodrigocareaga](https://www.linkedin.com/in/rodrigocareaga/)
+- GitHub: [@rodrigo-elastic](https://github.com/rodrigo-elastic)
+- Email: lrodrigocareaga@gmail.com
+
+**Why I built this.** I built FE Copilot because I was the FE the project describes. Six hours a week, every week, lost to repeated pre-meeting research, post-meeting writeups, and copy-pasting the same battlecard talking points. This is the tool I wished I had.
+
 ## Acknowledgements
 
 - The Elastic FE community for fifteen years of pattern matching that this project tries to encode.
 - The Anthropic Applied team for prompt caching, structured output, and Haiku 4.5.
 - The Elastic Search and Kibana teams for shipping Agent Builder and Workflows in 9.x.
 - The MCP working group for the protocol that lets Kibana introspect a third-party tool catalog.
-- Marta, Diego, Priya, Aiko, Kenji, Mei: every persona prompt is a composite of senior FEs and partners I have worked with.
+- Marta, Diego, Priya, Aiko, Kenji, Lyra, Mei, Ravi, Sloane, Auro, Carmen, Sage: every persona prompt is a composite of senior FEs and partners I have worked with.
 - All data in this project is synthetic. No customer data is used or stored.
 
 ## License

@@ -64,6 +64,8 @@
         <span class="ab-pill ab-pill-muted" id="audit-pill-calls">- calls last 7d</span>
         <span class="ab-pill ab-pill-muted" id="audit-pill-tokens">- tokens last 7d</span>
         <span class="ab-pill ab-pill-muted" id="audit-pill-mock">- % mock</span>
+        <span class="ab-pill ab-pill-muted" id="audit-pill-fallback" title="Calls that fell back to mock or template due to credits or errors">- fallbacks</span>
+        <span class="ab-pill ab-pill-muted" id="audit-pill-top" title="Tool that consumed the most tokens in the current window">- top tool</span>
         <a class="ab-pill ab-pill-link"
            id="audit-pill-kibana"
            href="#"
@@ -74,6 +76,34 @@
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 4h6v6"/><path d="M20 4 10 14"/><path d="M20 14v6H4V4h6"/></svg>
           Open in Kibana
         </a>
+      </div>
+    </section>
+
+    <section class="audit-controls" aria-label="Audit filters">
+      <div class="audit-control audit-search-wrap">
+        <label class="audit-control-lbl" for="audit-search">Search</label>
+        <input
+          id="audit-search"
+          class="audit-search"
+          type="search"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="Filter by tool, agent, model, or mode (live, mock, fallback)..."
+          aria-describedby="audit-search-hint" />
+        <span class="audit-control-hint" id="audit-search-hint">Debounced 150 ms. Matches any column.</span>
+      </div>
+      <div class="audit-control audit-range-wrap" role="group" aria-label="Date range">
+        <label class="audit-control-lbl" for="audit-range">Range</label>
+        <div class="audit-range" id="audit-range">
+          <button type="button" class="audit-range-btn" data-range="1h">Last hour</button>
+          <button type="button" class="audit-range-btn is-active" data-range="24h">Last 24h</button>
+          <button type="button" class="audit-range-btn" data-range="7d">Last 7d</button>
+          <button type="button" class="audit-range-btn" data-range="all">All</button>
+        </div>
+      </div>
+      <div class="audit-control audit-result-wrap" aria-live="polite">
+        <span class="audit-control-lbl">Showing</span>
+        <span class="audit-result-count" id="audit-result-count">-</span>
       </div>
     </section>
 
@@ -149,17 +179,17 @@
     <section class="audit-card" aria-labelledby="rollup-lbl">
       <header class="audit-card-head">
         <h2 id="rollup-lbl">Per-agent rollup</h2>
-        <span class="audit-card-meta">calls, avg tokens, total tokens, last seen</span>
+        <span class="audit-card-meta">click any header to sort</span>
       </header>
       <div class="audit-table-scroll">
-        <table class="audit-table" id="audit-rollup">
+        <table class="audit-table audit-table-sortable" id="audit-rollup">
           <thead>
             <tr>
-              <th scope="col">Agent</th>
-              <th scope="col" class="num">Calls</th>
-              <th scope="col" class="num">Avg tokens</th>
-              <th scope="col" class="num">Total tokens</th>
-              <th scope="col">Last seen</th>
+              <th scope="col" class="audit-th-sort" data-sort="agent" aria-sort="none"><button type="button" class="audit-sort-btn">Agent <span class="audit-sort-glyph" aria-hidden="true"></span></button></th>
+              <th scope="col" class="num audit-th-sort" data-sort="calls" aria-sort="none"><button type="button" class="audit-sort-btn">Calls <span class="audit-sort-glyph" aria-hidden="true"></span></button></th>
+              <th scope="col" class="num audit-th-sort" data-sort="avg" aria-sort="none"><button type="button" class="audit-sort-btn">Avg tokens <span class="audit-sort-glyph" aria-hidden="true"></span></button></th>
+              <th scope="col" class="num audit-th-sort" data-sort="total" aria-sort="none"><button type="button" class="audit-sort-btn">Total tokens <span class="audit-sort-glyph" aria-hidden="true"></span></button></th>
+              <th scope="col" class="audit-th-sort" data-sort="lastSeen" aria-sort="descending"><button type="button" class="audit-sort-btn">Last seen <span class="audit-sort-glyph" aria-hidden="true"></span></button></th>
             </tr>
           </thead>
           <tbody id="audit-rollup-body">
@@ -172,11 +202,25 @@
     <section class="audit-card" aria-labelledby="recent-lbl">
       <header class="audit-card-head">
         <h2 id="recent-lbl">Recent fires</h2>
-        <span class="audit-card-meta">last 10 events</span>
+        <span class="audit-card-meta" id="audit-recent-meta">last 10 events, click any header to sort</span>
       </header>
-      <ol class="audit-recent" id="audit-recent" aria-live="polite">
-        <li class="audit-recent-empty">Loading events...</li>
-      </ol>
+      <div class="audit-table-scroll">
+        <table class="audit-table audit-table-sortable" id="audit-recent-table">
+          <thead>
+            <tr>
+              <th scope="col" class="audit-th-sort" data-sort="ts" aria-sort="descending"><button type="button" class="audit-sort-btn">Timestamp <span class="audit-sort-glyph" aria-hidden="true"></span></button></th>
+              <th scope="col" class="audit-th-sort" data-sort="agent" aria-sort="none"><button type="button" class="audit-sort-btn">Agent <span class="audit-sort-glyph" aria-hidden="true"></span></button></th>
+              <th scope="col" class="audit-th-sort" data-sort="tool" aria-sort="none"><button type="button" class="audit-sort-btn">Tool <span class="audit-sort-glyph" aria-hidden="true"></span></button></th>
+              <th scope="col" class="audit-th-sort" data-sort="model" aria-sort="none"><button type="button" class="audit-sort-btn">Model <span class="audit-sort-glyph" aria-hidden="true"></span></button></th>
+              <th scope="col" class="audit-th-sort" data-sort="mode" aria-sort="none"><button type="button" class="audit-sort-btn">Mode <span class="audit-sort-glyph" aria-hidden="true"></span></button></th>
+              <th scope="col" class="num audit-th-sort" data-sort="tokens" aria-sort="none"><button type="button" class="audit-sort-btn">Tokens <span class="audit-sort-glyph" aria-hidden="true"></span></button></th>
+            </tr>
+          </thead>
+          <tbody id="audit-recent-body" aria-live="polite">
+            <tr><td colspan="6" class="audit-empty">Loading events...</td></tr>
+          </tbody>
+        </table>
+      </div>
     </section>
 
     <section id="toast-host" role="status" aria-live="polite" aria-atomic="false"></section>

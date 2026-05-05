@@ -3528,6 +3528,34 @@ body.portal-page.has-tools-rail.is-rail-collapsed .container {
   /* Meeting cards: actions wrap full width; topbar stays clean. */
   .meeting-header h1 { font-size: 22px; }
   .row-between { flex-direction: column; align-items: stretch; }
+
+  /* WCAG 2.5.5 tap target: every primary button must clear 44x44 on touch.
+     Padding alone is not always enough since some .btn instances have
+     compact text; the explicit min-height guarantees the floor. */
+  .btn { min-height: 44px; padding: 10px 16px; font-size: 13.5px; }
+  .btn .spinner { width: 14px; height: 14px; }
+
+  /* btn-link is text-style; we keep the look but inflate the hit pad. */
+  .btn-link {
+    position: relative;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 6px;
+  }
+
+  /* Tabs sit close to other tabs; bumping min-height clears the WCAG floor
+     while horizontal-scroll behavior (set above) keeps long tab rows
+     reachable. */
+  .tab { min-height: 44px; padding: 12px 14px; }
+
+  /* Toggle group buttons (Action items Matrix toggle) clear 44 px. */
+  .toggle-group button { min-height: 40px; padding: 10px 14px; }
+
+  /* Generic image safety: any inline image cannot exceed the viewport. The
+     Elastic logo in the topbar already has explicit width/height so this
+     does not affect chrome. */
+  img { max-width: 100%; height: auto; }
 }
 
 /* Smaller phones (<= 380px) tighten spacing further. */

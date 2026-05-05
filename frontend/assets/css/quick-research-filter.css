@@ -491,3 +491,60 @@
   border-left: 3px solid var(--qr-cust, var(--border));
   padding-left: 10px;
 }
+
+/* ============================================================ Mobile tap targets
+   The Kanban/List view toggle, group select and group-head buttons live in
+   the same toolbar; on a 375 px viewport they need 40 px+ tall hit pads. */
+@media (max-width: 768px) {
+  .qr-fb-view-btn { min-height: 40px; padding: 10px 14px; font-size: 12.5px; }
+  .qr-fb-group select { min-height: 40px; padding: 9px 12px; font-size: 13px; }
+  .qr-group-head { min-height: 44px; padding: 12px 14px; }
+}
+
+/* ============================================================ Customer-color legend
+   Subtle one-line pill above the filter bar that explains why the same
+   customer reads as the same hue across Kanban columns and the List view.
+   Five small dots demonstrate the palette so the legend is self-documenting. */
+.qr-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 -2px 0;
+  padding: 6px 12px;
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  font-size: 11.5px;
+  color: var(--muted);
+  letter-spacing: 0.01em;
+}
+
+.qr-legend-label {
+  font-weight: 600;
+  color: var(--ink-2);
+  text-transform: uppercase;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+}
+
+.qr-legend-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.qr-legend-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.qr-legend-dot.l0 { background: #0077CC; }
+.qr-legend-dot.l1 { background: #00BFB3; }
+.qr-legend-dot.l2 { background: #F04E98; }
+.qr-legend-dot.l3 { background: #FEC514; }
+.qr-legend-dot.l4 { background: #93C90E; }
+
+.qr-legend-text {
+  color: var(--muted);
+}

@@ -450,3 +450,21 @@
   line-height: 1.5;
   color: var(--ink-2);
 }
+
+/* ============================================================ Mobile tap targets
+   The industries grid card and the modal close button both need 44 px hit
+   areas on touch. Cards already pad to ~140 px tall so they pass; the modal
+   close grows from 28 px to 36 px with an inflated transparent hit pad. */
+@media (max-width: 768px) {
+  .ind-modal { padding: 16px; }
+  .ind-modal-card { padding: 18px 18px 18px; }
+  .ind-modal-close {
+    position: relative;
+    width: 36px;
+    height: 36px;
+  }
+  .ind-modal-close::before { content: ""; position: absolute; inset: -4px; }
+  /* Toolbar search and count: search input becomes full-row, count below. */
+  .ind-search-wrap { flex: 1 1 100%; min-width: 0; }
+  #ind-search { font-size: 14px; min-height: 44px; padding: 12px 14px 12px 36px; }
+}

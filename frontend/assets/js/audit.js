@@ -16,6 +16,22 @@
   const WINDOW_DAYS = 7;
   const FETCH_LIMIT = 1000; // backend supports `limit`; cap to keep payload small
 
+  // Filter state (search input + date range buttons).
+  const SEARCH_DEBOUNCE_MS = 150;
+  const RANGE_MS = {
+    "1h": 60 * 60 * 1000,
+    "24h": 24 * 60 * 60 * 1000,
+    "7d": 7 * 24 * 60 * 60 * 1000,
+    "all": null, // no cutoff
+  };
+  const state = {
+    rawEntries: [],          // last fetched entries (parsed once)
+    search: "",              // current search query (lowercased)
+    range: "24h",            // current date range key
+    rollupSort: { key: "calls", dir: "desc" },
+    recentSort: { key: "ts", dir: "desc" },
+  };
+
   // ------------------------------------------------------------------
   // Number / time helpers
   // ------------------------------------------------------------------
@@ -104,14 +120,45 @@
   // ------------------------------------------------------------------
   // Aggregation (client-side, runs over raw entries)
   // ------------------------------------------------------------------
-  function aggregate(entries) {
-    const cutoff = Date.now() - WINDOW_DAYS * 24 * 3600 * 1000;
-    const inWindow = [];
+  // Decorate the raw entries with a parsed Date once. Done up-front so the
+  // search and date-range filters can run over the same shape.
+  function decorateEntries(entries) {
+    const out = [];
     for (const e of entries) {
       const d = parseTs(e.ts);
       if (!d) continue;
+      out.push({ ...e, _d: d });
+    }
+    return out;
+  }
+
+  // Match an entry against the current search query. Searches across the
+  // visible columns (tool, agent, model, mode). Empty query matches all.
+  function matchesSearch(e, q) {
+    if (!q) return true;
+    const hay = [
+      e.tool || "",
+      e.agent || "",
+      e.model || "",
+      e.mode || "",
+    ].join(" ").toLowerCase();
+    return hay.indexOf(q) !== -1;
+  }
+
+  function aggregate(entries) {
+    // Date-range cutoff is driven by state.range; the chart bucket axis
+    // still uses WINDOW_DAYS so the "calls over time" view stays readable
+    // when the user picks a smaller range.
+    const rangeMs = RANGE_MS[state.range];
+    const cutoff = rangeMs == null ? -Infinity : Date.now() - rangeMs;
+    const q = state.search;
+    const inWindow = [];
+    for (const e of entries) {
+      const d = e._d || parseTs(e.ts);
+      if (!d) continue;
       if (d.getTime() < cutoff) continue;
-      inWindow.push({ ...e, _d: d });
+      if (!matchesSearch(e, q)) continue;
+      inWindow.push(e._d ? e : { ...e, _d: d });
     }
 
     // Hourly buckets across the window.
@@ -125,17 +172,24 @@
 
     // Tokens by model (input/output).
     const byModel = { haiku: { input: 0, output: 0 }, sonnet: { input: 0, output: 0 }, opus: { input: 0, output: 0 }, other: { input: 0, output: 0 } };
-    // Top labels (tool || agent).
+    // Top labels (tool || agent) by call count.
     const topMap = new Map();
+    // Top tools by total tokens consumed (used for the "top contributor" pill).
+    const tokensByTool = new Map();
     // Per-agent rollup.
     const agentMap = new Map();
-    // Mode counts.
+    // Mode counts. Fallback is a separate bucket because backend tags it
+    // independently of live/mock when a Claude call falls back to a template.
     let liveCalls = 0;
     let mockCalls = 0;
+    let fallbackCalls = 0;
     // Totals.
     let totalCalls = 0;
     let totalInput = 0;
     let totalOutput = 0;
+    // Tokens this week (always 7d, ignores the range filter so the pill is stable).
+    const weekCutoff = Date.now() - 7 * 24 * 3600 * 1000;
+    let tokensThisWeek = 0;
 
     for (const e of inWindow) {
       totalCalls += 1;
@@ -157,6 +211,10 @@
       const lbl = entryLabel(e);
       topMap.set(lbl, (topMap.get(lbl) || 0) + 1);
 
+      // Track tokens-per-tool so we can surface the top contributor.
+      const toolKey = e.tool || e.agent || "unknown";
+      tokensByTool.set(toolKey, (tokensByTool.get(toolKey) || 0) + inp + out);
+
       const ag = e.agent || "unknown";
       let row = agentMap.get(ag);
       if (!row) {
@@ -170,6 +228,14 @@
       const mode = (e.mode || "").toLowerCase();
       if (mode === "live") liveCalls += 1;
       else if (mode === "mock") mockCalls += 1;
+      else if (mode === "fallback") fallbackCalls += 1;
+    }
+
+    // Tokens this week (independent of range filter for stable pill display).
+    for (const e of entries) {
+      const d = e._d || parseTs(e.ts);
+      if (!d || d.getTime() < weekCutoff) continue;
+      tokensThisWeek += (Number(e.input_tokens) || 0) + (Number(e.output_tokens) || 0);
     }
 
     const top = Array.from(topMap.entries())
@@ -187,21 +253,32 @@
       }))
       .sort((a, b) => b.calls - a.calls);
 
-    const recent = inWindow
-      .slice()
-      .sort((a, b) => b._d - a._d)
-      .slice(0, 10);
+    // Hand the full filtered window to the renderer so the user can sort and
+    // browse, not just see the 10 most recent. The renderer caps the DOM size.
+    const recent = inWindow.slice();
 
     const totalTokens = totalInput + totalOutput;
-    const modeKnown = liveCalls + mockCalls;
+    const modeKnown = liveCalls + mockCalls + fallbackCalls;
+    // mockPct retains the original semantics (mock vs known modes) for the
+    // existing KPI card; the new pill row reports fallback rate separately.
     const mockPct = modeKnown ? mockCalls / modeKnown : 0;
+    const fallbackPct = modeKnown ? fallbackCalls / modeKnown : 0;
+
+    // Top contributor by tokens (used for the new pill).
+    let topByTokens = null;
+    for (const [tool, toks] of tokensByTool.entries()) {
+      if (!topByTokens || toks > topByTokens.tokens) {
+        topByTokens = { tool, tokens: toks };
+      }
+    }
 
     return {
-      totals: { calls: totalCalls, input: totalInput, output: totalOutput, tokens: totalTokens },
-      modes: { live: liveCalls, mock: mockCalls, known: modeKnown, mockPct: mockPct },
+      totals: { calls: totalCalls, input: totalInput, output: totalOutput, tokens: totalTokens, tokensThisWeek },
+      modes: { live: liveCalls, mock: mockCalls, fallback: fallbackCalls, known: modeKnown, mockPct, fallbackPct },
       buckets: { start: bucketStart, hours: HOURS, counts: bucketCounts, tokens: bucketTokens },
       byModel,
       top,
+      topByTokens,
       rollup,
       recent,
       windowEntries: inWindow.length,
@@ -503,14 +580,51 @@
   // ------------------------------------------------------------------
   // Rollup table
   // ------------------------------------------------------------------
+  // Generic comparator factory for table sort. Handles string/number/Date
+  // and keeps a stable secondary sort by agent name when the primary keys tie.
+  function compareBy(key, dir) {
+    const m = dir === "asc" ? 1 : -1;
+    return (a, b) => {
+      const av = a[key];
+      const bv = b[key];
+      if (av instanceof Date || bv instanceof Date) {
+        return ((av ? av.getTime() : 0) - (bv ? bv.getTime() : 0)) * m;
+      }
+      if (typeof av === "number" || typeof bv === "number") {
+        return ((Number(av) || 0) - (Number(bv) || 0)) * m;
+      }
+      return String(av || "").localeCompare(String(bv || "")) * m;
+    };
+  }
+
+  function applyHeaderSortState(tableId, sort) {
+    const table = document.getElementById(tableId);
+    if (!table) return;
+    const ths = table.querySelectorAll(".audit-th-sort");
+    ths.forEach((th) => {
+      const k = th.getAttribute("data-sort");
+      if (k === sort.key) {
+        th.setAttribute("aria-sort", sort.dir === "asc" ? "ascending" : "descending");
+        th.classList.add("is-sorted");
+        th.classList.toggle("is-asc", sort.dir === "asc");
+        th.classList.toggle("is-desc", sort.dir === "desc");
+      } else {
+        th.setAttribute("aria-sort", "none");
+        th.classList.remove("is-sorted", "is-asc", "is-desc");
+      }
+    });
+  }
+
   function renderRollup(agg) {
     const tbody = document.getElementById("audit-rollup-body");
     if (!tbody) return;
+    applyHeaderSortState("audit-rollup", state.rollupSort);
     if (!agg.rollup.length) {
-      tbody.innerHTML = '<tr><td colspan="5" class="audit-empty">No agent activity in the last 7d.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" class="audit-empty">No agent activity in the current window.</td></tr>';
       return;
     }
-    const rows = agg.rollup.map((r) => {
+    const sorted = agg.rollup.slice().sort(compareBy(state.rollupSort.key, state.rollupSort.dir));
+    const rows = sorted.map((r) => {
       const initials = (r.agent || "?").split(/[_\s-]/).map((p) => p[0] || "").join("").slice(0, 2).toUpperCase() || "?";
       const last = r.lastSeen ? `${fmtRelative(r.lastSeen)}` : "-";
       const lastTitle = r.lastSeen ? fmtTime(r.lastSeen) : "";
@@ -533,78 +647,133 @@
   }
 
   // ------------------------------------------------------------------
-  // Recent fires
+  // Recent fires (sortable table)
   // ------------------------------------------------------------------
+  // Project a raw entry to a flat shape the comparator can act on.
+  function recentRow(e) {
+    const inp = Number(e.input_tokens) || 0;
+    const out = Number(e.output_tokens) || 0;
+    return {
+      ts: e._d,
+      agent: e.agent || "unknown",
+      tool: e.tool || "",
+      model: e.model || "",
+      mode: (e.mode || "").toLowerCase(),
+      tokens: inp + out,
+      input: inp,
+      output: out,
+    };
+  }
+
   function renderRecent(agg) {
-    const list = document.getElementById("audit-recent");
-    if (!list) return;
-    if (!agg.recent.length) {
-      list.innerHTML = '<li class="audit-recent-empty">No recent fires in the last 7d.</li>';
+    const tbody = document.getElementById("audit-recent-body");
+    const meta = document.getElementById("audit-recent-meta");
+    if (!tbody) return;
+    applyHeaderSortState("audit-recent-table", state.recentSort);
+    // We render the full set of in-window entries (filtered) so the user
+    // can sort and browse, not just the 10 most recent. Cap the projection
+    // at 200 rows below to keep the DOM light.
+    const source = (agg && Array.isArray(agg.recent)) ? agg.recent : [];
+    const allRows = source.map(recentRow);
+    const sorted = allRows.slice().sort(compareBy(state.recentSort.key, state.recentSort.dir));
+    const view = sorted.slice(0, 200);
+    if (meta) {
+      meta.textContent = `${fmtInt(allRows.length)} events in window, showing ${fmtInt(view.length)} (click any header to sort)`;
+    }
+    if (!view.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="audit-empty">No fires match the current filter.</td></tr>';
       return;
     }
-    const items = agg.recent.map((e) => {
-      const inp = Number(e.input_tokens) || 0;
-      const out = Number(e.output_tokens) || 0;
-      const total = inp + out;
-      const ts = fmtTime(e._d);
-      const rel = fmtRelative(e._d);
-      const agent = e.agent || "unknown";
-      const tool = e.tool ? ` <span class="tool">${escapeHtml(e.tool)}</span>` : "";
-      const mode = (e.mode || "").toLowerCase();
-      const modeBadge = mode ? ` <span class="mode ${escapeAttr(mode)}">${escapeHtml(mode)}</span>` : "";
-      const model = e.model ? ` <span class="muted small">${escapeHtml(e.model)}</span>` : "";
+    const rows = view.map((r) => {
+      const ts = fmtTime(r.ts);
+      const rel = fmtRelative(r.ts);
+      const tool = r.tool ? `<span class="tool">${escapeHtml(r.tool)}</span>` : '<span class="muted">-</span>';
+      const modeBadge = r.mode ? `<span class="mode ${escapeAttr(r.mode)}">${escapeHtml(r.mode)}</span>` : '<span class="muted">-</span>';
+      const model = r.model ? `<span class="muted small">${escapeHtml(r.model)}</span>` : '<span class="muted">-</span>';
       return `
-        <li>
-          <span class="ts" title="${escapeAttr(ts)}">${escapeHtml(rel)}</span>
-          <span class="what"><span class="agent">${escapeHtml(agent)}</span>${tool}${modeBadge}${model}</span>
-          <span class="tokens">${fmtInt(total)} tok (${fmtInt(inp)} in / ${fmtInt(out)} out)</span>
-        </li>
+        <tr>
+          <td class="audit-ts" title="${escapeAttr(ts)}">${escapeHtml(rel)}</td>
+          <td><span class="agent">${escapeHtml(r.agent)}</span></td>
+          <td>${tool}</td>
+          <td>${model}</td>
+          <td>${modeBadge}</td>
+          <td class="num" title="${fmtInt(r.input)} in / ${fmtInt(r.output)} out">${fmtInt(r.tokens)}</td>
+        </tr>
       `;
     });
-    list.innerHTML = items.join("");
+    tbody.innerHTML = rows.join("");
   }
 
   // ------------------------------------------------------------------
   // KPIs + pill row
   // ------------------------------------------------------------------
+  function rangeLabel() {
+    switch (state.range) {
+      case "1h": return "last hour";
+      case "24h": return "last 24h";
+      case "7d": return "last 7d";
+      case "all": return "all time";
+      default: return "window";
+    }
+  }
+
   function renderKpis(agg) {
     const t = agg.totals;
+    const lbl = rangeLabel();
     setText("kpi-calls", fmtInt(t.calls));
+    setText("kpi-calls-sub", `across all agents (${lbl})`);
     setText("kpi-tokens", fmtCompact(t.tokens));
     setText("kpi-tokens-sub", `${fmtInt(t.input)} in / ${fmtInt(t.output)} out`);
     setText("kpi-mock", agg.modes.known ? fmtPct(agg.modes.mock, agg.modes.known) : "0%");
     setText("kpi-mock-sub", agg.modes.known
-      ? `${fmtInt(agg.modes.live)} live / ${fmtInt(agg.modes.mock)} mock`
+      ? `${fmtInt(agg.modes.live)} live / ${fmtInt(agg.modes.mock)} mock / ${fmtInt(agg.modes.fallback)} fallback`
       : "no mode tag on entries");
 
     const status = document.getElementById("audit-pill-status");
     if (status) {
       status.innerHTML = '<span class="audit-dot live" aria-hidden="true"></span><span>Live</span>';
     }
-    setText("audit-pill-calls", `${fmtInt(t.calls)} calls last 7d`);
-    setText("audit-pill-tokens", `${fmtCompact(t.tokens)} tokens last 7d`);
+    setText("audit-pill-calls", `${fmtInt(t.calls)} calls ${lbl}`);
+    // Tokens-this-week pill always reads the 7d total so the figure does not
+    // jump when the user switches the range filter to "Last hour".
+    setText("audit-pill-tokens", `${fmtCompact(t.tokensThisWeek)} tokens last 7d`);
     setText("audit-pill-mock", agg.modes.known ? `${fmtPct(agg.modes.mock, agg.modes.known)} mock` : "0% mock");
+    // Fallback rate pill: "X / Y calls fell back".
+    setText("audit-pill-fallback", agg.modes.known
+      ? `${fmtInt(agg.modes.fallback)} / ${fmtInt(agg.modes.known)} calls fell back`
+      : "0 fallbacks");
+    // Top contributor tool pill: which tool burned the most tokens.
+    const top = agg.topByTokens;
+    setText("audit-pill-top", top
+      ? `top: ${top.tool} (${fmtCompact(top.tokens)} tok)`
+      : "top: -");
+
+    // Visible result count for the controls strip.
+    setText("audit-result-count", `${fmtInt(t.calls)} of ${fmtInt(state.rawEntries.length)} entries`);
   }
   function renderError(err) {
     const status = document.getElementById("audit-pill-status");
     if (status) {
       status.innerHTML = '<span class="audit-dot error" aria-hidden="true"></span><span>Audit feed unavailable</span>';
     }
-    setText("audit-pill-calls", "- calls last 7d");
+    setText("audit-pill-calls", "- calls");
     setText("audit-pill-tokens", "- tokens last 7d");
     setText("audit-pill-mock", "- % mock");
+    setText("audit-pill-fallback", "- fallbacks");
+    setText("audit-pill-top", "- top tool");
     const tbody = document.getElementById("audit-rollup-body");
     if (tbody) {
       const safe = (typeof sanitizeError === "function") ? sanitizeError(err) : String(err && err.message || err || "error");
       tbody.innerHTML = `<tr><td colspan="5" class="audit-empty">Could not load audit feed (${escapeHtml(safe)}).</td></tr>`;
     }
-    const list = document.getElementById("audit-recent");
-    if (list) {
-      list.innerHTML = '<li class="audit-recent-empty">Audit feed unreachable. Will retry shortly.</li>';
+    const recentBody = document.getElementById("audit-recent-body");
+    if (recentBody) {
+      recentBody.innerHTML = '<tr><td colspan="6" class="audit-empty">Audit feed unreachable. Will retry shortly.</td></tr>';
     }
     setText("kpi-calls", "0");
     setText("kpi-tokens", "0");
     setText("kpi-mock", "0%");
+    setText("audit-result-count", "0 of 0 entries");
   }
 
   // ------------------------------------------------------------------
@@ -629,23 +798,32 @@
   // ------------------------------------------------------------------
   let refreshTimer = null;
 
+  // Pure render: aggregates state.rawEntries against the current filters and
+  // paints every panel. Cheap enough to call on every keystroke (debounced).
+  function rerender() {
+    if (!state.rawEntries.length) return;
+    const agg = aggregate(state.rawEntries);
+    state.lastFiltered = agg.recent;
+
+    renderKpis(agg);
+
+    const callsSvg = document.getElementById("chart-calls");
+    const modelsSvg = document.getElementById("chart-models");
+    const topSvg = document.getElementById("chart-top");
+    if (callsSvg) renderCallsChart(callsSvg, agg);
+    if (modelsSvg) renderModelsChart(modelsSvg, agg);
+    if (topSvg) renderTopChart(topSvg, agg);
+
+    renderRollup(agg);
+    renderRecent(agg);
+  }
+
   async function load({ force = false, silent = false } = {}) {
     try {
       const data = await fetchAudit({ force });
       const entries = (data && Array.isArray(data.entries)) ? data.entries : [];
-      const agg = aggregate(entries);
-
-      renderKpis(agg);
-
-      const callsSvg = document.getElementById("chart-calls");
-      const modelsSvg = document.getElementById("chart-models");
-      const topSvg = document.getElementById("chart-top");
-      if (callsSvg) renderCallsChart(callsSvg, agg);
-      if (modelsSvg) renderModelsChart(modelsSvg, agg);
-      if (topSvg) renderTopChart(topSvg, agg);
-
-      renderRollup(agg);
-      renderRecent(agg);
+      state.rawEntries = decorateEntries(entries);
+      rerender();
     } catch (err) {
       // On silent refresh, only log; on first load, render the error state.
       if (!silent) renderError(err);
@@ -691,7 +869,84 @@
     }
   }
 
+  // Lightweight debounce so the search box re-renders at most every 150 ms
+  // while the user types. We render off the in-memory raw entries, no refetch.
+  function debounce(fn, ms) {
+    let t = null;
+    return function debounced(...args) {
+      if (t) clearTimeout(t);
+      t = setTimeout(() => { t = null; fn.apply(this, args); }, ms);
+    };
+  }
+
+  function bindControls() {
+    // Search input.
+    const search = document.getElementById("audit-search");
+    if (search) {
+      const onSearch = debounce(() => {
+        state.search = String(search.value || "").trim().toLowerCase();
+        rerender();
+      }, SEARCH_DEBOUNCE_MS);
+      search.addEventListener("input", onSearch);
+      // Allow keyboard "Escape" to clear the filter quickly.
+      search.addEventListener("keydown", (ev) => {
+        if (ev.key === "Escape" && search.value) {
+          search.value = "";
+          state.search = "";
+          rerender();
+        }
+      });
+    }
+
+    // Date range buttons.
+    const rangeWrap = document.getElementById("audit-range");
+    if (rangeWrap) {
+      rangeWrap.addEventListener("click", (ev) => {
+        const btn = ev.target.closest(".audit-range-btn");
+        if (!btn) return;
+        const r = btn.getAttribute("data-range");
+        if (!r || !(r in RANGE_MS)) return;
+        state.range = r;
+        rangeWrap.querySelectorAll(".audit-range-btn").forEach((b) => {
+          b.classList.toggle("is-active", b === btn);
+          b.setAttribute("aria-pressed", b === btn ? "true" : "false");
+        });
+        rerender();
+      });
+      // Initialize aria-pressed.
+      rangeWrap.querySelectorAll(".audit-range-btn").forEach((b) => {
+        b.setAttribute("aria-pressed", b.classList.contains("is-active") ? "true" : "false");
+      });
+    }
+
+    // Sortable table headers. The two tables share one delegated handler.
+    function bindSort(tableId, sortState) {
+      const table = document.getElementById(tableId);
+      if (!table) return;
+      table.addEventListener("click", (ev) => {
+        const btn = ev.target.closest(".audit-sort-btn");
+        if (!btn) return;
+        const th = btn.closest(".audit-th-sort");
+        if (!th) return;
+        const key = th.getAttribute("data-sort");
+        if (!key) return;
+        // Toggle direction if same column; default to descending on first click
+        // for numeric / timestamp columns and ascending for textual ones.
+        if (sortState.key === key) {
+          sortState.dir = sortState.dir === "asc" ? "desc" : "asc";
+        } else {
+          sortState.key = key;
+          sortState.dir = (key === "agent" || key === "tool" || key === "model" || key === "mode") ? "asc" : "desc";
+        }
+        rerender();
+      });
+    }
+    bindSort("audit-rollup", state.rollupSort);
+    bindSort("audit-recent-table", state.recentSort);
+  }
+
   function init() {
+    bindControls();
     fixKibanaLink();
     load({ force: false, silent: false });
     startAutoRefresh();

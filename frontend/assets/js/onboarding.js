@@ -50,7 +50,17 @@
     return [
       {
         id: "autopilot",
-        targets: [".autopilot-cta-wrap", "#autopilot-cta", ".autopilot-cta"],
+        // Post-portal redesign (W21+W22) the wrap moved from `.autopilot-cta-wrap`
+        // to `.portal-autopilot .ap-cta-card`. Keep the legacy selector as
+        // a fallback so older saved sessions still resolve.
+        targets: [
+          ".portal-autopilot .ap-cta-card",
+          ".portal-autopilot",
+          "#autopilot-cta-portal",
+          ".autopilot-cta-wrap",
+          "#autopilot-cta",
+          ".autopilot-cta",
+        ],
         position: "below",
         title: t("onboard.step1.title", "Try the autopilot"),
         body: t(
@@ -102,7 +112,11 @@
       },
       {
         id: "hours-saved",
-        targets: [".hero-savings", ".hero-stats"],
+        // `.hero-savings` lived on the old quick-research-driven dashboard;
+        // post-portal redesign the equivalent on /index.html is the
+        // accent stat pill (`#hs-pill`) inside `.portal-stats`. Keep the
+        // legacy selectors as fallbacks for the alternate hero layouts.
+        targets: ["#hs-pill", ".stat-pill-accent", ".portal-stats", ".hero-savings", ".hero-stats"],
         position: "above",
         title: t("onboard.step5.title", "Six hours back, every week"),
         body: t(

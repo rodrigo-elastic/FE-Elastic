@@ -1032,8 +1032,25 @@ body.bc-detail-open.has-tools-rail .bc-detail { padding-left: 0; }
 
 @media (max-width: 768px) {
   .bc-vertical-bar { padding: 10px 12px; gap: 12px; }
-  .bc-chip { padding: 7px 11px; font-size: 12px; }
+  /* Chips need a 44 px hit target on touch. We keep the visual at ~36 px
+     tall (12.5 px font + 9 px vertical padding x 2) and inflate the hit
+     area via a transparent ::before. The wrapper of the chip row already
+     has flex-wrap so the inflated hit pads do not push siblings out. */
+  .bc-chip {
+    position: relative;
+    padding: 9px 14px;
+    font-size: 12.5px;
+    min-height: 36px;
+  }
+  .bc-chip::before { content: ""; position: absolute; inset: -4px; }
   .bc-industry-filter { padding: 10px 12px; gap: 10px; }
   .bc-industry-select-wrap { flex: 1 1 100%; max-width: none; }
-  .bc-industry-select { padding: 8px 32px 8px 14px; font-size: 12.5px; }
+  .bc-industry-select { padding: 12px 36px 12px 14px; font-size: 13.5px; min-height: 44px; }
+
+  /* Detail-view action buttons (Back, Copy, Print, Open in Drive). The
+     existing .bc-action-btn span { display: none } collapses these to
+     icons-only on mobile; pump the icon-only target to 40 px. */
+  .bc-action-btn { min-height: 40px; padding: 10px 12px; }
+  .bc-action-btn.bc-action-primary,
+  .bc-action-btn#bc-back-btn { min-height: 40px; padding: 10px 14px; }
 }
