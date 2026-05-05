@@ -11,9 +11,11 @@ __status__ = "Development"
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.routing import Match
 
 from app.api import (
     routes_agent_builder,
@@ -70,6 +72,42 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.middleware("http")
+async def api_method_not_allowed_middleware(request: Request, call_next):
+    """Convert 404 from the static frontend mount into a proper 405 for API paths.
+
+    FastAPI mounts the static frontend at ``/`` so unknown paths under
+    ``/api/v1/`` return 404 from StaticFiles instead of Starlette's built-in
+    405 method-mismatch response. For paths under ``/api/v1/`` we override that:
+    if any API route matches the path under a different method, we return 405
+    with a proper ``Allow`` header before the static mount sees it.
+    """
+    path = request.url.path
+    method = request.method
+    # Skip OPTIONS so the CORS middleware can handle preflight responses.
+    if path.startswith("/api/v1/") and method != "OPTIONS":
+        full_match_found = False
+        partial_methods: set = set()
+        for route in app.routes:
+            matcher = getattr(route, "matches", None)
+            methods = getattr(route, "methods", None)
+            if matcher is None or not methods:
+                continue
+            match, _ = matcher({"type": "http", "method": method, "path": path})
+            if match == Match.FULL:
+                full_match_found = True
+                break
+            if match == Match.PARTIAL:
+                partial_methods.update(methods)
+        if not full_match_found and partial_methods:
+            return JSONResponse(
+                {"detail": "Method Not Allowed"},
+                status_code=405,
+                headers={"Allow": ", ".join(sorted(partial_methods))},
+            )
+    return await call_next(request)
+
 
 app.include_router(routes_health.router, prefix="/api/v1")
 app.include_router(routes_meetings.router, prefix="/api/v1")

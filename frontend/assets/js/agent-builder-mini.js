@@ -294,7 +294,8 @@
           : null;
         renderAssistant(slot, { text: msg, steps: res?.steps, stats });
       } catch (e) {
-        renderError(slot, e.message || String(e));
+        const safe = (typeof sanitizeError === "function") ? sanitizeError(e) : (e && e.message) || String(e);
+        renderError(slot, safe);
       } finally {
         state.inFlight = false;
         sendBtn.disabled = false;

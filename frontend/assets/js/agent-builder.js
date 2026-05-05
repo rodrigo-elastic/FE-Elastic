@@ -110,6 +110,7 @@
 
   const state = {
     inFlight: false,
+    abortCtrl: null,
     kibanaUrl: null,
     agentId: localStorage.getItem(SELECTED_KEY) || MASTER_AGENT_ID,
     agents: [],
@@ -154,6 +155,11 @@
   }
 
   // ============================================================ Status
+  // W25C: when Kibana is unreachable (no API key or ngrok tunnel down) we
+  // surface a friendly toast plus a red status pill instead of a silent empty
+  // state. The page itself stays usable - the master agent and tool pickers
+  // are local catalogues, so judges can still read the workbench.
+  let _kibanaToastShown = false;
   async function loadStatus() {
     try {
       const s = await apiGet("/agent-builder/status");
@@ -176,10 +182,25 @@
         const sidebarBtn = $("#ab-sidebar-kibana");
         if (sidebarBtn) sidebarBtn.style.display = "none";
       }
+      if (!s.live && !_kibanaToastShown && typeof toast === "function") {
+        _kibanaToastShown = true;
+        toast(
+          "Kibana not configured or unreachable. Agent Builder runs in dry-run mode; the master agent and tool catalogue are still browsable.",
+          "warn"
+        );
+      }
     } catch (e) {
       const pillStatus = $("#ab-pill-status");
       pillStatus.textContent = "Status unavailable";
       pillStatus.classList.add("ab-pill-err");
+      if (!_kibanaToastShown && typeof toast === "function") {
+        _kibanaToastShown = true;
+        const safe = (typeof sanitizeError === "function") ? sanitizeError(e) : (e && e.message) || "unknown";
+        toast(
+          "Kibana not reachable from FE Copilot backend (" + safe + "). The chat still works against the local master agent fallback.",
+          "bad"
+        );
+      }
     }
   }
 
@@ -407,12 +428,17 @@
   }
 
   // ============================================================ Send
+  // Long LLM calls (up to ~30s for converse). Esc cancels the in-flight
+  // request via the per-send AbortController; the spinner is always cleared
+  // in finally so the UI never gets stuck. Uses apiPostWithRetry when the
+  // retry wrapper is loaded so a transient 502/503/504 retries 1s/2s/4s.
   async function send(text) {
     if (state.inFlight || !text || !text.trim()) return;
     state.inFlight = true;
+    state.abortCtrl = new AbortController();
     const sendBtn = $("#ab-send");
     sendBtn.disabled = true;
-    sendBtn.textContent = "Sending...";
+    sendBtn.textContent = "Sending... (Esc to cancel)";
 
     renderUserMessage(text);
     const slot = renderLoading();
@@ -420,7 +446,14 @@
     try {
       const body = { message: text, agent_id: state.agentId };
       if (state.conversationId) body.conversation_id = state.conversationId;
-      const res = await apiPost("/agent-builder/converse", body);
+      const res = typeof window.apiPostWithRetry === "function"
+        ? await window.apiPostWithRetry("/agent-builder/converse", body, {
+            category: "llm",
+            signal: state.abortCtrl.signal,
+            silent: true,
+            label: "Converse",
+          })
+        : await apiPost("/agent-builder/converse", body);
       if (res && res.conversation_id) {
         state.conversationId = res.conversation_id;
         localStorage.setItem(conversationStorageKey(state.agentId), state.conversationId);
@@ -436,13 +469,30 @@
         : null;
       renderAssistantMessage(slot, { text: msg, steps: res?.steps, stats });
     } catch (e) {
-      renderError(slot, e.message || String(e));
+      const cancelled = e && (e.name === "AbortError" || (state.abortCtrl && state.abortCtrl.signal.aborted));
+      if (cancelled) {
+        renderError(slot, "Cancelled");
+      } else {
+        const safe = (typeof sanitizeError === "function") ? sanitizeError(e) : (e && e.message) || String(e);
+        renderError(slot, safe);
+      }
     } finally {
       state.inFlight = false;
+      state.abortCtrl = null;
       sendBtn.disabled = false;
       sendBtn.textContent = "Send";
       $("#ab-input").value = "";
       $("#ab-input").focus();
+    }
+  }
+
+  // Esc-to-cancel: aborts the in-flight converse request so the spinner
+  // clears immediately. Wired in init() with capture=false so the modal's
+  // own Esc handler (which uses capture=true) still wins when the modal is
+  // open.
+  function cancelInflight() {
+    if (state.inFlight && state.abortCtrl) {
+      try { state.abortCtrl.abort(); } catch (_) { /* ignore */ }
     }
   }
 
@@ -898,7 +948,8 @@
       await loadAgents(newId);
       selectAgent(newId);
     } catch (e) {
-      status.textContent = "Error: " + (e.message || String(e));
+      const safe = (typeof sanitizeError === "function") ? sanitizeError(e) : (e && e.message) || String(e);
+      status.textContent = "Error: " + safe;
       status.classList.add("is-err");
     } finally {
       submit.disabled = false;
@@ -928,7 +979,8 @@
       await loadAgents(next);
       selectAgent(next);
     } catch (e) {
-      window.alert("Could not delete agent: " + (e.message || String(e)));
+      const safe = (typeof sanitizeError === "function") ? sanitizeError(e) : (e && e.message) || String(e);
+      window.alert("Could not delete agent: " + safe);
     }
   }
 
@@ -1010,6 +1062,18 @@
         return;
       }
       closeModal();
+    });
+    // Esc-to-cancel for the in-flight converse request. Only fires when the
+    // modal is NOT open (the modal handler above owns Esc when it is) and
+    // there is an outstanding LLM request. Keeps the spinner from getting
+    // stuck on a slow LLM call - no need to wait for the 30s timeout.
+    document.addEventListener("keydown", (ev) => {
+      if (ev.key !== "Escape") return;
+      const modal = $("#ab-modal");
+      if (modal && !modal.hidden) return; // modal handler owns this key
+      if (!state.inFlight) return;
+      ev.preventDefault();
+      cancelInflight();
     });
   }
 

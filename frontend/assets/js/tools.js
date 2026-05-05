@@ -55,7 +55,8 @@ function bindToolForm(formId, statusId, label, runner) {
       await runner();
       status.textContent = "";
     } catch (e) {
-      toast(`Failed: ${e.message}`, "bad");
+      const safe = (typeof sanitizeError === "function") ? sanitizeError(e) : (e && e.message) || "unknown error";
+      toast(`Failed: ${safe}`, "bad");
       status.textContent = "Failed; see toast.";
     } finally {
       submit.disabled = false;
@@ -242,7 +243,10 @@ async function runCostCalc() {
   const cur = parseFloat(document.getElementById("cost-current").value);
   if (!isNaN(cur) && cur > 0) body.current_spend_annual_usd = cur;
 
-  const res = await apiPost("/tools/cost-calc", body);
+  // Pure-compute endpoint, 5s budget. Retry transient 5xx 1s/2s/4s.
+  const res = typeof window.apiPostWithRetry === "function"
+    ? await window.apiPostWithRetry("/tools/cost-calc", body, { category: "compute", silent: true, label: "Cost calc" })
+    : await apiPost("/tools/cost-calc", body);
   const host = document.getElementById("cost-result");
   clear(host);
 
@@ -374,7 +378,10 @@ async function runCapacity() {
     replicas: parseInt(document.getElementById("cap-replicas").value) || 1,
     peak_qps: parseInt(document.getElementById("cap-qps").value) || 100,
   };
-  const res = await apiPost("/tools/capacity", body);
+  // Pure-compute endpoint, 5s budget. Retry transient 5xx 1s/2s/4s.
+  const res = typeof window.apiPostWithRetry === "function"
+    ? await window.apiPostWithRetry("/tools/capacity", body, { category: "compute", silent: true, label: "Capacity" })
+    : await apiPost("/tools/capacity", body);
   const host = document.getElementById("cap-result");
   clear(host);
 

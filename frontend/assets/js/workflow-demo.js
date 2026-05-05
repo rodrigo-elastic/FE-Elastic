@@ -83,7 +83,7 @@
       const data = await apiGet("/workflows/status");
       renderStatus(data);
     } catch (err) {
-      $status.innerHTML = `<div class="wf-error-line">Status fetch failed: ${err.message}</div>`;
+      $status.innerHTML = `<div class="wf-error-line">Status fetch failed: ${(typeof sanitizeError === "function") ? sanitizeError(err) : (err && err.message) || "error"}</div>`;
     }
   }
 
@@ -105,7 +105,7 @@
         <pre>${JSON.stringify(r, null, 2)}</pre></div>`;
       await loadStatus();
     } catch (err) {
-      $fireResult.innerHTML = `<div class="wf-result is-err"><strong>Sync failed:</strong> ${err.message}</div>`;
+      $fireResult.innerHTML = `<div class="wf-result is-err"><strong>Sync failed:</strong> ${(typeof sanitizeError === "function") ? sanitizeError(err) : (err && err.message) || "error"}</div>`;
     } finally {
       $btnSync.disabled = false;
       $btnSync.textContent = "Sync workflow";
@@ -132,7 +132,7 @@
         if (ticks > 18) clearInterval(fast); // 18 * 10s = 3 min
       }, 10000);
     } catch (err) {
-      $fireResult.innerHTML = `<div class="wf-result is-err"><strong>Fire failed:</strong> ${err.message}</div>`;
+      $fireResult.innerHTML = `<div class="wf-result is-err"><strong>Fire failed:</strong> ${(typeof sanitizeError === "function") ? sanitizeError(err) : (err && err.message) || "error"}</div>`;
     } finally {
       $btnFire.disabled = false;
       $btnFire.textContent = "Fire demo transcript";
@@ -145,18 +145,22 @@
     try {
       // Directly invoke the webhook endpoint with a synthetic payload so we don't have to wait
       // for the Kibana scheduler. The handler will look up the most recent unprocessed doc.
-      const r = await apiPost("/workflows/triggered", {
+      // Workflow webhook fire: 12s budget per category, retry transient 5xx.
+      const body = {
         alert_id: "manual-trigger",
         rule_id: "manual",
         rule_name: "manual-bypass",
-      });
+      };
+      const r = typeof window.apiPostWithRetry === "function"
+        ? await window.apiPostWithRetry("/workflows/triggered", body, { category: "workflow", silent: true, label: "Workflow trigger" })
+        : await apiPost("/workflows/triggered", body);
       $fireResult.innerHTML = `<div class="wf-result">
         <strong>Manual trigger result:</strong>
         <pre>${JSON.stringify(r, null, 2)}</pre>
       </div>`;
       await loadStatus();
     } catch (err) {
-      $fireResult.innerHTML = `<div class="wf-result is-err"><strong>Trigger failed:</strong> ${err.message}</div>`;
+      $fireResult.innerHTML = `<div class="wf-result is-err"><strong>Trigger failed:</strong> ${(typeof sanitizeError === "function") ? sanitizeError(err) : (err && err.message) || "error"}</div>`;
     } finally {
       $btnTriggerNow.disabled = false;
       $btnTriggerNow.textContent = "Trigger now (skip wait)";

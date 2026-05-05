@@ -132,13 +132,24 @@ async def reindex_disk_to_es() -> dict:
     return {"ok": True, "indexed": counts, "es_url": settings.elasticsearch_url}
 
 
+_RESERVED_BRIEF_PATHS = {"reindex"}
+
+
 @router.get("/{meeting_id}")
 async def get_brief(meeting_id: str, source: str = "auto") -> dict:
     """Fetch a single brief. ES first when available, falls back to disk.
 
     Returns 200 with `{exists: false}` when not generated yet (instead of 404)
     so the dashboard does not pollute the browser console with expected misses.
+    Reserved sibling keywords (e.g. `reindex`) raise 405 so a GET on a POST-only
+    path is not silently consumed by the path parameter.
     """
+    if meeting_id in _RESERVED_BRIEF_PATHS:
+        raise HTTPException(
+            status_code=405,
+            detail=f"GET not allowed on /briefs/{meeting_id}; this path accepts POST only",
+            headers={"Allow": "POST"},
+        )
     es = get_es_repo()
     if source != "disk" and es.available:
         rec = es.get_brief(meeting_id)

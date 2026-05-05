@@ -1100,14 +1100,17 @@
       // Re-route now that data is available (handles deep-link to #slug).
       routeFromHash();
     } catch (err) {
-      console.error("battlecards.load", err);
+      console.warn("battlecards.load", (err && err.message) || err);
       setMeta(0, "seed");
       if (grid) {
         clear(grid);
+        const safe = (typeof sanitizeError === "function")
+          ? sanitizeError(err)
+          : (err && err.message) || "Network error, check that the backend is running.";
         grid.appendChild(
           el("div", { class: "bc-empty" }, [
             el("strong", {}, "Could not load battlecards."),
-            el("span", {}, (err && err.message) || "Network error, check that the backend is running."),
+            el("span", {}, safe),
           ])
         );
       }

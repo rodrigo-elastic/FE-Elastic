@@ -744,7 +744,8 @@ function bindActions() {
       renderBrief(brief);
       toast("Pre-Meeting brief generated", "ok");
     } catch (e) {
-      toast(`Pre-Meeting failed: ${e.message}`, "bad");
+      const safe = (typeof sanitizeError === "function") ? sanitizeError(e) : (e && e.message) || "unknown error";
+      toast(`Pre-Meeting failed: ${safe}`, "bad");
       document.getElementById("brief").innerHTML = '<p class="muted">Run again to retry.</p>';
     } finally {
       btn.disabled = false;
@@ -765,7 +766,8 @@ function bindActions() {
       renderPost(result);
       toast("Post-Meeting result generated", "ok");
     } catch (e) {
-      toast(`Post-Meeting failed: ${e.message}`, "bad");
+      const safe = (typeof sanitizeError === "function") ? sanitizeError(e) : (e && e.message) || "unknown error";
+      toast(`Post-Meeting failed: ${safe}`, "bad");
       document.getElementById("post").innerHTML = '<p class="muted">Run again to retry.</p>';
     } finally {
       btn.disabled = false;
@@ -787,7 +789,8 @@ function bindActions() {
         toast("Dashboard request returned no URL", "bad");
       }
     } catch (e) {
-      toast(`Dashboard creation failed: ${e.message}`, "bad");
+      const safe = (typeof sanitizeError === "function") ? sanitizeError(e) : (e && e.message) || "unknown error";
+      toast(`Dashboard creation failed: ${safe}`, "bad");
     } finally {
       btn.disabled = false;
       btn.innerHTML = labelHTML;
@@ -802,7 +805,8 @@ function bindActions() {
     try {
       await replayTranscript();
     } catch (e) {
-      toast(`Live agent failed: ${e.message}`, "bad");
+      const safe = (typeof sanitizeError === "function") ? sanitizeError(e) : (e && e.message) || "unknown error";
+      toast(`Live agent failed: ${safe}`, "bad");
     } finally {
       btn.disabled = false;
       btn.innerHTML = labelHTML;

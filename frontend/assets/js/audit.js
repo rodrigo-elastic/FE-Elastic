@@ -595,7 +595,8 @@
     setText("audit-pill-mock", "- % mock");
     const tbody = document.getElementById("audit-rollup-body");
     if (tbody) {
-      tbody.innerHTML = `<tr><td colspan="5" class="audit-empty">Could not load audit feed (${escapeHtml(String(err && err.message || err || "error"))}).</td></tr>`;
+      const safe = (typeof sanitizeError === "function") ? sanitizeError(err) : String(err && err.message || err || "error");
+      tbody.innerHTML = `<tr><td colspan="5" class="audit-empty">Could not load audit feed (${escapeHtml(safe)}).</td></tr>`;
     }
     const list = document.getElementById("audit-recent");
     if (list) {

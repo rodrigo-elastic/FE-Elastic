@@ -54,7 +54,8 @@
       const data = await apiGet("/demo-data/scenarios");
       (data.scenarios || []).forEach((s) => grid.appendChild(card(s)));
     } catch (e) {
-      grid.innerHTML = `<p class="muted">Failed to load scenarios: ${e.message}</p>`;
+      const safe = (typeof sanitizeError === "function") ? sanitizeError(e) : (e && e.message) || "unknown error";
+      grid.innerHTML = `<p class="muted">Failed to load scenarios: ${safe}</p>`;
     }
   }
 
@@ -118,9 +119,10 @@
         }
         toast(`Seeded ${scenario.title}`, "ok");
       } catch (e) {
+        const safe = (typeof sanitizeError === "function") ? sanitizeError(e) : (e && e.message) || String(e);
         status.className = "dd-status err";
-        status.textContent = e.message || String(e);
-        toast(`Seed failed: ${e.message}`, "bad");
+        status.textContent = safe;
+        toast(`Seed failed: ${safe}`, "bad");
       } finally {
         seedBtn.disabled = false;
         seedBtn.innerHTML = labelHTML;

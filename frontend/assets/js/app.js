@@ -149,7 +149,8 @@ function renderCalendarRow(ev) {
               toast(`Brief generated for ${company.name}`, "ok");
               window.location.href = `/meeting.html?id=${encodeURIComponent(result.meeting_id)}&adhoc=1`;
             } catch (err) {
-              toast(`Pre-Meeting failed: ${err.message}`, "bad");
+              const safe = (typeof sanitizeError === "function") ? sanitizeError(err) : (err && err.message) || "unknown error";
+              toast(`Pre-Meeting failed: ${safe}`, "bad");
             } finally {
               btn.disabled = false;
               btn.innerHTML = labelHTML;
@@ -223,7 +224,8 @@ function bindTranscriptUpload() {
         updateCharCount();
         statusEl.textContent = `Loaded ${f.name} (${Math.round(text.length / 1024)} KB)`;
       } catch (e) {
-        toast(`Could not read file: ${e.message}`, "bad");
+        const safe = (typeof sanitizeError === "function") ? sanitizeError(e) : (e && e.message) || "unknown error";
+        toast(`Could not read file: ${safe}`, "bad");
       }
     });
   }
@@ -246,7 +248,8 @@ function bindTranscriptUpload() {
         updateCharCount();
         statusEl.textContent = `Loaded ${f.name} (${Math.round(text.length / 1024)} KB)`;
       } catch (err) {
-        toast(`Drop failed: ${err.message}`, "bad");
+        const safe = (typeof sanitizeError === "function") ? sanitizeError(err) : (err && err.message) || "unknown error";
+        toast(`Drop failed: ${safe}`, "bad");
       }
     });
   }
@@ -306,7 +309,7 @@ function bindTranscriptUpload() {
       } catch (_) {}
       window.location.href = `/meeting.html?id=${encodeURIComponent(mid)}&post=1&adhoc=1`;
     } catch (e) {
-      const msg = (e && e.message) || "Unknown error";
+      const msg = (typeof sanitizeError === "function") ? sanitizeError(e) : ((e && e.message) || "Unknown error");
       toast(`Analyze transcript failed: ${msg}`, "bad");
       statusEl.textContent = `Error: ${msg}`;
     } finally {
@@ -376,7 +379,8 @@ function bindKibanaActions() {
         toast(`Kibana setup failed: ${res.error || "unknown"}`, "bad");
       }
     } catch (e) {
-      toast(`Kibana setup failed: ${e.message}`, "bad");
+      const safe = (typeof sanitizeError === "function") ? sanitizeError(e) : (e && e.message) || "unknown error";
+      toast(`Kibana setup failed: ${safe}`, "bad");
     } finally {
       btn.textContent = old;
       btn.disabled = false;

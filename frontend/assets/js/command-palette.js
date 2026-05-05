@@ -146,15 +146,29 @@
       return Promise.resolve();
     }
     if (state.fetchPromise) return state.fetchPromise;
-    var safe = function (p) {
-      return p.then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
-    };
+    // Prefer the retry wrapper when present so a transient backend hiccup
+    // does not blank the palette. silent: true so we never toast for the
+    // background palette warm-up - the user has not asked for anything yet.
+    var hasRetry = typeof window.apiGetWithRetry === "function";
+    var fetchSafe;
+    if (hasRetry) {
+      fetchSafe = function (path) {
+        return window
+          .apiGetWithRetry(path, { category: "compute", silent: true, label: "palette " + path })
+          .catch(function () { return null; });
+      };
+    } else {
+      var safe = function (p) {
+        return p.then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
+      };
+      fetchSafe = function (path) { return safe(fetch(path)); };
+    }
     state.fetchPromise = Promise.all([
-      safe(fetch("/api/v1/demo-data/scenarios")),
-      safe(fetch("/api/v1/meetings")),
-      safe(fetch("/api/v1/briefs")),
-      safe(fetch("/api/v1/battlecards")),
-      safe(fetch("/api/v1/industries"))
+      fetchSafe("/api/v1/demo-data/scenarios"),
+      fetchSafe("/api/v1/meetings"),
+      fetchSafe("/api/v1/briefs"),
+      fetchSafe("/api/v1/battlecards"),
+      fetchSafe("/api/v1/industries")
     ]).then(function (out) {
       var scenariosRaw  = (out[0] && (out[0].scenarios || out[0])) || [];
       var meetingsRaw   = out[1] || [];
@@ -361,8 +375,11 @@
     } else if (action === "ab-sync") {
       var btn = state.nodes.input;
       btn.disabled = true;
-      fetch("/api/v1/agent-builder/sync", { method: "POST", headers: { "Content-Type": "application/json" } })
-        .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+      var syncPromise = typeof window.apiPostWithRetry === "function"
+        ? window.apiPostWithRetry("/agent-builder/sync", null, { category: "workflow", silent: true, label: "ab-sync" })
+        : fetch("/api/v1/agent-builder/sync", { method: "POST", headers: { "Content-Type": "application/json" } })
+            .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); });
+      syncPromise
         .then(function () { flashFooter("Agent Builder re-synced."); })
         .catch(function () { flashFooter("Run: curl -X POST /api/v1/agent-builder/sync"); })
         .then(function () { btn.disabled = false; });

@@ -1,14 +1,14 @@
 # FE Copilot Integration Smoke Report
 
-- Generated: 2026-05-05T08:17:24Z
+- Generated: 2026-05-05T08:48:24Z
 - Backend base: http://localhost:8123
 - Elasticsearch: https://fe-summit-hackathon-ed0e8e.es.us-west-1.aws.found.io
 - Kibana: https://fe-summit-hackathon-ed0e8e.kb.us-west-1.aws.found.io
-- Total runtime: 8.22 s
+- Total runtime: 19.56 s
 
 ## Verdict
 
-**GO**  --  passed=9, failed=0, skipped=0
+**CAUTION**  --  passed=8, failed=1, skipped=0
 
 Critical steps (1, 2, 3, 4, 7) must all pass.
 Non-critical steps (5, 6, 8, 9) may fail up to 2 times for CAUTION.
@@ -17,20 +17,20 @@ Non-critical steps (5, 6, 8, 9) may fail up to 2 times for CAUTION.
 
 | # | Step | Status | Critical | Duration (ms) | Notes |
 | ---: | --- | --- | --- | ---: | --- |
-| 1 | Backend health + pytest 30/30 | PASS | yes | 934 | health=ok, pytest=30 passed |
-| 2 | Elasticsearch indices (fec-* + demo-*) green | PASS | yes | 619 | 32 found / 29 expected, fec-knowledge=3837 docs |
-| 3 | Kibana saved objects (dashboards + tools + agent + .mcp + rule) | PASS | yes | 1760 | dashboards=19 (demo 16/16, customer-fit=3), fec-tools=12/12, agent=yes, mcp=1, rule=1 |
-| 4 | MCP server (tools/list = 12, fec_cost_calc tool/call) | PASS | yes | 4 | tools/list=12, fec_cost_calc OK (elastic $28,080) |
-| 5 | Tools REST (compute + knowledge-search; OPTIONS for heavy) | PASS | no | 2599 | cost-calc=200, capacity=200, knowledge-search=200, heavy-routes=405/405/405/405/405 |
-| 6 | Workflow status + webhook handler | PASS | no | 2176 | registered=True, rule=registered, connector=registered, webhook_status=200 |
-| 7 | Frontend pages reachable | PASS | yes | 15 | /=200/23798b, /index.html=200/23798b, /tools.html=200/22678b, /meeting.html?id=northwind-mtg-prev-001=200/10339b, /agent-builder.html=200/9140b, /demo-data.html=200/2932b, /workflow-demo.html=200/11469b, /fe-brain.html=200/5531b, /battlecards.html=200/11929b |
-| 8 | Em/en dash audit (backend + frontend + docs + data) | PASS | no | 23 | scanned=214 files, dash hits=0 |
-| 9 | Git status (uncommitted <=2; HEAD == origin/main) | PASS | no | 63 | uncommitted=0 (modified=0, untracked=0), HEAD=a3b55574407b, origin/main=a3b55574407b |
+| 1 | Backend health + pytest 30/30 | PASS | yes | 4900 | health=ok, pytest=30 passed |
+| 2 | Elasticsearch indices (fec-* + demo-*) green | PASS | yes | 570 | 32 found / 29 expected, fec-knowledge=3837 docs |
+| 3 | Kibana saved objects (dashboards + tools + agent + .mcp + rule) | PASS | yes | 1609 | dashboards=19 (demo 16/16, customer-fit=3), fec-tools=12/12, agent=yes, mcp=1, rule=1 |
+| 4 | MCP server (tools/list = 12, fec_cost_calc tool/call) | PASS | yes | 4750 | tools/list=12, fec_cost_calc OK (elastic $28,080) |
+| 5 | Tools REST (compute + knowledge-search; OPTIONS for heavy) | PASS | no | 2346 | cost-calc=200, capacity=200, knowledge-search=200, heavy-routes=405/405/405/405/405 |
+| 6 | Workflow status + webhook handler | PASS | no | 2858 | registered=True, rule=registered, connector=registered, webhook_status=200 |
+| 7 | Frontend pages reachable | PASS | yes | 2398 | /=200/23854b, /index.html=200/23854b, /tools.html=200/22734b, /meeting.html?id=northwind-mtg-prev-001=200/10389b, /agent-builder.html=200/9196b, /demo-data.html=200/2988b, /workflow-demo.html=200/11525b, /fe-brain.html=200/5587b, /battlecards.html=200/11985b |
+| 8 | Em/en dash audit (backend + frontend + docs + data) | PASS | no | 47 | scanned=220 files, dash hits=0 |
+| 9 | Git status (uncommitted <=2; HEAD == origin/main) | FAIL | no | 53 | uncommitted=39 (modified=33, untracked=6), HEAD=d5ca3a79f1ec, origin/main=d5ca3a79f1ec \| 33 modified files (>2) |
 
 ## Aggregate
 
-- passed: 9
-- failed: 0
+- passed: 8
+- failed: 1
 - skipped: 0
 - total steps: 9
 
@@ -41,7 +41,7 @@ Non-critical steps (5, 6, 8, 9) may fail up to 2 times for CAUTION.
   "1": {
     "name": "Backend health + pytest 30/30",
     "status": "PASS",
-    "duration_ms": 934,
+    "duration_ms": 4900,
     "notes": "health=ok, pytest=30 passed",
     "detail": {
       "health_status": 200,
@@ -54,7 +54,7 @@ Non-critical steps (5, 6, 8, 9) may fail up to 2 times for CAUTION.
   "2": {
     "name": "Elasticsearch indices (fec-* + demo-*) green",
     "status": "PASS",
-    "duration_ms": 619,
+    "duration_ms": 570,
     "notes": "32 found / 29 expected, fec-knowledge=3837 docs",
     "detail": {
       "index_count": 32,
@@ -64,7 +64,7 @@ Non-critical steps (5, 6, 8, 9) may fail up to 2 times for CAUTION.
   "3": {
     "name": "Kibana saved objects (dashboards + tools + agent + .mcp + rule)",
     "status": "PASS",
-    "duration_ms": 1760,
+    "duration_ms": 1609,
     "notes": "dashboards=19 (demo 16/16, customer-fit=3), fec-tools=12/12, agent=yes, mcp=1, rule=1",
     "detail": {
       "dashboard_total": 19,
@@ -86,7 +86,7 @@ Non-critical steps (5, 6, 8, 9) may fail up to 2 times for CAUTION.
   "4": {
     "name": "MCP server (tools/list = 12, fec_cost_calc tool/call)",
     "status": "PASS",
-    "duration_ms": 4,
+    "duration_ms": 4750,
     "notes": "tools/list=12, fec_cost_calc OK (elastic $28,080)",
     "detail": {
       "tool_count": 12,
@@ -112,7 +112,7 @@ Non-critical steps (5, 6, 8, 9) may fail up to 2 times for CAUTION.
   "5": {
     "name": "Tools REST (compute + knowledge-search; OPTIONS for heavy)",
     "status": "PASS",
-    "duration_ms": 2599,
+    "duration_ms": 2346,
     "notes": "cost-calc=200, capacity=200, knowledge-search=200, heavy-routes=405/405/405/405/405",
     "detail": {
       "cost_calc_status": 200,
@@ -132,7 +132,7 @@ Non-critical steps (5, 6, 8, 9) may fail up to 2 times for CAUTION.
   "6": {
     "name": "Workflow status + webhook handler",
     "status": "PASS",
-    "duration_ms": 2176,
+    "duration_ms": 2858,
     "notes": "registered=True, rule=registered, connector=registered, webhook_status=200",
     "detail": {
       "registered": true,
@@ -145,85 +145,91 @@ Non-critical steps (5, 6, 8, 9) may fail up to 2 times for CAUTION.
   "7": {
     "name": "Frontend pages reachable",
     "status": "PASS",
-    "duration_ms": 15,
-    "notes": "/=200/23798b, /index.html=200/23798b, /tools.html=200/22678b, /meeting.html?id=northwind-mtg-prev-001=200/10339b, /agent-builder.html=200/9140b, /demo-data.html=200/2932b, /workflow-demo.html=200/11469b, /fe-brain.html=200/5531b, /battlecards.html=200/11929b",
+    "duration_ms": 2398,
+    "notes": "/=200/23854b, /index.html=200/23854b, /tools.html=200/22734b, /meeting.html?id=northwind-mtg-prev-001=200/10389b, /agent-builder.html=200/9196b, /demo-data.html=200/2988b, /workflow-demo.html=200/11525b, /fe-brain.html=200/5587b, /battlecards.html=200/11985b",
     "detail": {
       "/": {
         "status": 200,
-        "bytes": 23798
+        "bytes": 23854
       },
       "/index.html": {
         "status": 200,
-        "bytes": 23798
+        "bytes": 23854
       },
       "/tools.html": {
         "status": 200,
-        "bytes": 22678
+        "bytes": 22734
       },
       "/meeting.html?id=northwind-mtg-prev-001": {
         "status": 200,
-        "bytes": 10339
+        "bytes": 10389
       },
       "/agent-builder.html": {
         "status": 200,
-        "bytes": 9140
+        "bytes": 9196
       },
       "/demo-data.html": {
         "status": 200,
-        "bytes": 2932
+        "bytes": 2988
       },
       "/workflow-demo.html": {
         "status": 200,
-        "bytes": 11469
+        "bytes": 11525
       },
       "/fe-brain.html": {
         "status": 200,
-        "bytes": 5531
+        "bytes": 5587
       },
       "/battlecards.html": {
         "status": 200,
-        "bytes": 11929
+        "bytes": 11985
       },
       "/health.html": {
         "status": 200,
-        "bytes": 13540
+        "bytes": 13596
       },
       "/industries.html": {
         "status": 200,
-        "bytes": 7273
+        "bytes": 7329
       },
       "/quick-research.html": {
         "status": 200,
-        "bytes": 8631
+        "bytes": 8687
       },
       "/customers.html": {
         "status": 200,
-        "bytes": 19875
+        "bytes": 19931
       }
     }
   },
   "8": {
     "name": "Em/en dash audit (backend + frontend + docs + data)",
     "status": "PASS",
-    "duration_ms": 23,
-    "notes": "scanned=214 files, dash hits=0",
+    "duration_ms": 47,
+    "notes": "scanned=220 files, dash hits=0",
     "detail": {
-      "files_scanned": 214,
+      "files_scanned": 220,
       "files_with_dashes": 0,
       "examples": []
     }
   },
   "9": {
     "name": "Git status (uncommitted <=2; HEAD == origin/main)",
-    "status": "PASS",
-    "duration_ms": 63,
-    "notes": "uncommitted=0 (modified=0, untracked=0), HEAD=a3b55574407b, origin/main=a3b55574407b",
+    "status": "FAIL",
+    "duration_ms": 53,
+    "notes": "uncommitted=39 (modified=33, untracked=6), HEAD=d5ca3a79f1ec, origin/main=d5ca3a79f1ec | 33 modified files (>2)",
     "detail": {
-      "uncommitted_lines": 0,
-      "uncommitted_sample": [],
-      "modified_lines": 0,
-      "head": "a3b55574407b",
-      "origin_main": "a3b55574407b",
+      "uncommitted_lines": 39,
+      "uncommitted_sample": [
+        " M backend/app/api/routes_briefs.py",
+        " M backend/app/main.py",
+        " M docs/integration-smoke-report.md",
+        " M frontend/agent-builder.html",
+        " M frontend/assets/js/agent-builder-mini.js"
+      ],
+      "modified_lines": 33,
+      "head": "d5ca3a79f1ec",
+      "origin_main": "d5ca3a79f1ec",
       "pushed_to_origin_main": true
     }
   }

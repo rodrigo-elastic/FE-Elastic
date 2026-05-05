@@ -107,7 +107,18 @@
   }
 
   async function fetchSavings() {
+    // Use the retry wrapper when available so transient 502/503/504 from the
+    // backend (cold-start, k8s rolling restart) do not collapse the band.
+    // silent: true so we hide the band without spamming a toast on every miss.
     try {
+      if (typeof window.apiGetWithRetry === "function") {
+        return await window.apiGetWithRetry("/stats/savings", {
+          category: "compute",
+          cache: "no-store",
+          silent: true,
+          label: "savings",
+        });
+      }
       const res = await fetch(ENDPOINT, { cache: "no-store" });
       if (!res.ok) {
         if (els.host) els.host.hidden = true;

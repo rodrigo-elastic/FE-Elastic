@@ -355,7 +355,20 @@
   }
 
   // ============================================================ API
+  // Delegates to the global retry wrapper when api-retry.js is loaded so
+  // transient 502/503/504 from a backend hiccup get one round of exponential
+  // backoff before surfacing as a step failure. Keeps the bespoke abort path
+  // intact when api-retry.js is absent (older pages, scripted demo).
   async function postJson(path, body, signal, timeoutMs) {
+    if (typeof window.apiPostWithRetry === "function") {
+      return window.apiPostWithRetry(path, body, {
+        category: "llm",
+        timeoutMs: timeoutMs || 25000,
+        signal,
+        silent: true,
+        label: "autopilot " + path,
+      });
+    }
     const ctrl = new AbortController();
     const onAbort = () => ctrl.abort();
     if (signal) signal.addEventListener("abort", onAbort, { once: true });

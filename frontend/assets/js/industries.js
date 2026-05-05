@@ -511,8 +511,9 @@
       const grid = document.getElementById("ind-grid");
       if (grid) {
         clear(grid);
+        const safe = (typeof sanitizeError === "function") ? sanitizeError(e) : (e && e.message) || "unknown error";
         grid.appendChild(
-          el("p", { class: "muted" }, "Failed to load industries: " + (e && e.message ? e.message : "unknown error"))
+          el("p", { class: "muted" }, "Failed to load industries: " + safe)
         );
       }
     }

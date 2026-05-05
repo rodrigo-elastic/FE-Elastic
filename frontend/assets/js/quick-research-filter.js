@@ -64,6 +64,14 @@
   }
 
   function safeApiGet(path) {
+    // Prefer the retry wrapper when present: the QR view fans out three
+    // parallel reads (calendar, meetings, briefs) and a single transient 503
+    // used to blank one of the three columns. With apiGetWithRetry we
+    // re-attempt 502/503/504 with 1s/2s/4s backoff. silent: true so a partial
+    // failure renders as an empty group rather than three toasts.
+    if (typeof window.apiGetWithRetry === "function") {
+      return window.apiGetWithRetry(path, { category: "compute", silent: true, label: "QR " + path }).catch(() => null);
+    }
     if (typeof window.apiGet !== "function") return Promise.reject(new Error("apiGet missing"));
     return window.apiGet(path).catch(() => null);
   }
@@ -136,16 +144,31 @@
     });
 
     const records = [];
-    calItems.forEach((ev) => records.push(normalizeCalendar(ev)));
-    mtgItems.forEach((m) => records.push(normalizeMeeting(m, briefByMeeting, postByMeeting)));
+    // Each normalize* may return null (defensive guard against malformed
+    // payloads). Filter them before pushing instead of relying on the
+    // sanitizer to drop null records.
+    calItems.forEach((ev) => {
+      const rec = normalizeCalendar(ev);
+      if (rec) records.push(rec);
+    });
+    mtgItems.forEach((m) => {
+      const rec = normalizeMeeting(m, briefByMeeting, postByMeeting);
+      if (rec) records.push(rec);
+    });
 
     // Briefs whose meeting_id we did NOT already render (ad-hoc briefs and
     // transcript-only post-meeting artifacts) become standalone history rows.
-    const meetingIds = new Set(mtgItems.map((m) => m.id));
+    const meetingIds = new Set(
+      mtgItems
+        .map((m) => (m && typeof m.id === "string" ? m.id : null))
+        .filter(Boolean)
+    );
     briefItems.forEach((b) => {
+      if (!b || typeof b !== "object") return;
       const id = b.meeting_id || b.id;
       if (!id || meetingIds.has(id)) return;
-      records.push(normalizeBrief(b));
+      const rec = normalizeBrief(b);
+      if (rec) records.push(rec);
     });
 
     return sanitizeRecords(records);
@@ -155,9 +178,47 @@
   // Sanitizer: drops system / orphan / internal records, keeps only the most
   // recent timestamp when duplicates share the same id, and warns in DevTools
   // so it is easy to verify how many records were filtered.
+  //
+  // W25A audit hardening: in addition to system prefixes and unresolved
+  // customers, also drops records whose id is missing/non-string, whose
+  // timestamp is unparseable or pinned to 1970/9999, and whose stage is not
+  // one of {scheduled, pre, post, transcript, other}. These guards protect
+  // the Kanban from rendering garbage if a backend ever ships a malformed
+  // payload.
   // -------------------------------------------------------------------------
+  const VALID_STAGES = new Set(STAGE_ORDER);
+  const PLACEHOLDER_NAMES = new Set([
+    "unresolved",
+    "n/a",
+    "(unknown)",
+    "unknown",
+    "placeholder",
+    "test",
+  ]);
+
+  function hasValidId(record) {
+    if (!record) return false;
+    const id = record.id;
+    if (typeof id !== "string") return false;
+    return id.trim().length > 0;
+  }
+
+  function hasValidTimestamp(record) {
+    // Records without a timestamp are allowed (some briefs lack generated_at);
+    // but if a timestamp IS provided, it must parse and not be the unix epoch
+    // or year 9999 sentinel.
+    if (!record.timestamp_iso) return true;
+    const t = new Date(record.timestamp_iso);
+    const ms = t.getTime();
+    if (isNaN(ms)) return false;
+    const year = t.getUTCFullYear();
+    if (year <= 1970 || year >= 9999) return false;
+    return true;
+  }
+
   function isSystemRecord(record) {
-    const rawId = String(record.id || "");
+    if (!record || typeof record !== "object") return true;
+    const rawId = typeof record.id === "string" ? record.id : "";
     // Strip the "cal:" / "mtg:" / "brf:" prefix that normalize* adds so we
     // match the underlying meeting/event id consistently.
     const id = rawId.replace(/^(cal|mtg|brf):/, "");
@@ -168,20 +229,43 @@
     if (systemPrefixes.some((p) => id.startsWith(p) || cid.startsWith(p))) return true;
     if (/FE team weekly sync/i.test(title)) return true;
     // Calendar events that don't resolve to a real customer flag with
-    // customer_id === "unknown" (see normalizeCalendar). Drop those: an
-    // internal-only meeting or unresolved invite has no place on the Kanban.
+    // customer_id === "unknown" OR a synthetic stem like "unknown-freemail"
+    // (see normalizeCalendar). Drop both: an internal-only meeting or
+    // unresolved invite has no place on the Kanban.
+    if (!cid) return true;
     if (cid === "unknown") return true;
+    if (cid.toLowerCase().startsWith("unknown-")) return true;
+    // Tombstone customer name guards.
     if (!cust) return true;
     const lower = cust.toLowerCase();
-    if (["unresolved", "n/a", "(unknown)"].includes(lower)) return true;
+    if (PLACEHOLDER_NAMES.has(lower)) return true;
     if (/^(unknown|placeholder|test)\b/.test(lower)) return true;
+    // Stage must be one of the known buckets.
+    if (!VALID_STAGES.has(record.stage)) return true;
+    // Title must be non-empty after trim.
+    if (!title.trim()) return true;
     return false;
   }
 
   function sanitizeRecords(records) {
     const dropped = [];
     const kept = [];
+    if (!Array.isArray(records)) return [];
     records.forEach((r) => {
+      // First gate: id MUST be a non-empty string. Records without a stable
+      // id cannot be deduped and must not enter the pipeline.
+      if (!hasValidId(r)) {
+        dropped.push(r);
+        return;
+      }
+      // Second gate: timestamp parses (or is intentionally absent). Year
+      // 1970/9999 sentinels and NaN are dropped instead of silently rendering
+      // as "Jan 1 1970".
+      if (!hasValidTimestamp(r)) {
+        dropped.push(r);
+        return;
+      }
+      // Third gate: customer / stage / title checks.
       if (isSystemRecord(r)) {
         dropped.push(r);
         return;
@@ -218,20 +302,46 @@
     return final;
   }
 
+  // Coerce a raw attendees list (which may contain strings, objects with an
+  // `email` field, or junk) into a clean array of email-like strings. Anything
+  // that doesn't yield a string survives as an object so downstream code (the
+  // attendee strip) can still inspect it; null / undefined entries are
+  // dropped.
+  function normalizeAttendees(raw) {
+    if (!Array.isArray(raw)) return [];
+    return raw
+      .map((a) => {
+        if (a == null) return null;
+        if (typeof a === "string") return a;
+        if (typeof a === "object" && typeof a.email === "string") return a.email;
+        return null;
+      })
+      .filter((s) => typeof s === "string" && s.length > 0);
+  }
+
   function normalizeCalendar(ev) {
+    if (!ev || typeof ev !== "object") return null;
     const r = ev.resolution || {};
     const company = r.company || {};
     const start = (ev.start && ev.start.dateTime) || null;
+    // Without a stable event id we cannot dedupe later, so drop the record
+    // outright instead of inventing a random id that breaks dedup contracts.
+    const evId = typeof ev.id === "string" && ev.id.trim() ? ev.id.trim() : null;
+    if (!evId) return null;
     return {
-      id: "cal:" + (ev.id || Math.random().toString(36).slice(2)),
-      title: ev.summary || tr("qr.records.untitled", "(untitled event)"),
-      customer_name: company.name || tr("qr.records.unknown_customer", "Unresolved"),
-      customer_id: company.id || "unknown",
-      industry: company.industry || "",
+      id: "cal:" + evId,
+      title: (typeof ev.summary === "string" && ev.summary.trim())
+        ? ev.summary
+        : tr("qr.records.untitled", "(untitled event)"),
+      customer_name: (typeof company.name === "string" && company.name.trim())
+        ? company.name
+        : tr("qr.records.unknown_customer", "Unresolved"),
+      customer_id: (typeof company.id === "string" && company.id.trim()) ? company.id : "unknown",
+      industry: (typeof company.industry === "string") ? company.industry : "",
       stage: "scheduled",
       timestamp_iso: start,
       source: "calendar",
-      attendees: (ev.attendees || []).map((a) => a.email).filter(Boolean),
+      attendees: normalizeAttendees(ev.attendees),
       hangout_link: ev.hangout_link || null,
       brief_id: null,
       post_meeting_id: null,
@@ -244,8 +354,14 @@
   }
 
   function normalizeMeeting(m, briefMap, postMap) {
-    const hasPost = postMap.has(m.id);
-    const hasBrief = briefMap.has(m.id);
+    if (!m || typeof m !== "object") return null;
+    // Meetings without an id cannot drive the Pre/Post agent calls (which
+    // build URLs from m.id). Drop early instead of producing
+    // /agents/post-meeting/null on click.
+    const mtgId = typeof m.id === "string" && m.id.trim() ? m.id.trim() : null;
+    if (!mtgId) return null;
+    const hasPost = postMap && typeof postMap.has === "function" ? postMap.has(mtgId) : false;
+    const hasBrief = briefMap && typeof briefMap.has === "function" ? briefMap.has(mtgId) : false;
     let stage;
     let source;
     if (m.is_upcoming) {
@@ -262,25 +378,35 @@
       source = "meeting";
     }
     return {
-      id: "mtg:" + m.id,
-      title: m.title || "(untitled)",
-      customer_name: m.company_name || "(unknown)",
-      customer_id: m.company_id || "unknown",
-      industry: m.company_industry || "",
+      id: "mtg:" + mtgId,
+      title: (typeof m.title === "string" && m.title.trim()) ? m.title : "(untitled)",
+      customer_name: (typeof m.company_name === "string" && m.company_name.trim())
+        ? m.company_name
+        : "(unknown)",
+      customer_id: (typeof m.company_id === "string" && m.company_id.trim()) ? m.company_id : "unknown",
+      industry: (typeof m.company_industry === "string") ? m.company_industry : "",
       stage,
       timestamp_iso: m.start_time || null,
       source,
-      attendees: m.attendees || [],
+      attendees: normalizeAttendees(m.attendees),
       hangout_link: null,
-      brief_id: hasBrief ? m.id : null,
-      post_meeting_id: hasPost ? m.id : null,
-      href: "/meeting.html?id=" + encodeURIComponent(m.id) + (hasPost ? "&post=1" : ""),
+      brief_id: hasBrief ? mtgId : null,
+      post_meeting_id: hasPost ? mtgId : null,
+      href: "/meeting.html?id=" + encodeURIComponent(mtgId) + (hasPost ? "&post=1" : ""),
       _meeting: m,
       _is_upcoming: !!m.is_upcoming,
     };
   }
 
   function normalizeBrief(b) {
+    if (!b || typeof b !== "object") return null;
+    // A brief without a stable meeting_id (or fallback id) cannot be opened
+    // by /meeting.html?id=... and would generate /meeting.html?id=null on
+    // click. Drop instead of inventing a random id.
+    const briefKey = (typeof b.meeting_id === "string" && b.meeting_id.trim())
+      ? b.meeting_id.trim()
+      : ((typeof b.id === "string" && b.id.trim()) ? b.id.trim() : null);
+    if (!briefKey) return null;
     const isPost = b.type === "post_meeting";
     const stage = isPost ? "post" : "pre";
     // Transcript-only artifacts come back with company_id starting with
@@ -288,19 +414,25 @@
     // group is meaningful.
     const isTranscript = String(b.company_id || "").startsWith("transcript-") && isPost;
     return {
-      id: "brf:" + (b.meeting_id || b.id || Math.random().toString(36).slice(2)),
-      title: b.headline || b.summary || (isPost ? "Post-meeting analysis" : "Pre-meeting brief"),
-      customer_name: b.company_name || b.company_id || "(unknown)",
-      customer_id: b.company_id || "unknown",
-      industry: b.industry || "",
+      id: "brf:" + briefKey,
+      title: (typeof b.headline === "string" && b.headline.trim())
+        ? b.headline
+        : ((typeof b.summary === "string" && b.summary.trim())
+          ? b.summary
+          : (isPost ? "Post-meeting analysis" : "Pre-meeting brief")),
+      customer_name: (typeof b.company_name === "string" && b.company_name.trim())
+        ? b.company_name
+        : ((typeof b.company_id === "string" && b.company_id.trim()) ? b.company_id : "(unknown)"),
+      customer_id: (typeof b.company_id === "string" && b.company_id.trim()) ? b.company_id : "unknown",
+      industry: (typeof b.industry === "string") ? b.industry : "",
       stage: isTranscript ? "transcript" : stage,
       timestamp_iso: b.generated_at || null,
       source: isPost ? "post" : "brief",
       attendees: [],
       hangout_link: null,
-      brief_id: !isPost ? b.meeting_id : null,
-      post_meeting_id: isPost ? b.meeting_id : null,
-      href: "/meeting.html?id=" + encodeURIComponent(b.meeting_id) + (isPost ? "&post=1" : ""),
+      brief_id: !isPost ? briefKey : null,
+      post_meeting_id: isPost ? briefKey : null,
+      href: "/meeting.html?id=" + encodeURIComponent(briefKey) + (isPost ? "&post=1" : ""),
       _brief: b,
     };
   }
@@ -542,7 +674,8 @@
       if (typeof window.toast === "function") window.toast("Brief generated for " + record.customer_name, "ok");
       window.location.href = "/meeting.html?id=" + encodeURIComponent(result.meeting_id) + "&adhoc=1";
     } catch (e) {
-      if (typeof window.toast === "function") window.toast("Pre-Meeting failed: " + e.message, "bad");
+      const safe = (typeof window.sanitizeError === "function") ? window.sanitizeError(e) : (e && e.message) || "unknown error";
+      if (typeof window.toast === "function") window.toast("Pre-Meeting failed: " + safe, "bad");
       btn.disabled = false;
       btn.innerHTML = labelHTML;
     }
@@ -562,7 +695,8 @@
       if (typeof window.toast === "function") window.toast("Post-meeting result for " + record.customer_name, "ok");
       window.location.href = "/meeting.html?id=" + encodeURIComponent(record._meeting.id) + "&post=1";
     } catch (e) {
-      if (typeof window.toast === "function") window.toast("Post-Meeting failed: " + e.message, "bad");
+      const safe = (typeof window.sanitizeError === "function") ? window.sanitizeError(e) : (e && e.message) || "unknown error";
+      if (typeof window.toast === "function") window.toast("Post-Meeting failed: " + safe, "bad");
       btn.disabled = false;
       btn.innerHTML = labelHTML;
     }

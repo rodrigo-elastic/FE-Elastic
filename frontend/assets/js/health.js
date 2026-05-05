@@ -94,6 +94,23 @@
     return span;
   }
 
+  // W25C: friendly translations for the warnings emitted by /health/full so an
+  // operator does not have to read snake_case codes. Unknown codes fall through
+  // to the underscore-stripped raw form.
+  const WARNING_LABELS = {
+    elasticsearch_unavailable: "Elasticsearch cluster is unreachable. Battlecards, FE Brain, and dashboards run on the on-disk seed fallback.",
+    mcp_tools_unloaded: "MCP tool registry did not load. The 12 specialist tools may be unavailable.",
+    fe_brain_empty: "FE Brain index is empty. Run scripts/index_knowledge.py to seed it.",
+    workflow_post_meeting_missing: "Kibana post-meeting workflow rule is not registered. Open /workflow-demo.html and click Sync workflow.",
+    workflow_orphan_actions_missing: "Kibana orphan-action workflow rule is not registered. Open /workflow-demo.html and click Sync workflow.",
+  };
+
+  function friendlyWarning(code) {
+    if (typeof code !== "string") return String(code);
+    if (WARNING_LABELS[code]) return WARNING_LABELS[code];
+    return code.replace(/_/g, " ");
+  }
+
   function renderWarnings(warnings) {
     const host = $("health-warnings");
     const ul = $("health-warnings-list");
@@ -107,7 +124,7 @@
     ul.innerHTML = "";
     warnings.forEach((w) => {
       const li = document.createElement("li");
-      li.textContent = w.replace(/_/g, " ");
+      li.textContent = friendlyWarning(w);
       ul.appendChild(li);
     });
   }
@@ -207,12 +224,20 @@
     setText("health-cluster-name", tt("health.cluster.offline", "backend offline"));
     setText("health-cluster-version", "-");
     setText("health-ping-ms", "-");
-    renderWarnings(["backend_unreachable: " + (err && err.message ? err.message : err)]);
+    const safe = (typeof sanitizeError === "function")
+      ? sanitizeError(err)
+      : String((err && err.message) || err || "error").slice(0, 200);
+    renderWarnings(["backend_unreachable: " + safe]);
   }
 
   async function load() {
     try {
-      const data = await apiGet("/health/full");
+      // Health endpoint: 5s budget, retry on transient 5xx so a single backend
+      // hiccup does not flip the dashboard to red. silent: true keeps the
+      // failure path inline (red banner) without doubling up via toast.
+      const data = typeof window.apiGetWithRetry === "function"
+        ? await window.apiGetWithRetry("/health/full", { category: "health", silent: true, label: "health" })
+        : await apiGet("/health/full");
       paint(data);
     } catch (err) {
       console.warn("[health] fetch failed", err);
