@@ -542,7 +542,12 @@
 
     await sleep(350, signal);
     const nameInput = await waitForEl("#qr-name", 3000, signal);
-    if (nameInput) await typeInto(nameInput, "Banco Atlántico", 68, signal);
+    if (nameInput) {
+      // Scroll the form into center so the typing is readable in the panel
+      nameInput.scrollIntoView({ behavior: "smooth", block: "center" });
+      await sleep(380, signal);
+      await typeInto(nameInput, "Banco Atlántico", 68, signal);
+    }
     await sleep(480, signal);
 
     // Pick the Banking & Financial Services template - watch the fields fill
@@ -583,45 +588,60 @@
   async function stepBrief(signal) {
     setCaption(2, "Pre-meeting brief ready.",
       "DORA obligations. Splunk TCO delta. Key personas. Cited.");
-    await sleep(1100, signal);
+
+    // Pre-fire the Field Assistant chip NOW so the response streams in the
+    // background while we read the brief. By the time stepFa starts (~15s
+    // from here) the answer will already be rendered in the chat.
+    const chipEarly = await waitForEl(".abm-chip", 2000, signal);
+    if (chipEarly) iframeClick(chipEarly);
+
+    await sleep(900, signal);
 
     // Read through each section at human pace - pause on the dense parts
     await iframeScrollBy(290, signal); await sleep(420, signal);
-    await iframeScrollBy(330, signal); await sleep(820, signal); // DORA - read it
+    await iframeScrollBy(330, signal); await sleep(820, signal);
     await iframeScrollBy(360, signal); await sleep(420, signal);
     setCaption(2, "DORA deadline. Splunk TCO. Tier-1 EU bank.",
       "Sourced. No manual research.");
     await sleep(360, signal);
-    await iframeScrollBy(370, signal); await sleep(640, signal); // Splunk TCO - read it
-    await iframeScrollBy(350, signal); await sleep(820, signal); // news signals - read it
+    await iframeScrollBy(370, signal); await sleep(640, signal);
+    await iframeScrollBy(350, signal); await sleep(820, signal);
     await iframeScrollBy(330, signal); await sleep(420, signal);
     await iframeScrollBy(310, signal); await sleep(540, signal);
-    await iframeScrollBy(290, signal); await sleep(720, signal); // key personas - read it
+    await iframeScrollBy(290, signal); await sleep(720, signal);
     await iframeScrollBy(270, signal); await sleep(520, signal);
     await sleep(480, signal);
   }
 
   async function stepFa(signal) {
     setCaption(3, "Field Assistant. Top 5 questions to ask.",
-      "MEDDPICC-anchored. Grounded in the brief just generated.");
+      "Pre-fired during the brief. Answer already streaming.");
 
-    // Scroll back up so the chip row is visible
+    // Scroll back to top - the chip was already clicked in stepBrief so
+    // the response is done (or nearly done) by the time we arrive here.
     const doc = iframeDoc();
     if (doc) { (doc.scrollingElement || doc.documentElement).scrollTo({ top: 0, behavior: "smooth" }); }
-    await sleep(680, signal);
+    await sleep(600, signal);
 
-    const chip = await waitForEl(".abm-chip", 3000, signal);
-    if (chip) {
-      chip.scrollIntoView({ behavior: "smooth", block: "center" });
-      await sleep(520, signal);
-      iframeClick(chip);
-      await sleep(380, signal);
-      setCaption(3, "Streaming. Five questions. Ready for the call.",
-        "Economic Buyer. Champion. Competition angle. Pricing objection. Technical fit.");
+    setCaption(3, "Five MEDDPICC questions. Ready for the call.",
+      "Economic Buyer. Champion. Competition angle. Pricing. Technical fit.");
+    await sleep(300, signal);
+
+    // Scroll through the pre-loaded response
+    const msgs = await waitForEl(".abm-messages", 1500, signal);
+    if (msgs) {
+      msgs.scrollIntoView({ behavior: "smooth", block: "start" });
+      await sleep(700, signal);
+      await iframeScrollBy(280, signal); await sleep(500, signal);
+      await iframeScrollBy(280, signal); await sleep(500, signal);
+      await iframeScrollBy(260, signal); await sleep(500, signal);
+      await iframeScrollBy(240, signal); await sleep(400, signal);
+    } else {
+      // Fallback: response not in DOM yet - give it a few more seconds
+      await sleep(8000, signal);
     }
 
-    // Let the response stream - this is the wow moment
-    await sleep(10500, signal);
+    await sleep(800, signal);
   }
 
   async function stepRecap(signal) {
