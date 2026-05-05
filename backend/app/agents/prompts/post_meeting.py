@@ -579,16 +579,21 @@ _MOCKS = {
     "northwind": _NORTHWIND_MOCK,
     "mercado-atlas": _MERCADO_ATLAS_MOCK,
     "atlantico": _ATLANTICO_MOCK,
-    "acme-001": _ACME_MOCK,
-    "globex-002": _GLOBEX_MOCK,
-    "initech-003": _INITECH_MOCK,
 }
+# The acme/globex/initech fixtures live in the source for historical
+# regression-test purposes (some old test_pdf_builder.py asserts hit them
+# via direct module import, NOT through the mock_response dispatcher).
+# They are intentionally NOT exposed through the mock_response lookup so
+# they cannot leak into a live demo. If a stale company_id slips through,
+# we fall back to the Northwind fixture.
 
 
 def mock_response(company_id: str = "northwind") -> dict:
     """Offline-mode result keyed by company. Hand-written so the demo runs without the Anthropic API.
 
-    Fictional demo keys (northwind, mercado-atlas, atlantico) are the canonical demo set.
-    Legacy keys (acme-001, globex-002, initech-003) remain for backwards compatibility.
+    Only the canonical fictional demo keys (northwind, mercado-atlas, atlantico)
+    are routable. Anything else (including legacy acme/globex/initech ids) falls
+    back to the Northwind fixture so no real-brand stale content ever surfaces
+    on a live demo.
     """
     return _MOCKS.get(company_id, _NORTHWIND_MOCK)

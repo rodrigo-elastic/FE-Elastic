@@ -334,7 +334,13 @@ def mock_response(company_id: str = "northwind") -> dict:
     """Offline-mode brief used when no API key is configured.
 
     Hand-written mocks per company let us demo any of the three fictional accounts
-    (Northwind Pay, Mercado Atlas, Banco Atlántico) without hitting the API. Legacy
-    Acme/Globex/Initech keys remain for backwards compatibility with older fixtures.
+    (Northwind Pay, Mercado Atlas, Banco Atlántico) without hitting the API. The
+    legacy Acme/Globex/Initech keys exist in the source for old test fixtures
+    but are NOT routable from this dispatcher - any company_id that is not in
+    the canonical demo set falls back to Northwind so real-brand stale content
+    never surfaces on a live demo.
     """
-    return _MOCKS.get(company_id, _MOCKS["northwind"])
+    safe_keys = {"northwind", "mercado-atlas", "atlantico"}
+    if company_id in safe_keys and company_id in _MOCKS:
+        return _MOCKS[company_id]
+    return _MOCKS["northwind"]
