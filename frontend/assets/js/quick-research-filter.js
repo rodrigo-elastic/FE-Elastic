@@ -239,7 +239,11 @@
     if (!cust) return true;
     const lower = cust.toLowerCase();
     if (PLACEHOLDER_NAMES.has(lower)) return true;
-    if (/^(unknown|placeholder|test)\b/.test(lower)) return true;
+    // Tighter than the original /^(unknown|placeholder|test)\b/. Drop only
+    // exact matches to "unknown" or "placeholder" prefixes (still reserved
+    // for system records). User-typed names like "Test Co" or "Testflight"
+    // are legitimate and must not be filtered.
+    if (/^(unknown|placeholder)\b/.test(lower)) return true;
     // Stage must be one of the known buckets.
     if (!VALID_STAGES.has(record.stage)) return true;
     // Title must be non-empty after trim.
@@ -413,6 +417,16 @@
     // "transcript-" - flag them as 'transcript' stage so the dedicated
     // group is meaningful.
     const isTranscript = String(b.company_id || "").startsWith("transcript-") && isPost;
+    // Ad-hoc Quick Research briefs come back without company_id but with a
+    // company_name. Slugify the name as a fallback id so the sanitizer's
+    // "drop unknown customer" rule does not silently hide the user's own
+    // briefs from the Customers Kanban.
+    const slugFromName = (typeof b.company_name === "string" && b.company_name.trim())
+      ? b.company_name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
+      : "";
+    const resolvedCid = (typeof b.company_id === "string" && b.company_id.trim())
+      ? b.company_id.trim()
+      : (slugFromName || "unknown");
     return {
       id: "brf:" + briefKey,
       title: (typeof b.headline === "string" && b.headline.trim())
@@ -423,7 +437,7 @@
       customer_name: (typeof b.company_name === "string" && b.company_name.trim())
         ? b.company_name
         : ((typeof b.company_id === "string" && b.company_id.trim()) ? b.company_id : "(unknown)"),
-      customer_id: (typeof b.company_id === "string" && b.company_id.trim()) ? b.company_id : "unknown",
+      customer_id: resolvedCid,
       industry: (typeof b.industry === "string") ? b.industry : "",
       stage: isTranscript ? "transcript" : stage,
       timestamp_iso: b.generated_at || null,

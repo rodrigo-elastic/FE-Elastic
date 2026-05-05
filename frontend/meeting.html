@@ -28,6 +28,22 @@
   <meta name="twitter:image" content="/assets/img/elastic/glyph-cluster-color.svg" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <!-- seo:meta:end -->
+  <script>
+    /* Theme bootstrap before first paint, matches tools-rail.js. Required
+       because /meeting.html does not load tools-rail.js (no left rail) and
+       the page would otherwise render in CSS default light, ignoring the
+       fec.theme localStorage choice. Without this, navigating from a dark
+       /quick-research.html into /meeting.html flickers to light. */
+    (function () {
+      try {
+        var t = localStorage.getItem("fec.theme");
+        if (!t) {
+          t = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        }
+        document.documentElement.setAttribute("data-theme", t === "light" ? "light" : "dark");
+      } catch (e) { document.documentElement.setAttribute("data-theme", "dark"); }
+    })();
+  </script>
   <link rel="stylesheet" href="/assets/css/styles.css" />
   <link rel="stylesheet" href="/assets/css/agent-builder.css" />
   <link rel="icon" type="image/svg+xml" href="/assets/img/elastic/glyph-cluster-color.svg" />
