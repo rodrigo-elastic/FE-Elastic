@@ -1206,3 +1206,38 @@
   background: rgba(220, 38, 38, 0.16);
   color: #ff5b6f;
 }
+
+/* ============================================================ Markdown rendering inside chat
+   The standalone agent-builder chat (.ab-msg-body) and the embedded mini
+   chat (.abm-msg-body) both run rendered HTML through renderMarkdown.
+   These rules style headings, lists, blockquotes, hr, and paragraphs so
+   the rendered output reads cleanly inside the chat bubble. */
+.ab-msg-body h1, .abm-msg-body h1 { font-size: 18px; font-weight: 700; margin: 12px 0 6px; line-height: 1.25; }
+.ab-msg-body h2, .abm-msg-body h2 { font-size: 16px; font-weight: 700; margin: 12px 0 6px; line-height: 1.3; color: var(--primary); }
+.ab-msg-body h3, .abm-msg-body h3 { font-size: 14px; font-weight: 700; margin: 10px 0 4px; line-height: 1.3; }
+.ab-msg-body h4, .abm-msg-body h4,
+.ab-msg-body h5, .abm-msg-body h5,
+.ab-msg-body h6, .abm-msg-body h6 { font-size: 13px; font-weight: 700; margin: 8px 0 4px; }
+.ab-msg-body p, .abm-msg-body p { margin: 0 0 10px; line-height: 1.55; }
+.ab-msg-body p:last-child, .abm-msg-body p:last-child { margin-bottom: 0; }
+.ab-msg-body ul, .abm-msg-body ul,
+.ab-msg-body ol, .abm-msg-body ol { margin: 6px 0 12px; padding-left: 22px; }
+.ab-msg-body li, .abm-msg-body li { margin: 3px 0; line-height: 1.5; }
+.ab-msg-body strong, .abm-msg-body strong { color: var(--ink); font-weight: 700; }
+.ab-msg-body em, .abm-msg-body em { font-style: italic; }
+.ab-msg-body a, .abm-msg-body a { color: var(--primary); text-decoration: underline; }
+.ab-msg-body a:hover, .abm-msg-body a:hover { text-decoration: none; }
+.ab-msg-body blockquote, .abm-msg-body blockquote {
+  margin: 8px 0;
+  padding: 8px 12px;
+  border-left: 3px solid var(--primary);
+  background: var(--panel-2);
+  color: var(--ink-2);
+  border-radius: 0 6px 6px 0;
+  font-style: italic;
+}
+.ab-msg-body hr, .abm-msg-body hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 14px 0;
+}

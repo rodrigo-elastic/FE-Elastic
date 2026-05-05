@@ -142,15 +142,72 @@
   }
 
   // Lightweight Markdown-ish renderer. Handles **bold**, `code`, ```fenced```, bullets, line breaks.
+  // Robust markdown renderer: ATX headings, fenced code, inline code,
+  // bold, italic, links, ul/ol, blockquote, hr, paragraphs. Mirrors the
+  // implementation in agent-builder-mini.js.
   function renderMarkdown(text) {
-    let html = escapeHtml(text);
-    html = html.replace(/```([\s\S]*?)```/g, (_, code) => `<pre><code>${code}</code></pre>`);
-    html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
+    if (text == null) return "";
+    let src = String(text);
+    const codeBlocks = [];
+    src = src.replace(/```([a-zA-Z0-9_+\-]*)\n?([\s\S]*?)```/g, (_, lang, code) => {
+      const i = codeBlocks.length;
+      codeBlocks.push({ lang: String(lang || "").trim(), code: String(code || "") });
+      return " CODE" + i + " ";
+    });
+    src = escapeHtml(src);
+    const lines = src.split(/\n/);
+    const out = [];
+    let i = 0;
+    function flushPara(buf) { if (buf.length) out.push("<p>" + buf.join(" ") + "</p>"); }
+    while (i < lines.length) {
+      const ln = lines[i];
+      if (/^\s*(?:-{3,}|\*{3,})\s*$/.test(ln)) { out.push("<hr>"); i++; continue; }
+      const h = /^(\#{1,6})\s+(.+?)\s*#*\s*$/.exec(ln);
+      if (h) { out.push("<h" + h[1].length + ">" + h[2] + "</h" + h[1].length + ">"); i++; continue; }
+      if (/^>\s?/.test(ln)) {
+        const buf = [];
+        while (i < lines.length && /^>\s?/.test(lines[i])) { buf.push(lines[i].replace(/^>\s?/, "")); i++; }
+        out.push("<blockquote>" + buf.join("<br>") + "</blockquote>");
+        continue;
+      }
+      if (/^\s*[-*]\s+/.test(ln)) {
+        const buf = [];
+        while (i < lines.length && /^\s*[-*]\s+/.test(lines[i])) { buf.push("<li>" + lines[i].replace(/^\s*[-*]\s+/, "") + "</li>"); i++; }
+        out.push("<ul>" + buf.join("") + "</ul>");
+        continue;
+      }
+      if (/^\s*\d+\.\s+/.test(ln)) {
+        const buf = [];
+        while (i < lines.length && /^\s*\d+\.\s+/.test(lines[i])) { buf.push("<li>" + lines[i].replace(/^\s*\d+\.\s+/, "") + "</li>"); i++; }
+        out.push("<ol>" + buf.join("") + "</ol>");
+        continue;
+      }
+      if (/^\s*$/.test(ln)) { i++; continue; }
+      const buf = [];
+      while (i < lines.length
+             && !/^\s*$/.test(lines[i])
+             && !/^(\#{1,6})\s+/.test(lines[i])
+             && !/^\s*(?:-{3,}|\*{3,})\s*$/.test(lines[i])
+             && !/^\s*[-*]\s+/.test(lines[i])
+             && !/^\s*\d+\.\s+/.test(lines[i])
+             && !/^>\s?/.test(lines[i])) {
+        buf.push(lines[i].trim());
+        i++;
+      }
+      flushPara(buf);
+    }
+    let html = out.join("\n");
     html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-    html = html.replace(/^- (.+)$/gm, "<li>$1</li>");
-    html = html.replace(/(?:<li>[\s\S]*?<\/li>\n?)+/g, (m) => `<ul>${m}</ul>`);
-    html = html.replace(/\n{2,}/g, "<br><br>");
-    html = html.replace(/\n/g, "<br>");
+    html = html.replace(/__([^_]+)__/g, "<strong>$1</strong>");
+    html = html.replace(/(^|[\s(])\*([^*\n]+)\*/g, "$1<em>$2</em>");
+    html = html.replace(/(^|[\s(])_([^_\n]+)_/g, "$1<em>$2</em>");
+    html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
+    html = html.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+    html = html.replace(/ CODE(\d+) /g, (_, n) => {
+      const block = codeBlocks[+n] || { lang: "", code: "" };
+      const cls = block.lang ? ' class="lang-' + escapeHtml(block.lang) + '"' : "";
+      return "<pre><code" + cls + ">" + escapeHtml(block.code) + "</code></pre>";
+    });
     return html;
   }
 
