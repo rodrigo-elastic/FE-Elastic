@@ -347,10 +347,11 @@ a.brand:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; 
 }
 .pill.ok::before { box-shadow: 0 0 0 0 rgba(0, 191, 179, 0.5); animation: pulse 2.4s infinite; }
 .pill.bad {
-  color: #FF8A95;
+  color: #a8253a;
   border-color: rgba(246, 102, 102, 0.4);
   background: rgba(246, 102, 102, 0.12);
 }
+[data-theme="dark"] .pill.bad { color: #FF8A95; }
 .pill.upcoming { color: var(--yellow); border-color: rgba(254, 197, 20, 0.35); background: var(--yellow-soft); }
 .pill.past { color: var(--blue); border-color: rgba(27, 169, 245, 0.35); background: var(--blue-soft); }
 
@@ -2605,6 +2606,19 @@ body.printing #panel-brief { display: block !important; }
   100% { background: transparent; box-shadow: none; }
 }
 
+/* ============================================================ Demo banner dark override
+   The yellow notice banner is reused across index, customers, quick-research,
+   industries (defined inline). The light theme keeps the original soft yellow
+   (#fff3cd / #856404). In dark mode we deepen the surface and lift the text
+   so it sits naturally with the rest of the chrome instead of glaring. */
+[data-theme="dark"] .demo-banner {
+  background: rgba(254, 197, 20, 0.10);
+  color: #ffe28a;
+  border-bottom-color: rgba(254, 197, 20, 0.28);
+}
+[data-theme="dark"] .demo-banner-close { color: #ffe28a; }
+[data-theme="dark"] .demo-banner-close:hover { background: rgba(254, 197, 20, 0.18); }
+
 /* ============================================================ Tools page */
 
 /* Embed mode: when a page is loaded in an iframe with ?embed=1 (autopilot
@@ -2863,6 +2877,7 @@ body.portal-page.has-tools-rail.is-rail-collapsed .container {
   color: #00827a;
   border-color: rgba(0, 191, 179, 0.30);
 }
+[data-theme="dark"] .tag-compute { color: #b9f5ed; border-color: rgba(0, 191, 179, 0.45); }
 
 .tool-panel > summary .chevron {
   flex: 0 0 auto;
@@ -3564,7 +3579,8 @@ body.portal-page.has-tools-rail.is-rail-collapsed .container {
 }
 .tr-meta .dot { color: var(--muted-2); }
 #tr-charcount.ok { color: var(--primary); font-weight: 600; }
-#tr-charcount.bad { color: #FF8A95; font-weight: 600; }
+#tr-charcount.bad { color: #a8253a; font-weight: 600; }
+[data-theme="dark"] #tr-charcount.bad { color: #FF8A95; }
 .tr-file-pick {
   display: inline-flex;
   align-items: center;

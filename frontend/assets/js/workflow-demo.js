@@ -83,7 +83,7 @@
       const data = await apiGet("/workflows/status");
       renderStatus(data);
     } catch (err) {
-      $status.innerHTML = `<div style="color:#ff5252">Status fetch failed: ${err.message}</div>`;
+      $status.innerHTML = `<div class="wf-error-line">Status fetch failed: ${err.message}</div>`;
     }
   }
 
@@ -105,7 +105,7 @@
         <pre>${JSON.stringify(r, null, 2)}</pre></div>`;
       await loadStatus();
     } catch (err) {
-      $fireResult.innerHTML = `<div class="wf-result" style="background:rgba(255,82,82,.06);border-color:rgba(255,82,82,.3)"><strong>Sync failed:</strong> ${err.message}</div>`;
+      $fireResult.innerHTML = `<div class="wf-result is-err"><strong>Sync failed:</strong> ${err.message}</div>`;
     } finally {
       $btnSync.disabled = false;
       $btnSync.textContent = "Sync workflow";
@@ -120,7 +120,7 @@
       $fireResult.innerHTML = `<div class="wf-result">
         <strong>Transcript indexed into <code>${r.index}</code>.</strong>
         <div>doc id: <code>${r.doc_id}</code></div>
-        <div style="margin-top:6px;color:rgba(255,255,255,.65)">${r.note || ""}</div>
+        <div class="wf-status-note">${r.note || ""}</div>
         <div style="margin-top:8px">Watching for the alerting rule to fire (auto-refresh every 15s)…</div>
       </div>`;
       // accelerate polling for ~3 minutes
@@ -132,7 +132,7 @@
         if (ticks > 18) clearInterval(fast); // 18 * 10s = 3 min
       }, 10000);
     } catch (err) {
-      $fireResult.innerHTML = `<div class="wf-result" style="background:rgba(255,82,82,.06);border-color:rgba(255,82,82,.3)"><strong>Fire failed:</strong> ${err.message}</div>`;
+      $fireResult.innerHTML = `<div class="wf-result is-err"><strong>Fire failed:</strong> ${err.message}</div>`;
     } finally {
       $btnFire.disabled = false;
       $btnFire.textContent = "Fire demo transcript";
@@ -156,7 +156,7 @@
       </div>`;
       await loadStatus();
     } catch (err) {
-      $fireResult.innerHTML = `<div class="wf-result" style="background:rgba(255,82,82,.06);border-color:rgba(255,82,82,.3)"><strong>Trigger failed:</strong> ${err.message}</div>`;
+      $fireResult.innerHTML = `<div class="wf-result is-err"><strong>Trigger failed:</strong> ${err.message}</div>`;
     } finally {
       $btnTriggerNow.disabled = false;
       $btnTriggerNow.textContent = "Trigger now (skip wait)";

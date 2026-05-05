@@ -11,28 +11,36 @@
   window.__feCommandPaletteLoaded = true;
 
   /* ============================================================ Static index */
+  // 12 pages match the persistent left rail in tools-rail.js; if a page is added
+  // there, append the matching entry below so the palette never drifts.
   var STATIC_COMMANDS = [
-    // Pages (8)
-    { type: "pages", icon: "🏠", label: "Dashboard",       sub: "/index.html",         href: "/index.html",         keywords: "home overview" },
-    { type: "pages", icon: "🛠",  label: "Tools",           sub: "/tools.html",         href: "/tools.html",         keywords: "panels generators" },
-    { type: "pages", icon: "🤖", label: "Agent Builder",   sub: "/agent-builder.html", href: "/agent-builder.html", keywords: "agents prompts" },
-    { type: "pages", icon: "🧪", label: "Demo Data",       sub: "/demo-data.html",     href: "/demo-data.html",     keywords: "scenarios seed" },
-    { type: "pages", icon: "🌊", label: "Workflow",        sub: "/workflow-demo.html", href: "/workflow-demo.html", keywords: "pipeline demo" },
-    { type: "pages", icon: "🧠", label: "FE Brain",        sub: "/fe-brain.html",      href: "/fe-brain.html",      keywords: "knowledge docs rag" },
-    { type: "pages", icon: "⚔",  label: "Battlecards",     sub: "/battlecards.html",   href: "/battlecards.html",   keywords: "competitive splunk" },
-    { type: "pages", icon: "📜", label: "Audit",           sub: "/audit.html",         href: "/audit.html",         keywords: "log compliance" },
+    // Pages (12)
+    { type: "pages", icon: "🏠", label: "Home",            sub: "/index.html",          href: "/index.html",          keywords: "home dashboard overview" },
+    { type: "pages", icon: "🔎", label: "Quick Research",  sub: "/quick-research.html", href: "/quick-research.html", keywords: "brief account research pre meeting" },
+    { type: "pages", icon: "👥", label: "Customers",       sub: "/customers.html",      href: "/customers.html",      keywords: "accounts companies opportunities" },
+    { type: "pages", icon: "🧠", label: "FE Brain",        sub: "/fe-brain.html",       href: "/fe-brain.html",       keywords: "knowledge docs rag corpus" },
+    { type: "pages", icon: "🤖", label: "Agent Builder",   sub: "/agent-builder.html",  href: "/agent-builder.html",  keywords: "agents prompts orchestrator" },
+    { type: "pages", icon: "⚔",  label: "Battlecards",     sub: "/battlecards.html",    href: "/battlecards.html",    keywords: "competitive splunk datadog" },
+    { type: "pages", icon: "🏭", label: "Industries",      sub: "/industries.html",     href: "/industries.html",     keywords: "vertical sector verticals" },
+    { type: "pages", icon: "🧪", label: "Demo Data",       sub: "/demo-data.html",      href: "/demo-data.html",      keywords: "scenarios seed credstuff ddos ransomware" },
+    { type: "pages", icon: "🌊", label: "Workflow",        sub: "/workflow-demo.html",  href: "/workflow-demo.html",  keywords: "pipeline demo orchestration" },
+    { type: "pages", icon: "🩺", label: "Health",          sub: "/health.html",         href: "/health.html",         keywords: "status diagnostics uptime" },
+    { type: "pages", icon: "📜", label: "Audit",           sub: "/audit.html",          href: "/audit.html",          keywords: "log compliance trail" },
+    { type: "pages", icon: "🛠",  label: "Tools",           sub: "/tools.html",          href: "/tools.html",          keywords: "panels generators 12 tools" },
 
-    // Tools (10)
-    { type: "tools", icon: "📋", label: "POC Plan",                sub: "/tools.html#tool-poc",          href: "/tools.html#tool-poc",          keywords: "proof concept" },
-    { type: "tools", icon: "🔁", label: "SPL to ES|QL",            sub: "/tools.html#tool-spl",          href: "/tools.html#tool-spl",          keywords: "splunk migration query" },
-    { type: "tools", icon: "✅", label: "Compliance",              sub: "/tools.html#tool-compliance",   href: "/tools.html#tool-compliance",   keywords: "fca soc2 hipaa gdpr pci" },
-    { type: "tools", icon: "💰", label: "Cost",                    sub: "/tools.html#tool-cost",         href: "/tools.html#tool-cost",         keywords: "tco pricing" },
-    { type: "tools", icon: "📈", label: "Capacity",                sub: "/tools.html#tool-capacity",     href: "/tools.html#tool-capacity",     keywords: "cluster sizing nodes" },
-    { type: "tools", icon: "📚", label: "Stack",                   sub: "/tools.html#tool-stack",        href: "/tools.html#tool-stack",        keywords: "tech extract" },
-    { type: "tools", icon: "💻", label: "Code",                    sub: "/tools.html#tool-code",         href: "/tools.html#tool-code",         keywords: "samples snippets" },
-    { type: "tools", icon: "🩺", label: "Troubleshoot",            sub: "/tools.html#tool-troubleshoot", href: "/tools.html#tool-troubleshoot", keywords: "diagnose error" },
-    { type: "tools", icon: "🧠", label: "Knowledge (FE Brain)",    sub: "/fe-brain.html",                href: "/fe-brain.html",                keywords: "docs rag search" },
-    { type: "tools", icon: "🎼", label: "Orchestrator",            sub: "/agent-builder.html",           href: "/agent-builder.html",           keywords: "router multi agent" },
+    // Tools (12) - matches tool-poc through tool-proposal anchors on /tools.html.
+    { type: "tools", icon: "📋", label: "POC Plan",                sub: "/tools.html#tool-poc",          href: "/tools.html#tool-poc",          keywords: "proof concept pov" },
+    { type: "tools", icon: "🔁", label: "SPL to ES|QL",            sub: "/tools.html#tool-spl",          href: "/tools.html#tool-spl",          keywords: "splunk migration query translation" },
+    { type: "tools", icon: "✅", label: "Compliance",              sub: "/tools.html#tool-compliance",   href: "/tools.html#tool-compliance",   keywords: "fca soc2 hipaa gdpr pci dora" },
+    { type: "tools", icon: "💰", label: "Cost",                    sub: "/tools.html#tool-cost",         href: "/tools.html#tool-cost",         keywords: "tco pricing splunk datadog" },
+    { type: "tools", icon: "📈", label: "Capacity",                sub: "/tools.html#tool-capacity",     href: "/tools.html#tool-capacity",     keywords: "cluster sizing nodes shards" },
+    { type: "tools", icon: "📚", label: "Stack",                   sub: "/tools.html#tool-stack",        href: "/tools.html#tool-stack",        keywords: "tech extract integrations" },
+    { type: "tools", icon: "💻", label: "Code",                    sub: "/tools.html#tool-code",         href: "/tools.html#tool-code",         keywords: "samples snippets agent" },
+    { type: "tools", icon: "🩺", label: "Troubleshoot",            sub: "/tools.html#tool-troubleshoot", href: "/tools.html#tool-troubleshoot", keywords: "diagnose error logs" },
+    { type: "tools", icon: "🧠", label: "Knowledge (FE Brain)",    sub: "/tools.html#tool-knowledge",    href: "/tools.html#tool-knowledge",    keywords: "docs rag search corpus mei" },
+    { type: "tools", icon: "🎯", label: "Compare (Sloane)",        sub: "/tools.html#tool-compare",      href: "/tools.html#tool-compare",      keywords: "competitive battlecard sloane" },
+    { type: "tools", icon: "🎼", label: "Orchestrator (Auro)",     sub: "/tools.html#tool-orchestrator", href: "/tools.html#tool-orchestrator", keywords: "router multi agent auro" },
+    { type: "tools", icon: "📝", label: "Proposal (Carmen)",       sub: "/tools.html#tool-proposal",     href: "/tools.html#tool-proposal",     keywords: "one pager carmen pursuit" },
 
     // Quick actions (4)
     { type: "actions", icon: "🚦", label: "Run smoke test",         sub: "Open runtime/integration_smoke output", action: "smoke",         keywords: "test integration runtime" },
@@ -43,13 +51,15 @@
 
   /* ============================================================ Constants */
   var CACHE_TTL_MS = 60 * 1000;
-  var SECTION_ORDER = ["pages", "tools", "scenarios", "meetings", "actions"];
+  var SECTION_ORDER = ["pages", "tools", "battlecards", "industries", "scenarios", "meetings", "actions"];
   var SECTION_TITLES = {
-    pages:     "Pages",
-    tools:     "Tools",
-    scenarios: "Demo Scenarios",
-    meetings:  "Recent Meetings",
-    actions:   "Quick Actions"
+    pages:       "Pages",
+    tools:       "Tools",
+    battlecards: "Battlecards",
+    industries:  "Industries",
+    scenarios:   "Demo Scenarios",
+    meetings:    "Recent Meetings",
+    actions:     "Quick Actions"
   };
 
   /* ============================================================ State */
@@ -58,10 +68,12 @@
     query: "",
     selected: 0,
     flatResults: [],
-    cache: { at: 0, scenarios: [], meetings: [] },
+    cache: { at: 0, scenarios: [], meetings: [], battlecards: [], industries: [] },
     fetchPromise: null,
     triggerEl: null,
-    nodes: null
+    nodes: null,
+    helpOpen: false,
+    helpNodes: null
   };
 
   /* ============================================================ Utilities */
@@ -127,7 +139,10 @@
   }
 
   function fetchDynamic() {
-    if (Date.now() - state.cache.at < CACHE_TTL_MS && (state.cache.scenarios.length || state.cache.meetings.length)) {
+    if (Date.now() - state.cache.at < CACHE_TTL_MS && (
+      state.cache.scenarios.length || state.cache.meetings.length ||
+      state.cache.battlecards.length || state.cache.industries.length
+    )) {
       return Promise.resolve();
     }
     if (state.fetchPromise) return state.fetchPromise;
@@ -137,11 +152,15 @@
     state.fetchPromise = Promise.all([
       safe(fetch("/api/v1/demo-data/scenarios")),
       safe(fetch("/api/v1/meetings")),
-      safe(fetch("/api/v1/briefs"))
+      safe(fetch("/api/v1/briefs")),
+      safe(fetch("/api/v1/battlecards")),
+      safe(fetch("/api/v1/industries"))
     ]).then(function (out) {
-      var scenariosRaw = (out[0] && (out[0].scenarios || out[0])) || [];
-      var meetingsRaw  = out[1] || [];
-      var briefsRaw    = (out[2] && (out[2].briefs || out[2])) || [];
+      var scenariosRaw  = (out[0] && (out[0].scenarios || out[0])) || [];
+      var meetingsRaw   = out[1] || [];
+      var briefsRaw     = (out[2] && (out[2].briefs || out[2])) || [];
+      var battleRaw     = (out[3] && (out[3].items || out[3])) || [];
+      var industriesRaw = (out[4] && (out[4].items || out[4])) || [];
       // scenarios
       state.cache.scenarios = (Array.isArray(scenariosRaw) ? scenariosRaw : []).slice(0, 5).map(function (s) {
         var dash = s.dashboard_url || s.dashboard_url_fe || "/demo-data.html#" + (s.id || "");
@@ -177,6 +196,34 @@
           keywords: (company + " " + title + " " + id).toLowerCase()
         };
       });
+      // battlecards: each card becomes a quick jump to /battlecards.html#<slug>.
+      state.cache.battlecards = (Array.isArray(battleRaw) ? battleRaw : []).map(function (c) {
+        var slug = c.competitor_slug || (c.competitor || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+        var name = c.competitor || slug;
+        var vertical = c.vertical || c.category || "";
+        return {
+          type: "battlecards",
+          icon: "⚔",
+          label: name,
+          sub: vertical ? ("Battlecard - " + vertical) : "Battlecard",
+          href: "/battlecards.html#" + encodeURIComponent(slug),
+          keywords: (slug + " " + name + " " + vertical + " competitor").toLowerCase()
+        };
+      });
+      // industries: each row becomes a quick jump to /industries.html?industry=<id>.
+      state.cache.industries = (Array.isArray(industriesRaw) ? industriesRaw : []).map(function (it) {
+        var id = it.id || "";
+        var name = it.name || it.title || id;
+        var summary = it.summary || it.tagline || "";
+        return {
+          type: "industries",
+          icon: "🏭",
+          label: name,
+          sub: summary || ("Industry - " + id),
+          href: id ? ("/industries.html?industry=" + encodeURIComponent(id)) : "/industries.html",
+          keywords: (id + " " + name + " " + summary + " industry vertical").toLowerCase()
+        };
+      });
       state.cache.at = Date.now();
     }).catch(function () {
       // swallow; sections just stay empty
@@ -188,7 +235,11 @@
 
   /* ============================================================ Build / render */
   function getAllCommands() {
-    return STATIC_COMMANDS.concat(state.cache.scenarios || []).concat(state.cache.meetings || []);
+    return STATIC_COMMANDS
+      .concat(state.cache.battlecards  || [])
+      .concat(state.cache.industries   || [])
+      .concat(state.cache.scenarios    || [])
+      .concat(state.cache.meetings     || []);
   }
 
   function computeResults() {
@@ -320,7 +371,74 @@
       var base = getKibanaBase();
       window.open(base ? base + "/app/home" : "/api/v1/kibana/url?app=home", "_blank", "noopener");
     } else if (action === "shortcuts") {
-      flashFooter("Cmd+K open  ·  Up/Down navigate  ·  Enter select  ·  Esc close  ·  Tab cycles focus");
+      close();
+      // Defer so the palette close animation completes before help opens.
+      setTimeout(openHelp, 60);
+    }
+  }
+
+  /* ============================================================ Keyboard help dialog */
+  function tHelp(key, fallback) {
+    try {
+      if (typeof window.t === "function") {
+        var v = window.t(key, fallback);
+        if (v) return v;
+      }
+    } catch (_) {}
+    return fallback;
+  }
+  function openHelp() {
+    if (state.helpOpen) return;
+    state.helpOpen = true;
+    if (state.helpNodes) {
+      state.helpNodes.backdrop.hidden = false;
+      setTimeout(function () { state.helpNodes.close.focus(); }, 0);
+      return;
+    }
+    var rows = [
+      ["Cmd / Ctrl + K", tHelp("cp.help.row.open", "Open or close the command palette")],
+      ["?",              tHelp("cp.help.row.help", "Show this keyboard shortcuts panel")],
+      ["Esc",            tHelp("cp.help.row.esc", "Close the open palette, dialog, or autopilot")],
+      ["Up / Down",      tHelp("cp.help.row.move", "Move the highlight in the palette result list")],
+      ["Enter",          tHelp("cp.help.row.enter", "Activate the highlighted item")],
+      ["Home / End",     tHelp("cp.help.row.homeend", "Jump to first or last result")],
+      ["Tab",            tHelp("cp.help.row.tab", "Cycle focus inside the palette")],
+      ["/",              tHelp("cp.help.row.slash", "Focus the page search field on Home")]
+    ];
+    var list = el("dl", { class: "cp-help-list" });
+    rows.forEach(function (r) {
+      list.appendChild(el("dt", { class: "cp-help-key" }, [el("span", { class: "cp-kbd" }, [r[0]])]));
+      list.appendChild(el("dd", { class: "cp-help-desc" }, [r[1]]));
+    });
+    var closeBtn = el("button", {
+      type: "button",
+      class: "cp-help-close",
+      "aria-label": tHelp("cp.help.close", "Close keyboard shortcuts")
+    }, [tHelp("cp.help.close.label", "Close")]);
+    closeBtn.addEventListener("click", closeHelp);
+    var modal = el("div", {
+      class: "cp-help-modal",
+      role: "dialog",
+      "aria-modal": "true",
+      "aria-label": tHelp("cp.help.title", "Keyboard shortcuts")
+    }, [
+      el("h2", { class: "cp-help-title" }, [tHelp("cp.help.title", "Keyboard shortcuts")]),
+      list,
+      el("div", { class: "cp-help-foot" }, [closeBtn])
+    ]);
+    var backdrop = el("div", { class: "cp-help-backdrop", role: "presentation" }, [modal]);
+    backdrop.addEventListener("mousedown", function (ev) {
+      if (ev.target === backdrop) closeHelp();
+    });
+    document.body.appendChild(backdrop);
+    state.helpNodes = { backdrop: backdrop, modal: modal, close: closeBtn };
+    setTimeout(function () { closeBtn.focus(); }, 0);
+  }
+  function closeHelp() {
+    if (!state.helpOpen) return;
+    state.helpOpen = false;
+    if (state.helpNodes && state.helpNodes.backdrop) {
+      state.helpNodes.backdrop.hidden = true;
     }
   }
 
@@ -445,15 +563,31 @@
   function onGlobalKeydown(e) {
     var isCmdK = (e.key === "k" || e.key === "K") && (e.metaKey || e.ctrlKey) && !e.altKey;
     if (isCmdK) {
-      if (state.open) { e.preventDefault(); close(); return; }
-      if (isTypingTarget(e.target) && !(e.metaKey || e.ctrlKey)) return;
+      if (state.open) { e.preventDefault(); e.stopPropagation(); close(); return; }
       e.preventDefault();
+      e.stopPropagation();
       open();
+      return;
+    }
+    // Help dialog shortcut: "?" anywhere outside a typing target opens shortcuts overlay.
+    if (!state.open && !state.helpOpen && e.key === "?" && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      if (isTypingTarget(e.target)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      openHelp();
+      return;
+    }
+    if (state.helpOpen && e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      closeHelp();
       return;
     }
     if (!state.open) return;
     if (e.key === "Escape") {
+      // Stop propagation so other listeners (autopilot stop, modal close) do not also fire.
       e.preventDefault();
+      e.stopPropagation();
       close();
     } else if (e.key === "ArrowDown") {
       e.preventDefault();
