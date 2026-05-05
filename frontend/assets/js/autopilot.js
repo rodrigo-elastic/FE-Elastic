@@ -11,14 +11,14 @@
     storageKey: "fec.autopilot.lastRun",
     totalSeconds: 45,
     steps: [
-      { id: "hook",     label: "7:42 a.m.",             duration: 2000 },
-      { id: "brief",    label: "Pre-meeting brief",     duration: 9000 },
-      { id: "brain",    label: "Discovery questions",   duration: 5000 },
-      { id: "gdpr",     label: "GDPR agent",            duration: 9000 },
-      { id: "meddpicc", label: "MEDDPICC analysis",     duration: 9000 },
-      { id: "kibana",   label: "Kibana dashboards",     duration: 7000 },
-      { id: "cluster",  label: "Agents in cluster",     duration: 2000 },
-      { id: "recap",    label: "Recap",                 duration: 2000 },
+      { id: "hook",  label: "7:42 a.m.",        duration: 1000 },
+      { id: "qr",    label: "Quick Research",    duration: 7000 },
+      { id: "brief", label: "Pre-meeting brief", duration: 7000 },
+      { id: "fa",    label: "Top 5 questions",   duration: 8000 },
+      { id: "ws",    label: "Workspace",         duration: 8000 },
+      { id: "ab",    label: "Agent Builder",     duration: 7000 },
+      { id: "bc",    label: "Battlecards",       duration: 5000 },
+      { id: "recap", label: "Recap",             duration: 2000 },
     ],
   };
 
@@ -391,61 +391,211 @@
     }
   }
 
+  // ============================================================ Iframe interaction helpers
+  // All helpers operate on state.nodes.iframe, which embeds same-origin pages.
+
+  function iframeDoc() {
+    try { return state.nodes.iframe && state.nodes.iframe.contentDocument; } catch (_) { return null; }
+  }
+
+  // Resolve when the iframe fires its next load event. Falls back after timeoutMs so
+  // the autopilot never stalls on a slow page.
+  function waitForLoad(signal, timeoutMs) {
+    const iframe = state.nodes.iframe;
+    return new Promise((resolve, reject) => {
+      if (signal && signal.aborted) return reject(new DOMException("Aborted", "AbortError"));
+      let done = false;
+      const settle = (fn) => { if (done) return; done = true; fn(); };
+      const tid = timeoutMs ? setTimeout(() => settle(resolve), timeoutMs) : null;
+      const onLoad = () => { if (tid) clearTimeout(tid); settle(resolve); };
+      iframe.addEventListener("load", onLoad, { once: true });
+      if (signal) {
+        signal.addEventListener("abort", () => {
+          if (tid) clearTimeout(tid);
+          iframe.removeEventListener("load", onLoad);
+          settle(() => reject(new DOMException("Aborted", "AbortError")));
+        }, { once: true });
+      }
+    });
+  }
+
+  // Poll iframe DOM until selector matches, up to timeoutMs. Returns element or null.
+  async function waitForEl(selector, timeoutMs, signal) {
+    const deadline = Date.now() + (timeoutMs || 4000);
+    while (Date.now() < deadline) {
+      if (signal && signal.aborted) throw new DOMException("Aborted", "AbortError");
+      const doc = iframeDoc();
+      if (doc && doc.readyState !== "loading") {
+        const found = doc.querySelector(selector);
+        if (found) return found;
+      }
+      await sleep(120, signal);
+    }
+    return null;
+  }
+
+  // Navigate iframe to path (via showPanel) and wait for its load event.
+  async function navTo(path, signal) {
+    const loadP = waitForLoad(signal, 5000);
+    showPanel(path);
+    await loadP;
+    await sleep(260, signal);
+  }
+
+  // Type text char-by-char into el, dispatching events using the iframe's own constructors
+  // so the page's input listeners fire correctly.
+  async function typeInto(el, text, charMs, signal) {
+    if (!el) return;
+    const delay = charMs || 45;
+    const win = (state.nodes.iframe && state.nodes.iframe.contentWindow) || window;
+    const IEv = win.InputEvent || window.InputEvent;
+    const Ev  = win.Event || window.Event;
+    el.focus();
+    el.value = "";
+    for (const char of text) {
+      if (signal && signal.aborted) throw new DOMException("Aborted", "AbortError");
+      el.value += char;
+      try { el.dispatchEvent(new IEv("input", { bubbles: true, cancelable: true, data: char, inputType: "insertText" })); }
+      catch (_) { el.dispatchEvent(new Ev("input", { bubbles: true })); }
+      await sleep(delay, signal);
+    }
+    try { el.dispatchEvent(new Ev("change", { bubbles: true })); } catch (_) {}
+  }
+
+  // Click an element inside the iframe.
+  function iframeClick(el) {
+    if (!el) return;
+    try { el.focus(); } catch (_) {}
+    el.click();
+  }
+
+  // Smooth-scroll the iframe's root element by deltaY pixels and wait for animation.
+  async function iframeScrollBy(deltaY, signal) {
+    const doc = iframeDoc();
+    if (!doc) { await sleep(700, signal); return; }
+    const root = doc.scrollingElement || doc.documentElement;
+    root.scrollBy({ top: deltaY, behavior: "smooth" });
+    await sleep(720, signal);
+  }
+
   // ============================================================ Steps
-  // 8-step story autopilot, 45s total. Follows one FE from 7:42 a.m. through
-  // a Banco Atlantico discovery call: pre-meeting brief, FE Brain discovery
-  // questions, GDPR compliance agent, post-meeting MEDDPICC, Kibana dashboards,
-  // agents persisted in the cluster. No LLM calls; deterministic page tour.
+  // 8-step UI-driven demo, 45s total. Types, clicks, and scrolls inside a
+  // same-origin iframe. No autopilot step blocks on Anthropic credits; the
+  // Field Assistant chip fires a live request but the step resolves on a
+  // fixed timer whether or not the response finishes streaming.
 
   async function stepHook(signal) {
     setCaption(0, "Tuesday. 7:42 a.m.",
       "Banco Atlantico call at 8:00. Splunk renewal on their desk. Eighteen minutes.");
     hidePanel();
-    const btn = state.nodes.cta;
-    if (btn) btn.classList.add("is-running");
-    await sleep(2000, signal);
+    await sleep(1000, signal);
+  }
+
+  async function stepQr(signal) {
+    setCaption(1, "Quick Research. London Bank.",
+      "FSI Banking template. One click to fill context.");
+    await navTo("/quick-research.html", signal);
+
+    // Type company name fast
+    const nameInput = await waitForEl("#qr-name", 3000, signal);
+    if (nameInput) await typeInto(nameInput, "London Bank", 45, signal);
+    await sleep(180, signal);
+
+    // Click Banking & Financial Services template
+    const tplBtn = await waitForEl('[data-tpl-id="banking"]', 2500, signal);
+    if (tplBtn) { iframeClick(tplBtn); await sleep(700, signal); }
+
+    setCaption(1, "Brief generating. FSI Banking template applied.",
+      "DORA obligations. Splunk TCO delta. Tier-1 EU bank personas.");
+    await sleep(500, signal);
+
+    // Jump to a pre-existing meeting so there is no API wait
+    await navTo("/meeting.html?id=northwind-mtg-prev-001&brief=1", signal);
   }
 
   async function stepBrief(signal) {
-    setCaption(1, "Pre-meeting brief generating.",
-      "FSI Banking template. DORA obligations, Splunk TCO delta, Tier-1 EU bank personas. Ready before the first slide.");
-    showPanel("/meeting.html?id=northwind-mtg-prev-001");
-    await sleep(9000, signal);
+    setCaption(2, "Pre-meeting brief. DORA. Splunk TCO. GDPR.",
+      "Before the first slide. Every section sourced, every risk mapped.");
+    await sleep(500, signal);
+    await iframeScrollBy(360, signal);
+    await iframeScrollBy(420, signal);
+    await iframeScrollBy(480, signal);
+    await iframeScrollBy(520, signal);
+    await iframeScrollBy(380, signal);
   }
 
-  async function stepBrain(signal) {
-    setCaption(2, "FE Brain. Discovery questions for a Tier-1 EU bank.",
-      "1,300 doc chunks. BM25 + ELSER + RRF + Haiku rerank. Cited in ten seconds.");
-    showPanel("/fe-brain.html");
-    await sleep(5000, signal);
+  async function stepFa(signal) {
+    setCaption(3, "Field Assistant. Top 5 discovery questions.",
+      "Anchored to MEDDPICC. Grounded in the brief. In seconds.");
+
+    // Scroll back to the top so the Field Assistant chips are visible
+    const doc = iframeDoc();
+    if (doc) { (doc.scrollingElement || doc.documentElement).scrollTo({ top: 0, behavior: "smooth" }); }
+    await sleep(600, signal);
+
+    const chip = await waitForEl(".abm-chip", 3000, signal);
+    if (chip) {
+      chip.scrollIntoView({ behavior: "smooth", block: "center" });
+      await sleep(380, signal);
+      iframeClick(chip);
+      await sleep(300, signal);
+    }
+
+    // Let the streaming response run; move on regardless after the window
+    await sleep(6500, signal);
   }
 
-  async function stepGdpr(signal) {
-    setCaption(3, "Agent Builder. GDPR Compliance agent.",
-      "Priya persona. DORA + HIPAA + GDPR. Native MCP and A2A. Registers straight into your Kibana cluster.");
-    showPanel("/agent-builder.html");
-    await sleep(9000, signal);
+  async function stepWs(signal) {
+    setCaption(4, "Workspace. London Bank.",
+      "Every brief, every meeting. Scroll the timeline. Salesforce stays the system of record.");
+    await navTo("/workspace.html", signal);
+
+    // Type in the search bar to demonstrate live filtering
+    const searchInput = await waitForEl("#qr-fb-search", 3000, signal);
+    if (searchInput) {
+      await typeInto(searchInput, "London", 55, signal);
+      await sleep(480, signal);
+    }
+    await iframeScrollBy(320, signal);
+    await sleep(380, signal);
+
+    // Switch to post-meeting view to show MEDDPICC output
+    setCaption(4, "Post-meeting. MEDDPICC extracted. Salesforce updated.",
+      "Economic Buyer, Champion, Competition. Elastic Workflow pushed it automatically.");
+    await navTo("/meeting.html?id=northwind-mtg-prev-001&post=1", signal);
+    await sleep(380, signal);
+    await iframeScrollBy(450, signal);
+    await iframeScrollBy(420, signal);
   }
 
-  async function stepMeddpicc(signal) {
-    setCaption(4, "Post-meeting. MEDDPICC extracted.",
-      "Economic Buyer, Champion, Competition identified. Salesforce updated automatically via Elastic Workflow.");
-    showPanel("/meeting.html?id=northwind-mtg-prev-001&post=1");
-    await sleep(9000, signal);
+  async function stepAb(signal) {
+    setCaption(5, "Agent Builder. Three context-driven agents.",
+      "Native MCP and A2A. RFP Responder, Migration Specialist, Compliance Pursuit. Your Kibana cluster.");
+    await navTo("/agent-builder.html", signal);
+    await sleep(400, signal);
+    await iframeScrollBy(320, signal);
+    await sleep(480, signal);
+
+    // Click "new agent" to show the creation form
+    const newBtn = await waitForEl("#ab-new-agent", 2000, signal);
+    if (newBtn) {
+      newBtn.scrollIntoView({ behavior: "smooth", block: "center" });
+      await sleep(380, signal);
+      iframeClick(newBtn);
+      await sleep(2600, signal);
+    } else {
+      await sleep(3400, signal);
+    }
   }
 
-  async function stepKibana(signal) {
-    setCaption(5, "Kibana dashboards. FSI banking fraud.",
-      "80 ML alerts. Paired FE and Customer views. Real data - no fake screenshots.");
-    showPanel("/demo-data.html");
-    await sleep(7000, signal);
-  }
-
-  async function stepCluster(signal) {
-    setCaption(6, "Agents live in your Kibana cluster.",
-      "Native MCP and A2A. Your data. Your tenant. Your moat.");
-    showPanel("/agent-builder.html");
-    await sleep(2000, signal);
+  async function stepBc(signal) {
+    setCaption(6, "Thirty-one battlecards. Ranked by marketshare.",
+      "Splunk. Datadog. CrowdStrike. TCO, talking points, objection handlers. In the room when you need them.");
+    await navTo("/battlecards.html", signal);
+    await sleep(380, signal);
+    await iframeScrollBy(460, signal);
+    await iframeScrollBy(480, signal);
+    await iframeScrollBy(460, signal);
   }
 
   async function stepRecap(signal) {
@@ -456,7 +606,7 @@
     await sleep(2000, signal);
   }
 
-  const STEP_FNS = [stepHook, stepBrief, stepBrain, stepGdpr, stepMeddpicc, stepKibana, stepCluster, stepRecap];
+  const STEP_FNS = [stepHook, stepQr, stepBrief, stepFa, stepWs, stepAb, stepBc, stepRecap];
 
   // ============================================================ Run loop
   async function runStep(idx, signal) {
