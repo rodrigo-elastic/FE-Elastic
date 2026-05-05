@@ -1,6 +1,6 @@
 /*
   filename: autopilot.js
-  description: "Show me the magic" 30-second autonomous demo orchestrator. Page-tour driven. 9 steps end-to-end (intro, dashboard, industries, battlecards, FE Brain, Agent Builder, demo data, health, recap) showcasing every page via the iframe stage. No LLM calls so it works without Anthropic credits. AbortController + Esc cancel, run history in localStorage. Desktop-only.
+  description: "Show me the magic" 45-second story-driven demo. Follows one FE from 7:42 a.m. to the end of a Banco Atlantico discovery call: pre-meeting brief, FE Brain discovery questions, GDPR compliance agent build, post-meeting MEDDPICC extraction, Kibana dashboards, agents persisted in the cluster. No LLM calls; deterministic page tour. AbortController + Esc cancel, run history in localStorage. Desktop-only.
   Author: Rodrigo Careaga
   Date: 03-05-2026
 */
@@ -9,17 +9,16 @@
 
   const AP = {
     storageKey: "fec.autopilot.lastRun",
-    totalSeconds: 30,
+    totalSeconds: 45,
     steps: [
-      { id: "intro",      label: "Intro",            duration: 2000 },
-      { id: "dashboard",  label: "Dashboard",        duration: 2500 },
-      { id: "industries", label: "20 industries",    duration: 3500 },
-      { id: "bcards",     label: "Battlecards",      duration: 4500 },
-      { id: "brain",      label: "FE Brain",         duration: 4000 },
-      { id: "ab",         label: "Agent Builder",    duration: 5000 },
-      { id: "demo",       label: "Demo data",        duration: 2000 },
-      { id: "health",     label: "Live health",      duration: 2000 },
-      { id: "recap",      label: "Recap",            duration: 4000 },
+      { id: "hook",     label: "7:42 a.m.",             duration: 2000 },
+      { id: "brief",    label: "Pre-meeting brief",     duration: 9000 },
+      { id: "brain",    label: "Discovery questions",   duration: 5000 },
+      { id: "gdpr",     label: "GDPR agent",            duration: 9000 },
+      { id: "meddpicc", label: "MEDDPICC analysis",     duration: 9000 },
+      { id: "kibana",   label: "Kibana dashboards",     duration: 7000 },
+      { id: "cluster",  label: "Agents in cluster",     duration: 2000 },
+      { id: "recap",    label: "Recap",                 duration: 2000 },
     ],
   };
 
@@ -37,7 +36,7 @@
   };
 
   // Sum of per-step expected durations. This is the denominator the determinate
-  // top-progress bar uses to estimate ETA. Equals AP.totalSeconds * 1000 (~30s)
+  // top-progress bar uses to estimate ETA. Equals AP.totalSeconds * 1000 (~45s)
   // by construction; timeouts are worst-case fallbacks and would overstate the bar.
   AP.expectedTotalMs = AP.steps.reduce((acc, s) => acc + (s.duration || 0), 0);
 
@@ -393,79 +392,71 @@
   }
 
   // ============================================================ Steps
-  // 9-step autopilot, 30s total. Page-tour driven. Each step navigates the
-  // iframe to a real page with deep-link params so judges see the real product
-  // (industries, battlecards, FE Brain, agent builder, demo data, health,
-  // workflow). No step blocks on Anthropic credits; LLM-dependent flows are
-  // replaced with deterministic page tours.
+  // 8-step story autopilot, 45s total. Follows one FE from 7:42 a.m. through
+  // a Banco Atlantico discovery call: pre-meeting brief, FE Brain discovery
+  // questions, GDPR compliance agent, post-meeting MEDDPICC, Kibana dashboards,
+  // agents persisted in the cluster. No LLM calls; deterministic page tour.
 
-  async function stepIntro(signal) {
-    setCaption(0, "FE Copilot",
-      "Thirty seconds. Fourteen MCP tools. Thirty-one battlecards. Twenty industries. Eight demo scenarios.");
-    fireConfetti(80);
+  async function stepHook(signal) {
+    setCaption(0, "Tuesday. 7:42 a.m.",
+      "Banco Atlantico call at 8:00. Splunk renewal on their desk. Eighteen minutes.");
+    hidePanel();
     const btn = state.nodes.cta;
     if (btn) btn.classList.add("is-running");
-    await sleep(1700, signal);
+    await sleep(2000, signal);
   }
 
-  async function stepDashboard(signal) {
-    setCaption(1, "Dashboard",
-      "Quick Research, calendar inbox, recent briefs. One place for every pre-call.");
-    showPanel("/");
-    await sleep(2200, signal);
+  async function stepBrief(signal) {
+    setCaption(1, "Pre-meeting brief generating.",
+      "FSI Banking template. DORA obligations, Splunk TCO delta, Tier-1 EU bank personas. Ready before the first slide.");
+    showPanel("/meeting.html?id=northwind-mtg-prev-001");
+    await sleep(9000, signal);
   }
 
-  async function stepIndustries(signal) {
-    setCaption(2, "Twenty industries",
-      "FSI, Government, Healthcare, Retail, Telco, Manufacturing. Personas, regulations, top competitors per vertical.");
-    showPanel("/industries.html");
-    await sleep(3200, signal);
-  }
-
-  async function stepBattlecards(signal) {
-    setCaption(3, "Thirty-one battlecards. Ranked by marketshare.",
-      "Splunk. Datadog. CrowdStrike. AWS OpenSearch. TCO, talking points, objection handlers. In the room when you need them.");
-    showPanel("/battlecards.html");
-    await sleep(4200, signal);
-  }
-
-  async function stepFeBrain(signal) {
-    setCaption(4, "FE Brain. 1,300 doc chunks. Hybrid retrieval.",
-      "BM25 + ELSER + RRF + Haiku rerank. Cited answers in ten seconds. Grounded in your data.");
+  async function stepBrain(signal) {
+    setCaption(2, "FE Brain. Discovery questions for a Tier-1 EU bank.",
+      "1,300 doc chunks. BM25 + ELSER + RRF + Haiku rerank. Cited in ten seconds.");
     showPanel("/fe-brain.html");
-    await sleep(3700, signal);
+    await sleep(5000, signal);
   }
 
-  async function stepAgentBuilder(signal) {
-    setCaption(5, "Agent Builder. Three context-driven agents.",
-      "Native MCP and A2A. RFP Responder, Migration Specialist, Compliance Pursuit. Lives in your Kibana cluster, not this app.");
+  async function stepGdpr(signal) {
+    setCaption(3, "Agent Builder. GDPR Compliance agent.",
+      "Priya persona. DORA + HIPAA + GDPR. Native MCP and A2A. Registers straight into your Kibana cluster.");
     showPanel("/agent-builder.html");
-    await sleep(4700, signal);
+    await sleep(9000, signal);
   }
 
-  async function stepDemoData(signal) {
-    setCaption(6, "Eight demo scenarios",
-      "FSI fraud, HIPAA audit, GDPR, supply chain attack. Real Kibana dashboards, no fake data.");
+  async function stepMeddpicc(signal) {
+    setCaption(4, "Post-meeting. MEDDPICC extracted.",
+      "Economic Buyer, Champion, Competition identified. Salesforce updated automatically via Elastic Workflow.");
+    showPanel("/meeting.html?id=northwind-mtg-prev-001&post=1");
+    await sleep(9000, signal);
+  }
+
+  async function stepKibana(signal) {
+    setCaption(5, "Kibana dashboards. FSI banking fraud.",
+      "80 ML alerts. Paired FE and Customer views. Real data - no fake screenshots.");
     showPanel("/demo-data.html");
-    await sleep(1700, signal);
+    await sleep(7000, signal);
   }
 
-  async function stepHealth(signal) {
-    setCaption(7, "Fourteen tools live. Two workflows. All green.",
-      "Elastic + Anthropic. MIT licensed. Ready for your cluster.");
-    showPanel("/health.html");
-    await sleep(1700, signal);
+  async function stepCluster(signal) {
+    setCaption(6, "Agents live in your Kibana cluster.",
+      "Native MCP and A2A. Your data. Your tenant. Your moat.");
+    showPanel("/agent-builder.html");
+    await sleep(2000, signal);
   }
 
   async function stepRecap(signal) {
-    setCaption(8, "Six hours per FE per week back.",
-      "That's what we just took back. Take it home. Move pilots to real-world impact.");
+    setCaption(7, "Six hours per FE per week back.",
+      "That's what we just took back. Move pilots to real-world impact.");
     fireConfetti(140);
     hidePanel();
-    await sleep(3700, signal);
+    await sleep(2000, signal);
   }
 
-  const STEP_FNS = [stepIntro, stepDashboard, stepIndustries, stepBattlecards, stepFeBrain, stepAgentBuilder, stepDemoData, stepHealth, stepRecap];
+  const STEP_FNS = [stepHook, stepBrief, stepBrain, stepGdpr, stepMeddpicc, stepKibana, stepCluster, stepRecap];
 
   // ============================================================ Run loop
   async function runStep(idx, signal) {
@@ -507,7 +498,7 @@
       cta.disabled = true;
       cta.classList.add("is-running");
       cta.querySelector(".ap-label").textContent = "Running...";
-      cta.querySelector(".ap-sub").textContent = "30s";
+      cta.querySelector(".ap-sub").textContent = "45s";
     }
     startCountdown();
 
@@ -567,7 +558,7 @@
       cta.disabled = false;
       cta.classList.remove("is-running");
       cta.querySelector(".ap-label").textContent = "Show me the magic";
-      cta.querySelector(".ap-sub").textContent = "30s";
+      cta.querySelector(".ap-sub").textContent = "45s";
     }
 
     const elapsedMs = Math.round(performance.now() - state.startedAt);
@@ -668,13 +659,13 @@
         class: "autopilot-cta",
         type: "button",
         id: "autopilot-cta",
-        "aria-label": "Run the 30-second FE Copilot autonomous demo",
+        "aria-label": "Run the 45-second FE Copilot story demo",
       }, [
         el("span", { class: "ap-icon", "aria-hidden": "true", text: "*" }),
         el("span", { class: "ap-label", text: "Show me the magic" }),
-        el("span", { class: "ap-sub", text: "30s" }),
+        el("span", { class: "ap-sub", text: "45s" }),
       ]),
-      el("span", { class: "autopilot-hint", text: "One click. Thirty seconds. Industries, battlecards, FE Brain, Agent Builder, demo scenarios, health." }),
+      el("span", { class: "autopilot-hint", text: "One click. Forty-five seconds. Pre-meeting brief, FE Brain, GDPR agent, MEDDPICC, Kibana dashboards." }),
     ]);
 
     // Place under the lede paragraph but above the hero stats, if possible.
