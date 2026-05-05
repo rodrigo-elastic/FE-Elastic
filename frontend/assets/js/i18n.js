@@ -182,7 +182,7 @@ const I18N_STRINGS = {
 
     "meeting.brief": "Pre-Meeting Brief",
     "meeting.post": "Post-Meeting",
-    "meeting.live": "Live Companion",
+    "meeting.live": "Meeting",
     "meeting.context": "Context",
     "meeting.btn.run.pre": "Run Pre-Meeting Agent",
     "meeting.btn.run.post": "Run Post-Meeting Agent",
@@ -648,7 +648,7 @@ const I18N_STRINGS = {
 
     "meeting.brief": "Brief Pre-Meeting",
     "meeting.post": "Post-Meeting",
-    "meeting.live": "Companion en vivo",
+    "meeting.live": "Junta",
     "meeting.context": "Contexto",
     "meeting.btn.run.pre": "Correr agente Pre-Meeting",
     "meeting.btn.run.post": "Correr agente Post-Meeting",
@@ -1114,7 +1114,7 @@ const I18N_STRINGS = {
 
     "meeting.brief": "プレミーティング・ブリーフ",
     "meeting.post": "ポストミーティング",
-    "meeting.live": "ライブ・コンパニオン",
+    "meeting.live": "ミーティング",
     "meeting.context": "コンテキスト",
     "meeting.btn.run.pre": "Pre-Meetingエージェントを実行",
     "meeting.btn.run.post": "Post-Meetingエージェントを実行",
@@ -1580,7 +1580,7 @@ const I18N_STRINGS = {
 
     "meeting.brief": "Pre-Meeting-Brief",
     "meeting.post": "Post-Meeting",
-    "meeting.live": "Live Companion",
+    "meeting.live": "Meeting",
     "meeting.context": "Kontext",
     "meeting.btn.run.pre": "Pre-Meeting-Agent starten",
     "meeting.btn.run.post": "Post-Meeting-Agent starten",
@@ -2046,7 +2046,7 @@ const I18N_STRINGS = {
 
     "meeting.brief": "Brief pré-réunion",
     "meeting.post": "Post-réunion",
-    "meeting.live": "Live Companion",
+    "meeting.live": "Meeting",
     "meeting.context": "Contexte",
     "meeting.btn.run.pre": "Lancer l'agent Pre-Meeting",
     "meeting.btn.run.post": "Lancer l'agent Post-Meeting",

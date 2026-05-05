@@ -44,12 +44,6 @@ let MEETING_DATA = null;
     meta.appendChild(textNode(fmtDate(m.start_time)));
   }
 
-  // Ad-hoc: hide live + post tabs (no transcript), default to Brief
-  if (isAdHoc || !MEETING_DATA.transcript) {
-    document.querySelector('.tab[data-tab="post"]')?.setAttribute("hidden", "");
-    document.querySelector('.tab[data-tab="live"]')?.setAttribute("hidden", "");
-  }
-
   setupTabs();
   renderContext();
   renderTranscript();
@@ -724,13 +718,6 @@ async function maybeAutoLoad() {
 }
 
 function bindActions() {
-  // Hide buttons that don't make sense given the meeting type.
-  if (isAdHoc || meetingId.startsWith("transcript-") || meetingId.startsWith("ad-hoc-")) {
-    document.getElementById("run-pre")?.setAttribute("hidden", "");
-    document.getElementById("run-post")?.setAttribute("hidden", "");
-    document.getElementById("run-live")?.setAttribute("hidden", "");
-  }
-
   document.getElementById("run-pre")?.addEventListener("click", async (ev) => {
     const btn = ev.currentTarget;
     const labelHTML = btn.innerHTML;

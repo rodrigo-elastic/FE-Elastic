@@ -81,23 +81,17 @@
         </span>
         <span data-i18n="meeting.brief">Pre-Meeting Brief</span>
       </button>
+      <button class="tab" data-tab="live" type="button" role="tab" id="tab-live" aria-selected="false" aria-controls="panel-live">
+        <span class="icon" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+        </span>
+        <span data-i18n="meeting.live">Meeting</span>
+      </button>
       <button class="tab" data-tab="post" type="button" role="tab" id="tab-post" aria-selected="false" aria-controls="panel-post">
         <span class="icon" aria-hidden="true">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
         </span>
         <span data-i18n="meeting.post">Post-Meeting</span>
-      </button>
-      <button class="tab" data-tab="live" type="button" role="tab" id="tab-live" aria-selected="false" aria-controls="panel-live">
-        <span class="icon" aria-hidden="true">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-        </span>
-        <span data-i18n="meeting.live">Live Companion</span>
-      </button>
-      <button class="tab" data-tab="context" type="button" role="tab" id="tab-context" aria-selected="false" aria-controls="panel-context">
-        <span class="icon" aria-hidden="true">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-        </span>
-        <span data-i18n="meeting.context">Context</span>
       </button>
     </nav>
 
@@ -160,8 +154,10 @@
     </section>
 
     <section class="panel" id="panel-live" role="tabpanel" aria-labelledby="tab-live" tabindex="0" hidden>
+
+      <!-- Transcript -->
       <div class="row-between">
-        <h2>Live companion</h2>
+        <h2>Transcript</h2>
         <div style="display:flex; gap:8px; align-items:center;">
           <label class="model-pick" title="Live runs once per turn - Haiku is plenty.">
             <span class="model-pick-lbl">Model</span>
@@ -178,13 +174,16 @@
         </div>
       </div>
       <div id="live"><p class="muted">Replay each transcript turn through Haiku 4.5; competitor and MEDDPICC signals surface as alerts inline.</p></div>
-      <div id="abm-live"></div>
-    </section>
 
-    <section class="panel" id="panel-context" role="tabpanel" aria-labelledby="tab-context" tabindex="0" hidden>
+      <!-- Live companion Field Assistant -->
+      <div id="abm-live"></div>
+
+      <!-- Account context -->
+      <hr style="margin: 28px 0; border: none; border-top: 1px solid var(--border, #e0e0e0);" />
       <h2>Context for this account</h2>
       <div id="context" style="margin-top:12px;"></div>
       <div id="abm-context"></div>
+
     </section>
 
     <section id="toast-host" role="status" aria-live="polite" aria-atomic="false"></section>
