@@ -588,16 +588,9 @@
   async function stepBrief(signal) {
     setCaption(2, "Pre-meeting brief ready.",
       "DORA obligations. Splunk TCO delta. Key personas. Cited.");
+    await sleep(1100, signal);
 
-    // Pre-fire the Field Assistant chip NOW so the response streams in the
-    // background while we read the brief. By the time stepFa starts (~15s
-    // from here) the answer will already be rendered in the chat.
-    const chipEarly = await waitForEl(".abm-chip", 2000, signal);
-    if (chipEarly) iframeClick(chipEarly);
-
-    await sleep(900, signal);
-
-    // Read through each section at human pace - pause on the dense parts
+    // Slow reading scroll - pause longer on dense sections
     await iframeScrollBy(290, signal); await sleep(420, signal);
     await iframeScrollBy(330, signal); await sleep(820, signal);
     await iframeScrollBy(360, signal); await sleep(420, signal);
@@ -615,33 +608,78 @@
 
   async function stepFa(signal) {
     setCaption(3, "Field Assistant. Top 5 questions to ask.",
-      "Pre-fired during the brief. Answer already streaming.");
+      "MEDDPICC-anchored. Grounded in the brief.");
 
-    // Scroll back to top - the chip was already clicked in stepBrief so
-    // the response is done (or nearly done) by the time we arrive here.
+    // Scroll back to top so the chips are visible
     const doc = iframeDoc();
     if (doc) { (doc.scrollingElement || doc.documentElement).scrollTo({ top: 0, behavior: "smooth" }); }
-    await sleep(600, signal);
+    await sleep(680, signal);
 
-    setCaption(3, "Five MEDDPICC questions. Ready for the call.",
-      "Economic Buyer. Champion. Competition angle. Pricing. Technical fit.");
-    await sleep(300, signal);
-
-    // Scroll through the pre-loaded response
-    const msgs = await waitForEl(".abm-messages", 1500, signal);
-    if (msgs) {
-      msgs.scrollIntoView({ behavior: "smooth", block: "start" });
-      await sleep(700, signal);
-      await iframeScrollBy(280, signal); await sleep(500, signal);
-      await iframeScrollBy(280, signal); await sleep(500, signal);
-      await iframeScrollBy(260, signal); await sleep(500, signal);
-      await iframeScrollBy(240, signal); await sleep(400, signal);
-    } else {
-      // Fallback: response not in DOM yet - give it a few more seconds
-      await sleep(8000, signal);
+    const chip = await waitForEl(".abm-chip", 2000, signal);
+    if (chip) {
+      chip.scrollIntoView({ behavior: "smooth", block: "center" });
+      await sleep(420, signal);
+      // Animate a press without firing a real API call
+      chip.style.cssText = "transform:scale(0.93);transition:transform 0.1s ease";
+      await sleep(120, signal);
+      chip.style.cssText = "transform:scale(1);transition:transform 0.12s ease";
+      await sleep(100, signal);
+      chip.style.cssText = "";
     }
 
-    await sleep(800, signal);
+    // Inject user question into the brief's chat panel
+    const chat = doc ? doc.querySelector("#abm-brief .abm-chat") : null;
+    if (chat) {
+      const userEl = doc.createElement("div");
+      userEl.className = "abm-msg abm-msg-user";
+      userEl.innerHTML = '<div class="abm-msg-body">Top 5 questions to ask</div>';
+      chat.appendChild(userEl);
+
+      const loadEl = doc.createElement("div");
+      loadEl.className = "abm-msg abm-msg-assistant";
+      loadEl.innerHTML = '<div class="abm-loader">Thinking…</div>';
+      chat.appendChild(loadEl);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    setCaption(3, "Generating…", "Five MEDDPICC questions for Banco Atlántico.");
+    await sleep(1100, signal);
+
+    // Replace loader with the pre-written response - instant, no API call
+    if (chat) {
+      const loadEl = chat.lastElementChild;
+      if (loadEl && loadEl.querySelector(".abm-loader")) loadEl.remove();
+
+      const answerEl = doc.createElement("div");
+      answerEl.className = "abm-msg abm-msg-assistant";
+      answerEl.innerHTML =
+        '<div class="abm-msg-body">' +
+        "<p>Top 5 discovery questions for <strong>Banco Atlántico</strong>, anchored to MEDDPICC:</p><ol>" +
+        "<li><strong>Economic Buyer</strong> — Who owns final sign-off on the Splunk renewal, and is their primary criterion cost reduction, DORA compliance coverage, or expanding into observability?</li>" +
+        "<li><strong>DORA Deadline</strong> — Where are you in your June gap analysis? Which log aggregation or alerting requirements are still open and need to be closed before the audit window?</li>" +
+        "<li><strong>Champion</strong> — Who internally is already advocating for a platform change, and what would make them successful getting organizational buy-in before the renewal closes?</li>" +
+        "<li><strong>Competition</strong> — Beyond Splunk, are you evaluating AWS OpenSearch or Datadog? What is driving that — TCO, capability gaps, or team familiarity?</li>" +
+        "<li><strong>Technical Fit</strong> — What is your current ingest volume at peak, and which workloads — SIEM, observability, or APM — are most critical to the scope of this renewal?</li>" +
+        "</ol></div>";
+      chat.appendChild(answerEl);
+      chat.scrollTop = chat.scrollHeight;
+      await sleep(600, signal);
+
+      setCaption(3, "Five questions. Ready for the call.",
+        "Economic Buyer. DORA deadline. Champion. Competition. Technical fit.");
+
+      // Scroll through each question at reading pace
+      chat.scrollBy({ top: 160, behavior: "smooth" }); await sleep(800, signal);
+      chat.scrollBy({ top: 160, behavior: "smooth" }); await sleep(800, signal);
+      chat.scrollBy({ top: 160, behavior: "smooth" }); await sleep(800, signal);
+      chat.scrollBy({ top: 160, behavior: "smooth" }); await sleep(700, signal);
+    } else {
+      setCaption(3, "Five questions. Ready for the call.",
+        "Economic Buyer. DORA deadline. Champion. Competition. Technical fit.");
+      await sleep(5000, signal);
+    }
+
+    await sleep(500, signal);
   }
 
   async function stepRecap(signal) {
