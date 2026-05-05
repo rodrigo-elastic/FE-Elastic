@@ -199,8 +199,9 @@
     let html = out.join("\n");
     html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
     html = html.replace(/__([^_]+)__/g, "<strong>$1</strong>");
-    html = html.replace(/(^|[\s(])\*([^*\n]+)\*/g, "$1<em>$2</em>");
-    html = html.replace(/(^|[\s(])_([^_\n]+)_/g, "$1<em>$2</em>");
+    // Italic: leading boundary includes ">" (block pass wraps in <p>).
+    html = html.replace(/(^|[\s(>])\*([^*\n]+)\*/g, "$1<em>$2</em>");
+    html = html.replace(/(^|[\s(>])_([^_\n]+)_/g, "$1<em>$2</em>");
     html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
     html = html.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
     html = html.replace(/ CODE(\d+) /g, (_, n) => {
@@ -378,6 +379,20 @@
   function conversationStorageKey(agentId) {
     return STORAGE_PREFIX + agentId;
   }
+  // Per-agent transcript storage (questions + answers). Survives reload.
+  function historyStorageKey(agentId) {
+    return STORAGE_PREFIX + agentId + ".messages";
+  }
+  function loadHistory(agentId) {
+    try {
+      const raw = localStorage.getItem(historyStorageKey(agentId));
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch (_e) { return []; }
+  }
+  function saveHistory(agentId, arr) {
+    try { localStorage.setItem(historyStorageKey(agentId), JSON.stringify(arr)); } catch (_e) { /* quota or private */ }
+  }
 
   function selectAgent(agentId) {
     if (!agentId || agentId === state.agentId && state.conversationId !== null) {
@@ -397,9 +412,24 @@
     chat.innerHTML = "";
     const agent = findAgent(agentId);
     const friendly = agent ? (agent.name || agentId) : agentId;
-    chat.appendChild(
-      el("div", { class: "ab-empty" }, `Talking to ${friendly}. Pick a chip above or type your own message.`)
-    );
+    // Replay any persisted transcript for this agent first; if there is none,
+    // fall back to the empty-state hint.
+    const history = loadHistory(agentId);
+    if (history.length) {
+      history.forEach((m) => {
+        if (m.role === "user") {
+          renderUserMessage(m.text);
+        } else if (m.role === "assistant") {
+          const slot = renderLoading();
+          slot.removeAttribute("data-loading");
+          renderAssistantMessage(slot, { text: m.text || "", steps: m.steps, stats: m.stats });
+        }
+      });
+    } else {
+      chat.appendChild(
+        el("div", { class: "ab-empty" }, `Talking to ${friendly}. Pick a chip above or type your own message.`)
+      );
+    }
   }
 
   // ============================================================ Chat rendering
@@ -498,6 +528,12 @@
     sendBtn.textContent = "Sending... (Esc to cancel)";
 
     renderUserMessage(text);
+    // Persist the user turn before the LLM round-trip so a refresh mid-call
+    // does not lose the question.
+    const userTurn = { role: "user", text };
+    const hist = loadHistory(state.agentId);
+    hist.push(userTurn);
+    saveHistory(state.agentId, hist);
     const slot = renderLoading();
 
     try {
@@ -525,6 +561,10 @@
           }
         : null;
       renderAssistantMessage(slot, { text: msg, steps: res?.steps, stats });
+      // Persist the assistant turn so the transcript survives reload.
+      const histAfter = loadHistory(state.agentId);
+      histAfter.push({ role: "assistant", text: msg, steps: res?.steps, stats });
+      saveHistory(state.agentId, histAfter);
     } catch (e) {
       const cancelled = e && (e.name === "AbortError" || (state.abortCtrl && state.abortCtrl.signal.aborted));
       if (cancelled) {
@@ -556,6 +596,7 @@
   function reset() {
     state.conversationId = null;
     localStorage.removeItem(conversationStorageKey(state.agentId));
+    localStorage.removeItem(historyStorageKey(state.agentId));
     const chat = $("#ab-chat");
     chat.innerHTML = "";
     chat.appendChild(
