@@ -17,7 +17,7 @@
     // Pages (12)
     { type: "pages", icon: "🏠", label: "Home",            sub: "/index.html",          href: "/index.html",          keywords: "home dashboard overview" },
     { type: "pages", icon: "🔎", label: "Quick Research",  sub: "/quick-research.html", href: "/quick-research.html", keywords: "brief account research pre meeting" },
-    { type: "pages", icon: "👥", label: "Customers",       sub: "/customers.html",      href: "/customers.html",      keywords: "accounts companies opportunities" },
+    { type: "pages", icon: "🗂", label: "Workspace",       sub: "/workspace.html",      href: "/workspace.html",      keywords: "workspace customers timeline briefs post-meetings transcripts artifacts accounts" },
     { type: "pages", icon: "🧠", label: "FE Brain",        sub: "/fe-brain.html",       href: "/fe-brain.html",       keywords: "knowledge docs rag corpus" },
     { type: "pages", icon: "🤖", label: "Agent Builder",   sub: "/agent-builder.html",  href: "/agent-builder.html",  keywords: "agents prompts orchestrator" },
     { type: "pages", icon: "⚔",  label: "Battlecards",     sub: "/battlecards.html",    href: "/battlecards.html",    keywords: "competitive splunk datadog" },

@@ -112,7 +112,8 @@
   background: var(--panel-3);
 }
 
-.qr-fb-chips input[type="radio"] {
+.qr-fb-chips input[type="radio"],
+.qr-fb-chips input[type="checkbox"] {
   appearance: none;
   -webkit-appearance: none;
   width: 0;
@@ -545,6 +546,346 @@
 .qr-legend-dot.l3 { background: #FEC514; }
 .qr-legend-dot.l4 { background: #93C90E; }
 
+/* Workspace legend uses stage-coded dots so the FE can immediately decode the
+   timeline colors. Yellow=scheduled, Lochmara=pre-meeting, teal=post-meeting,
+   pink=transcript. */
+.qr-legend-dot.stage-scheduled  { background: var(--yellow, #FEC514); }
+.qr-legend-dot.stage-pre        { background: var(--primary, #0077CC); }
+.qr-legend-dot.stage-post       { background: var(--teal, #00BFB3); }
+.qr-legend-dot.stage-transcript { background: var(--pink, #F04E98); }
+
 .qr-legend-text {
   color: var(--muted);
+}
+
+/* ============================================================ Workspace view
+   One card per customer, large name + colored tag on the left, horizontal
+   timeline of artifacts on the right. Click a dot to jump to the artifact;
+   click "Show all artifacts" to expand a chronological detail panel.
+   FE Copilot is NOT a CRM (Salesforce is the system of record). The Workspace
+   shows what the FE has PRODUCED, not what the customer is doing. */
+
+.qr-customer-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.qr-customer-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-left: 5px solid var(--qr-cust, var(--primary));
+  border-radius: 14px;
+  padding: 16px 18px 14px 18px;
+  transition: border-color 120ms var(--easing), box-shadow 120ms var(--easing);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.qr-customer-card:hover {
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--qr-cust, #0077CC) 14%, transparent);
+}
+
+.qr-customer-card[data-customer-color="0"] { --qr-cust: #0077CC; }
+.qr-customer-card[data-customer-color="1"] { --qr-cust: #00BFB3; }
+.qr-customer-card[data-customer-color="2"] { --qr-cust: #F04E98; }
+.qr-customer-card[data-customer-color="3"] { --qr-cust: #FEC514; }
+.qr-customer-card[data-customer-color="4"] { --qr-cust: #93C90E; }
+.qr-customer-card[data-customer-color="5"] { --qr-cust: #1BA9F5; }
+.qr-customer-card[data-customer-color="6"] { --qr-cust: #F58F2B; }
+.qr-customer-card[data-customer-color="7"] { --qr-cust: #7E57C2; }
+.qr-customer-card[data-customer-color="8"] { --qr-cust: #E91E63; }
+.qr-customer-card[data-customer-color="9"] { --qr-cust: #00ACC1; }
+
+.qr-customer-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.qr-customer-tag {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--qr-cust, var(--primary));
+  flex: 0 0 12px;
+}
+
+.qr-customer-name {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+  line-height: 1.2;
+  flex: 0 1 auto;
+}
+
+.qr-customer-industry {
+  font-size: 11.5px;
+  color: var(--muted);
+  background: var(--panel-2);
+  padding: 3px 9px;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+}
+
+.qr-customer-counts {
+  margin-left: auto;
+  font-size: 11.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+
+.qr-customer-timeline-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+}
+
+.qr-customer-timeline-label {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.qr-customer-timeline {
+  position: relative;
+  height: 48px;
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 0 14px;
+}
+
+.qr-customer-timeline-track {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  right: 14px;
+  height: 2px;
+  background: var(--border);
+  transform: translateY(-50%);
+  border-radius: 2px;
+}
+
+.qr-customer-timeline-axis {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  background: var(--panel-2);
+  padding: 0 4px;
+  z-index: 1;
+}
+
+.qr-customer-timeline-axis.qr-axis-min { left: 0; }
+.qr-customer-timeline-axis.qr-axis-max { right: 0; }
+
+.qr-customer-dot {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--dot-color, var(--primary));
+  border: 2px solid var(--panel);
+  box-shadow: 0 0 0 1px var(--border);
+  cursor: pointer;
+  transition: transform 120ms var(--easing), box-shadow 120ms var(--easing);
+  text-decoration: none;
+  z-index: 2;
+}
+
+/* Tappable hit pad: extend the click target to 32x32 without enlarging the
+   visual dot (overlay via ::before). Mobile-friendly per FE feedback. */
+.qr-customer-dot::before {
+  content: "";
+  position: absolute;
+  inset: -10px;
+  border-radius: 50%;
+}
+
+.qr-customer-dot:hover,
+.qr-customer-dot:focus-visible {
+  transform: translateY(-50%) scale(1.45);
+  box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--dot-color, var(--primary)), 0 4px 12px color-mix(in srgb, var(--dot-color, #0077CC) 40%, transparent);
+  outline: none;
+}
+
+.qr-customer-dot[data-stage="scheduled"]  { --dot-color: var(--yellow, #FEC514); }
+.qr-customer-dot[data-stage="pre"]        { --dot-color: var(--primary, #0077CC); }
+.qr-customer-dot[data-stage="post"]       { --dot-color: var(--teal, #00BFB3); }
+.qr-customer-dot[data-stage="transcript"] { --dot-color: var(--pink, #F04E98); }
+.qr-customer-dot[data-stage="other"]      { --dot-color: var(--border-strong, #94a3b8); }
+
+.qr-customer-dot-mark {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+.qr-customer-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.qr-customer-foot-total {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.qr-customer-foot-sched {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--yellow, #FEC514) 18%, transparent);
+  color: color-mix(in srgb, var(--yellow, #FEC514) 70%, var(--ink));
+  font-weight: 600;
+}
+
+[data-theme="dark"] .qr-customer-foot-sched {
+  color: var(--yellow, #FEC514);
+}
+
+.qr-customer-detail-toggle {
+  margin-left: auto;
+  appearance: none;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font: 600 11.5px/1 Inter, system-ui, sans-serif;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: background 120ms, border-color 120ms, color 120ms;
+}
+
+.qr-customer-detail-toggle:hover {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.qr-customer-card.is-expanded .qr-customer-detail-toggle {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.qr-customer-detail {
+  border-top: 1px dashed var(--border);
+  padding-top: 10px;
+}
+
+.qr-customer-detail[hidden] { display: none; }
+
+.qr-customer-detail-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.qr-customer-detail-heading {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  font-weight: 700;
+  padding: 0 0 6px 0;
+}
+
+.qr-customer-detail-empty {
+  padding: 12px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.qr-customer-detail-link {
+  display: grid;
+  grid-template-columns: 14px 110px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--ink);
+  font-size: 12.5px;
+  transition: background 120ms;
+}
+
+.qr-customer-detail-link:hover {
+  background: var(--panel-2);
+}
+
+.qr-customer-detail-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--dot-color, var(--primary));
+}
+
+.qr-customer-detail-dot[data-stage="scheduled"]  { --dot-color: var(--yellow, #FEC514); }
+.qr-customer-detail-dot[data-stage="pre"]        { --dot-color: var(--primary, #0077CC); }
+.qr-customer-detail-dot[data-stage="post"]       { --dot-color: var(--teal, #00BFB3); }
+.qr-customer-detail-dot[data-stage="transcript"] { --dot-color: var(--pink, #F04E98); }
+.qr-customer-detail-dot[data-stage="other"]      { --dot-color: var(--border-strong, #94a3b8); }
+
+.qr-customer-detail-stage {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.qr-customer-detail-title {
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qr-customer-detail-date {
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 768px) {
+  .qr-customer-card {
+    padding: 14px;
+    border-left-width: 4px;
+  }
+  .qr-customer-name { font-size: 15.5px; }
+  .qr-customer-counts { width: 100%; margin-left: 0; }
+  .qr-customer-timeline { height: 56px; }
+  .qr-customer-detail-toggle { min-height: 36px; padding: 9px 14px; font-size: 12.5px; }
+  .qr-customer-detail-link {
+    grid-template-columns: 12px 1fr auto;
+    grid-template-areas: "dot title date" "dot stage stage";
+    gap: 6px 10px;
+  }
+  .qr-customer-detail-link .qr-customer-detail-dot { grid-area: dot; }
+  .qr-customer-detail-link .qr-customer-detail-stage { grid-area: stage; font-size: 10px; }
+  .qr-customer-detail-link .qr-customer-detail-title { grid-area: title; white-space: normal; }
+  .qr-customer-detail-link .qr-customer-detail-date { grid-area: date; }
 }

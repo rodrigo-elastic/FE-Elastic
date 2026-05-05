@@ -1,7 +1,10 @@
 <!--
   filename: customers.html
-  description: Customers and records browser. Filter and group every meeting,
-  brief, post-meeting summary and transcript across all accounts.
+  description: Legacy redirect. The Customers page was reframed as the FE
+  Workspace at /workspace.html (FE Copilot is not a CRM; Salesforce is the
+  system of record). This page redirects in three layers (HTTP-equiv meta
+  refresh, JS replace, and a manual link fallback) so any bookmarked or
+  cross-linked URL keeps working.
   Author: Rodrigo Careaga
   Date: 04-05-2026
 -->
@@ -10,325 +13,26 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FE Copilot - Customers</title>
-  <!-- seo:meta:start -->
-  <meta name="description" content="FE Copilot customers and records browser. Filter and group every meeting, brief, post meeting summary and transcript across all accounts in one place." />
-  <link rel="canonical" href="/customers.html" />
-  <meta name="theme-color" content="#0077CC" />
-  <meta name="author" content="Rodrigo Careaga" />
-  <meta name="application-name" content="FE Copilot" />
-  <meta property="og:type" content="website" />
-  <meta property="og:title" content="FE Copilot - Customers" />
-  <meta property="og:description" content="FE Copilot customers and records browser. Filter and group every meeting, brief, post meeting summary and transcript across all accounts in one place." />
-  <meta property="og:image" content="/assets/img/elastic/glyph-cluster-color.svg" />
-  <meta property="og:url" content="/customers.html" />
-  <meta property="og:site_name" content="FE Copilot" />
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="FE Copilot - Customers" />
-  <meta name="twitter:description" content="FE Copilot customers and records browser. Filter and group every meeting, brief, post meeting summary and transcript across all accounts in one place." />
-  <meta name="twitter:image" content="/assets/img/elastic/glyph-cluster-color.svg" />
-  <link rel="manifest" href="/manifest.webmanifest" />
-  <!-- seo:meta:end -->
+  <title>FE Copilot - Workspace</title>
+  <meta name="description" content="Customers has been reframed as Workspace. Redirecting to /workspace.html..." />
+  <link rel="canonical" href="/workspace.html" />
+  <meta name="robots" content="noindex,follow" />
+  <meta http-equiv="refresh" content="0; url=/workspace.html" />
   <link rel="stylesheet" href="/assets/css/styles.css" />
-  <link rel="icon" type="image/svg+xml" href="/assets/img/elastic/glyph-cluster-color.svg" />
-  <link rel="stylesheet" href="/assets/css/command-palette.css" />
-  <link rel="stylesheet" href="/assets/css/autopilot.css" />
-  <link rel="stylesheet" href="/assets/css/quick-research-filter.css" />
-  <style>
-    .demo-banner { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 8px 16px; background: #fff3cd; color: #856404; font-size: 12px; line-height: 1.4; border-bottom: 1px solid #f5e2a4; text-align: center; }
-    .demo-banner.is-hidden { display: none; }
-    .demo-banner-text { flex: 1; max-width: 1100px; }
-    .demo-banner-close { position: relative; background: transparent; border: 0; color: #856404; font-size: 16px; cursor: pointer; padding: 6px 10px; line-height: 1; border-radius: 4px; min-width: 32px; min-height: 32px; }
-    .demo-banner-close::before { content: ""; position: absolute; inset: -6px; }
-    .demo-banner-close:hover { background: rgba(133, 100, 4, 0.12); }
-    @media (max-width: 768px) {
-      .demo-banner { font-size: 13px; padding: 8px 12px; gap: 8px; text-align: left; }
-      .demo-banner-close { padding: 8px 12px; min-width: 36px; min-height: 36px; }
-    }
-    .tr-collapsible { border: 1px solid var(--border); border-radius: 12px; background: var(--panel); overflow: hidden; }
-    .tr-collapsible > summary { list-style: none; cursor: pointer; padding: 14px 18px; display: flex; align-items: center; gap: 10px; font-weight: 600; color: var(--ink); user-select: none; }
-    .tr-collapsible > summary::-webkit-details-marker { display: none; }
-    .tr-collapsible > summary::marker { content: ""; }
-    .tr-collapsible > summary:hover { background: var(--primary-soft); }
-    .tr-collapsible[open] > summary { border-bottom: 1px solid var(--border); }
-    .tr-cta-icon { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 6px; background: var(--primary-soft); color: var(--primary); flex: 0 0 24px; transition: transform 0.18s ease; }
-    [data-theme="dark"] .tr-cta-icon { color: #6cb5ff; }
-    .tr-collapsible[open] .tr-cta-icon { transform: rotate(45deg); background: rgba(220, 53, 69, 0.12); color: #b02a37; }
-    [data-theme="dark"] .tr-collapsible[open] .tr-cta-icon { color: #ffb4b4; background: rgba(220, 53, 69, 0.22); }
-    .tr-cta-label { flex: 1; font-size: 14px; }
-    .tr-cta-hint { font-size: 12px; color: var(--muted); display: none; }
-    .tr-collapsible[open] .tr-cta-hint { display: inline; }
-    .tr-collapsible #tr-form, .tr-collapsible .qr-head { padding: 0 18px; }
-    .tr-collapsible[open] #tr-form { padding-bottom: 18px; }
-  </style>
-</head>
-<body class="customers-page">
-  <a class="skip-to-main" href="#main-content" data-i18n="a11y.skip_to_main">Skip to main content</a>
-  <header class="topbar">
-    <a class="brand" href="/" aria-label="FE Copilot home">
-      <img class="logo-elastic" src="/assets/img/elastic/logo-horizontal-white.svg" alt="Elastic" width="64" height="22" />
-      <span class="brand-sep">/</span>
-      <span class="name">FE <span class="accent">Copilot</span></span>
-      <span class="tag">Customers</span>
-    </a>
-    <div class="right">
-      <div class="lang-host" id="lang-host"></div>
-      <span class="pill" id="model-pill" aria-live="polite" aria-atomic="true">Loading model...</span>
-      <span class="pill" id="status" data-i18n="topbar.connecting" aria-live="polite" aria-atomic="true">Connecting...</span>
-    </div>
-  </header>
-
-  <div class="demo-banner" id="fec-demo-banner" role="note">
-    <span class="demo-banner-text" data-i18n="banner.demo">Demo data only. All companies, employees, and financials shown are fictional. Public list pricing for Splunk and Datadog is real.</span>
-    <button type="button" class="demo-banner-close" id="fec-demo-banner-close" aria-label="Dismiss demo data notice" data-i18n-aria-label="banner.dismiss">&times;</button>
-  </div>
-  <script>
-    (function () { try { var b=document.getElementById('fec-demo-banner'); if(!b) return; if(localStorage.getItem('fec.banner_dismissed')==='1'){ b.classList.add('is-hidden'); return; } var x=document.getElementById('fec-demo-banner-close'); if(x){ x.addEventListener('click', function(){ b.classList.add('is-hidden'); try{localStorage.setItem('fec.banner_dismissed','1');}catch(e){} }); } } catch(e){} })();
-  </script>
-
-  <main class="container" id="main-content" tabindex="-1">
-    <section class="hero">
-      <h1><span data-i18n="hero.title.1">Three agents.</span> <span class="grad" data-i18n="hero.title.2">One pre-meeting flow.</span></h1>
-      <p class="lede" data-i18n="hero.lede">FE Copilot chains a Pre-Meeting Researcher, a Live Companion, and a Post-Meeting Action Engine on top of Claude. All sample data here is synthetic; no customer data was used.</p>
-      <div class="hero-stats">
-        <div class="hero-stat teal"><div class="num" id="stat-companies">-</div><div class="lbl" data-i18n="stats.accounts">Accounts</div></div>
-        <div class="hero-stat yellow"><div class="num" id="stat-upcoming">-</div><div class="lbl" data-i18n="stats.upcoming">Upcoming</div></div>
-        <div class="hero-stat blue"><div class="num" id="stat-past">-</div><div class="lbl" data-i18n="stats.past">Past meetings</div></div>
-        <div class="hero-stat pink"><div class="num" id="stat-briefs">-</div><div class="lbl" data-i18n="stats.briefs">Briefs generated</div></div>
-      </div>
-    </section>
-
-    <section class="quick-research transcript-card" id="entry-tr" aria-labelledby="tr-heading" style="margin: 0 0 18px 0">
-      <details class="tr-collapsible" id="tr-collapsible">
-        <summary class="tr-cta" aria-controls="tr-collapsible-body" aria-expanded="false">
-          <span class="tr-cta-icon" aria-hidden="true">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" focusable="false"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          </span>
-          <span class="tr-cta-label" data-i18n="customers.transcript.cta">Analyze transcript</span>
-          <span class="tr-cta-hint" data-i18n="customers.transcript.cta_open">Hide form</span>
-        </summary>
-        <div id="tr-collapsible-body">
-        <div class="qr-head" style="margin-top: 14px">
-          <div>
-            <h2 id="tr-heading" data-i18n="customers.transcript.title">Analyze a meeting transcript</h2>
-            <p class="muted small" style="margin: 4px 0 0 0" data-i18n="customers.transcript.subtitle">Paste a Zoom .vtt, Gong export, or any "Speaker: text" transcript. The Post-Meeting agent extracts action items, MEDDPICC signals, and competitor mentions, then drops the result into the Transcript column below.</p>
-          </div>
-        </div>
-        <form id="tr-form" class="qr-form tr-form" onsubmit="return false;" novalidate>
-          <div class="qr-row">
-            <div class="qr-field grow">
-              <label class="qr-lbl" for="tr-name" data-i18n="tr.field.company">Company</label>
-              <input type="text" id="tr-name" name="company_name" autocomplete="organization" required minlength="1" maxlength="120" data-i18n-placeholder="tr.placeholder.company" placeholder="e.g. Northwind Pay, Mercado Atlas, Banco Atlántico" aria-required="true" />
-            </div>
-            <div class="qr-field">
-              <label class="qr-lbl" for="tr-title" data-i18n="tr.field.title">Meeting title</label>
-              <input type="text" id="tr-title" name="meeting_title" maxlength="160" data-i18n-placeholder="tr.placeholder.title" placeholder="Discovery, QBR, technical follow-up..." />
-            </div>
-            <div class="qr-field">
-              <label class="qr-lbl" for="tr-source" data-i18n="tr.field.source">Source</label>
-              <select id="tr-source" name="transcript_source">
-                <option value="zoom" data-i18n="tr.source.zoom">Zoom (.vtt)</option>
-                <option value="gong" data-i18n="tr.source.gong">Gong export</option>
-                <option value="manual" data-i18n="tr.source.manual">Manual paste</option>
-              </select>
-            </div>
-          </div>
-          <div class="qr-row">
-            <div class="qr-field">
-              <label class="qr-lbl" for="tr-industry" data-i18n="tr.field.industry">Industry (optional)</label>
-              <input type="text" id="tr-industry" name="industry" maxlength="80" data-i18n-placeholder="tr.placeholder.industry" placeholder="Fintech, Retail, Public sector..." />
-            </div>
-            <div class="qr-field">
-              <label class="qr-lbl" for="tr-size" data-i18n="tr.field.size">Size (optional)</label>
-              <input type="text" id="tr-size" name="size" maxlength="80" data-i18n-placeholder="tr.placeholder.size" placeholder="Mid-market, Enterprise..." />
-            </div>
-          </div>
-          <div class="qr-field">
-            <label class="qr-lbl" for="tr-notes" data-i18n="tr.field.notes">Notes (optional)</label>
-            <textarea id="tr-notes" name="notes" rows="2" maxlength="2000" data-i18n-placeholder="tr.placeholder.notes" placeholder="Anything the agent should know: deal stage, blockers, attendees..."></textarea>
-          </div>
-          <div class="qr-field">
-            <div class="tr-text-head">
-              <label class="qr-lbl" for="tr-text" data-i18n="tr.field.text">Transcript</label>
-              <span class="muted small tr-hint" data-i18n="tr.hint">Paste from Gong, Zoom, or any "Speaker: text" export. Min 20 characters.</span>
-            </div>
-            <textarea id="tr-text" name="transcript_text" rows="14" required minlength="20" maxlength="200000" spellcheck="false" data-i18n-placeholder="tr.placeholder.text" placeholder="WEBVTT&#10;&#10;00:00:01.000 --> 00:00:05.000&#10;Alice (Customer): We saw a 30% spike in p99 latency last week.&#10;&#10;00:00:05.500 --> 00:00:09.000&#10;Bob (Elastic FE): Got it. Walk me through the alerting setup..."></textarea>
-            <div class="tr-meta">
-              <span class="muted small" id="tr-charcount" aria-live="polite">0 chars</span>
-              <span class="dot">·</span>
-              <label class="tr-file-pick">
-                <span data-i18n="tr.field.file">Or upload a .vtt / .txt</span>
-                <input type="file" id="tr-file" accept=".vtt,.txt,.srt" />
-              </label>
-            </div>
-          </div>
-          <div class="qr-actions">
-            <button type="submit" class="btn primary" id="tr-submit">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-              <span data-i18n="tr.submit">Analyze transcript</span>
-            </button>
-            <div class="qr-model">
-              <label class="qr-model-lbl" for="tr-model" data-i18n="tr.field.model">Model</label>
-              <select id="tr-model" name="model">
-                <option value="">Haiku 4.5 (default)</option>
-                <option value="claude-haiku-4-5">Haiku 4.5 (fastest, cheapest)</option>
-                <option value="claude-sonnet-4-6">Sonnet 4.6 (balanced)</option>
-                <option value="claude-opus-4-7">Opus 4.7 (deepest analysis)</option>
-              </select>
-            </div>
-            <span class="muted small tr-status" id="tr-status" role="status" aria-live="polite"></span>
-          </div>
-        </form>
-        </div>
-      </details>
-    </section>
-
-    <div class="qr-legend" role="note" aria-label="Customer color legend">
-      <span class="qr-legend-label" data-i18n="qr.legend.label">Color legend</span>
-      <span class="qr-legend-dots" aria-hidden="true">
-        <span class="qr-legend-dot l0"></span>
-        <span class="qr-legend-dot l1"></span>
-        <span class="qr-legend-dot l2"></span>
-        <span class="qr-legend-dot l3"></span>
-        <span class="qr-legend-dot l4"></span>
-      </span>
-      <span class="qr-legend-text" data-i18n="qr.legend.text">Same color = same customer across stages</span>
-    </div>
-
-    <section class="qr-filter-bar" aria-label="Filter and group records">
-      <div class="qr-fb-row">
-        <label class="qr-fb-search">
-          <span class="visually-hidden" data-i18n="qr.filter.search">Search</span>
-          <svg class="qr-fb-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="search" id="qr-fb-search" data-i18n-placeholder="qr.filter.search_placeholder" placeholder="Search customer, title, industry, attendee..." aria-label="Search filter" />
-          <button type="button" class="qr-fb-search-clear" aria-label="Clear search" hidden><span aria-hidden="true">&times;</span><span class="visually-hidden">Clear</span></button>
-        </label>
-      </div>
-      <div class="qr-fb-row">
-        <fieldset class="qr-fb-chips" id="qr-fb-stage" aria-label="Stage filter">
-          <legend class="visually-hidden">Stage</legend>
-          <label><input type="radio" name="qr-stage" value="all" checked> <span data-i18n="qr.filter.stage.all">All</span></label>
-          <label><input type="radio" name="qr-stage" value="scheduled"> <span data-i18n="qr.filter.stage.scheduled">Scheduled</span></label>
-          <label><input type="radio" name="qr-stage" value="pre"> <span data-i18n="qr.filter.stage.pre">Pre-meeting</span></label>
-          <label><input type="radio" name="qr-stage" value="post"> <span data-i18n="qr.filter.stage.post">Post-meeting</span></label>
-          <label><input type="radio" name="qr-stage" value="transcript"> <span data-i18n="qr.filter.stage.transcript">Transcript</span></label>
-        </fieldset>
-
-        <label class="qr-fb-group">
-          <span class="qr-fb-group-lbl" data-i18n="qr.filter.group_by">Group by</span>
-          <select id="qr-fb-group">
-            <option value="customer" data-i18n="qr.filter.group.customer">Customer</option>
-            <option value="stage" selected data-i18n="qr.filter.group.stage">Stage</option>
-            <option value="date" data-i18n="qr.filter.group.date">Date</option>
-            <option value="none" data-i18n="qr.filter.group.none">None</option>
-          </select>
-        </label>
-
-        <label class="qr-fb-group">
-          <span class="qr-fb-group-lbl" data-i18n="qr.filter.range">Range</span>
-          <select id="qr-fb-range">
-            <option value="all" data-i18n="qr.filter.range.all" selected>All time</option>
-            <option value="week" data-i18n="qr.filter.range.week">This week</option>
-            <option value="month" data-i18n="qr.filter.range.month">This month</option>
-            <option value="quarter" data-i18n="qr.filter.range.quarter">This quarter</option>
-          </select>
-        </label>
-
-        <div class="qr-fb-view" role="group" aria-label="View toggle">
-          <button type="button" class="qr-fb-view-btn" data-qr-view="kanban" aria-pressed="true" title="Kanban view by stage">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="5" height="16" rx="1"/><rect x="10" y="4" width="5" height="10" rx="1"/><rect x="17" y="4" width="4" height="14" rx="1"/></svg>
-            <span data-i18n="qr.view.kanban">Kanban</span>
-          </button>
-          <button type="button" class="qr-fb-view-btn" data-qr-view="list" aria-pressed="false" title="List view grouped by selection">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-            <span data-i18n="qr.view.list">List</span>
-          </button>
-        </div>
-
-        <span class="qr-fb-counter" id="qr-fb-counter" aria-live="polite"></span>
-      </div>
-    </section>
-
-    <section class="qr-records" aria-label="Records">
-      <div class="qr-records-host" id="qr-records-host"></div>
-      <div class="qr-records-empty" id="qr-records-empty" hidden>
-        <strong data-i18n="qr.records.empty.title">No records match those filters</strong>
-        <span class="muted small" data-i18n="qr.records.empty.body">Try clearing the search or switching to "All time".</span>
-      </div>
-    </section>
-
-    <section>
-      <div class="row-between">
-        <h2>Calendar inbox</h2>
-        <span class="muted small" id="cal-count"></span>
-      </div>
-      <p class="muted small" style="margin: 0 0 8px 0">Mock Google Calendar feed; the smart-resolver picks the customer for each invite even when consultants are in the room.</p>
-      <ul id="calendar-list" class="meetings"></ul>
-    </section>
-
-    <section>
-      <div class="row-between">
-        <h2 data-i18n="section.meetings">Meetings on file</h2>
-        <div style="display:flex; gap:10px; align-items:center;">
-          <span class="muted small" id="meetings-count"></span>
-          <div class="search-wrap" role="search">
-            <svg class="search-ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <label for="meetings-search" class="visually-hidden">Filter meetings</label>
-            <input type="text" id="meetings-search" data-i18n-placeholder="search.placeholder" placeholder="Filter by company, title, industry..." aria-label="Filter meetings by company, title, or industry" />
-            <kbd class="kbd" aria-hidden="true">/</kbd>
-          </div>
-        </div>
-      </div>
-      <div class="row-between" style="margin: 10px 0 6px 0">
-        <h3 class="subhead yellow"><span class="dot"></span> <span data-i18n="section.upcoming">Upcoming</span></h3>
-        <span class="muted small" id="upcoming-count"></span>
-      </div>
-      <ul id="upcoming" class="meetings"></ul>
-
-      <div class="row-between" style="margin: 22px 0 6px 0">
-        <h3 class="subhead blue"><span class="dot"></span> <span data-i18n="section.past">Past</span></h3>
-        <span class="muted small" id="past-count"></span>
-      </div>
-      <ul id="past" class="meetings"></ul>
-    </section>
-
-    <section style="margin-top: 28px">
-      <div class="row-between">
-        <h2 data-i18n="section.history">History</h2>
-        <span class="muted small" id="history-count"></span>
-      </div>
-      <ul id="history" class="history"></ul>
-    </section>
-
-    <section id="toast-host" role="status" aria-live="polite" aria-atomic="false"></section>
-  </main>
-
-  <script src="/assets/js/tools-rail.js"></script>
-  <script defer src="/assets/js/i18n.js"></script>
-  <script defer src="/assets/js/api.js"></script>
-  <script defer src="/assets/js/ui.js"></script>
-  <script defer src="/assets/js/api-retry.js"></script>
-  <script defer src="/assets/js/app.js"></script>
-  <script defer src="/assets/js/quick-research-filter.js"></script>
-  <script defer src="/assets/js/command-palette.js"></script>
   <script>
     (function () {
-      document.addEventListener("fec.transcript.analyzed", function () {
-        if (window.QRFilter && typeof window.QRFilter.refresh === "function") {
-          try { window.QRFilter.refresh(); } catch (e) {}
-        }
-      });
-      // Mirror native <details> open state onto aria-expanded for AT that key off ARIA.
-      var det = document.getElementById("tr-collapsible");
-      if (det) {
-        var sum = det.querySelector("summary.tr-cta");
-        function syncExpanded() {
-          if (sum) sum.setAttribute("aria-expanded", det.open ? "true" : "false");
-        }
-        det.addEventListener("toggle", syncExpanded);
-        syncExpanded();
+      try {
+        // Preserve query string and hash so deep links (eg. ?meeting=123) survive.
+        var url = "/workspace.html" + (location.search || "") + (location.hash || "");
+        location.replace(url);
+      } catch (e) {
+        // Hard fallback handled by the meta refresh + manual link below.
       }
     })();
   </script>
+</head>
+<body class="workspace-page" style="padding: 40px; font-family: Inter, system-ui, sans-serif; color: var(--ink, #1a1a1a);">
+  <h1 style="margin: 0 0 8px 0">Workspace moved</h1>
+  <p>Customers is now <a href="/workspace.html">/workspace.html</a>. Redirecting...</p>
 </body>
 </html>

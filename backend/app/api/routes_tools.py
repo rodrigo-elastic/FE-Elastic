@@ -23,6 +23,7 @@ from app.agents.schemas import (
     CodeSampleOut,
     CompareOut,
     ComplianceMappingsOut,
+    DeployValidatorOut,
     OrchestratorInvocation,
     OrchestratorOut,
     OrchestratorPlanOut,
@@ -723,6 +724,161 @@ async def run_troubleshoot(payload: TroubleshootRequest) -> Dict[str, Any]:
     return data
 
 
+# ============================================================ Deploy Validator (Astrid) ===
+
+
+class DeployValidatorRequest(BaseModel):
+    cluster_summary: str = Field(..., min_length=20, max_length=20000)
+    language: Optional[str] = Field("English", max_length=40)
+    model: Optional[str] = Field("", max_length=60)
+
+
+# Mock payload covers the most common production antipatterns Astrid sees in the
+# field. Lengths and severities span critical, high, and medium so the FE panel
+# renders all the badge variants even when Anthropic credits are exhausted.
+_DEPLOY_VALIDATOR_MOCK: Dict[str, Any] = {
+    "findings": [
+        {
+            "severity": "critical",
+            "title": "Security disabled in a production cluster",
+            "antipattern": "xpack.security.enabled=false on a cluster the FE described as production. Anyone on the network can read every index, run cluster-state queries, and rotate the master.",
+            "remediation_steps": [
+                "Set xpack.security.enabled=true in elasticsearch.yml on every node, then perform a rolling restart.",
+                "Run elasticsearch-setup-passwords interactive (or auto) to set the elastic, kibana_system, logstash_system, and beats_system credentials.",
+                "Wire SAML or OIDC under Stack Management > Security > Single Sign-On so humans never touch the elastic superuser.",
+                "Enable the audit log: xpack.security.audit.enabled=true and ship it to a dedicated index pattern.",
+            ],
+            "doc_url": "https://www.elastic.co/docs/deploy-manage/security/secure-your-cluster-deployment",
+        },
+        {
+            "severity": "critical",
+            "title": "No snapshot lifecycle configured",
+            "antipattern": "Cluster summary lists no SLM policy and no repository. A disk failure or a fat-finger DELETE today removes the data permanently.",
+            "remediation_steps": [
+                "Register an object-storage repository (S3, GCS, or Azure) under Stack Management > Snapshot and Restore.",
+                "Create an SLM policy that snapshots all indices daily and retains 30 days of recovery points.",
+                "Enable the Snapshots failure alert under Stack Management > Rules.",
+                "Test a restore into a sandbox cluster within the next two weeks; an untested snapshot is not a backup.",
+            ],
+            "doc_url": "https://www.elastic.co/docs/deploy-manage/tools/snapshot-and-restore",
+        },
+        {
+            "severity": "high",
+            "title": "JVM heap above 32 GB defeats compressed object pointers",
+            "antipattern": "JVM heap is set to 48 GB. Above 31 to 32 GB the JVM disables compressed oops, every object reference doubles in size, and effective heap shrinks. Hot tier nodes hit GC pauses sooner than the larger number suggests.",
+            "remediation_steps": [
+                "Drop -Xms and -Xmx to 31 GB on every hot tier node (or 30 GB to leave a safety margin).",
+                "Allocate the rest of node RAM to the OS page cache; do not give it back to the JVM.",
+                "Restart nodes one at a time, waiting for green between each.",
+                "Add a Stack Monitoring alert on jvm.mem.heap_used_percent > 75 sustained 10 minutes.",
+            ],
+            "doc_url": "https://www.elastic.co/docs/deploy-manage/production-guidance/jvm-heap-size",
+        },
+        {
+            "severity": "high",
+            "title": "ILM rollover schedule mismatched with hot tier sizing",
+            "antipattern": "Hot tier sized for thirty days of retention, but the ILM policy rolls over to warm at seven days. Either the hot tier is paying for storage it never uses, or rollover is dropping data into warm before the dashboards expect it.",
+            "remediation_steps": [
+                "Open Stack Management > Index Lifecycle Policies and align the hot phase max_age (or max_primary_shard_size) with the actual hot retention.",
+                "Add a documented rationale field to the policy description so the next FE understands the cost-versus-latency tradeoff.",
+                "Validate by sampling GET <index>/_ilm/explain on three random data streams; step_info should be empty and phase should match expectations.",
+            ],
+            "doc_url": "https://www.elastic.co/docs/manage-data/lifecycle/index-lifecycle-management",
+        },
+        {
+            "severity": "medium",
+            "title": "Hot tier shard count above the safe threshold",
+            "antipattern": "80 shards reside on the hot tier across 2 hot nodes. That is 40 shards per node, well above the safe 20-shards-per-GB-of-heap rule of thumb for production workloads.",
+            "remediation_steps": [
+                "Run GET _cat/shards?v on the hot tier and identify oversharded data streams.",
+                "Update the offending ILM policy to roll over at a larger max_primary_shard_size (50 GB) before moving to warm.",
+                "Apply force-merge to the largest read-only indices (target 1 segment) during a low-traffic window to reclaim heap and disk.",
+                "Schedule a quarterly shard hygiene review as part of the operations runbook.",
+            ],
+            "doc_url": "https://www.elastic.co/docs/deploy-manage/production-guidance/optimize-performance/size-shards",
+        },
+        {
+            "severity": "medium",
+            "title": "Ingest pipelines without on_failure handlers",
+            "antipattern": "Pipelines listed in the summary do not declare on_failure handlers. One malformed document can fail an entire bulk request and silently drop other valid records.",
+            "remediation_steps": [
+                "Edit each pipeline under Stack Management > Ingest Pipelines and add an on_failure block that routes to a dead letter index (e.g., ingest-deadletter).",
+                "Create a Kibana alert on count(ingest-deadletter) > 0 over 5 minutes so the ops team sees pipeline regressions early.",
+                "Add a quarterly review of the dead letter index as part of the ingest hygiene runbook.",
+            ],
+            "doc_url": "https://www.elastic.co/docs/manage-data/ingest/transform-enrich/handling-pipeline-failures",
+        },
+    ],
+    "summary": (
+        "Mock fallback validation report (Astrid). The cluster as described carries two critical risks: "
+        "security is disabled on a production deployment, and no snapshot lifecycle is configured. Both must "
+        "be remediated before any further capacity work. Heap and ILM are oversized and misaligned, and the hot "
+        "tier is oversharded enough to cause GC pauses under burst ingest. None of the issues are unfixable in a "
+        "Friday afternoon if you sequence them by reversibility."
+    ),
+    "cluster_health_score": 28,
+}
+
+
+@router.post("/deploy-validator")
+async def run_deploy_validator(payload: DeployValidatorRequest) -> Dict[str, Any]:
+    """Astrid (Senior Platform Architect, 12y) audits a pasted cluster summary and ranks antipatterns by blast radius."""
+    language = payload.language or "English"
+    log.info(
+        "tool.deploy_validator.start",
+        language=language,
+        summary_len=len(payload.cluster_summary or ""),
+    )
+
+    user_prompt = (
+        language_preamble(language)
+        + tool_prompts.render_deploy_validator_prompt(payload.cluster_summary)
+        + language_instruction(language)
+    )
+
+    result: DeployValidatorOut = get_service().call_structured(
+        system=tool_prompts.DEPLOY_VALIDATOR_SYSTEM,
+        user=user_prompt,
+        schema=tool_prompts.DEPLOY_VALIDATOR_SCHEMA,
+        output_model=DeployValidatorOut,
+        model=_resolve_model(payload.model),
+        max_tokens=8192,
+        effort="high",
+        mock_payload=_DEPLOY_VALIDATOR_MOCK,
+        audit_meta={
+            "agent": "tool_deploy_validator",
+            "tool": "deploy_validator",
+            "summary_len": len(payload.cluster_summary or ""),
+        },
+    )
+
+    data = result.model_dump()
+
+    # Persist a timestamped audit artifact so the FE can replay any past report.
+    try:
+        out_dir = settings.runtime_dir / "deploy_validator"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+        record = {
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "language": language,
+            "cluster_summary": payload.cluster_summary,
+            **data,
+        }
+        (out_dir / f"{ts}.json").write_text(
+            json.dumps(record, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+        )
+    except Exception as exc:
+        log.warning("tool.deploy_validator.persist_failed", reason=str(exc))
+
+    log.info(
+        "tool.deploy_validator.complete",
+        findings=len(data.get("findings") or []),
+        score=data.get("cluster_health_score"),
+    )
+    return data
+
+
 # ============================================================ Compare (Sloane) =======
 
 
@@ -1046,6 +1202,8 @@ async def _dispatch_pick(tool: str, args: Dict[str, Any]) -> Any:
         return await run_knowledge_search(KnowledgeSearchRequest(**args))
     if tool == "fec_troubleshoot":
         return await run_troubleshoot(TroubleshootRequest(**args))
+    if tool == "fec_deploy_validator":
+        return await run_deploy_validator(DeployValidatorRequest(**args))
     raise ValueError(f"unknown tool: {tool}")
 
 

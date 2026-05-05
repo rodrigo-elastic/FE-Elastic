@@ -1,6 +1,6 @@
 """
 filename: routes_mcp.py
-description: MCP Streamable HTTP server exposing the twelve FE Copilot tools (nine specialists, the Sloane competitive comparison tool, the Auro orchestrator, and the Carmen one-page proposal generator) to Elastic Agent Builder. Speaks JSON-RPC over a single POST endpoint per the MCP 2025-03-26 spec; each tool delegates to the existing FastAPI tool route.
+description: MCP Streamable HTTP server exposing the thirteen FE Copilot tools (nine specialists, the Sloane competitive comparison tool, the Auro orchestrator, the Carmen one-page proposal generator, and the Astrid deployment validator) to Elastic Agent Builder. Speaks JSON-RPC over a single POST endpoint per the MCP 2025-03-26 spec; each tool delegates to the existing FastAPI tool route.
 date: 03-05-2026
 """
 __author__ = "Rodrigo Careaga"
@@ -20,6 +20,7 @@ from app.api.routes_tools import (
     CompareRequest,
     ComplianceRequest,
     CostCalcRequest,
+    DeployValidatorRequest,
     KnowledgeSearchRequest,
     OrchestratorRequest,
     POCPlanRequest,
@@ -32,6 +33,7 @@ from app.api.routes_tools import (
     run_compare,
     run_compliance_mapping,
     run_cost_calc,
+    run_deploy_validator,
     run_knowledge_search,
     run_orchestrator,
     run_poc_plan,
@@ -214,6 +216,18 @@ TOOLS = [
             "required": ["meeting_id"],
         },
     },
+    {
+        "name": "fec_deploy_validator",
+        "description": "Take a pasted Elastic cluster summary (sizing, shard counts, ILM, security config, ingest pipelines, snapshots, JVM heap, topology) and produce a prioritized antipattern report with concrete remediation steps and a 0 to 100 cluster health score. CRMs and competitive sales tools cannot do this; this is FE-only. Persona: Astrid, Senior Platform Architect at Elastic (12 years of production Elasticsearch audits).",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "cluster_summary": {"type": "string", "description": "Free-form summary of the cluster: node count, tiers, shard counts, ILM policies, security setting, ingest pipelines, snapshots, JVM heap, version."},
+                "language": {"type": "string", "default": "English"},
+            },
+            "required": ["cluster_summary"],
+        },
+    },
 ]
 
 
@@ -245,6 +259,8 @@ async def _invoke_tool(name: str, args: Dict[str, Any]) -> Any:
         return await run_orchestrator(OrchestratorRequest(**args))
     if name == "fec_proposal":
         return await run_proposal(ProposalRequest(**args))
+    if name == "fec_deploy_validator":
+        return await run_deploy_validator(DeployValidatorRequest(**args))
     raise ValueError(f"unknown tool: {name}")
 
 

@@ -173,6 +173,25 @@ class TroubleshootOut(BaseModel):
     caveats: List[str]
 
 
+# ============================================================ DEPLOY VALIDATOR (Astrid) ===
+
+
+class DeployFinding(BaseModel):
+    """One antipattern Astrid spotted in a pasted cluster summary."""
+    severity: Literal["critical", "high", "medium", "low"]
+    title: str
+    antipattern: str
+    remediation_steps: List[str]
+    doc_url: str
+
+
+class DeployValidatorOut(BaseModel):
+    """Full validation report from the deploy validator tool."""
+    findings: List[DeployFinding]
+    summary: str
+    cluster_health_score: int = Field(ge=0, le=100)
+
+
 # ============================================================ COMPARE (Sloane) ========
 
 

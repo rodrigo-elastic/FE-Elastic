@@ -1,6 +1,6 @@
 /*
   filename: tools.js
-  description: Frontend handlers for the eight FE technical tools (POC plan, SPL-to-ES|QL, compliance, cost calc, capacity planner, stack extract, code sample, troubleshooting assistant).
+  description: Frontend handlers for the FE technical tools (POC plan, SPL-to-ES|QL, compliance, cost calc, capacity planner, stack extract, code sample, troubleshooting assistant, deployment validator).
   Author: Rodrigo Careaga
   Date: 03-05-2026
 */
@@ -38,6 +38,7 @@ function bindAll() {
   bindToolForm("stack-form", "stack-status", "Extract stack", runStackExtract);
   bindToolForm("code-form", "code-status", "Generate code", runCodeSample);
   bindToolForm("ts-form", "ts-status", "Diagnose", runTroubleshoot);
+  bindToolForm("dv-form", "dv-status", "Validate cluster", runDeployValidator);
 }
 
 function bindToolForm(formId, statusId, label, runner) {
@@ -752,4 +753,156 @@ function tsRenderMarkdown(text) {
   html = html.replace(/\n{2,}/g, "<br><br>");
   html = html.replace(/\n/g, "<br>");
   return html;
+}
+
+// ----------------------------------------------------------------- Deploy validator (Astrid)
+
+async function runDeployValidator() {
+  const summary = document.getElementById("dv-summary").value;
+  if (!summary || summary.trim().length < 20) {
+    throw new Error("paste a cluster summary first (min 20 chars)");
+  }
+  if (summary.length > 20000) {
+    throw new Error("cluster summary is too long (max 20000 chars)");
+  }
+  const model = document.getElementById("dv-model").value;
+  const body = {
+    cluster_summary: summary,
+    language: claudeLanguageName(),
+    model,
+  };
+  const res = await apiPost("/tools/deploy-validator", body);
+  renderDeployValidator(res);
+}
+
+// Map a severity string to a colored badge palette. Critical = red, high =
+// amber, medium = blue, low = teal. Inline style keeps this self-contained
+// without piggybacking on the troubleshoot risk variants.
+function dvSeverityStyle(sev) {
+  const s = String(sev || "").toLowerCase();
+  if (s === "critical") {
+    return "background: rgba(220, 53, 69, 0.16); color: #a01f2e; border: 1px solid rgba(220, 53, 69, 0.45);";
+  }
+  if (s === "high") {
+    return "background: rgba(246, 192, 0, 0.18); color: #8a6d00; border: 1px solid rgba(246, 192, 0, 0.45);";
+  }
+  if (s === "medium") {
+    return "background: rgba(0, 119, 204, 0.14); color: #0a4d80; border: 1px solid rgba(0, 119, 204, 0.40);";
+  }
+  if (s === "low") {
+    return "background: rgba(20, 158, 134, 0.14); color: #0c6b59; border: 1px solid rgba(20, 158, 134, 0.40);";
+  }
+  return "background: rgba(100, 116, 139, 0.14); color: #334155; border: 1px solid rgba(100, 116, 139, 0.32);";
+}
+
+// Score-pill color shifts as the score worsens.
+function dvScoreStyle(score) {
+  const n = Number(score) || 0;
+  if (n >= 80) {
+    return "background: rgba(20, 158, 134, 0.16); color: #0c6b59; border: 1px solid rgba(20, 158, 134, 0.45);";
+  }
+  if (n >= 55) {
+    return "background: rgba(0, 119, 204, 0.16); color: #0a4d80; border: 1px solid rgba(0, 119, 204, 0.45);";
+  }
+  if (n >= 35) {
+    return "background: rgba(246, 192, 0, 0.20); color: #8a6d00; border: 1px solid rgba(246, 192, 0, 0.50);";
+  }
+  return "background: rgba(220, 53, 69, 0.18); color: #a01f2e; border: 1px solid rgba(220, 53, 69, 0.50);";
+}
+
+function renderDeployValidator(res) {
+  const host = document.getElementById("dv-result");
+  clear(host);
+  host.classList.add("fade-in");
+
+  const score = (typeof res.cluster_health_score === "number") ? res.cluster_health_score : null;
+
+  // Header row: score pill plus summary paragraph.
+  const headerRow = el("div", { class: "tool-pills", style: "margin-bottom: 12px; gap: 10px; align-items: center;" });
+  if (score !== null) {
+    headerRow.appendChild(
+      el("span", {
+        class: "native-badge",
+        style: "font-size: 14px; padding: 6px 12px; " + dvScoreStyle(score),
+      }, "Cluster health: " + score + " / 100")
+    );
+  }
+  const findings = res.findings || [];
+  const counts = { critical: 0, high: 0, medium: 0, low: 0 };
+  findings.forEach((f) => {
+    const s = String(f.severity || "").toLowerCase();
+    if (counts[s] != null) counts[s] += 1;
+  });
+  ["critical", "high", "medium", "low"].forEach((sev) => {
+    if (counts[sev] > 0) {
+      headerRow.appendChild(
+        el("span", {
+          class: "native-badge",
+          style: "font-size: 12px; " + dvSeverityStyle(sev),
+        }, counts[sev] + " " + sev)
+      );
+    }
+  });
+  host.appendChild(headerRow);
+
+  if (res.summary) {
+    host.appendChild(el("div", { class: "brief-headline" }, res.summary));
+  }
+
+  // Findings list.
+  if (findings.length) {
+    host.appendChild(el("h4", { class: "tool-section" }, "Findings"));
+    findings.forEach((f, i) => {
+      const sev = String(f.severity || "").toLowerCase();
+      const card = el("div", {
+        class: "comp-card",
+        style: "padding: 12px 14px; margin-bottom: 12px;",
+      });
+      card.appendChild(
+        el("div", {
+          class: "comp-head",
+          style: "padding-bottom: 8px; margin-bottom: 8px; gap: 10px; align-items: center;",
+        }, [
+          el("span", { class: "phase-num" }, "F" + (i + 1)),
+          el("span", {
+            class: "native-badge",
+            style: "font-size: 11px; letter-spacing: 0.5px; " + dvSeverityStyle(sev),
+          }, sev.toUpperCase()),
+          el("span", {
+            class: "comp-reg",
+            style: "font-size: 14px; flex: 1; min-width: 0;",
+          }, f.title || "(untitled finding)"),
+        ])
+      );
+      if (f.antipattern) {
+        card.appendChild(el("div", { class: "phase-section-lbl" }, "Antipattern observed"));
+        card.appendChild(
+          el("div", { class: "muted small", style: "margin-bottom: 8px; line-height: 1.5;" }, f.antipattern)
+        );
+      }
+      const steps = f.remediation_steps || [];
+      if (steps.length) {
+        card.appendChild(el("div", { class: "phase-section-lbl" }, "Remediation steps"));
+        const ol = el("ol", {
+          class: "risk-list",
+          style: "padding-left: 24px; list-style: decimal; margin-top: 4px;",
+        });
+        steps.forEach((step) => {
+          ol.appendChild(el("li", {}, [el("div", { class: "risk-desc" }, step)]));
+        });
+        card.appendChild(ol);
+      }
+      if (f.doc_url) {
+        const link = el("a", {
+          href: f.doc_url,
+          target: "_blank",
+          rel: "noopener",
+          class: "footer-link",
+          style: "display: inline-block; margin-top: 6px; font-size: 12px;",
+        }, "Elastic docs ->");
+        card.appendChild(link);
+      }
+      host.appendChild(card);
+    });
+  }
 }

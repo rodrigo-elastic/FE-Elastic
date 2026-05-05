@@ -35,6 +35,19 @@
     other: "",
   };
 
+  // Workspace mode: detected via body.workspace-page (set by workspace.html).
+  // The new canonical view is "workspace" (one card per customer with a
+  // horizontal timeline). Legacy /quick-research and /customers redirects fall
+  // back to the kanban default. The stage filter switches from a single radio
+  // (legacy) to multi-select checkboxes in workspace mode.
+  function isWorkspaceMode() {
+    try {
+      return document.body && document.body.classList.contains("workspace-page");
+    } catch (_e) {
+      return false;
+    }
+  }
+
   // Single source of truth for the most recent normalized records. Refresh
   // rebuilds this; render uses it directly so we never need a re-fetch on a
   // filter or group change.
@@ -42,20 +55,33 @@
     records: [],
     query: "",
     stage: "all",
+    // Multi-stage filter (workspace mode). All stages enabled by default;
+    // unchecking a chip hides that color of dot from the timeline.
+    stageMulti: { scheduled: true, pre: true, post: true, transcript: true, other: true },
     range: "all",
     group: "stage",
-    view: "kanban",   // "kanban" (default) | "list"
+    // workspace.html boots into "workspace" view. Legacy callers (quick-research,
+    // customers redirect) keep "kanban" as the default.
+    view: isWorkspaceMode() ? "workspace" : "kanban",
+    expandedCustomers: new Set(),
     hydrated: false,
   };
 
+  function viewPrefKey() {
+    return isWorkspaceMode() ? "fec.workspace.view" : "fec.customers.view";
+  }
   function loadViewPref() {
     try {
-      const v = localStorage.getItem("fec.customers.view");
-      if (v === "list" || v === "kanban") STATE.view = v;
+      const v = localStorage.getItem(viewPrefKey());
+      if (isWorkspaceMode()) {
+        if (v === "list" || v === "workspace") STATE.view = v;
+      } else if (v === "list" || v === "kanban") {
+        STATE.view = v;
+      }
     } catch (_e) { /* ignore */ }
   }
   function saveViewPref() {
-    try { localStorage.setItem("fec.customers.view", STATE.view); } catch (_e) {}
+    try { localStorage.setItem(viewPrefKey(), STATE.view); } catch (_e) {}
   }
 
   function tr(key, fallback) {
@@ -484,8 +510,17 @@
 
   function applyFilters(records) {
     const q = (STATE.query || "").trim().toLowerCase();
+    const useMulti = isWorkspaceMode();
     return records.filter((r) => {
-      if (STATE.stage !== "all" && r.stage !== STATE.stage) return false;
+      if (useMulti) {
+        // In workspace mode, the stage filter is multi-select. A record is
+        // shown if its stage chip is checked. Records with an unmapped stage
+        // fall through the "other" bucket toggle.
+        const k = STAGE_ORDER.includes(r.stage) ? r.stage : "other";
+        if (!STATE.stageMulti[k]) return false;
+      } else if (STATE.stage !== "all" && r.stage !== STATE.stage) {
+        return false;
+      }
       if (!inRange(r, STATE.range)) return false;
       if (!matchesQuery(r, q)) return false;
       return true;
@@ -777,12 +812,285 @@
     }
     if (empty) empty.hidden = true;
 
-    if (STATE.view === "kanban") {
+    if (STATE.view === "workspace") {
+      renderWorkspace(filtered, host);
+    } else if (STATE.view === "kanban") {
       renderKanban(filtered, host);
     } else {
-      const groups = groupRecords(filtered, STATE.group);
+      // List view: in workspace mode, "Group by Customer" is the implicit
+      // default (one section per customer, chronological); on legacy pages we
+      // honor the user-selected STATE.group.
+      const groupKey = isWorkspaceMode() ? "customer" : STATE.group;
+      const groups = groupRecords(filtered, groupKey);
       renderGroups(groups, host);
     }
+  }
+
+  // -------------------------------------------------------------------------
+  // Workspace view: one card per customer with a horizontal timeline.
+  // Each artifact (brief, post-meeting, transcript, scheduled meeting) is a
+  // dot positioned by date; color codes the stage. Click a dot to navigate to
+  // the artifact. Click the card chrome to expand a chronological detail
+  // panel beneath the timeline. -----------------------------------------
+  function renderWorkspace(records, host) {
+    host.innerHTML = "";
+    if (!records.length) return;
+
+    // Group by customer (stable id, fallback to name).
+    const customerMap = new Map();
+    records.forEach((r) => {
+      const key = String(r.customer_id || r.customer_name || "_unresolved").toLowerCase();
+      if (!customerMap.has(key)) {
+        customerMap.set(key, {
+          key,
+          name: r.customer_name || tr("qr.records.unknown_customer", "Unresolved"),
+          industry: r.industry || "",
+          colorIdx: customerColorIndex(r),
+          items: [],
+        });
+      }
+      customerMap.get(key).items.push(r);
+    });
+
+    // Sort customers alphabetically; sort each customer's items by time asc
+    // (oldest first, so the timeline reads left to right by default).
+    const customers = Array.from(customerMap.values())
+      .map((c) => ({
+        ...c,
+        items: c.items.slice().sort((a, b) => byTimeAsc(a, b)),
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    const grid = document.createElement("div");
+    grid.className = "qr-customer-grid";
+    customers.forEach((c) => grid.appendChild(renderCustomerCard(c)));
+    host.appendChild(grid);
+  }
+
+  function byTimeAsc(a, b) {
+    const ta = a.timestamp_iso ? new Date(a.timestamp_iso).getTime() : 0;
+    const tb = b.timestamp_iso ? new Date(b.timestamp_iso).getTime() : 0;
+    return ta - tb;
+  }
+
+  function stageDotI18n(stage) {
+    if (stage === "scheduled") return tr("workspace.dot.scheduled", "Scheduled");
+    if (stage === "pre") return tr("workspace.dot.brief", "Pre-meeting brief");
+    if (stage === "post") return tr("workspace.dot.post", "Post-meeting summary");
+    if (stage === "transcript") return tr("workspace.dot.transcript", "Transcript");
+    return tr(STAGE_LABELS_KEY[stage] || "qr.records.group.other", STAGE_LABELS_FALLBACK[stage] || "Other");
+  }
+
+  function renderCustomerCard(customer) {
+    const card = document.createElement("article");
+    card.className = "qr-customer-card";
+    card.dataset.customerColor = String(customer.colorIdx);
+
+    // Header row: name + industry pill + counts summary.
+    const head = document.createElement("header");
+    head.className = "qr-customer-head";
+
+    const tag = document.createElement("span");
+    tag.className = "qr-customer-tag";
+    tag.setAttribute("aria-hidden", "true");
+
+    const name = document.createElement("h3");
+    name.className = "qr-customer-name";
+    name.textContent = customer.name;
+
+    const industry = document.createElement("span");
+    industry.className = "qr-customer-industry";
+    industry.textContent = customer.industry || "";
+
+    head.appendChild(tag);
+    head.appendChild(name);
+    if (customer.industry) head.appendChild(industry);
+
+    // Right side: stacked counts so the FE knows what is in this card at a
+    // glance without expanding it. Template: "{n} briefs . {m} post-meetings . {k} transcripts"
+    const briefCount = customer.items.filter((r) => r.stage === "pre").length;
+    const postCount = customer.items.filter((r) => r.stage === "post").length;
+    const trCount = customer.items.filter((r) => r.stage === "transcript").length;
+    const schedCount = customer.items.filter((r) => r.stage === "scheduled").length;
+
+    const counts = document.createElement("span");
+    counts.className = "qr-customer-counts";
+    const tpl = tr(
+      "workspace.card.counts",
+      "{n} briefs . {m} post-meetings . {k} transcripts"
+    );
+    counts.textContent = tpl
+      .replace("{n}", String(briefCount))
+      .replace("{m}", String(postCount))
+      .replace("{k}", String(trCount));
+    head.appendChild(counts);
+
+    card.appendChild(head);
+
+    // Timeline: full-width strip with a horizontal axis and one dot per
+    // artifact, positioned by date along the customer's min..max range.
+    card.appendChild(renderTimeline(customer));
+
+    // Footer mini-meta (totals + scheduled hint).
+    const foot = document.createElement("div");
+    foot.className = "qr-customer-foot";
+    const total = customer.items.length;
+    const totalLabel = tr("workspace.card.total", "{n} artifacts");
+    const totalSpan = document.createElement("span");
+    totalSpan.className = "qr-customer-foot-total";
+    totalSpan.textContent = totalLabel.replace("{n}", String(total));
+    foot.appendChild(totalSpan);
+
+    if (schedCount > 0) {
+      const schedSpan = document.createElement("span");
+      schedSpan.className = "qr-customer-foot-sched";
+      const schedTpl = tr("workspace.card.scheduled", "{n} scheduled");
+      schedSpan.textContent = schedTpl.replace("{n}", String(schedCount));
+      foot.appendChild(schedSpan);
+    }
+
+    const detailBtn = document.createElement("button");
+    detailBtn.type = "button";
+    detailBtn.className = "qr-customer-detail-toggle";
+    detailBtn.setAttribute("aria-expanded", "false");
+    detailBtn.textContent = tr("workspace.detail.show", "Show all artifacts");
+    foot.appendChild(detailBtn);
+
+    card.appendChild(foot);
+
+    // Detail panel (hidden by default): full chronological list of every
+    // artifact for the customer, descending so the most recent activity is on
+    // top.
+    const detail = document.createElement("div");
+    detail.className = "qr-customer-detail";
+    detail.hidden = true;
+    detail.appendChild(renderDetailList(customer));
+    card.appendChild(detail);
+
+    detailBtn.addEventListener("click", () => {
+      const open = detailBtn.getAttribute("aria-expanded") === "true";
+      detailBtn.setAttribute("aria-expanded", String(!open));
+      detail.hidden = open;
+      detailBtn.textContent = open
+        ? tr("workspace.detail.show", "Show all artifacts")
+        : tr("workspace.detail.hide", "Hide artifacts");
+      card.classList.toggle("is-expanded", !open);
+    });
+
+    return card;
+  }
+
+  function renderTimeline(customer) {
+    const wrap = document.createElement("div");
+    wrap.className = "qr-customer-timeline-wrap";
+
+    const lbl = document.createElement("span");
+    lbl.className = "qr-customer-timeline-label";
+    lbl.textContent = tr("workspace.timeline.label", "Timeline");
+    wrap.appendChild(lbl);
+
+    const tl = document.createElement("div");
+    tl.className = "qr-customer-timeline";
+    tl.setAttribute("role", "list");
+
+    // Compute date range (min..max). If only one timestamp exists, all dots
+    // collapse to the right edge so the customer at least shows "something
+    // happened recently" without dividing by zero.
+    const stamps = customer.items
+      .map((r) => (r.timestamp_iso ? new Date(r.timestamp_iso).getTime() : null))
+      .filter((t) => t != null && !isNaN(t));
+    let minT = stamps.length ? Math.min.apply(null, stamps) : 0;
+    let maxT = stamps.length ? Math.max.apply(null, stamps) : 1;
+    if (minT === maxT) {
+      // Spread a single-dot range over a 1-day window so the dot lands at
+      // the center rather than collapsing.
+      maxT = minT + 24 * 60 * 60 * 1000;
+    }
+    const span = Math.max(1, maxT - minT);
+
+    // Date axis labels (oldest left, newest right).
+    const minLbl = document.createElement("span");
+    minLbl.className = "qr-customer-timeline-axis qr-axis-min";
+    minLbl.textContent = stamps.length ? new Date(minT).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "";
+    tl.appendChild(minLbl);
+
+    const maxLbl = document.createElement("span");
+    maxLbl.className = "qr-customer-timeline-axis qr-axis-max";
+    maxLbl.textContent = stamps.length ? new Date(maxT).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "";
+    tl.appendChild(maxLbl);
+
+    const track = document.createElement("div");
+    track.className = "qr-customer-timeline-track";
+    tl.appendChild(track);
+
+    customer.items.forEach((r) => {
+      const t = r.timestamp_iso ? new Date(r.timestamp_iso).getTime() : null;
+      const pct = t == null || isNaN(t) ? 100 : ((t - minT) / span) * 100;
+      const stageKey = STAGE_ORDER.includes(r.stage) ? r.stage : "other";
+
+      const dot = document.createElement("a");
+      dot.className = "qr-customer-dot";
+      dot.dataset.stage = stageKey;
+      dot.setAttribute("role", "listitem");
+      dot.style.left = "calc(" + Math.max(0, Math.min(100, pct)).toFixed(2) + "% - 6px)";
+      dot.href = r.href || "#";
+
+      const tooltipParts = [stageDotI18n(stageKey), r.title];
+      if (r.timestamp_iso) tooltipParts.push(fmt(r.timestamp_iso));
+      const tooltip = tooltipParts.filter(Boolean).join(" - ");
+      dot.title = tooltip;
+      dot.setAttribute("aria-label", tooltip);
+
+      // Tiny visual marker inside the dot (svg circle) to keep the hit target
+      // tappable on mobile (40px hit pad via CSS).
+      dot.innerHTML = '<span class="qr-customer-dot-mark" aria-hidden="true"></span>';
+      track.appendChild(dot);
+    });
+
+    wrap.appendChild(tl);
+    return wrap;
+  }
+
+  function renderDetailList(customer) {
+    const ul = document.createElement("ul");
+    ul.className = "qr-customer-detail-list";
+    const sorted = customer.items.slice().sort(byTimeDesc);
+
+    if (!sorted.length) {
+      const li = document.createElement("li");
+      li.className = "qr-customer-detail-empty";
+      li.textContent = tr("workspace.detail.empty", "No artifacts yet for this customer.");
+      ul.appendChild(li);
+      return ul;
+    }
+
+    const heading = document.createElement("li");
+    heading.className = "qr-customer-detail-heading";
+    heading.textContent = tr("workspace.detail.title", "All artifacts");
+    ul.appendChild(heading);
+
+    sorted.forEach((r) => {
+      const li = document.createElement("li");
+      li.className = "qr-customer-detail-item";
+      const stageKey = STAGE_ORDER.includes(r.stage) ? r.stage : "other";
+      li.dataset.stage = stageKey;
+
+      const stageLabel = stageDotI18n(stageKey);
+      const dateStr = r.timestamp_iso ? fmt(r.timestamp_iso) : "";
+
+      const a = document.createElement("a");
+      a.className = "qr-customer-detail-link";
+      a.href = r.href || "#";
+
+      a.innerHTML =
+        '<span class="qr-customer-detail-dot" data-stage="' + htmlEscape(stageKey) + '" aria-hidden="true"></span>' +
+        '<span class="qr-customer-detail-stage">' + htmlEscape(stageLabel) + "</span>" +
+        '<span class="qr-customer-detail-title">' + htmlEscape(r.title || "(untitled)") + "</span>" +
+        (dateStr ? '<span class="qr-customer-detail-date">' + htmlEscape(dateStr) + "</span>" : "");
+      li.appendChild(a);
+      ul.appendChild(li);
+    });
+    return ul;
   }
 
   // Kanban: 4 columns (Scheduled, Pre-meeting, Post-meeting, Transcript)
@@ -865,7 +1173,9 @@
   }
 
   function bindControls() {
-    // View toggle (Kanban / List). Persists in localStorage.
+    const workspaceMode = isWorkspaceMode();
+
+    // View toggle (Workspace/Kanban + List). Persists in localStorage.
     document.querySelectorAll('[data-qr-view]').forEach((btn) => {
       const v = btn.getAttribute("data-qr-view");
       if (v === STATE.view) btn.classList.add("is-active");
@@ -877,12 +1187,13 @@
           b.classList.toggle("is-active", b.getAttribute("data-qr-view") === v);
           b.setAttribute("aria-pressed", String(b.getAttribute("data-qr-view") === v));
         });
-        // The Group-by control is irrelevant in kanban mode (the columns
-        // ARE the grouping). Disable it visually but keep the value so the
-        // user's preference is preserved when switching back to list.
+        // The Group-by control is irrelevant in kanban / workspace mode (the
+        // columns or customer cards ARE the grouping). Disable it visually
+        // but keep the value so the user's preference is preserved when
+        // switching back to list.
         const groupSel = document.getElementById("qr-fb-group");
         if (groupSel) {
-          groupSel.disabled = v === "kanban";
+          groupSel.disabled = v !== "list";
         }
         render();
       });
@@ -910,14 +1221,28 @@
       });
     }
 
-    document.querySelectorAll('input[name="qr-stage"]').forEach((radio) => {
-      radio.addEventListener("change", () => {
-        if (radio.checked) {
-          STATE.stage = radio.value;
+    if (workspaceMode) {
+      // Multi-select chip filter (checkboxes). Toggling hides that color of
+      // dot from every customer timeline.
+      document.querySelectorAll('input[name="qr-stage-multi"]').forEach((cb) => {
+        cb.addEventListener("change", () => {
+          const k = cb.value;
+          if (k in STATE.stageMulti) STATE.stageMulti[k] = !!cb.checked;
           render();
-        }
+        });
       });
-    });
+    } else {
+      // Legacy single-select stage radio (kept so /quick-research and the
+      // /customers redirect both keep working unchanged).
+      document.querySelectorAll('input[name="qr-stage"]').forEach((radio) => {
+        radio.addEventListener("change", () => {
+          if (radio.checked) {
+            STATE.stage = radio.value;
+            render();
+          }
+        });
+      });
+    }
 
     const groupSel = document.getElementById("qr-fb-group");
     if (groupSel) {

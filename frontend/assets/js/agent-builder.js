@@ -87,7 +87,8 @@
     { id: "build",        i18n: "ab.tool.bundle.build",        label: "Build",              tools: ["fec_code_sample", "fec_stack_extract", "fec_knowledge_search", "fec_troubleshoot"], desc: "Hands-on integration: SDK samples, stack, fixes" },
     { id: "exec",         i18n: "ab.tool.bundle.exec",         label: "Exec briefing",      tools: ["fec_proposal", "fec_compare", "fec_cost_calc", "fec_orchestrator"], desc: "C-level pitch: proposal, comp, ROI orchestrated" },
     { id: "search",       i18n: "ab.tool.bundle.search",       label: "Search architect",   tools: ["fec_knowledge_search", "fec_code_sample", "fec_capacity", "fec_compare"], desc: "RAG, semantic_text, ELSER, hybrid retrieval" },
-    { id: "all",          i18n: "ab.tool.bundle.all",          label: "All twelve",         tools: ["fec_poc_plan","fec_spl_to_esql","fec_compliance","fec_stack_extract","fec_code_sample","fec_cost_calc","fec_capacity","fec_knowledge_search","fec_troubleshoot","fec_compare","fec_orchestrator","fec_proposal"], desc: "Master generalist: pick everything" },
+    { id: "platform",     i18n: "ab.tool.bundle.platform",     label: "Platform health",    tools: ["fec_deploy_validator", "fec_capacity", "fec_troubleshoot", "fec_knowledge_search"], desc: "Audit a cluster, size it right, fix what is broken" },
+    { id: "all",          i18n: "ab.tool.bundle.all",          label: "All thirteen",       tools: ["fec_poc_plan","fec_spl_to_esql","fec_compliance","fec_stack_extract","fec_code_sample","fec_cost_calc","fec_capacity","fec_knowledge_search","fec_troubleshoot","fec_compare","fec_orchestrator","fec_proposal","fec_deploy_validator"], desc: "Master generalist: pick everything" },
     { id: "clear",        i18n: "ab.tool.bundle.clear",        label: "Clear",              tools: [], desc: "Deselect all" },
   ];
 
