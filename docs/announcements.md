@@ -36,10 +36,11 @@ seen:
   var. So the FE who only needs the brief pays brief money. The FE who wants
   Opus reasoning on the post-meeting summary pays Opus money. Per agent.
 
-- It ships with seven Field utilities chained over MCP inside Elastic Agent
-  Builder: SPL to ES|QL, cost calc, compliance mapper, POV planner, capacity,
-  stack extractor, code samples. The master agent picks the right tool from
-  one prompt.
+- It ships with twelve Field utilities chained over MCP inside Elastic Agent
+  Builder: POC plan, SPL to ES|QL, compliance mapper, stack extractor, code
+  sample, cost calc, capacity, knowledge search, troubleshoot, compare,
+  orchestrator, proposal. The master agent picks the right tool from one
+  prompt.
 
 What I need now: two or three FE buddies willing to point this at a real
 upcoming customer call (SMB, mid-market, public sector, any segment) and tell
@@ -66,7 +67,7 @@ Thanks to everyone who pressure-tested the talk tracks last week. :pray:
 
 - A. FE Copilot: my FY27 SKO hackathon submission, looking for two pilots
 - B. 15 hours per FE per week: my hackathon entry just shipped
-- C. Three agents, seven tools, one pre-meeting flow (FY27 SKO submission)
+- C. Three agents, twelve tools, one pre-meeting flow (FY27 SKO submission)
 
 ---
 
@@ -87,9 +88,10 @@ pushes six Salesforce writes (Opportunity MEDDPICC, ContentNote, Document
 Link, Competitor, Deal Health, Slack post). Defaults to Haiku 4.5 at roughly
 two cents per pipeline run; per-agent override to Sonnet 4.6 or Opus 4.7.
 
-The seven Field utilities (SPL to ES|QL, cost calc, compliance, POV planner,
-capacity, stack extractor, code samples) are exposed as MCP tools inside
-Elastic Agent Builder, so a single prompt to the master agent chains them.
+The twelve Field utilities (POC plan, SPL to ES|QL, compliance, stack
+extractor, code sample, cost calc, capacity, knowledge search, troubleshoot,
+compare, orchestrator, proposal) are exposed as MCP tools inside Elastic
+Agent Builder, so a single prompt to the master agent chains them.
 
 **Demo and repo.** Three minute video at [LOOM_URL]. Public repo at
 [GITHUB_URL]. Synthetic data only, no customer data is used or stored.
@@ -128,7 +130,7 @@ What it does:
   Salesforce updates after one click.
 
 Built on Anthropic Claude (Haiku 4.5 by default, Opus 4.7 for the heavier
-reasoning) and Elastic Agent Builder with seven MCP tools chained by a
+reasoning) and Elastic Agent Builder with twelve MCP tools chained by a
 master agent. All synthetic data, no customer data touched.
 
 Repo: [GITHUB_URL]

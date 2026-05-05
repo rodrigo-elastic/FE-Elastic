@@ -79,8 +79,8 @@ Per-beat rules:
 
 Read these before submitting. If a judge pings back, the answers are grounded and short.
 
-1. **"How does this scale beyond one FE?"** Eleven `fec_*` MCP tools live in Agent Builder inside Elastic Cloud. Any FE on the tenant gets the same eleven personas, five scenarios, two workflows on day one. Apache 2.0 means the field can fork it Monday.
+1. **"How does this scale beyond one FE?"** Twelve `fec_*` MCP tools live in Agent Builder inside Elastic Cloud. Any FE on the tenant gets the same ten personas, eight scenarios, two workflows on day one. MIT License means the field can fork it Monday.
 2. **"What about data privacy and customer info?"** Briefs cite SEC EDGAR, news, Wikipedia. No customer-private data leaves the tenant. Salesforce writes are sandboxed against `runtime/salesforce.log` for the demo; production swap is an env var.
 3. **"Is the cost calculator accurate?"** `fec_cost_calc` uses public Splunk Enterprise list pricing and Elastic Cloud rate cards at 200 GB/day. The 74 percent number is reproducible; numbers update as rate cards shift.
 4. **"Can a customer use this directly?"** The Customer view of the paired dashboards is built for that. Battlecards and SFDC writes are FE-internal. Easy to gate.
-5. **"What is the moat?"** ELSER hybrid retrieval over four hundred seven Elastic doc chunks plus eleven persona-shaped tools plus two Kibana workflow rules. The combination is the moat, not any single piece.
+5. **"What is the moat?"** ELSER hybrid retrieval over 3837 Elastic doc chunks plus twelve persona-shaped tools plus two Kibana workflow rules. The combination is the moat, not any single piece.

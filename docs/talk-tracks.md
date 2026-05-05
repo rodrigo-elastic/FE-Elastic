@@ -121,11 +121,11 @@ Los lideres SRE con los que me siento estan cansados de una manera concreta: un 
 
 ### 3a. 60-second elevator pitch (English)
 
-VPs of Engineering tell me the same thing year after year: "our Splunk bill grew 35% YoY, our Datadog bill grew 40%, and my devs still cannot ship a feature that searches our own product catalog in under 200ms." FE Copilot collapses three vendors into one. The cost calculator (`/api/v1/tools/cost-calc`) compared apples-to-apples: Splunk at 2,000 dollars per GB-day license alone, Datadog at 10 cents per GB ingest, Elastic hot/warm/frozen averaging out to dollars per GB month. The pre-meeting brief grounds claims in SEC EDGAR filings (real 10-K and 6-K data) plus news, so the conversation starts factual. Kenji, our SDK cookbook persona, hands your devs a copy-pasteable Python or Go sample for bulk indexing 1,000 docs in under 80 lines. The 7 MCP tools chained by the master agent in Elastic Agent Builder mean one prompt translates SPL, runs TCO, and drafts the POV plan.
+VPs of Engineering tell me the same thing year after year: "our Splunk bill grew 35% YoY, our Datadog bill grew 40%, and my devs still cannot ship a feature that searches our own product catalog in under 200ms." FE Copilot collapses three vendors into one. The cost calculator (`/api/v1/tools/cost-calc`) compared apples-to-apples: Splunk at 2,000 dollars per GB-day license alone, Datadog at 10 cents per GB ingest, Elastic hot/warm/frozen averaging out to dollars per GB month. The pre-meeting brief grounds claims in SEC EDGAR filings (real 10-K and 6-K data) plus news, so the conversation starts factual. Kenji, our SDK cookbook persona, hands your devs a copy-pasteable Python or Go sample for bulk indexing 1,000 docs in under 80 lines. The 12 MCP tools chained by the master agent in Elastic Agent Builder mean one prompt translates SPL, runs TCO, and drafts the POV plan.
 
 ### 3a. Pitch de 60 segundos (Espanol)
 
-Los VP de Engineering dicen lo mismo cada ano: "mi factura de Splunk subio 35% YoY, la de Datadog 40%, y mis devs no logran que la busqueda del catalogo baje de 200ms." FE Copilot colapsa tres vendors en uno. La cost calculator (`/api/v1/tools/cost-calc`) compara apples-to-apples: Splunk a 2,000 dolares por GB-dia solo licencia, Datadog a 10 centavos por GB ingest, Elastic hot/warm/frozen promediando dolares por GB mes. El pre-meeting brief ancla afirmaciones en filings SEC EDGAR (10-K y 6-K reales) mas noticias, asi la conversacion arranca factual. Kenji, persona de SDK cookbook, entrega a tus devs un sample Python o Go copy-pasteable para bulk index de 1,000 docs en menos de 80 lineas. Las 7 herramientas MCP encadenadas por el master agent en Elastic Agent Builder permiten que un solo prompt traduzca SPL, calcule TCO, y redacte el POV plan.
+Los VP de Engineering dicen lo mismo cada ano: "mi factura de Splunk subio 35% YoY, la de Datadog 40%, y mis devs no logran que la busqueda del catalogo baje de 200ms." FE Copilot colapsa tres vendors en uno. La cost calculator (`/api/v1/tools/cost-calc`) compara apples-to-apples: Splunk a 2,000 dolares por GB-dia solo licencia, Datadog a 10 centavos por GB ingest, Elastic hot/warm/frozen promediando dolares por GB mes. El pre-meeting brief ancla afirmaciones en filings SEC EDGAR (10-K y 6-K reales) mas noticias, asi la conversacion arranca factual. Kenji, persona de SDK cookbook, entrega a tus devs un sample Python o Go copy-pasteable para bulk index de 1,000 docs en menos de 80 lineas. Las 12 herramientas MCP encadenadas por el master agent en Elastic Agent Builder permiten que un solo prompt traduzca SPL, calcule TCO, y redacte el POV plan.
 
 ### 3b. Top 5 discovery questions (English)
 
@@ -152,7 +152,7 @@ Los VP de Engineering dicen lo mismo cada ano: "mi factura de Splunk subio 35% Y
 **Response:** Elastic is the original API. OpenSearch forked at 7.10; Elastic shipped ES|QL, ELSER semantic search, semantic_text mappings, learning-to-rank, and native vector quantization since. Kenji's code-sample tool produces the exact Python or TypeScript snippet for your team using the supported elasticsearch-py 8.x or `@elastic/elasticsearch` SDK, idiomatic, under 80 lines.
 
 **Objection 3:** "We need search relevance, not just logs."
-**Response:** Same engine. ELSER plus BM25 hybrid scoring with the reranker beats keyword-only by 30% on standard relevance benchmarks. The 7 MCP tools include the code sample tool, capacity planner, and POV planner; the master agent in Agent Builder chains them so your platform team can prototype hybrid search and a TCO model from a single prompt.
+**Response:** Same engine. ELSER plus BM25 hybrid scoring with the reranker beats keyword-only by 30% on standard relevance benchmarks. The 12 MCP tools include the code sample tool, capacity planner, and POV planner; the master agent in Agent Builder chains them so your platform team can prototype hybrid search and a TCO model from a single prompt.
 
 ### 3c. Top 3 objeciones y respuestas (Espanol)
 
@@ -163,7 +163,7 @@ Los VP de Engineering dicen lo mismo cada ano: "mi factura de Splunk subio 35% Y
 **Respuesta:** Elastic es la API original. OpenSearch hizo fork en 7.10; Elastic lanzo desde entonces ES|QL, busqueda semantica ELSER, mappings semantic_text, learning-to-rank, y cuantizacion vectorial nativa. La herramienta de code sample de Kenji produce el snippet Python o TypeScript exacto para tu equipo usando los SDKs soportados elasticsearch-py 8.x o `@elastic/elasticsearch`, idiomatico, bajo 80 lineas.
 
 **Objecion 3:** "Necesitamos relevancia de busqueda, no solo logs."
-**Respuesta:** Mismo motor. ELSER mas BM25 hibrido con reranker supera al keyword puro en 30% en benchmarks estandar de relevancia. Las 7 herramientas MCP incluyen code sample, capacity planner, y POV planner; el master agent en Agent Builder las encadena para que tu equipo de plataforma prototipe busqueda hibrida y un modelo TCO desde un solo prompt.
+**Respuesta:** Mismo motor. ELSER mas BM25 hibrido con reranker supera al keyword puro en 30% en benchmarks estandar de relevancia. Las 12 herramientas MCP incluyen code sample, capacity planner, y POV planner; el master agent en Agent Builder las encadena para que tu equipo de plataforma prototipe busqueda hibrida y un modelo TCO desde un solo prompt.
 
 ---
 
@@ -175,7 +175,7 @@ Los VP de Engineering dicen lo mismo cada ano: "mi factura de Splunk subio 35% Y
 | Live competitor and MEDDPICC alerts | `backend/app/agents/live_meeting.py` |
 | 6 Salesforce writes plus Slack post | `backend/app/agents/post_meeting.py`, `backend/app/integrations/salesforce_mock.py` |
 | Field Assistant chat with full preamble | `frontend/assets/js/meeting.js` `mountAgentBuilderMinis()` |
-| 7 MCP tools chained by master agent | `backend/scripts/sync_agent_builder.py`, `backend/app/integrations/agent_builder.py` |
+| 12 MCP tools chained by master agent | `backend/scripts/sync_agent_builder.py`, `backend/app/integrations/agent_builder.py` |
 | Cost calculator TCO numbers | `backend/app/services/calculators.py`, `/api/v1/tools/cost-calc` |
 | SPL to ES|QL translator (Diego) | `backend/app/agents/prompts/tools.py` `SPL_ESQL_SYSTEM` |
 | Compliance mapper (Priya) | `backend/app/agents/prompts/tools.py` `COMPLIANCE_SYSTEM` |

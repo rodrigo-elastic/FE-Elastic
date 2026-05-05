@@ -52,7 +52,7 @@ Terminal pane (right one third), cwd `/Users/rodrigocareaga/Downloads/FE-Elastic
 | 16 | 2:25 - 2:34 | B6 Workflows | `/workflow-demo.html` | Cmd 6. Both rules green. Click "Fire demo transcript". | 2 workflows. Doc indexed. | "fire the transcript" | Live note-taking pulls the FE off the customer signal. |
 | 17 | 2:34 - 2:42 | B6 Workflows | terminal | Tail scrolls 6 writes: Opp MEDDPICC, ContentNote, Link, Competitor, Deal Health, Slack. | Workflow 1: 6 SFDC writes. | "Salesforce writes scroll" | 30 to 60 minutes of SFDC hygiene per meeting, automated. |
 | 18 | 2:42 - 2:50 | B6 Workflows | terminal | `[Auto]` wave lands: Workflow 2 orphan tasks. | Workflow 2: orphan tasks. | "Friday-night updates, gone" | Forecast drift from skipped Salesforce updates. |
-| 19 | 2:50 - 3:00 | B7 Outro | `/` | Cmd 1. Lower-third: github URL. Logo dissolve. | Cmd K. 5 languages. Apache 2.0. | "six hours per FE per week" | The aggregate. Apache 2.0, every FE benefits day one. |
+| 19 | 2:50 - 3:00 | B7 Outro | `/` | Cmd 1. Lower-third: github URL. Logo dissolve. | Cmd K. 5 languages. MIT License. | "six hours per FE per week" | The aggregate. MIT License, every FE benefits day one. |
 
 19 shots. Sum: 8 + 27 + 20 + 30 + 30 + 30 + 25 + 10 = 180 s exact.
 

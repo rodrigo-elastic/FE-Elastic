@@ -61,20 +61,20 @@ DEMO: SPL to ES-QL with `index=web sourcetype=access | stats count by host | sor
 DEMO: Cost calc 200 GB per day, 12 months, 1.5M USD.
 DEMO: Compliance DORA + PCI DSS.
 
-SAY (EN): "Same sidebar, every page. Seven utilities. SPL to ES-QL. Cost. Compliance. POC. Capacity. Stack. Code. Each one wraps a Claude expert with twelve to twenty years in the field."
-SAY (ES): "La misma barra lateral en cada pagina. Siete utilidades. SPL a ES-QL. Costo. Compliance. POC. Capacidad. Stack. Codigo. Cada una envuelve un experto en Claude, doce a veinte anos de campo."
+SAY (EN): "Same sidebar, every page. Twelve utilities. SPL to ES-QL. Cost. Compliance. POC. Capacity. Stack. Code. Knowledge. Troubleshoot. Compare. Orchestrator. Proposal. Each one wraps a Claude expert with twelve to twenty years in the field."
+SAY (ES): "La misma barra lateral en cada pagina. Doce utilidades. SPL a ES-QL. Costo. Compliance. POC. Capacidad. Stack. Codigo. Knowledge. Troubleshoot. Compare. Orchestrator. Proposal. Cada una envuelve un experto en Claude, doce a veinte anos de campo."
 
 ---
 
 ## [4:00] Agent Builder + MCP
 
-CLICK: Agent Builder in sidebar. Show 7-MCP-tools pill.
+CLICK: Agent Builder in sidebar. Show 12-MCP-tools pill.
 CLICK: chip "Chain: SPL + cost". Watch tool calls render inline.
 CUT to Kibana Stack Management Agent Builder Tools list.
 CUT back to a meeting view. CLICK: Create dashboard in Kibana. Show 8 panels and FE / Customer tabs.
 
-SAY (EN): "Inside Kibana. Agent Builder. Master agent fec underscore field assistant owns seven MCP tools. One question chains two of them. And from any meeting, one click renders the eight-panel customer-fit dashboard inside the customer's own cluster. FE tab and customer tab."
-SAY (ES): "Dentro de Kibana. Agent Builder. El agente maestro fec guion bajo field assistant es dueno de siete herramientas MCP. Una pregunta encadena dos. Y desde cualquier reunion, un click crea el dashboard customer-fit de ocho paneles dentro del cluster del propio cliente. Pestana FE y pestana customer."
+SAY (EN): "Inside Kibana. Agent Builder. Master agent fec underscore field assistant owns twelve MCP tools. One question chains two of them. And from any meeting, one click renders the eight-panel customer-fit dashboard inside the customer's own cluster. FE tab and customer tab."
+SAY (ES): "Dentro de Kibana. Agent Builder. El agente maestro fec guion bajo field assistant es dueno de doce herramientas MCP. Una pregunta encadena dos. Y desde cualquier reunion, un click crea el dashboard customer-fit de ocho paneles dentro del cluster del propio cliente. Pestana FE y pestana customer."
 
 ---
 
@@ -93,8 +93,8 @@ SAY (ES): "El transcript cae al inbox. El workflow de Kibana se dispara. El agen
 
 CUT: dashboard. Zoom out. Brand card.
 
-SAY (EN): "Three agents. Seven tools. Eight panels. Five languages. Same code. Every FE segment. Thank you."
-SAY (ES): "Tres agentes. Siete herramientas. Ocho paneles. Cinco idiomas. El mismo codigo. Cada segmento de FE. Gracias."
+SAY (EN): "Three agents. Twelve tools. Eight panels. Five languages. Same code. Every FE segment. Thank you."
+SAY (ES): "Tres agentes. Doce herramientas. Ocho paneles. Cinco idiomas. El mismo codigo. Cada segmento de FE. Gracias."
 
 ---
 

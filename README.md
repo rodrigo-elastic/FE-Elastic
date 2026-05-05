@@ -50,7 +50,8 @@ Field Engineers run six customer meetings a day and burn fifteen hours a week on
 |---|---|---|
 | Dashboard | [docs/screenshots/dashboard.png](docs/screenshots/dashboard.png) | docs/gifs/dashboard.gif |
 | Meeting (Mercado Atlas) | [docs/screenshots/meeting_meli.png](docs/screenshots/meeting_meli.png) | docs/gifs/meeting.gif |
-| Meeting (Northwind Pay) | [docs/screenshots/meeting_northwind.png](docs/screenshots/meeting_northwind.png) | docs/gifs/live_alerts.gif |
+| Meeting (Northwind Pay) | [docs/screenshots/meeting_revolut.png](docs/screenshots/meeting_revolut.png) | docs/gifs/live_alerts.gif |
+| Meeting (Banco Atlántico) | [docs/screenshots/meeting_santander.png](docs/screenshots/meeting_santander.png) | docs/gifs/live_alerts.gif |
 | Tools rail | [docs/screenshots/tools.png](docs/screenshots/tools.png) | docs/gifs/tools.gif |
 | Agent Builder | [docs/screenshots/agent_builder.png](docs/screenshots/agent_builder.png) | docs/gifs/agent_builder.gif |
 | Workflow loop | [docs/screenshots/workflow_demo.png](docs/screenshots/workflow_demo.png) | docs/gifs/workflow.gif |
@@ -105,12 +106,17 @@ git clone <repo-url> fe-copilot && cd fe-copilot
 
 # 2. Configure (mock mode runs without keys)
 cp .env.example .env
-# Optional: set ANTHROPIC_API_KEY, KIBANA_API_KEY, ELASTIC_CLOUD_ID for live mode
+# Optional: set ANTHROPIC_API_KEY, ELASTICSEARCH_URL + ELASTICSEARCH_API_KEY,
+# and KIBANA_URL + KIBANA_API_KEY for live mode. With placeholders the app
+# auto-enables mock mode and the seed JSON falls back transparently.
 
 # 3. Virtualenv + dependencies (Python 3.11+)
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r backend/requirements.txt
+# macOS arm64 only: WeasyPrint needs Pango + Cairo. Skip if you do not
+# need PDF output (the app auto-falls back to HTML briefs).
+#   brew install pango cairo libffi gdk-pixbuf
 
 # 4. Generate synthetic data (deterministic, offline)
 PYTHONPATH=backend python -m scripts.generate_synthetic_data
@@ -131,7 +137,7 @@ Hit a few endpoints to confirm the stack is up:
 
 ```bash
 curl -s http://127.0.0.1:8123/api/v1/health | jq .
-curl -s http://127.0.0.1:8123/api/v1/calendar/upcoming | jq '.[0]'
+curl -s http://127.0.0.1:8123/api/v1/calendar/events | jq '.items[0]'
 curl -s -X POST http://127.0.0.1:8123/api/v1/tools/cost-calc \
   -H "Content-Type: application/json" \
   -d '{"ingest_gb_day":120,"retention_months":12,"current_spend_annual_usd":1500000}' | jq .
@@ -155,7 +161,7 @@ PYTHONPATH=backend python -m scripts.run_pipeline
 | # | Page | Path | Who it is for | What it does |
 |---|---|---|---|---|
 | 1 | Dashboard | [`/`](frontend/index.html) | Every FE | Calendar inbox with smart resolver that filters Elastic-internal invites and deprioritizes 17+ consulting firms ([`backend/app/services/company_resolver.py`](backend/app/services/company_resolver.py)). Hero stats, three entry modes (Quick Research, Transcript paste, Calendar). Screenshot: [docs/screenshots/dashboard.png](docs/screenshots/dashboard.png). |
-| 2 | Meeting workspace | [`/meeting.html?id=...`](frontend/meeting.html) | FE running a customer call | Three tabs: pre-meeting brief, live companion, post-meeting actions. Field Assistant mini-chat grounded in the brief and the last 8 transcript turns. Customer journey strip across the top. Screenshot: [docs/screenshots/meeting_northwind.png](docs/screenshots/meeting_northwind.png). |
+| 2 | Meeting workspace | [`/meeting.html?id=...`](frontend/meeting.html) | FE running a customer call | Three tabs: pre-meeting brief, live companion, post-meeting actions. Field Assistant mini-chat grounded in the brief and the last 8 transcript turns. Customer journey strip across the top. Screenshot: [docs/screenshots/meeting_revolut.png](docs/screenshots/meeting_revolut.png). |
 | 3 | Tools rail | [`/tools.html`](frontend/tools.html) | Every FE | Twelve collapsible panels: POC plan, SPL to ES\|QL, Compliance mapper, Stack extractor, Code sample, Cost calc, Capacity, Knowledge search, Troubleshoot, Compare, Orchestrator, Proposal. Each wraps a Claude expert persona. Screenshot: [docs/screenshots/tools.png](docs/screenshots/tools.png). |
 | 4 | FE Brain | [`/fe-brain.html`](frontend/fe-brain.html) | FE asking docs questions | Retrieval-augmented Q+A grounded in 3837 chunks of the official Elastic documentation, indexed in `fec-knowledge` with ELSER embeddings. Citations link back to the source page. Mei (Elastic Docs Lead) curates the corpus. |
 | 5 | Agent Builder | [`/agent-builder.html`](frontend/agent-builder.html) | FE wanting tool chaining | Chat surface for the master agent `fec_field_assistant` running inside Kibana 9.3.4. Streams reasoning steps and tool calls inline. One prompt chains SPL conversion plus cost. Screenshot: [docs/screenshots/agent_builder.png](docs/screenshots/agent_builder.png). |
@@ -266,6 +272,24 @@ The intended near-term integration story (already in the roadmap above) is for F
 Why this matters: a hackathon project that overrides Klue would be rejected by every FE who trusts Klue's research. A hackathon project that **routes** Klue into the agent loop, layered with Elastic-specific synthesis and the FE's own meeting context, is genuinely additive. The 31 battlecards in this repo are demo scaffolding to make the agent flow tangible during the 3-minute video; in production they should be replaced by Klue lookups behind the same `fec_compare` and `fec_proposal` tool surface, with no UI change required.
 
 The `data/seed/battlecards.json` file is therefore intentionally fictional and lightweight. Real customer-facing competitive work should always start at Klue and end at Salesforce, with FE Copilot acting as the connective synthesizer in between.
+
+## Further documentation
+
+The `docs/` directory has the long-form material. The pieces most worth opening:
+
+- [`docs/architecture.md`](docs/architecture.md): system diagram, component map, three hero data flows.
+- [`docs/submission.md`](docs/submission.md): hackathon pitch, judging-criterion cross-walks, bill-of-materials.
+- [`docs/demo-script.md`](docs/demo-script.md) and [`docs/storyboard.md`](docs/storyboard.md): the 5-minute single-take video plan.
+- [`docs/cue-cards.md`](docs/cue-cards.md), [`docs/talk-tracks.md`](docs/talk-tracks.md), [`docs/teleprompter.md`](docs/teleprompter.md): per-persona pitches and live-read cards.
+- [`docs/deploy.md`](docs/deploy.md): seven-step Fly.io playbook for replacing the ngrok dependency.
+- [`docs/supervisor.md`](docs/supervisor.md): single bash loop that keeps the backend, ngrok tunnel, and Agent Builder sync alive during a recording.
+- [`docs/audit-dashboard.md`](docs/audit-dashboard.md): the `fec-audit` Kibana dashboard that reads token usage live (Elastic monitoring Elastic).
+- [`docs/workflow-2.md`](docs/workflow-2.md): the second Kibana Workflow (orphan high-impact action items) that closes the agent-output-as-trigger loop.
+- [`docs/i18n.md`](docs/i18n.md), [`docs/theme.md`](docs/theme.md), [`docs/responsive.md`](docs/responsive.md), [`docs/a11y.md`](docs/a11y.md): five-language i18n, dark and light themes, mobile breakpoints, accessibility audit.
+- [`docs/compliance.md`](docs/compliance.md), [`docs/ci.md`](docs/ci.md), [`docs/freshness.md`](docs/freshness.md), [`docs/transcript-flow.md`](docs/transcript-flow.md): operational notes (license, GitHub Actions, demo data freshness, transcript ingest).
+- [`docs/announcements.md`](docs/announcements.md), [`docs/judging-narrative.md`](docs/judging-narrative.md), [`docs/judging-rubric.md`](docs/judging-rubric.md), [`docs/video-script-v2.md`](docs/video-script-v2.md), [`docs/badges.md`](docs/badges.md), [`docs/demo-checklist.md`](docs/demo-checklist.md): launch and submission collateral.
+
+QA reports from W19 onward (`docs/qa-w19*.md` through `docs/qa-w27*.md`) and the FE Brain corpus audits (`docs/fe-brain-*.md`, `docs/battlecards-*.md`) are kept in `docs/` as a working archive of audit waves; they are referenced from `docs/qa-overnight-batches.md` and `docs/qa-w26a-copy.md` rather than from this README.
 
 ## Acknowledgements
 
