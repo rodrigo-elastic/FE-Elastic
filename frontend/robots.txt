@@ -1,0 +1,6 @@
+# robots.txt for FE Copilot
+# FE Summit hackathon submission, public demo. All paths allowed.
+User-agent: *
+Allow: /
+
+Sitemap: /sitemap.xml

@@ -38,7 +38,7 @@ Stop pinging Slack.
 
 FE Brain.
 
-Hybrid retrieval over nine hundred fifty two Elastic doc chunks.
+Hybrid retrieval over thirty eight hundred Elastic doc chunks.
 
 Cited answers in ten seconds.
 
@@ -92,9 +92,9 @@ Ten technical dimensions.
 
 Customer demos in fifteen seconds, not half a day.
 
-Five scenarios.
+Eight scenarios.
 
-Ten paired dashboards.
+Eight paired dashboards.
 
 [PAUSE. switch FE to Customer view]
 
@@ -130,9 +130,9 @@ Workflows trigger agents.
 
 Six hours per F E per week back.
 
-Eleven personas.
+Ten personas.
 
-Apache 2.0.
+M I T license.
 
 github dot com slash rodrigo dash elastic slash F E dash Elastic.
 
@@ -149,7 +149,7 @@ github dot com slash rodrigo dash elastic slash F E dash Elastic.
 If the judges ask:
 
 **"How does this scale?"**
-Eleven MCP tools, stateless backend, deployable on Fly.io free tier. The Kibana side scales with the customer's existing cluster.
+Twelve MCP tools, stateless backend, deployable on Fly.io free tier. The Kibana side scales with the customer's existing cluster.
 
 **"What about data privacy?"**
 The brief uses only what the F E typed plus public S E C E D G A R. Customer data never leaves the boundary unless the F E pastes a transcript explicitly.

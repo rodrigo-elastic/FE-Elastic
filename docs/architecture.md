@@ -9,21 +9,21 @@ This page is the single source of truth for how FE Copilot is wired. Every box i
 ```mermaid
 flowchart TB
     subgraph User["FE Workspace"]
-        Browser["Browser<br/>frontend/*.html<br/>8 pages, 5 languages"]
+        Browser["Browser<br/>frontend/*.html<br/>13 pages, 5 languages"]
     end
 
     subgraph Backend["FE Copilot backend (FastAPI on :8123)"]
         API["FastAPI router<br/>backend/app/api/routes_*.py<br/>15 routers"]
         Agents["3 agents<br/>backend/app/agents/<br/>pre / live / post"]
-        Tools["7 FE tools<br/>backend/app/api/routes_tools.py<br/>POC, SPL, compliance, stack,<br/>code, cost, capacity"]
+        Tools["10 FE tools<br/>backend/app/api/routes_tools.py<br/>POC, SPL, compliance, stack,<br/>code, cost, capacity, troubleshoot,<br/>compare, proposal"]
         FEBrain["FE Brain RAG<br/>backend/app/api/routes_tools.py<br/>knowledge-search"]
-        MCP["MCP server<br/>backend/app/api/routes_mcp.py<br/>9 tools (7 FE + 2 RAG)"]
+        MCP["MCP server<br/>backend/app/api/routes_mcp.py<br/>12 tools (10 FE + RAG search + orchestrator)"]
         Repos["Synthetic fixtures<br/>backend/data/synthetic/<br/>Northwind Pay / Mercado Atlas / Banco Atlántico"]
         Runtime["Runtime artifacts<br/>runtime/*.log, *.jsonl, briefs/, emails/"]
     end
 
     subgraph Elastic["Elastic Cloud 9.3.4"]
-        ES["Elasticsearch<br/>fec-knowledge index<br/>160 chunks, ELSER embeddings"]
+        ES["Elasticsearch<br/>fec-knowledge index<br/>3837 chunks, ELSER embeddings"]
         Kibana["Kibana"]
         AB["Agent Builder<br/>master agent: fec_field_assistant"]
         Workflow["Kibana Workflow<br/>fec-transcript-inbox watcher"]
@@ -70,21 +70,21 @@ flowchart TB
 
 ## Component descriptions
 
-**Browser frontend.** Eight static HTML pages served by FastAPI from `frontend/`: dashboard, meeting workspace, tools rail, FE Brain, Agent Builder chat, demo data, workflow demo, and a per-meeting view. No framework, no build step. The persistent left sidebar (`frontend/assets/js/tools-rail.js`) is injected into every page. Five languages are wired through `frontend/assets/js/i18n.js` (English, Spanish, Japanese, German, French).
+**Browser frontend.** Thirteen static HTML pages served by FastAPI from `frontend/`: dashboard, meeting workspace, tools rail, FE Brain, Agent Builder chat, demo data, workflow demo, customers, battlecards, industries, quick research, audit, and health. No framework, no build step. The persistent left sidebar (`frontend/assets/js/tools-rail.js`) is injected into every page. Five languages are wired through `frontend/assets/js/i18n.js` (English, Spanish, Japanese, German, French).
 
 **FastAPI backend.** Single Uvicorn process on port 8123 (`backend/app/main.py`). Fifteen routers under `backend/app/api/routes_*.py`: agents, tools, briefs, meetings, calendar, salesforce, audit, demo-data, kibana, mcp, agent-builder, workflows, battlecards, health, plus a static mount for `frontend/`. Pydantic models in `backend/app/models/` enforce schema at the boundary; structlog writes a JSON line per request.
 
 **Three agents.** `backend/app/agents/pre_meeting.py`, `live_meeting.py`, `post_meeting.py`. Each agent inherits a base `Agent` class that calls `ClaudeService.call_structured` with a frozen system prompt, a JSON schema, and a per-meeting dossier. Mock mode (`ANTHROPIC_API_KEY` blank) returns hand-written payloads so the demo runs offline.
 
-**Seven FE tools.** Expert-persona Claude wrappers exposed at `/api/v1/tools/{poc-plan, spl-to-esql, compliance-mapping, stack-extract, code-sample, cost-calc, capacity}`. Personas: Marta (POV architect), Diego (ex-Splunk), Priya (ex-PwC compliance), Aiko (Discovery analyst), Kenji (SDK cookbook author). All persona prompts live in `backend/app/agents/prompts/tools.py`.
+**Ten FE tools.** Expert-persona Claude wrappers exposed at `/api/v1/tools/{poc-plan, spl-to-esql, compliance-mapping, stack-extract, code-sample, cost-calc, capacity, troubleshoot, compare, proposal}`. Personas: Marta (POV architect), Diego (ex-Splunk), Priya (ex-PwC compliance), Aiko (Discovery analyst), Kenji (SDK cookbook author), Ravi (ex-Elastic support), Sloane (Senior Competitive Architect), Carmen (Senior Pursuit Lead). All persona prompts live in `backend/app/agents/prompts/tools.py`.
 
-**FE Brain RAG.** A retrieval-augmented Q+A surface over the official Elastic documentation. The `fec-knowledge` index in Elastic Cloud holds 160 chunks with ELSER sparse embeddings; `/api/v1/tools/knowledge-search` retrieves the top chunks and feeds them to Claude, with citations rendered in the UI.
+**FE Brain RAG.** A retrieval-augmented Q+A surface over the official Elastic documentation. The `fec-knowledge` index in Elastic Cloud holds 3837 chunks with ELSER sparse embeddings; `/api/v1/tools/knowledge-search` retrieves the top chunks and feeds them to Claude, with citations rendered in the UI.
 
-**MCP server.** `backend/app/api/routes_mcp.py` exposes the seven tools plus the two RAG endpoints (search and ask) as Model Context Protocol tools at `/api/v1/mcp/*`. Nine tools total, declared with JSON schemas Kibana Agent Builder can introspect.
+**MCP server.** `backend/app/api/routes_mcp.py` exposes the ten FE tools plus the RAG knowledge search and the orchestrator as Model Context Protocol tools at `/api/v1/mcp/*`. Twelve tools total, declared with JSON schemas Kibana Agent Builder can introspect.
 
 **Elastic Cloud 9.3.4.** A real Elasticsearch + Kibana deployment. Beyond the RAG index, Kibana hosts the master Agent Builder agent `fec_field_assistant`, six live customer-fit dashboards generated from meeting context, and a Workflow rule that watches `fec-transcript-inbox`.
 
-**Agent Builder.** Kibana 9.x Agent Builder declares the nine MCP tools and one master agent; declaration script lives in `backend/scripts/sync_agent_builder.py`. The master agent reasons across tools, so a single prompt like "translate this SPL and price it at 200 GB/day" chains `fec_spl_to_esql` then `fec_cost_calc` automatically.
+**Agent Builder.** Kibana 9.x Agent Builder declares the twelve MCP tools and one master agent; declaration script lives in `backend/scripts/sync_agent_builder.py`. The master agent reasons across tools, so a single prompt like "translate this SPL and price it at 200 GB/day" chains `fec_spl_to_esql` then `fec_cost_calc` automatically.
 
 **Kibana Workflow.** A scheduled rule polls `fec-transcript-inbox` every minute. When a new transcript document lands, the rule fires a webhook to the FE Copilot backend at `/api/v1/workflows/triggered`. The post-meeting agent runs end to end with no human in the loop. Logged to `runtime/workflows.log`.
 

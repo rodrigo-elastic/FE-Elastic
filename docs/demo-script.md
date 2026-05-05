@@ -6,7 +6,7 @@
 > Hard cap: 3:00 (180 seconds), single take, English voiceover only.
 > Recording: Loom or QuickTime, 1080p, captions on.
 > Backend assumed running at http://127.0.0.1:8123. Kibana at https://fe-summit-hackathon-ed0e8e.kb.us-west-1.aws.found.io.
-> Built with Elastic Cloud 9.3.4 and Anthropic Claude. Apache 2.0.
+> Built with Elastic Cloud 9.3.4 and Anthropic Claude. MIT License.
 
 ---
 
@@ -20,7 +20,7 @@ The average Elastic Field Engineer burns 30 to 40 minutes prepping each customer
 
 ## Tagline
 
-FE Copilot. Eleven personas. Five scenarios. Two workflows. Built for Elastic Field Engineers.
+FE Copilot. Ten personas. Eight scenarios. Two workflows. Built for Elastic Field Engineers.
 
 ## Judging coverage map
 
@@ -62,9 +62,9 @@ FE Copilot. Eleven personas. Five scenarios. Two workflows. Built for Elastic Fi
 2. "Brief writes itself. SEC EDGAR, news, Wikipedia. Haiku 4.5."
 3. "Brief renders. Every claim cites a source."
 4. "Field Assistant. Auro picks two specialists in parallel: POV plan and TCO."
-5. "Agent Builder live in Kibana. Eleven MCP tools. Master agent."
+5. "Agent Builder live in Kibana. Twelve MCP tools. Master agent."
 6. "Workflow fires. Doc lands. SFDC and Slack write back."
-7. "Done. Eleven personas. Two workflows. Five to ten cents per run."
+7. "Done. Ten personas. Two workflows. Five to ten cents per run."
 
 **B-roll:** Subtle confetti at step 1 and step 7. No music. Captions carry rhythm.
 
@@ -78,7 +78,7 @@ FE Copilot. Eleven personas. Five scenarios. Two workflows. Built for Elastic Fi
 
 **On-screen action:** Open `/fe-brain.html`. Click chip "Set up semantic_text with ELSER on Elastic Cloud". Inline [n] citations stream. Right-side citation cards render.
 
-**EN voiceover:** "Stop pinging Slack. FE Brain. ELSER hybrid over four hundred seven Elastic doc chunks. Inline citations. Ten seconds, not five minutes." (21 words)
+**EN voiceover:** "Stop pinging Slack. FE Brain. ELSER hybrid over thirty eight hundred Elastic doc chunks. Inline citations. Ten seconds, not five minutes." (21 words)
 
 **B-roll:** Light zoom on inline citation chips as they paint.
 
@@ -118,9 +118,9 @@ FE Copilot. Eleven personas. Five scenarios. Two workflows. Built for Elastic Fi
 
 ## B5. Demo Data plus paired dashboards (1:55 - 2:25, 30 seconds)
 
-**On-screen action:** Open `/demo-data.html`. Five scenario cards visible. Click "Open [FE]" on Black Friday. Kibana FE dashboard loads. Scroll once. Back to Demo Data, click switcher to Customer view.
+**On-screen action:** Open `/demo-data.html`. Eight scenario cards visible. Click "Open [FE]" on Black Friday. Kibana FE dashboard loads. Scroll once. Back to Demo Data, click switcher to Customer view.
 
-**EN voiceover:** "Customer demos in fifteen seconds. Five scenarios. Ten paired Kibana dashboards. Black Friday FE view. Flip the switcher. Customer framing, same data." (23 words)
+**EN voiceover:** "Customer demos in fifteen seconds. Eight scenarios. Eight paired Kibana dashboards. Black Friday FE view. Flip the switcher. Customer framing, same data." (23 words)
 
 **B-roll:** Hold one second per Kibana panel. No zoom.
 
@@ -148,7 +148,7 @@ FE Copilot. Eleven personas. Five scenarios. Two workflows. Built for Elastic Fi
 
 **On-screen action:** Cut back to homepage. Lower-third overlay: GitHub URL, stack lockup. Logo dissolve to black at 3:00.
 
-**EN voiceover:** "Six hours per FE per week, back. Eleven personas. Apache two point zero. github dot com slash rodrigo dash elastic slash F E dash Elastic." (25 words)
+**EN voiceover:** "Six hours per FE per week, back. Ten personas. M I T license. github dot com slash rodrigo dash elastic slash F E dash Elastic." (25 words)
 
 **B-roll:** GitHub URL holds for the final two seconds.
 
@@ -230,4 +230,4 @@ If a judge asks "so what" or "why does this matter" in Q+A, read this aloud. It 
 4. FE Brain doc answer in 10 seconds vs a 5 minute Slack ping.
 5. Five to ten cents per autopilot run.
 
-**Closing pitch (read aloud if needed):** "FE Copilot gives every Elastic Field Engineer six hours back per week. Eleven personas, two workflows, grounded in our public docs. Five to ten cents per run. Apache 2.0. Ship it."
+**Closing pitch (read aloud if needed):** "FE Copilot gives every Elastic Field Engineer six hours back per week. Ten personas, two workflows, grounded in our public docs. Five to ten cents per run. MIT License. Ship it."

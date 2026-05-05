@@ -140,7 +140,7 @@ Now let me show you why each one matters.
 ```
 [CAM A. Click FE Brain tab.]
 
-FE Brain. Hybrid retrieval over thirteen hundred Elastic doc chunks.
+FE Brain. Hybrid retrieval over thirty eight hundred Elastic doc chunks.
 Cited answers in ten seconds.
 
 [Click a chip. Wait for citations to render.]
@@ -149,7 +149,7 @@ Cited answers in ten seconds.
 Stop pinging Slack.
 ```
 
-**Why it works**: One stat (1300 chunks), one outcome (10 seconds), one emotional payoff ("Stop pinging Slack"). The Cam B cut on the emotional line is Apple's "one more thing" signature.
+**Why it works**: One stat (3837 chunks), one outcome (10 seconds), one emotional payoff ("Stop pinging Slack"). The Cam B cut on the emotional line is Apple's "one more thing" signature.
 
 ### B5. Agent Builder (1:25 to 1:50, 35 words)
 
@@ -224,7 +224,7 @@ Six hours back. Every Field Engineer. Every week.
 
 [Pause. Eye contact. Half a smile.]
 
-Apache two point oh.
+M I T license.
 github dot com slash rodrigo dash elastic slash F E dash Elastic.
 
 [Hold the eye contact for 1 full second after the URL. Do NOT cut yet.]
@@ -327,7 +327,7 @@ B0: "Every Field Engineer at Elastic loses six hours a week
      to prep, notes, and follow-up. Six. Hours."
 
 B9: "Six hours back. Every Field Engineer. Every week.
-     Apache two point oh.
+     M I T license.
      github dot com slash rodrigo dash elastic slash F E dash Elastic.
      Take it home."
 ```

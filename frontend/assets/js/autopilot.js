@@ -452,14 +452,14 @@
 
   async function stepHealth(signal) {
     setCaption(7, "Live health",
-      "Twelve MCP tools, two Kibana workflows, twenty battlecards by vertical, FE Brain corpus size, last sync, cluster ping. All green.");
+      "Twelve MCP tools, two Kibana workflows, thirty one battlecards across four verticals, FE Brain corpus size, last sync, cluster ping. All green.");
     showPanel("/health.html");
     await sleep(4700, signal);
   }
 
   async function stepRecap(signal) {
     setCaption(8, "Six hours per FE per week back",
-      "Apache 2.0. Eleven personas. Two workflows. Built on Anthropic Claude and Elastic Cloud. Take it home, build your own agents.");
+      "MIT License. Ten personas. Two workflows. Built on Anthropic Claude and Elastic Cloud. Take it home, build your own agents.");
     fireConfetti(140);
     hidePanel();
     await sleep(4700, signal);

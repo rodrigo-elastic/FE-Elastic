@@ -131,28 +131,55 @@ class ElasticsearchRepo:
         log.info("es.battlecards_seeded", count=len(cards))
 
     def _seed_renewal_signals_if_empty(self) -> None:
-        """Seed `fec-renewal-signals` from disk on first run so the alerting rule has data to fire on."""
+        """Seed `fec-renewal-signals` from disk so the alerting rule has data to
+        fire on. Re-stamps `@timestamp` to a fresh "last 14 days" window every
+        run so the rule's "3 signals in 14 days" window keeps catching them as
+        the demo box keeps running. Idempotent: re-running deduplicates by id."""
         if not self._available or not RENEWAL_SIGNALS_SEED_PATH.exists():
-            return
-        try:
-            count = self._client.count(index=INDEX_RENEWAL_SIGNALS).get("count", 0)
-        except Exception:
-            count = 0
-        if count > 0:
             return
         try:
             signals = json.loads(RENEWAL_SIGNALS_SEED_PATH.read_text(encoding="utf-8"))
         except Exception as exc:
             log.warning("es.renewal_signals_load_failed", error=str(exc))
             return
-        from datetime import datetime as _dt, timezone as _tz
 
-        now_iso = _dt.now(_tz.utc).isoformat()
-        for sig in signals:
+        from datetime import datetime as _dt, timezone as _tz, timedelta as _td
+
+        now = _dt.now(_tz.utc)
+        # Stagger signals across the last 14 days so the rule's "3 signals in
+        # 14 days" window fires but the dashboard does not show every signal
+        # landing at the exact same instant.
+        offsets_days = [1, 2, 3, 5, 7, 9, 11, 12, 13, 4, 6, 8]
+
+        # Idempotency check: if the most recent existing @timestamp is younger
+        # than 24 hours we skip the rewrite (cron already covered today).
+        try:
+            latest = self._client.search(
+                index=INDEX_RENEWAL_SIGNALS,
+                body={"size": 1, "sort": [{"@timestamp": {"order": "desc"}}], "query": {"match_all": {}}},
+            )
+            hits = latest.get("hits", {}).get("hits", [])
+            if hits:
+                latest_ts = hits[0]["_source"].get("@timestamp")
+                if latest_ts:
+                    try:
+                        latest_dt = _dt.fromisoformat(latest_ts.replace("Z", "+00:00"))
+                        if (now - latest_dt) < _td(hours=24):
+                            log.info("es.renewal_signals_fresh", latest=latest_ts)
+                            return
+                    except Exception:
+                        pass
+        except Exception:
+            # Index missing or unreachable; fall through and seed.
+            pass
+
+        for idx, sig in enumerate(signals):
             try:
                 body = dict(sig)
-                # Stamp every seed doc with @timestamp so the rule's time window catches it.
-                body.setdefault("@timestamp", now_iso)
+                # Stagger across the last 14 days for visual variety in Kibana.
+                hours_back = offsets_days[idx % len(offsets_days)] * 24
+                body["@timestamp"] = (now - _td(hours=hours_back)).isoformat()
+                body.setdefault("detected_at", body["@timestamp"])
                 self._client.index(
                     index=INDEX_RENEWAL_SIGNALS,
                     id=sig.get("id") or sig.get("account_id"),

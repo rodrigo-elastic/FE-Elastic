@@ -5,7 +5,7 @@
 - Cases run: 201
 - Heavy endpoints SKIPPED (Anthropic credits / mutating cluster state): 18
 - Contract violations: 0
-- Runtime: 36.11 s
+- Runtime: 29.05 s
 
 ## Per-endpoint case results
 
@@ -20,7 +20,7 @@
 | 7 | GET | `/info` | happy | 200 | 200 | PASS | {"service":"fe-copilot","version":"0.1.0","mock_mode":false,"models":{"default":"claude-haiku-4-5","pre_meeting":"claude-haiku-4-5","post_me |
 | 8 | POST | `/info` | wrong-method | 405 | 405 | PASS |  |
 | 9 | GET | `/info` | cors | 200/204 + ACAO header | 200 | PASS | aca-origin='http://example.test', status=200 |
-| 10 | GET | `/health/full` | happy | 200 | 200 | PASS | {"status":"green","warnings":[],"build":{"sha":"d5ca3a7","timestamp":"2026-05-05T10:17:42+02:00"},"mcp_tools":{"count":12,"list":["fec_poc_p |
+| 10 | GET | `/health/full` | happy | 200 | 200 | PASS | {"status":"green","warnings":[],"build":{"sha":"3b11760","timestamp":"2026-05-05T10:48:59+02:00"},"mcp_tools":{"count":12,"list":["fec_poc_p |
 | 11 | POST | `/health/full` | wrong-method | 405 | 405 | PASS |  |
 | 12 | GET | `/health/full` | cors | 200/204 + ACAO header | 200 | PASS | aca-origin='http://example.test', status=200 |
 | 13 | POST | `/elasticsearch/reconnect` | happy | 200 | 200 | PASS | {"available":true,"url":"https://fe-summit-hackathon-ed0e8e.es.us-west-1.aws.found.io"} |
@@ -70,7 +70,7 @@
 | 57 | GET | `/briefs/{meeting_id}/post` | happy | 200 | 200 | PASS | {"meeting_id":"atlantico-mtg-prev-002","company_id":"atlantico","generated_at":"2026-05-04T17:07:45.014774+00:00","summary":"Banco Atlántico |
 | 58 | GET | `/briefs/{meeting_id}/post` | missing | 200 or 404 | 200 | PASS | by design returns 200 + exists:false |
 | 59 | GET | `/briefs/{meeting_id}/post` | cors | 200/204 + ACAO header | 200 | PASS | aca-origin='http://example.test', status=200 |
-| 60 | GET | `/audit` | happy | 200 | 200 | PASS | {"entries":[{"ts":"2026-05-05T08:37:47.271866+00:00","model":"claude-haiku-4-5","mode":"hybrid_rerank","input_tokens":0,"output_tokens":0,"f |
+| 60 | GET | `/audit` | happy | 200 | 200 | PASS | {"entries":[{"ts":"2026-05-05T08:49:06.718013+00:00","model":"claude-haiku-4-5","mode":"hybrid_rerank","input_tokens":0,"output_tokens":0,"f |
 | 61 | POST | `/audit` | wrong-method | 405 | 405 | PASS |  |
 | 62 | GET | `/audit` | cors | 200/204 + ACAO header | 200 | PASS | aca-origin='http://example.test', status=200 |
 | 63 | GET | `/battlecards` | happy | 200 | 200 | PASS | {"items":[{"id":"battlecard-algolia","competitor":"Algolia","competitor_slug":"algolia","vertical":"ai_search_ecommerce","industries":["reta |
@@ -91,7 +91,7 @@
 | 78 | GET | `/calendar/events` | happy | 200 | 200 | PASS | {"items":[{"id":"gcal-evt-005","summary":"FE team weekly sync","description":"Internal Elastic FE team weekly.","start":{"dateTime":"2026-05 |
 | 79 | POST | `/calendar/events` | wrong-method | 405 | 405 | PASS |  |
 | 80 | GET | `/calendar/events` | cors | 200/204 + ACAO header | 200 | PASS | aca-origin='http://example.test', status=200 |
-| 81 | GET | `/calendar/events/{event_id}` | happy | 200 | 200 | PASS | {"id":"gcal-evt-005","summary":"FE team weekly sync","description":"Internal Elastic FE team weekly.","start":{"dateTime":"2026-05-05T10:47: |
+| 81 | GET | `/calendar/events/{event_id}` | happy | 200 | 200 | PASS | {"id":"gcal-evt-005","summary":"FE team weekly sync","description":"Internal Elastic FE team weekly.","start":{"dateTime":"2026-05-05T10:50: |
 | 82 | GET | `/calendar/events/{event_id}` | missing | 404 | 404 | PASS |  |
 | 83 | GET | `/calendar/events/{event_id}` | cors | 200/204 + ACAO header | 200 | PASS | aca-origin='http://example.test', status=200 |
 | 84 | POST | `/tools/poc-plan/{meeting_id}` | missing | 404 | 404 | PASS | {"detail":"meeting __no_such_id_for_contract_check__ not found"} \| missing meeting |
@@ -187,7 +187,7 @@
 | 174 | POST | `/workflows/triggered` | cors | 200/204 + ACAO header | 200 | PASS | aca-origin='http://example.test', status=200 |
 | 175 | GET | `/workflows/demo-fire` | wrong-method | 405 | 405 | PASS |  |
 | 176 | POST | `/workflows/demo-fire` | cors | 200/204 + ACAO header | 200 | PASS | aca-origin='http://example.test', status=200 |
-| 177 | GET | `/workflows/recent-fires` | happy | 200 | 200 | PASS | {"ok":true,"fires":[{"received_at":"2026-05-05T08:47:23.448510+00:00","alert_id":"smoke-test","rule_id":"smoke-test","rule_name":"Smoke Test |
+| 177 | GET | `/workflows/recent-fires` | happy | 200 | 200 | PASS | {"ok":true,"fires":[{"received_at":"2026-05-05T08:50:25.533981+00:00","alert_id":"smoke-test","rule_id":"smoke-test","rule_name":"Smoke Test |
 | 178 | POST | `/workflows/recent-fires` | wrong-method | 405 | 405 | PASS |  |
 | 179 | GET | `/workflows/recent-fires` | cors | 200/204 + ACAO header | 200 | PASS | aca-origin='http://example.test', status=200 |
 | 180 | POST | `/workflows/post-meeting-action-orphan` | happy | 200 | 200 | PASS | {"ok":true,"tasks_created":0,"tasks":[],"scanned_docs":2,"matched_orphans":0} |
@@ -209,7 +209,7 @@
 | 196 | GET | `/industries/{industry_id}` | happy | 200 | 200 | PASS | {"id":"fsi-banking","name":"Financial Services - Banking","icon":"bank","summary":"Retail, commercial, and investment banking. Splunk replac |
 | 197 | GET | `/industries/{industry_id}` | missing | 404 | 404 | PASS |  |
 | 198 | GET | `/industries/{industry_id}` | cors | 200/204 + ACAO header | 200 | PASS | aca-origin='http://example.test', status=200 |
-| 199 | GET | `/stats/savings` | happy | 200 | 200 | PASS | {"this_week":{"hours_saved":98.8,"tool_calls":553,"agent_runs":38,"workflows_fired":19,"delta_vs_last_week":"+100%"},"last_week":{"hours_sav |
+| 199 | GET | `/stats/savings` | happy | 200 | 200 | PASS | {"this_week":{"hours_saved":100.1,"tool_calls":568,"agent_runs":38,"workflows_fired":20,"delta_vs_last_week":"+100%"},"last_week":{"hours_sa |
 | 200 | POST | `/stats/savings` | wrong-method | 405 | 405 | PASS |  |
 | 201 | GET | `/stats/savings` | cors | 200/204 + ACAO header | 200 | PASS | aca-origin='http://example.test', status=200 |
 
@@ -227,5 +227,7 @@ None. All cases passed.
 
 ## Fixes applied during this pass
 
-- See `git log` between the previous overnight tag and this report for any route or schema changes triggered by violations found on the first run.
+1. **Static frontend mount was eating 405s.** `backend/app/main.py` now installs an HTTP middleware that intercepts paths under `/api/v1/` and returns 405 with a proper `Allow` header when an API route matches the path with a different method. Without this, requests like `GET /api/v1/elasticsearch/reconnect` (POST-only) fell through to the `/` static mount and surfaced as 404, hiding the method-mismatch from API consumers.
+2. **`/briefs/{meeting_id}` swallowed reserved keywords.** A `GET /briefs/reindex` matched the path parameter and returned 200 with `exists:false`, masking the fact that `/briefs/reindex` is POST-only. `routes_briefs.py` now reserves the `reindex` keyword in `get_brief` and raises `HTTPException(405)` with `Allow: POST` so the contract is honoured.
+3. **CORS preflight stayed correct.** The new method-mismatch middleware skips OPTIONS explicitly so FastAPI's CORSMiddleware can answer preflight with the expected `Access-Control-Allow-*` headers.
 

@@ -1,0 +1,33 @@
+{
+  "name": "FE Copilot",
+  "short_name": "FE Copilot",
+  "description": "FE Copilot, the cockpit for Elastic Field Engineers. Quick research, customers, FE Brain, battlecards, industries, agent builder and live audit.",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#0077CC",
+  "background_color": "#ffffff",
+  "lang": "en",
+  "categories": ["productivity", "business"],
+  "icons": [
+    {
+      "src": "/assets/img/elastic/glyph-cluster-color.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/img/elastic/glyph-cluster-color.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/assets/img/elastic/logo-horizontal-color.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

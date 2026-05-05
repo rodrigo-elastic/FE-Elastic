@@ -9,24 +9,24 @@
 
 ## Title (under 70 chars)
 
-**FE Copilot: 3 Agents and 9 MCP Tools for Every Elastic Field Engineer**
+**FE Copilot: 3 Agents and 12 MCP Tools for Every Elastic Field Engineer**
 
-Character count: 65. Why this title:
+Character count: 66. Why this title:
 
 - Names the audience (Elastic Field Engineers) so judges scoring "FE Impact" anchor on it in the first second.
-- Carries the headline numbers (3 agents, 9 MCP tools) so the scope reads concretely without opening the README.
+- Carries the headline numbers (3 agents, 12 MCP tools) so the scope reads concretely without opening the README.
 - "Copilot" frames it as a co-worker, not a replacement, which is the actual product position.
 - Two backup titles, in priority order, in case the form forces shorter copy:
   - "FE Copilot: From Calendar Invite to Salesforce Sync" (50 chars)
-  - "FE Copilot: 5 Languages, 9 Tools, 1 Field Engineer" (51 chars)
+  - "FE Copilot: 5 Languages, 12 Tools, 1 Field Engineer" (52 chars)
 
 ---
 
 ## One-liner (140 chars max)
 
-> Calendar invite to sourced brief, live MEDDPICC whisper, one-click SFDC sync. 3 agents, 9 MCP tools. Built on Claude. Lives in Elastic.
+> Calendar invite to sourced brief, live MEDDPICC whisper, one-click SFDC sync. 3 agents, 12 MCP tools. Built on Claude. Lives in Elastic.
 
-Character count: 137.
+Character count: 138.
 
 ---
 
@@ -34,9 +34,9 @@ Character count: 137.
 
 **Pain.** A Senior Customer Architect runs six customer meetings a day. Each one wants thirty minutes of prep, fifteen minutes of post-meeting writeup, and a Salesforce update that almost never happens on time. That is fifteen hours a week, per Field Engineer, before the laptop opens. Splunk renewals, DORA mappings, ES|QL conversions, and TCO math each pull the FE out of selling and into spreadsheet work. The org has no shortage of expertise; it has a swivel-chair problem.
 
-**Solution.** FE Copilot is a three-agent chain plus nine Field Engineering MCP tools, all driven from one persistent left rail across eight frontend pages. The Pre-Meeting Researcher (`backend/app/agents/pre_meeting.py`) pulls live SEC EDGAR 10-K and 6-K filings, news with verifiable URLs, and a MEDDPICC primer into a sourced PDF brief. The Live Meeting Companion (`backend/app/agents/live_meeting.py`) fires per-turn competitor and MEDDPICC alerts on Haiku 4.5. The Post-Meeting Action Engine (`backend/app/agents/post_meeting.py`) runs six Salesforce writes and a Slack post in one click. Seven Claude-backed tools (POC plan, SPL to ES|QL, compliance, stack, code sample, knowledge search, troubleshoot) plus two pure-compute tools (cost calc, capacity) round out the rail.
+**Solution.** FE Copilot is a three-agent chain plus twelve Field Engineering MCP tools, all driven from one persistent left rail across thirteen frontend pages. The Pre-Meeting Researcher (`backend/app/agents/pre_meeting.py`) pulls live SEC EDGAR 10-K and 6-K filings, news with verifiable URLs, and a MEDDPICC primer into a sourced PDF brief. The Live Meeting Companion (`backend/app/agents/live_meeting.py`) fires per-turn competitor and MEDDPICC alerts on Haiku 4.5. The Post-Meeting Action Engine (`backend/app/agents/post_meeting.py`) runs six Salesforce writes and a Slack post in one click. Ten Claude-backed tools (POC plan, SPL to ES|QL, compliance, stack, code sample, knowledge search, troubleshoot, compare, orchestrator, proposal) plus two pure-compute tools (cost calc, capacity) round out the rail.
 
-**Proof.** 30 of 30 backend tests passing. 9 MCP tools registered in real Elastic Agent Builder via `backend/scripts/sync_agent_builder.py`. 1 Kibana workflow, 1 webhook connector, 1 .mcp connector live in the cluster. 6 paired Kibana dashboards (FE plus Customer x 3). 5 demo scenarios, 8 frontend pages, 5 languages (EN, ES, JA, DE, FR). Clone to first brief: 90 seconds.
+**Proof.** 30 of 30 backend tests passing. 12 MCP tools registered in real Elastic Agent Builder via `backend/scripts/sync_agent_builder.py`. 2 Kibana workflows, 1 webhook connector, 1 .mcp connector live in the cluster. 6 paired Kibana dashboards (FE plus Customer x 3). 8 demo scenarios, 13 frontend pages, 5 languages (EN, ES, JA, DE, FR). Clone to first brief: 90 seconds.
 
 (Word count: 250.)
 
@@ -52,11 +52,11 @@ The pain is sized in real Field Engineering minutes, not vendor slogans. The Pre
 
 ### Use of Workflows + Agent Builder
 
-This is the leverage criterion and the strongest beat. `backend/scripts/sync_agent_builder.py` declares all nine FE tools as Agent Builder External HTTP tools and registers a master agent `fec_field_assistant` that owns all of them over MCP. The master agent chains tools live in the demo: one prompt, two tool calls, one answer (SPL to ES|QL feeds into the cost calculator). On top of that, `backend/app/api/routes_workflows.py` exposes `/sync`, `/triggered`, and `/recent-fires` so a Kibana ES-query alerting rule fires the Post-Meeting agent the second a transcript document lands in the inbox index. One Kibana workflow plus one webhook connector plus one .mcp connector live in the cluster, end-to-end, no human in the loop. Quote-able anchor: "Inbox to workflow to agent to Salesforce to Slack, in under five seconds."
+This is the leverage criterion and the strongest beat. `backend/scripts/sync_agent_builder.py` declares all twelve FE tools as Agent Builder External HTTP tools and registers a master agent `fec_field_assistant` that owns all of them over MCP. The master agent chains tools live in the demo: one prompt, two tool calls, one answer (SPL to ES|QL feeds into the cost calculator). On top of that, `backend/app/api/routes_workflows.py` exposes `/sync`, `/triggered`, and `/recent-fires` so a Kibana ES-query alerting rule fires the Post-Meeting agent the second a transcript document lands in the inbox index. One Kibana workflow plus one webhook connector plus one .mcp connector live in the cluster, end-to-end, no human in the loop. Quote-able anchor: "Inbox to workflow to agent to Salesforce to Slack, in under five seconds."
 
 ### Polish and Usability
 
-Eight frontend pages share one persistent left rail injected by `frontend/assets/js/tools-rail.js`, which means the same nine tools are one click away from every page (dashboard, meeting view, tools, agent builder, workflow demo, demo data, FE brain, brief render). Five languages are wired (EN, ES, JA, DE, FR), so a judge from any region can flip the language picker and watch the UI track. Brand is on-spec Lochmara primary plus Elastic cluster accent palette with a multi-color gradient hero title. WeasyPrint produces the brief PDF when the system libs are present, and a clean HTML fallback when they are not, so the demo never hard-fails on a borrowed laptop. Quote-able anchor: "Same sidebar, every page, every language."
+Thirteen frontend pages share one persistent left rail injected by `frontend/assets/js/tools-rail.js`, which means the same twelve tools are one click away from every page (dashboard, meeting view, tools, agent builder, workflow demo, demo data, FE brain, customers, battlecards, industries, quick research, audit, health). Five languages are wired (EN, ES, JA, DE, FR), so a judge from any region can flip the language picker and watch the UI track. Brand is on-spec Lochmara primary plus Elastic cluster accent palette with a multi-color gradient hero title. WeasyPrint produces the brief PDF when the system libs are present, and a clean HTML fallback when they are not, so the demo never hard-fails on a borrowed laptop. Quote-able anchor: "Same sidebar, every page, every language."
 
 ### Reusability
 
@@ -124,7 +124,7 @@ End-to-end routing traces captured in `runtime/qa/carmen_routing_trace.json` (si
 - **Framework**: FastAPI plus Pydantic plus structlog
 - **AI**: Anthropic Claude API. Opus 4.7 for the two reasoning agents (pre and post). Haiku 4.5 for the live whisper and tool calls. Adaptive thinking with `effort: high` on Opus calls. Prompt caching on the stable system block. Structured output via `output_config.format` with explicit JSON schemas.
 - **Search and storage**: Elasticsearch 8.x via docker-compose. Repositories abstract `synthetic JSON` plus `app indices` so the same code reads from either.
-- **Agent Builder**: Elastic Agent Builder (Kibana 9.x with Enterprise license). Nine External HTTP tools plus one master agent registered via REST. SSE streaming for converse.
+- **Agent Builder**: Elastic Agent Builder (Kibana 9.x with Enterprise license). Twelve External HTTP tools plus one master agent registered via REST. SSE streaming for converse.
 - **Workflows**: Kibana ES-query alerting rule plus webhook connector. Triggers `/api/v1/workflows/triggered` on transcript-inbox doc landing.
 - **MCP**: `/api/agent_builder/mcp` server; tools also reachable from third-party MCP clients (Claude Desktop, Cursor).
 - **PDF**: WeasyPrint (Jinja templates). HTML fallback when system libs (`pango`, `cairo`, `gdk-pixbuf`, `libffi`) are missing.
@@ -175,8 +175,8 @@ The picker lives in the global sidebar; copy is hot-swapped from the i18n bundle
 | Pre-Meeting agent (Opus 4.7) | Real | Hits Anthropic API. Live SEC EDGAR HTTP. |
 | Live Meeting agent (Haiku 4.5) | Real | Per-turn streaming. |
 | Post-Meeting agent (Opus 4.7) | Real | Six writes to `runtime/salesforce.log`. |
-| 9 MCP tools | Real | All return 200 against real Claude. 30 of 30 tests pass. |
-| Agent Builder (master agent + 9 tools) | Real, requires Kibana 9 Enterprise | Dry-run mode without API key. |
+| 12 MCP tools | Real | All return 200 against real Claude. 30 of 30 tests pass. |
+| Agent Builder (master agent + 12 tools) | Real, requires Kibana 9 Enterprise | Dry-run mode without API key. |
 | Kibana workflow + webhook | Real | One-minute schedule plus skip-wait button. |
 | 6 paired Kibana dashboards | Real | 8 markdown panels per dashboard, FE plus Customer tabs. |
 | Salesforce write | **Demo-grade integration**. Append-only JSON log at `runtime/salesforce.log`. Real REST shape with capitalized field names. Swap to live SFDC is a one-file change in `backend/app/integrations/salesforce_mock.py`. The demo shows the log tailing live so the writes are visible to the judges. Demo-grade is correct here because the hackathon scope is FE workflow proof, not SFDC org admin work. |
