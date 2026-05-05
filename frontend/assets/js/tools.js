@@ -39,6 +39,7 @@ function bindAll() {
   bindToolForm("code-form", "code-status", "Generate code", runCodeSample);
   bindToolForm("ts-form", "ts-status", "Diagnose", runTroubleshoot);
   bindToolForm("dv-form", "dv-status", "Validate cluster", runDeployValidator);
+  bindToolForm("pv-form", "pv-status", "Run POV health check", runPovHealth);
 }
 
 function bindToolForm(formId, statusId, label, runner) {
@@ -905,4 +906,193 @@ function renderDeployValidator(res) {
       host.appendChild(card);
     });
   }
+}
+
+// ----------------------------------------------------------------- POV Health (Lina)
+
+async function runPovHealth() {
+  const summary = (document.getElementById("pv-summary") || {}).value || "";
+  if (summary.trim().length < 20) {
+    throw new Error("paste a trial summary first (min 20 chars)");
+  }
+  if (summary.length > 20000) {
+    throw new Error("trial summary is too long (max 20000 chars)");
+  }
+  const customer = (document.getElementById("pv-customer") || {}).value || "";
+  const weekRaw = (document.getElementById("pv-week") || {}).value || "";
+  const week = weekRaw ? parseInt(weekRaw, 10) : 0;
+  const model = (document.getElementById("pv-model") || {}).value || "";
+  const body = {
+    trial_summary: summary,
+    customer_name: customer,
+    week_number: Number.isFinite(week) ? week : 0,
+    language: claudeLanguageName(),
+    model,
+  };
+  const res = await apiPost("/tools/pov-health", body);
+  renderPovHealth(res, "pv-result");
+}
+
+// Color palette for the stage badge. on_track = green, at_risk = amber, stalled = red.
+function pvStageStyle(stage) {
+  const s = String(stage || "").toLowerCase();
+  if (s === "on_track") {
+    return "background: rgba(20, 158, 134, 0.18); color: #0c6b59; border: 1px solid rgba(20, 158, 134, 0.50);";
+  }
+  if (s === "at_risk") {
+    return "background: rgba(246, 192, 0, 0.20); color: #8a6d00; border: 1px solid rgba(246, 192, 0, 0.55);";
+  }
+  if (s === "stalled") {
+    return "background: rgba(220, 53, 69, 0.18); color: #a01f2e; border: 1px solid rgba(220, 53, 69, 0.55);";
+  }
+  return "background: rgba(100, 116, 139, 0.14); color: #334155; border: 1px solid rgba(100, 116, 139, 0.32);";
+}
+
+function pvStageLabel(stage) {
+  const s = String(stage || "").toLowerCase();
+  if (s === "on_track") return "On track";
+  if (s === "at_risk") return "At risk";
+  if (s === "stalled") return "Stalled";
+  return s || "unknown";
+}
+
+function pvConfidenceStyle(score) {
+  const n = Number(score) || 0;
+  if (n >= 70) return "background: rgba(20, 158, 134, 0.16); color: #0c6b59; border: 1px solid rgba(20, 158, 134, 0.45);";
+  if (n >= 35) return "background: rgba(246, 192, 0, 0.20); color: #8a6d00; border: 1px solid rgba(246, 192, 0, 0.50);";
+  return "background: rgba(220, 53, 69, 0.18); color: #a01f2e; border: 1px solid rgba(220, 53, 69, 0.50);";
+}
+
+function pvSeverityStyle(sev) {
+  const s = String(sev || "").toLowerCase();
+  if (s === "critical") return "background: rgba(220, 53, 69, 0.16); color: #a01f2e; border: 1px solid rgba(220, 53, 69, 0.45);";
+  if (s === "high")     return "background: rgba(246, 192, 0, 0.18); color: #8a6d00; border: 1px solid rgba(246, 192, 0, 0.45);";
+  if (s === "medium")   return "background: rgba(0, 119, 204, 0.14); color: #0a4d80; border: 1px solid rgba(0, 119, 204, 0.40);";
+  if (s === "low")      return "background: rgba(20, 158, 134, 0.14); color: #0c6b59; border: 1px solid rgba(20, 158, 134, 0.40);";
+  return "background: rgba(100, 116, 139, 0.14); color: #334155; border: 1px solid rgba(100, 116, 139, 0.32);";
+}
+
+function renderPovHealth(res, hostId) {
+  const host = document.getElementById(hostId || "pv-result");
+  if (!host) return;
+  clear(host);
+  host.classList.add("fade-in");
+
+  const stage = res.stage_assessment || "unknown";
+  const score = (typeof res.confidence_score === "number") ? res.confidence_score : null;
+  const days = (typeof res.days_to_decision_estimate === "number") ? res.days_to_decision_estimate : null;
+
+  // Header row: stage badge, confidence pill, days-to-decision.
+  const headerRow = el("div", { class: "tool-pills", style: "margin-bottom: 12px; gap: 10px; align-items: center;" });
+  headerRow.appendChild(
+    el("span", {
+      class: "native-badge",
+      style: "font-size: 14px; padding: 6px 12px; letter-spacing: 0.4px; " + pvStageStyle(stage),
+    }, pvStageLabel(stage))
+  );
+  if (score !== null) {
+    headerRow.appendChild(
+      el("span", {
+        class: "native-badge",
+        style: "font-size: 13px; " + pvConfidenceStyle(score),
+      }, "Confidence: " + score + " / 100")
+    );
+  }
+  if (days !== null) {
+    headerRow.appendChild(
+      el("span", {
+        class: "native-badge",
+        style: "font-size: 12px; background: rgba(0, 119, 204, 0.10); color: #0a4d80; border: 1px solid rgba(0, 119, 204, 0.32);",
+      }, days + " days to decision")
+    );
+  }
+  host.appendChild(headerRow);
+
+  if (res.executive_summary) {
+    host.appendChild(el("div", { class: "brief-headline" }, res.executive_summary));
+  }
+
+  // Strengths
+  const strengths = res.strengths || [];
+  if (strengths.length) {
+    host.appendChild(el("h4", { class: "tool-section" }, "Strengths"));
+    strengths.forEach((s, i) => {
+      const card = el("div", {
+        class: "comp-card",
+        style: "padding: 12px 14px; margin-bottom: 10px; border-left: 3px solid rgba(20, 158, 134, 0.55);",
+      });
+      card.appendChild(el("div", { class: "comp-head", style: "padding-bottom: 6px; margin-bottom: 6px; gap: 10px; align-items: center;" }, [
+        el("span", { class: "phase-num" }, "S" + (i + 1)),
+        el("span", { class: "comp-reg", style: "font-size: 14px; flex: 1; min-width: 0;" }, s.title || "(untitled strength)"),
+      ]));
+      if (s.evidence) {
+        card.appendChild(el("div", { class: "phase-section-lbl" }, "Evidence"));
+        card.appendChild(el("div", { class: "muted small", style: "line-height: 1.5;" }, s.evidence));
+      }
+      host.appendChild(card);
+    });
+  }
+
+  // Risks
+  const risks = res.risks || [];
+  if (risks.length) {
+    host.appendChild(el("h4", { class: "tool-section" }, "Risks"));
+    risks.forEach((r, i) => {
+      const sev = String(r.severity || "").toLowerCase();
+      const accent = sev === "critical" ? "rgba(220, 53, 69, 0.55)"
+                   : sev === "high"     ? "rgba(246, 192, 0, 0.55)"
+                   : sev === "medium"   ? "rgba(0, 119, 204, 0.55)"
+                                        : "rgba(20, 158, 134, 0.55)";
+      const card = el("div", {
+        class: "comp-card",
+        style: "padding: 12px 14px; margin-bottom: 10px; border-left: 3px solid " + accent + ";",
+      });
+      card.appendChild(el("div", { class: "comp-head", style: "padding-bottom: 6px; margin-bottom: 6px; gap: 10px; align-items: center;" }, [
+        el("span", { class: "phase-num" }, "R" + (i + 1)),
+        el("span", { class: "native-badge", style: "font-size: 11px; letter-spacing: 0.4px; " + pvSeverityStyle(sev) }, sev.toUpperCase() || "RISK"),
+        el("span", { class: "comp-reg", style: "font-size: 14px; flex: 1; min-width: 0;" }, r.title || "(untitled risk)"),
+      ]));
+      if (r.evidence) {
+        card.appendChild(el("div", { class: "phase-section-lbl" }, "Evidence"));
+        card.appendChild(el("div", { class: "muted small", style: "line-height: 1.5;" }, r.evidence));
+      }
+      host.appendChild(card);
+    });
+  }
+
+  // Next best actions
+  const actions = res.next_best_actions || [];
+  if (actions.length) {
+    host.appendChild(el("h4", { class: "tool-section" }, "Next-best actions"));
+    const list = el("ol", { class: "risk-list", style: "padding-left: 24px; list-style: decimal; margin-top: 4px;" });
+    actions.forEach((a) => {
+      const li = el("li", { style: "margin-bottom: 10px;" });
+      li.appendChild(el("div", { class: "risk-desc", style: "font-weight: 600;" }, a.title || ""));
+      const meta = el("div", { class: "tool-pills", style: "gap: 8px; margin: 4px 0;" });
+      if (a.owner_role) {
+        meta.appendChild(el("span", {
+          class: "native-badge",
+          style: "font-size: 11px; background: rgba(0, 119, 204, 0.12); color: #0a4d80; border: 1px solid rgba(0, 119, 204, 0.35);",
+        }, a.owner_role));
+      }
+      if (a.estimated_minutes) {
+        meta.appendChild(el("span", {
+          class: "native-badge",
+          style: "font-size: 11px; background: rgba(100, 116, 139, 0.12); color: #334155; border: 1px solid rgba(100, 116, 139, 0.32);",
+        }, a.estimated_minutes + " min"));
+      }
+      li.appendChild(meta);
+      if (a.expected_impact) {
+        li.appendChild(el("div", { class: "muted small", style: "line-height: 1.5;" }, a.expected_impact));
+      }
+      list.appendChild(li);
+    });
+    host.appendChild(list);
+  }
+}
+
+// Expose for the standalone /pov-health.html page so it can reuse the rendering logic.
+if (typeof window !== "undefined") {
+  window.runPovHealth = runPovHealth;
+  window.renderPovHealth = renderPovHealth;
 }

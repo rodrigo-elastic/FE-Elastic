@@ -28,6 +28,8 @@
     fec_compare: "Compare Elastic vs Datadog for an e-commerce observability use case",
     fec_orchestrator: "Build a security POV for a fintech: compliance + cost + cluster sizing",
     fec_proposal: "Generate a one-page proposal for Banco Atlántico, include the 60 hour POV",
+    fec_deploy_validator: "Validate this cluster: 3-node Elastic Cloud, security disabled, 80 shards on hot tier, no SLM",
+    fec_pov_health: "How is this trial doing? Atlas Health, week 3 of 8, 12 GB/day, 1 dashboard, no SLOs, single user",
   };
 
   // Friendly labels for the tool picker. Falls back to the raw id when the tool is unknown locally.
@@ -44,6 +46,8 @@
     fec_compare: "Competitive comparison (Sloane)",
     fec_orchestrator: "Orchestrator (Auro)",
     fec_proposal: "One-page proposal (Carmen)",
+    fec_deploy_validator: "Deployment validator (Astrid)",
+    fec_pov_health: "POV health monitor (Lina)",
   };
 
   // Categorization for the modal tool picker. Four groups, rendered in this exact order:
@@ -61,6 +65,8 @@
     fec_code_sample:      "Build",
     fec_stack_extract:    "Build",
     fec_troubleshoot:     "Build",
+    fec_deploy_validator: "Sizing",
+    fec_pov_health:       "Sizing",
   };
 
   // Display order + i18n keys for the four sections. Anything not in this list is grouped at the bottom under "Other".
@@ -81,14 +87,15 @@
     { id: "discovery",    i18n: "ab.tool.bundle.discovery",    label: "Discovery",          tools: ["fec_stack_extract", "fec_knowledge_search", "fec_compare"], desc: "Pull stack from a transcript, ask the docs, compare" },
     { id: "competitive",  i18n: "ab.tool.bundle.competitive",  label: "Competitive",        tools: ["fec_compare", "fec_cost_calc", "fec_proposal", "fec_knowledge_search"], desc: "Replace Splunk, Datadog, Dynatrace, OpenSearch, Algolia" },
     { id: "compliance",   i18n: "ab.tool.bundle.compliance",   label: "Compliance",         tools: ["fec_compliance", "fec_knowledge_search", "fec_proposal"], desc: "DORA, HIPAA, FedRAMP, PCI DSS mapped to Elastic" },
-    { id: "pov",          i18n: "ab.tool.bundle.pov",          label: "POV",                tools: ["fec_poc_plan", "fec_capacity", "fec_code_sample", "fec_knowledge_search"], desc: "End-to-end proof-of-value with code samples" },
+    { id: "pov_legacy",   i18n: "ab.tool.bundle.pov_legacy",   label: "POV (legacy)",       tools: ["fec_poc_plan", "fec_capacity", "fec_code_sample", "fec_knowledge_search"], desc: "Original POV bundle: end-to-end proof-of-value with code samples" },
+    { id: "pov",          i18n: "ab.tool.bundle.pov",          label: "POV ops",            tools: ["fec_pov_health", "fec_poc_plan", "fec_capacity", "fec_compliance"], desc: "Run a weekly POV health check, plan the next step, size the cluster" },
     { id: "troubleshoot", i18n: "ab.tool.bundle.troubleshoot", label: "Troubleshoot",       tools: ["fec_troubleshoot", "fec_knowledge_search", "fec_code_sample"], desc: "Diagnose stack errors, ES|QL queries, code fixes" },
     { id: "renewal",      i18n: "ab.tool.bundle.renewal",      label: "Renewal defense",    tools: ["fec_compare", "fec_cost_calc", "fec_compliance", "fec_proposal"], desc: "Retention play with comp, ROI, compliance angle" },
     { id: "build",        i18n: "ab.tool.bundle.build",        label: "Build",              tools: ["fec_code_sample", "fec_stack_extract", "fec_knowledge_search", "fec_troubleshoot"], desc: "Hands-on integration: SDK samples, stack, fixes" },
     { id: "exec",         i18n: "ab.tool.bundle.exec",         label: "Exec briefing",      tools: ["fec_proposal", "fec_compare", "fec_cost_calc", "fec_orchestrator"], desc: "C-level pitch: proposal, comp, ROI orchestrated" },
     { id: "search",       i18n: "ab.tool.bundle.search",       label: "Search architect",   tools: ["fec_knowledge_search", "fec_code_sample", "fec_capacity", "fec_compare"], desc: "RAG, semantic_text, ELSER, hybrid retrieval" },
-    { id: "platform",     i18n: "ab.tool.bundle.platform",     label: "Platform health",    tools: ["fec_deploy_validator", "fec_capacity", "fec_troubleshoot", "fec_knowledge_search"], desc: "Audit a cluster, size it right, fix what is broken" },
-    { id: "all",          i18n: "ab.tool.bundle.all",          label: "All thirteen",       tools: ["fec_poc_plan","fec_spl_to_esql","fec_compliance","fec_stack_extract","fec_code_sample","fec_cost_calc","fec_capacity","fec_knowledge_search","fec_troubleshoot","fec_compare","fec_orchestrator","fec_proposal","fec_deploy_validator"], desc: "Master generalist: pick everything" },
+    { id: "platform",     i18n: "ab.tool.bundle.platform",     label: "Platform health",    tools: ["fec_deploy_validator", "fec_pov_health", "fec_capacity", "fec_troubleshoot", "fec_knowledge_search"], desc: "Audit a cluster, watch trial health, size it right, fix what is broken" },
+    { id: "all",          i18n: "ab.tool.bundle.all",          label: "All fourteen",       tools: ["fec_poc_plan","fec_spl_to_esql","fec_compliance","fec_stack_extract","fec_code_sample","fec_cost_calc","fec_capacity","fec_knowledge_search","fec_troubleshoot","fec_compare","fec_orchestrator","fec_proposal","fec_deploy_validator","fec_pov_health"], desc: "Master generalist: pick everything" },
     { id: "clear",        i18n: "ab.tool.bundle.clear",        label: "Clear",              tools: [], desc: "Deselect all" },
   ];
 

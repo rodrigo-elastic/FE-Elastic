@@ -967,15 +967,39 @@
     detail.appendChild(renderDetailList(customer));
     card.appendChild(detail);
 
-    detailBtn.addEventListener("click", () => {
-      const open = detailBtn.getAttribute("aria-expanded") === "true";
-      detailBtn.setAttribute("aria-expanded", String(!open));
-      detail.hidden = open;
+    function setExpanded(open) {
+      detailBtn.setAttribute("aria-expanded", String(open));
+      card.setAttribute("aria-expanded", String(open));
+      detail.hidden = !open;
       detailBtn.textContent = open
-        ? tr("workspace.detail.show", "Show all artifacts")
-        : tr("workspace.detail.hide", "Hide artifacts");
-      card.classList.toggle("is-expanded", !open);
+        ? tr("workspace.detail.hide", "Hide artifacts")
+        : tr("workspace.detail.show", "Show all artifacts");
+      card.classList.toggle("is-expanded", open);
+    }
+
+    detailBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const open = detailBtn.getAttribute("aria-expanded") === "true";
+      setExpanded(!open);
     });
+
+    card.addEventListener("click", (e) => {
+      if (e.target.closest("a, button, .qr-customer-detail")) return;
+      const open = detailBtn.getAttribute("aria-expanded") === "true";
+      setExpanded(!open);
+    });
+
+    card.addEventListener("keydown", (e) => {
+      if (e.target !== card) return;
+      if (e.key !== "Enter" && e.key !== " ") return;
+      e.preventDefault();
+      const open = detailBtn.getAttribute("aria-expanded") === "true";
+      setExpanded(!open);
+    });
+
+    card.tabIndex = 0;
+    card.setAttribute("role", "button");
+    card.setAttribute("aria-expanded", "false");
 
     return card;
   }

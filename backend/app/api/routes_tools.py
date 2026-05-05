@@ -29,6 +29,7 @@ from app.agents.schemas import (
     OrchestratorPlanOut,
     OrchestratorSynthesisOut,
     POCPlanOut,
+    PovHealthOut,
     ProposalOut,
     SPLToESQLOut,
     StackExtractOut,
@@ -879,6 +880,241 @@ async def run_deploy_validator(payload: DeployValidatorRequest) -> Dict[str, Any
     return data
 
 
+# ============================================================ POV Health (Lina) ======
+
+
+class PovHealthRequest(BaseModel):
+    trial_summary: str = Field(..., min_length=20, max_length=20000)
+    customer_name: Optional[str] = Field("", max_length=160)
+    week_number: Optional[int] = Field(0, ge=0, le=52)
+    language: Optional[str] = Field("English", max_length=40)
+    model: Optional[str] = Field("", max_length=60)
+
+
+# Mock payload mirrors the canonical "Atlas Health, week 3 of 8" demo trial:
+# 12 GB/day from 2 namespaces, 1 dashboard, no SLOs, no alerts, single user.
+# Stage_assessment is at_risk with confidence 45 so the panel renders the
+# amber badge variant and the FE can demo the next-best-actions flow.
+_POV_HEALTH_MOCK: Dict[str, Any] = {
+    "stage_assessment": "at_risk",
+    "confidence_score": 45,
+    "executive_summary": (
+        "Atlas Health is at risk in week 3 of an 8 week POV. Ingest is healthy at 12 GB per day from 2 namespaces, "
+        "but adoption is stalled: only one user has logged in, no SLOs are configured, and there are no alerting "
+        "rules beyond the integration defaults. The single-user signal is the biggest churn predictor here. The FE "
+        "needs a multi-team enablement session this week or this trial will quietly slip into a no-decision."
+    ),
+    "strengths": [
+        {
+            "title": "Ingest is steady at production-shaped volume",
+            "evidence": "Trial summary states ingesting 12 GB per day from 2 namespaces. That is the right order of magnitude for the customer's stated workload, and the cluster is not silent.",
+        },
+        {
+            "title": "Two production namespaces are wired to the trial",
+            "evidence": "The summary names 2 namespaces feeding the cluster. Customers who only ingest one namespace rarely convert; two is the minimum threshold for genuine evaluation.",
+        },
+        {
+            "title": "First dashboard already built",
+            "evidence": "Summary lists 1 dashboard. The customer has spent at least one cycle in Kibana. That is a leading indicator that an in-house champion is engaged.",
+        },
+    ],
+    "risks": [
+        {
+            "title": "Single-user trial. No multi-team adoption.",
+            "severity": "critical",
+            "evidence": "Trial summary explicitly states 'single user'. Without at least three distinct emails across platform, app dev, and security, no internal champion forms and the trial dies on renewal.",
+        },
+        {
+            "title": "Zero SLOs configured by week 3 of 8",
+            "evidence": "Summary lists 'no SLOs'. Trials without SLOs by mid-POV almost never convert on the observability use case; the customer never builds the burn-rate alerting muscle that justifies the spend.",
+            "severity": "high",
+        },
+        {
+            "title": "Default alerting config still in place",
+            "evidence": "Summary lists 'no alerts' beyond integration defaults. By week 3 the customer should have at least 5 tuned alerting rules; zero means the platform has not yet been pulled into the on-call rotation.",
+            "severity": "high",
+        },
+    ],
+    "next_best_actions": [
+        {
+            "title": "FE schedules a 30-minute SLO workshop with the customer platform lead this week",
+            "owner_role": "FE",
+            "estimated_minutes": 30,
+            "expected_impact": "Two SLOs configured against the priority service by Friday. Moves SLO coverage from 0 to 2 and unblocks the burn-rate alert pattern.",
+        },
+        {
+            "title": "AE pulls in a second persona: schedules a 45-minute joint review with the customer security team",
+            "owner_role": "AE",
+            "estimated_minutes": 45,
+            "expected_impact": "Adds at least two new logins from the security org by week 4, taking the trial from 1 to 3+ distinct users and breaking the single-user churn signal.",
+        },
+        {
+            "title": "Customer Champion runs an internal 60-minute demo for the application team using the existing dashboard",
+            "owner_role": "Customer-Champion",
+            "estimated_minutes": 60,
+            "expected_impact": "Three to five additional logins from the application team within seven days. Builds the cross-team adoption signal that predicts conversion.",
+        },
+        {
+            "title": "FE delivers a 25-minute alerting rules clinic: 5 production-shaped rules wired during the session",
+            "owner_role": "FE",
+            "estimated_minutes": 25,
+            "expected_impact": "Goes from 0 to 5 tuned alerting rules in week 4. Lifts the trial out of default config and into a state the on-call team can actually use.",
+        },
+    ],
+    "days_to_decision_estimate": 35,
+}
+
+
+def _slugify_customer(name: str) -> str:
+    """Lowercase, ascii, hyphen-separated slug used in persisted artifact filenames."""
+    import re
+    s = (name or "").strip().lower()
+    s = re.sub(r"[^a-z0-9]+", "-", s).strip("-")
+    return s or "trial"
+
+
+@router.post("/pov-health")
+async def run_pov_health(payload: PovHealthRequest) -> Dict[str, Any]:
+    """Lina (Senior POV Operations Lead, 9y) audits a trial summary and emits a stage_assessment + confidence + strengths + risks + next-best-actions."""
+    language = payload.language or "English"
+    customer_name = (payload.customer_name or "").strip()
+    week_number = int(payload.week_number or 0)
+    log.info(
+        "tool.pov_health.start",
+        language=language,
+        customer=customer_name or "(unspecified)",
+        week=week_number,
+        summary_len=len(payload.trial_summary or ""),
+    )
+
+    user_prompt = (
+        language_preamble(language)
+        + tool_prompts.render_pov_health_prompt(
+            payload.trial_summary,
+            customer_name=customer_name,
+            week_number=week_number,
+        )
+        + language_instruction(language)
+    )
+
+    # Customer-aware mock so offline runs return a recognizable payload even
+    # when the FE varies the customer name in the demo.
+    mock_payload = dict(_POV_HEALTH_MOCK)
+    if customer_name and customer_name.lower() not in mock_payload["executive_summary"].lower():
+        mock_payload["executive_summary"] = mock_payload["executive_summary"].replace(
+            "Atlas Health", customer_name
+        )
+
+    result: PovHealthOut = get_service().call_structured(
+        system=tool_prompts.POV_HEALTH_SYSTEM,
+        user=user_prompt,
+        schema=tool_prompts.POV_HEALTH_SCHEMA,
+        output_model=PovHealthOut,
+        model=_resolve_model(payload.model),
+        max_tokens=8192,
+        effort="high",
+        mock_payload=mock_payload,
+        audit_meta={
+            "agent": "tool_pov_health",
+            "tool": "pov_health",
+            "customer": customer_name,
+            "week_number": week_number,
+            "summary_len": len(payload.trial_summary or ""),
+        },
+    )
+
+    data = result.model_dump()
+
+    # Persist a timestamped audit artifact so the FE can replay any past health check.
+    try:
+        out_dir = settings.runtime_dir / "pov_health"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+        slug = _slugify_customer(customer_name)
+        record = {
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "language": language,
+            "customer_name": customer_name,
+            "week_number": week_number,
+            "trial_summary": payload.trial_summary,
+            **data,
+        }
+        (out_dir / f"{slug}-{ts}.json").write_text(
+            json.dumps(record, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+        )
+    except Exception as exc:
+        log.warning("tool.pov_health.persist_failed", reason=str(exc))
+
+    log.info(
+        "tool.pov_health.complete",
+        stage=data.get("stage_assessment"),
+        score=data.get("confidence_score"),
+        strengths=len(data.get("strengths") or []),
+        risks=len(data.get("risks") or []),
+        actions=len(data.get("next_best_actions") or []),
+    )
+    return data
+
+
+@router.get("/pov-health/history")
+async def pov_health_history() -> Dict[str, Any]:
+    """List persisted POV health checks, grouped by customer slug, newest first.
+
+    Powers the History panel on /pov-health.html. Reads from runtime/pov_health/*.json.
+    Returns minimal metadata (no trial_summary blob) plus the artifact filename
+    so the frontend can fetch the full record on demand.
+    """
+    out_dir = settings.runtime_dir / "pov_health"
+    if not out_dir.exists():
+        return {"groups": [], "total": 0}
+
+    groups: Dict[str, List[Dict[str, Any]]] = {}
+    total = 0
+    for path in sorted(out_dir.glob("*.json"), reverse=True):
+        try:
+            blob = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        total += 1
+        slug = _slugify_customer(blob.get("customer_name") or path.stem.split("-")[0])
+        groups.setdefault(slug, []).append({
+            "filename": path.name,
+            "customer_name": blob.get("customer_name") or "",
+            "week_number": blob.get("week_number") or 0,
+            "generated_at": blob.get("generated_at") or "",
+            "stage_assessment": blob.get("stage_assessment") or "",
+            "confidence_score": blob.get("confidence_score") or 0,
+            "days_to_decision_estimate": blob.get("days_to_decision_estimate") or 0,
+            "executive_summary": (blob.get("executive_summary") or "")[:280],
+        })
+
+    out_groups = []
+    for slug, items in groups.items():
+        items.sort(key=lambda r: r.get("generated_at", ""), reverse=True)
+        out_groups.append({
+            "slug": slug,
+            "customer_name": items[0].get("customer_name") or slug,
+            "items": items,
+        })
+    out_groups.sort(key=lambda g: g["customer_name"].lower())
+    return {"groups": out_groups, "total": total}
+
+
+@router.get("/pov-health/history/{filename}")
+async def pov_health_history_item(filename: str) -> Dict[str, Any]:
+    """Return one persisted POV health record by filename. Filename is slug-validated."""
+    import re
+    if not re.match(r"^[a-zA-Z0-9._-]+\.json$", filename):
+        raise HTTPException(status_code=400, detail="bad filename")
+    path = settings.runtime_dir / "pov_health" / filename
+    if not path.exists():
+        raise HTTPException(status_code=404, detail=f"history record {filename} not found")
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"could not load record: {exc}")
+
+
 # ============================================================ Compare (Sloane) =======
 
 
@@ -1204,6 +1440,8 @@ async def _dispatch_pick(tool: str, args: Dict[str, Any]) -> Any:
         return await run_troubleshoot(TroubleshootRequest(**args))
     if tool == "fec_deploy_validator":
         return await run_deploy_validator(DeployValidatorRequest(**args))
+    if tool == "fec_pov_health":
+        return await run_pov_health(PovHealthRequest(**args))
     raise ValueError(f"unknown tool: {tool}")
 
 

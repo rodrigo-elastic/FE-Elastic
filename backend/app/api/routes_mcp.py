@@ -1,6 +1,6 @@
 """
 filename: routes_mcp.py
-description: MCP Streamable HTTP server exposing the thirteen FE Copilot tools (nine specialists, the Sloane competitive comparison tool, the Auro orchestrator, the Carmen one-page proposal generator, and the Astrid deployment validator) to Elastic Agent Builder. Speaks JSON-RPC over a single POST endpoint per the MCP 2025-03-26 spec; each tool delegates to the existing FastAPI tool route.
+description: MCP Streamable HTTP server exposing the fourteen FE Copilot tools (nine specialists, the Sloane competitive comparison tool, the Auro orchestrator, the Carmen one-page proposal generator, the Astrid deployment validator, and the Lina POV health monitor) to Elastic Agent Builder. Speaks JSON-RPC over a single POST endpoint per the MCP 2025-03-26 spec; each tool delegates to the existing FastAPI tool route.
 date: 03-05-2026
 """
 __author__ = "Rodrigo Careaga"
@@ -24,6 +24,7 @@ from app.api.routes_tools import (
     KnowledgeSearchRequest,
     OrchestratorRequest,
     POCPlanRequest,
+    PovHealthRequest,
     ProposalRequest,
     SPLToESQLRequest,
     StackExtractRequest,
@@ -37,6 +38,7 @@ from app.api.routes_tools import (
     run_knowledge_search,
     run_orchestrator,
     run_poc_plan,
+    run_pov_health,
     run_proposal,
     run_spl_to_esql,
     run_stack_extract,
@@ -228,6 +230,20 @@ TOOLS = [
             "required": ["cluster_summary"],
         },
     },
+    {
+        "name": "fec_pov_health",
+        "description": "Take a pasted POV/trial summary (customer name, week number, ingest volume, namespaces, dashboards, SLOs, alerting rules, user count, integrations) and emit a stage_assessment (on_track/at_risk/stalled), confidence_score 0 to 100, top 3 strengths, top 3 risks, and 4 owner-assignable next-best-actions. Tied directly to FE quota outcomes (POV conversion = revenue). CRMs show opportunity stage; this shows technical POV stage with structured signals. Persona: Lina, Senior POV Operations Lead at Elastic (9 years running technical POVs, wrote the internal POV Health checklist).",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "trial_summary": {"type": "string", "description": "Free-form summary of the trial: customer, week number, ingest volume, namespaces, dashboards, SLOs, alerting rules, user count, integrations, any platform pain."},
+                "customer_name": {"type": "string", "description": "Customer name (used in persisted artifact filename)."},
+                "week_number": {"type": "integer", "description": "Trial week number (1 to 52)."},
+                "language": {"type": "string", "default": "English"},
+            },
+            "required": ["trial_summary"],
+        },
+    },
 ]
 
 
@@ -261,6 +277,8 @@ async def _invoke_tool(name: str, args: Dict[str, Any]) -> Any:
         return await run_proposal(ProposalRequest(**args))
     if name == "fec_deploy_validator":
         return await run_deploy_validator(DeployValidatorRequest(**args))
+    if name == "fec_pov_health":
+        return await run_pov_health(PovHealthRequest(**args))
     raise ValueError(f"unknown tool: {name}")
 
 

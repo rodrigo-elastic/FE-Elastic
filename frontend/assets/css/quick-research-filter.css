@@ -582,10 +582,21 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  cursor: pointer;
 }
 
 .qr-customer-card:hover {
   box-shadow: 0 4px 16px color-mix(in srgb, var(--qr-cust, #0077CC) 14%, transparent);
+}
+
+.qr-customer-card:focus-visible {
+  outline: 2px solid var(--qr-cust, var(--primary));
+  outline-offset: 2px;
+}
+
+.qr-customer-card a,
+.qr-customer-card button {
+  cursor: pointer;
 }
 
 .qr-customer-card[data-customer-color="0"] { --qr-cust: #0077CC; }

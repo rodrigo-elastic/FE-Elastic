@@ -50,9 +50,9 @@
     <section class="hero">
       <h1>Technical tools <span class="grad">for Field Engineers.</span></h1>
       <p class="lede">
-        Thirteen utilities for the technical-sales motion: POC plans, SPL to ES|QL conversion, compliance mappings,
+        Fourteen utilities for the technical-sales motion: POC plans, SPL to ES|QL conversion, compliance mappings,
         cost calculator, capacity planner, automatic tech-stack extraction, code-sample generation, troubleshooting,
-        knowledge search, competitor compare, multi-tool orchestrator, one-page proposal, and the deployment validator.
+        knowledge search, competitor compare, multi-tool orchestrator, one-page proposal, deployment validator, and POV health.
         Each tool is a one-shot Claude call (or pure compute) backed by structured JSON output.
       </p>
     </section>
@@ -515,6 +515,52 @@
           </div>
         </form>
         <div id="dv-result" class="tool-result"></div>
+      </div>
+    </details>
+
+    <!-- ========================================================== POV Health -->
+    <details class="tool-panel" id="tool-pov-health">
+      <summary>
+        <span class="tool-num">14</span>
+        <div class="tool-meta">
+          <h2 class="tool-title">POV Health (Lina)</h2>
+          <p class="tool-desc">Paste a customer trial summary. Get an at-risk / on-track assessment with confidence score, strengths, risks, and next-best-actions. Tied to POV conversion revenue.</p>
+        </div>
+        <span class="tool-tag tag-claude">Claude</span>
+        <span class="chevron"></span>
+      </summary>
+      <div class="tool-body">
+        <form id="pv-form" class="tool-form" onsubmit="return false">
+          <div class="qr-row">
+            <label class="qr-field grow">
+              <span class="qr-lbl">Customer name (optional)</span>
+              <input type="text" id="pv-customer" placeholder="Atlas Health" maxlength="160" />
+            </label>
+            <label class="qr-field" style="max-width:160px">
+              <span class="qr-lbl">Trial week</span>
+              <input type="number" id="pv-week" min="0" max="52" placeholder="3" />
+            </label>
+          </div>
+          <label class="qr-field">
+            <span class="qr-lbl">Trial summary (ingest, namespaces, dashboards, SLOs, alerts, users, integrations)</span>
+            <textarea id="pv-summary" rows="8" placeholder="Atlas Health, week 3 of 8, ingesting 12 GB/day from 2 namespaces, 1 dashboard built, no SLOs, no alerting rules beyond integration defaults, single user only, ELSER not yet enabled. Customer Champion is the platform engineering lead."></textarea>
+          </label>
+          <div class="tool-actions">
+            <button type="submit" class="btn primary">Run POV health check</button>
+            <a class="btn ghost" href="/pov-health.html">Open POV Health workspace</a>
+            <label class="qr-model">
+              <span class="qr-model-lbl">Model</span>
+              <select id="pv-model">
+                <option value="">Default</option>
+                <option value="claude-haiku-4-5">Haiku 4.5</option>
+                <option value="claude-sonnet-4-6">Sonnet 4.6</option>
+                <option value="claude-opus-4-7">Opus 4.7</option>
+              </select>
+            </label>
+            <span class="muted small" id="pv-status"></span>
+          </div>
+        </form>
+        <div id="pv-result" class="tool-result"></div>
       </div>
     </details>
 

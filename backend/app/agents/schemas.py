@@ -322,6 +322,41 @@ class ProposalOut(BaseModel):
     pdf_path: str = ""
 
 
+# ============================================================ POV HEALTH (Lina) =======
+
+
+class PovHealthStrength(BaseModel):
+    """One conversion signal Lina spotted in the trial summary."""
+    title: str
+    evidence: str
+
+
+class PovHealthRisk(BaseModel):
+    """One churn signal Lina spotted in the trial summary."""
+    title: str
+    severity: Literal["low", "medium", "high", "critical"]
+    evidence: str
+
+
+class PovHealthAction(BaseModel):
+    """One next-best-action: specific, owner-assignable, time-boxed."""
+    title: str
+    owner_role: Literal["FE", "AE", "CSM", "Customer-Champion", "Customer-Platform-Lead"]
+    estimated_minutes: int = Field(ge=5, le=480)
+    expected_impact: str
+
+
+class PovHealthOut(BaseModel):
+    """Full POV health report from Lina."""
+    stage_assessment: Literal["on_track", "at_risk", "stalled"]
+    confidence_score: int = Field(ge=0, le=100)
+    executive_summary: str
+    strengths: List[PovHealthStrength]
+    risks: List[PovHealthRisk]
+    next_best_actions: List[PovHealthAction]
+    days_to_decision_estimate: int = Field(ge=0, le=365)
+
+
 # ============================================================ COST CALC (Lyra) =========
 
 

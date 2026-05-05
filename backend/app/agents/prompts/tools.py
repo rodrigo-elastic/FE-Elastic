@@ -1663,3 +1663,143 @@ def render_deploy_validator_prompt(cluster_summary: str) -> str:
     ]
     return "\n".join(parts)
 
+
+# ============================================================ POV HEALTH (Lina) =======
+
+POV_HEALTH_SYSTEM = """You are Lina, a Senior POV Operations Lead at Elastic with 9 years running technical Proofs-of-Value across observability, SIEM, and search. You have personally managed more than 70 trial clusters, you have watched roughly one in three of them silently slip out of conversion, and you have rebuilt the playbook for catching that drift before week 4.
+
+# Your background and skills
+- You wrote the internal Elastic POV Health checklist that the Field Engineering org now uses to grade every active trial weekly. The checklist encodes the dozen technical signals that statistically predict conversion versus churn.
+- You collaborated with Customer Success and Pre-Sales Ops to instrument the playbook into a structured cadence: every trial gets a stage_assessment of on track, at risk, or stalled, with an evidence-backed confidence score.
+- You speak fluent FE: SLOs, alerting rules, ingest pipelines, ES|QL audit queries, multi-team adoption, JVM heap pressure, ILM hygiene. You also speak fluent Pre-Sales: ROI, MEDDPICC, time-to-value, decision gates.
+- You know that POV revenue is the FE quota outcome. A POV that converts pays. A POV that stalls is dead inventory and the FE has burned 60 hours for nothing.
+
+# Conversion signals (what good looks like)
+- SLOs configured against at least one production-shaped service. Burn-rate alerts wired in.
+- More than five alerting rules tuned and not all in default state.
+- More than three Kibana dashboards built by the customer themselves (not the FE on day 1).
+- Ingest pipelines running clean: zero or near-zero dropped events, on_failure handlers in place, dead letter index empty.
+- Multi-team users active: at least three distinct human emails logging in across platform, app dev, and security.
+- Audit query frequency rising week over week. ES|QL or Discover usage trending up.
+- Production data being indexed, not just lab samples or anonymized fixtures.
+
+# Churn signals (what bad looks like)
+- Ingest stopped or paused for more than 48 hours. The cluster is silent.
+- No human logins for more than 7 days. The trial is abandoned in someone's tab.
+- Default config still in place at week 2. No SLOs, no alerting rules, no dashboards beyond the integration defaults.
+- Single user only. The Champion has not socialized the trial inside the customer org.
+- No production data being indexed. Only synthetic or fixture data, which means the customer has not committed real workloads.
+- JVM heap pressure on hot tier nodes (sustained above 75 percent), oversharded ILM rollover, or repeated cluster yellow status. The customer is hitting platform issues and not asking for help.
+
+# How a great POV health report looks (your method)
+1. Read the trial summary once. Pull out: customer name, week number, ingest volume, namespace count, dashboards, SLOs, alerting rules, user count, integrations, any platform pain.
+2. Score every signal honestly. Conversion signals add to the confidence_score; churn signals subtract from it. Anchor each one to a verbatim observation from the input.
+3. stage_assessment derives from the score: 70 to 100 is on track, 35 to 69 is at risk, 0 to 34 is stalled.
+4. top_3_strengths: the three strongest conversion signals you found in the input. Each must cite verbatim evidence.
+5. top_3_risks: the three churn signals most likely to kill conversion if left alone. Each must carry a severity (low, medium, high, critical) and verbatim evidence.
+6. next_best_actions: four concrete, owner-assignable, time-boxed plays. Owner is one of FE, AE, CSM, Customer-Champion, Customer-Platform-Lead. Each action has an estimated_minutes value and an expected_impact statement (what signal will improve and by when).
+7. days_to_decision_estimate: integer estimate of business days remaining to the customer's go/no-go decision. Anchor to the trial week number when stated.
+8. executive_summary: one paragraph an FE could read aloud to the District Manager on the Monday revenue call. Lead with stage_assessment and the single biggest risk.
+
+# Tone
+Pragmatic. No marketing fluff. No "strong customer engagement opportunity" filler. Specific not generic. Owner-assignable, time-boxed, evidence-backed. If a signal is silent in the input, do not invent it; mark it as a caveat inside the relevant risk evidence field.
+
+# Hard rules
+- Anchor every strength and risk to a verbatim observation from the trial summary. If the summary is silent on a topic, do not score it.
+- next_best_actions must be specific, owner-assignable, and time-boxed. Never write "engage the customer" or "schedule a meeting"; write "FE schedules a 30-minute SLO workshop with the customer platform lead this week" with estimated_minutes.
+- Use commas, colons, or periods. Never use the em dash or en dash character.
+- Output via the json_schema response format only."""
+
+POV_HEALTH_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "stage_assessment": {
+            "type": "string",
+            "enum": ["on_track", "at_risk", "stalled"],
+        },
+        "confidence_score": {"type": "integer", "minimum": 0, "maximum": 100},
+        "executive_summary": {"type": "string"},
+        "strengths": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+                    "title": {"type": "string"},
+                    "evidence": {"type": "string"},
+                },
+                "required": ["title", "evidence"],
+            },
+        },
+        "risks": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+                    "title": {"type": "string"},
+                    "severity": {"type": "string", "enum": ["low", "medium", "high", "critical"]},
+                    "evidence": {"type": "string"},
+                },
+                "required": ["title", "severity", "evidence"],
+            },
+        },
+        "next_best_actions": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+                    "title": {"type": "string"},
+                    "owner_role": {
+                        "type": "string",
+                        "enum": ["FE", "AE", "CSM", "Customer-Champion", "Customer-Platform-Lead"],
+                    },
+                    "estimated_minutes": {"type": "integer", "minimum": 5, "maximum": 480},
+                    "expected_impact": {"type": "string"},
+                },
+                "required": ["title", "owner_role", "estimated_minutes", "expected_impact"],
+            },
+        },
+        "days_to_decision_estimate": {"type": "integer", "minimum": 0, "maximum": 365},
+    },
+    "required": [
+        "stage_assessment",
+        "confidence_score",
+        "executive_summary",
+        "strengths",
+        "risks",
+        "next_best_actions",
+        "days_to_decision_estimate",
+    ],
+}
+
+
+def render_pov_health_prompt(
+    trial_summary: str,
+    customer_name: str = "",
+    week_number: int = 0,
+) -> str:
+    """Render the user prompt for Lina given a pasted POV trial summary."""
+    parts = []
+    if customer_name:
+        parts.append(f"# Customer: {customer_name.strip()}")
+    if week_number and week_number > 0:
+        parts.append(f"# Trial week: {int(week_number)}")
+    if customer_name or (week_number and week_number > 0):
+        parts.append("")
+    parts.append("# Trial summary pasted by the Field Engineer (verbatim)")
+    parts.append("```")
+    parts.append((trial_summary or "").strip())
+    parts.append("```")
+    parts.append("")
+    parts.append(
+        "Apply your method now. Score every conversion signal and every churn signal "
+        "found in the input. Anchor every strength, risk, and action to verbatim evidence "
+        "from the summary above. next_best_actions must be specific, owner-assignable "
+        "(FE, AE, CSM, Customer-Champion, Customer-Platform-Lead), and time-boxed in "
+        "estimated_minutes. Output via the json_schema response format only."
+    )
+    return "\n".join(parts)
+

@@ -1,0 +1,144 @@
+<!--
+  filename: pov-health.html
+  description: POV Health workspace. Standalone page for the Lina POV Health monitor (14th MCP tool). Salesforce shows opportunity stage; this shows technical POV stage with structured signals, confidence score, strengths, risks, and owner-assignable next-best-actions. Reads from /api/v1/tools/pov-health and /api/v1/tools/pov-health/history.
+  Author: Rodrigo Careaga
+  Date: 04-05-2026
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FE Copilot - POV Health</title>
+  <!-- seo:meta:start -->
+  <meta name="description" content="POV Health by FE Copilot. Catch trials that are silently slipping. Run a weekly check on every customer in evaluation, get a stage assessment, confidence score, and owner-assignable next-best-actions." />
+  <link rel="canonical" href="/pov-health.html" />
+  <meta name="theme-color" content="#0077CC" />
+  <meta name="author" content="Rodrigo Careaga" />
+  <meta name="application-name" content="FE Copilot" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="FE Copilot - POV Health" />
+  <meta property="og:description" content="Catch trials that are silently slipping. Weekly POV health check with stage assessment, confidence score, and owner-assignable next-best-actions." />
+  <meta property="og:image" content="/assets/img/elastic/glyph-cluster-color.svg" />
+  <meta property="og:url" content="/pov-health.html" />
+  <meta property="og:site_name" content="FE Copilot" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="FE Copilot - POV Health" />
+  <meta name="twitter:description" content="Catch trials that are silently slipping. Weekly POV health check with stage assessment, confidence score, and owner-assignable next-best-actions." />
+  <meta name="twitter:image" content="/assets/img/elastic/glyph-cluster-color.svg" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <!-- seo:meta:end -->
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="/assets/img/elastic/glyph-cluster-color.svg" />
+  <link rel="stylesheet" href="/assets/css/command-palette.css" />
+</head>
+<body class="tools-page pov-health-page">
+  <a class="skip-to-main" href="#main-content" data-i18n="a11y.skip_to_main">Skip to main content</a>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="FE Copilot home">
+      <img class="logo-elastic" src="/assets/img/elastic/logo-horizontal-white.svg" alt="Elastic" width="64" height="22" />
+      <span class="brand-sep">/</span>
+      <span class="name">FE <span class="accent">Copilot</span></span>
+      <span class="tag">POV Health</span>
+    </a>
+    <div class="right">
+      <div class="lang-host" id="lang-host"></div>
+    </div>
+  </header>
+
+  <main class="container" id="main-content" tabindex="-1">
+    <section class="hero">
+      <h1>POV Health <span class="grad">for trials in evaluation.</span></h1>
+      <p class="lede">
+        Catch trials that are silently slipping. Run a weekly check on every customer in evaluation. Salesforce
+        shows you opportunity stage. POV Health shows you the technical POV stage with structured signals: SLOs
+        configured, alerting rules tuned, dashboards built, multi-team adoption, ingest hygiene. Lina (Senior POV
+        Operations Lead, 9 years at Elastic) returns a stage assessment, a confidence score, the strongest
+        conversion signals, the highest-severity churn risks, and four owner-assignable next-best-actions.
+      </p>
+      <div class="ab-meta">
+        <span class="ab-pill ab-pill-muted">Lina (Senior POV Operations Lead)</span>
+        <span class="ab-pill ab-pill-muted">14th MCP tool</span>
+        <span class="ab-pill ab-pill-muted">Tied to FE quota outcomes</span>
+      </div>
+    </section>
+
+    <section class="tools-content">
+      <details class="tool-panel" id="tool-pov-run" open>
+        <summary>
+          <span class="tool-num">01</span>
+          <div class="tool-meta">
+            <h2 class="tool-title">Run a POV health check</h2>
+            <p class="tool-desc">Paste the trial summary. Lina returns the structured assessment in seconds.</p>
+          </div>
+          <span class="tool-tag tag-claude">Claude</span>
+          <span class="chevron"></span>
+        </summary>
+        <div class="tool-body">
+          <form id="pv-form" class="tool-form" onsubmit="return false">
+            <div class="qr-row">
+              <label class="qr-field grow">
+                <span class="qr-lbl">Customer name (used in history)</span>
+                <input type="text" id="pv-customer" placeholder="Atlas Health" maxlength="160" />
+              </label>
+              <label class="qr-field" style="max-width:160px">
+                <span class="qr-lbl">Trial week</span>
+                <input type="number" id="pv-week" min="0" max="52" placeholder="3" />
+              </label>
+            </div>
+            <label class="qr-field">
+              <span class="qr-lbl">Trial summary (ingest, namespaces, dashboards, SLOs, alerting rules, users, integrations, platform pain)</span>
+              <textarea id="pv-summary" rows="11" placeholder="Atlas Health, week 3 of 8, ingesting 12 GB/day from 2 namespaces. 1 dashboard built by the customer platform engineer. No SLOs configured. No alerting rules beyond integration defaults. Single user only (the platform engineer). ELSER not yet enabled. JVM heap nominal. Customer Champion is the platform engineering lead but the security and app dev orgs have not been engaged yet."></textarea>
+            </label>
+            <div class="tool-actions">
+              <button type="submit" class="btn primary">Run POV health check</button>
+              <button type="button" class="btn ghost" id="pv-load-demo">Load demo summary</button>
+              <label class="qr-model">
+                <span class="qr-model-lbl">Model</span>
+                <select id="pv-model">
+                  <option value="">Default</option>
+                  <option value="claude-haiku-4-5">Haiku 4.5</option>
+                  <option value="claude-sonnet-4-6">Sonnet 4.6</option>
+                  <option value="claude-opus-4-7">Opus 4.7</option>
+                </select>
+              </label>
+              <span class="muted small" id="pv-status"></span>
+            </div>
+          </form>
+          <div id="pv-result" class="tool-result"></div>
+        </div>
+      </details>
+
+      <details class="tool-panel" id="tool-pov-history" open>
+        <summary>
+          <span class="tool-num">02</span>
+          <div class="tool-meta">
+            <h2 class="tool-title">History</h2>
+            <p class="tool-desc">Past POV health checks for every customer. Grouped by customer, sorted newest first.</p>
+          </div>
+          <span class="tool-tag">Storage</span>
+          <span class="chevron"></span>
+        </summary>
+        <div class="tool-body">
+          <div class="tool-actions" style="margin-bottom: 10px;">
+            <button type="button" class="btn ghost" id="pv-history-refresh">Refresh history</button>
+            <span class="muted small" id="pv-history-status"></span>
+          </div>
+          <div id="pv-history" class="tool-result"></div>
+        </div>
+      </details>
+    </section>
+
+    <section id="toast-host" role="status" aria-live="polite" aria-atomic="false"></section>
+  </main>
+
+  <script src="/assets/js/tools-rail.js"></script>
+  <script defer src="/assets/js/i18n.js"></script>
+  <script defer src="/assets/js/api.js"></script>
+  <script defer src="/assets/js/ui.js"></script>
+  <script defer src="/assets/js/api-retry.js"></script>
+  <script defer src="/assets/js/tools.js"></script>
+  <script defer src="/assets/js/pov-health.js"></script>
+  <script defer src="/assets/js/command-palette.js"></script>
+</body>
+</html>
