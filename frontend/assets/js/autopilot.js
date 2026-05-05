@@ -1,6 +1,6 @@
 /*
   filename: autopilot.js
-  description: "Show me the magic" 45-second autonomous demo orchestrator. Page-tour driven. 9 steps end-to-end (intro, dashboard, industries, battlecards, FE Brain, Agent Builder, demo data, health, recap) showcasing every page via the iframe stage. No LLM calls so it works without Anthropic credits. AbortController + Esc cancel, run history in localStorage. Desktop-only.
+  description: "Show me the magic" 30-second autonomous demo orchestrator. Page-tour driven. 9 steps end-to-end (intro, dashboard, industries, battlecards, FE Brain, Agent Builder, demo data, health, recap) showcasing every page via the iframe stage. No LLM calls so it works without Anthropic credits. AbortController + Esc cancel, run history in localStorage. Desktop-only.
   Author: Rodrigo Careaga
   Date: 03-05-2026
 */
@@ -9,17 +9,17 @@
 
   const AP = {
     storageKey: "fec.autopilot.lastRun",
-    totalSeconds: 45,
+    totalSeconds: 30,
     steps: [
-      { id: "intro",      label: "Intro",            duration: 3000 },
-      { id: "dashboard",  label: "Dashboard",        duration: 4000 },
-      { id: "industries", label: "20 industries",    duration: 6000 },
-      { id: "bcards",     label: "Battlecards",      duration: 6000 },
-      { id: "brain",      label: "FE Brain",         duration: 5000 },
-      { id: "ab",         label: "Agent Builder",    duration: 6000 },
-      { id: "demo",       label: "Demo data",        duration: 5000 },
-      { id: "health",     label: "Live health",      duration: 5000 },
-      { id: "recap",      label: "Recap",            duration: 5000 },
+      { id: "intro",      label: "Intro",            duration: 2000 },
+      { id: "dashboard",  label: "Dashboard",        duration: 2500 },
+      { id: "industries", label: "20 industries",    duration: 3500 },
+      { id: "bcards",     label: "Battlecards",      duration: 4500 },
+      { id: "brain",      label: "FE Brain",         duration: 4000 },
+      { id: "ab",         label: "Agent Builder",    duration: 5000 },
+      { id: "demo",       label: "Demo data",        duration: 2000 },
+      { id: "health",     label: "Live health",      duration: 2000 },
+      { id: "recap",      label: "Recap",            duration: 4000 },
     ],
   };
 
@@ -393,76 +393,76 @@
   }
 
   // ============================================================ Steps
-  // 9-step autopilot, 45s total. Page-tour driven. Each step navigates the
+  // 9-step autopilot, 30s total. Page-tour driven. Each step navigates the
   // iframe to a real page with deep-link params so judges see the real product
   // (industries, battlecards, FE Brain, agent builder, demo data, health,
   // workflow). No step blocks on Anthropic credits; LLM-dependent flows are
   // replaced with deterministic page tours.
 
   async function stepIntro(signal) {
-    setCaption(0, "FE Copilot autopilot",
-      "Forty five seconds. Twelve MCP tools, thirty one battlecards, twenty industries, eight demo scenarios. No typing.");
+    setCaption(0, "FE Copilot",
+      "Thirty seconds. Fourteen MCP tools. Thirty-one battlecards. Twenty industries. Eight demo scenarios.");
     fireConfetti(80);
     const btn = state.nodes.cta;
     if (btn) btn.classList.add("is-running");
-    await sleep(2700, signal);
+    await sleep(1700, signal);
   }
 
   async function stepDashboard(signal) {
     setCaption(1, "Dashboard",
-      "Quick Research, calendar inbox with smart customer resolver, recent briefs, audit trail.");
+      "Quick Research, calendar inbox, recent briefs. One place for every pre-call.");
     showPanel("/");
-    await sleep(3700, signal);
+    await sleep(2200, signal);
   }
 
   async function stepIndustries(signal) {
     setCaption(2, "Twenty industries",
-      "FSI, Government, Healthcare, Retail, Telco, Manufacturing and more. Each card has personas, regulations, top competitors.");
+      "FSI, Government, Healthcare, Retail, Telco, Manufacturing. Personas, regulations, top competitors per vertical.");
     showPanel("/industries.html");
-    await sleep(5700, signal);
+    await sleep(3200, signal);
   }
 
   async function stepBattlecards(signal) {
-    setCaption(3, "Thirty one battlecards, sorted by marketshare",
-      "Filter by vertical or industry. Click Splunk for full TCO comparison, talking points, honest gaps, objection handlers.");
+    setCaption(3, "Thirty-one battlecards. Ranked by marketshare.",
+      "Splunk. Datadog. CrowdStrike. AWS OpenSearch. TCO, talking points, objection handlers. In the room when you need them.");
     showPanel("/battlecards.html");
-    await sleep(5700, signal);
+    await sleep(4200, signal);
   }
 
   async function stepFeBrain(signal) {
-    setCaption(4, "FE Brain hybrid retrieval",
-      "BM25 plus ELSER plus Reciprocal Rank Fusion plus Haiku rerank over 1300 Elastic doc chunks. Cited answers in ten seconds.");
+    setCaption(4, "FE Brain. 1,300 doc chunks. Hybrid retrieval.",
+      "BM25 + ELSER + RRF + Haiku rerank. Cited answers in ten seconds. Grounded in your data.");
     showPanel("/fe-brain.html");
-    await sleep(4700, signal);
+    await sleep(3700, signal);
   }
 
   async function stepAgentBuilder(signal) {
-    setCaption(5, "Agent Builder, real persistence",
-      "Master agent plus three pre seeded specialists. Build your own from the modal. Persisted in your Kibana cluster, not in this app.");
+    setCaption(5, "Agent Builder. Three context-driven agents.",
+      "Native MCP and A2A. RFP Responder, Migration Specialist, Compliance Pursuit. Lives in your Kibana cluster, not this app.");
     showPanel("/agent-builder.html");
-    await sleep(5700, signal);
+    await sleep(4700, signal);
   }
 
   async function stepDemoData(signal) {
     setCaption(6, "Eight demo scenarios",
-      "Black Friday outage, credential stuffing, GDPR audit, supply chain attack, FSI banking fraud, HIPAA audit, CDM compliance, noisy microservice. Each ships paired FE and Customer dashboards.");
+      "FSI fraud, HIPAA audit, GDPR, supply chain attack. Real Kibana dashboards, no fake data.");
     showPanel("/demo-data.html");
-    await sleep(4700, signal);
+    await sleep(1700, signal);
   }
 
   async function stepHealth(signal) {
-    setCaption(7, "Live health",
-      "Twelve MCP tools, two Kibana workflows, thirty one battlecards across four verticals, FE Brain corpus size, last sync, cluster ping. All green.");
+    setCaption(7, "Fourteen tools live. Two workflows. All green.",
+      "Elastic + Anthropic. MIT licensed. Ready for your cluster.");
     showPanel("/health.html");
-    await sleep(4700, signal);
+    await sleep(1700, signal);
   }
 
   async function stepRecap(signal) {
-    setCaption(8, "Six hours per FE per week back",
-      "MIT License. Ten personas. Two workflows. Built on Anthropic Claude and Elastic Cloud. Take it home, build your own agents.");
+    setCaption(8, "Six hours per FE per week back.",
+      "That's what we just took back. Take it home. Move pilots to real-world impact.");
     fireConfetti(140);
     hidePanel();
-    await sleep(4700, signal);
+    await sleep(3700, signal);
   }
 
   const STEP_FNS = [stepIntro, stepDashboard, stepIndustries, stepBattlecards, stepFeBrain, stepAgentBuilder, stepDemoData, stepHealth, stepRecap];
@@ -507,7 +507,7 @@
       cta.disabled = true;
       cta.classList.add("is-running");
       cta.querySelector(".ap-label").textContent = "Running...";
-      cta.querySelector(".ap-sub").textContent = "45s";
+      cta.querySelector(".ap-sub").textContent = "30s";
     }
     startCountdown();
 
@@ -600,8 +600,8 @@
     const sectionsClean = AP.steps.length - state.failures.length;
     const elapsedStr = `${(elapsedMs / 1000).toFixed(1)}s`;
     const card = el("div", { class: "ap-complete", role: "dialog", "aria-modal": "true", "aria-label": "Autopilot complete" }, [
-      el("h3", { text: "Six hours per FE per week back." }),
-      el("p", { text: "Twelve MCP tools, thirty one battlecards, twenty industries, eight demo scenarios. All live in your Elastic cluster. Take it for a test drive or skip the autopilot and start with any tile on the home page." }),
+      el("h3", { text: "That's what we just took back." }),
+      el("p", { text: "Fourteen MCP tools. Thirty-one battlecards. Twenty industries. Eight demo scenarios. MIT licensed. Take it home." }),
       el("div", { class: "ap-stat-row" }, [
         el("div", { class: "ap-stat" }, [
           el("strong", { text: elapsedStr }),
@@ -612,7 +612,7 @@
           el("span", { text: "sections covered" }),
         ]),
         el("div", { class: "ap-stat" }, [
-          el("strong", { text: "12" }),
+          el("strong", { text: "14" }),
           el("span", { text: "MCP tools live" }),
         ]),
         el("div", { class: "ap-stat" }, [
@@ -668,13 +668,13 @@
         class: "autopilot-cta",
         type: "button",
         id: "autopilot-cta",
-        "aria-label": "Run the 45-second FE Copilot autonomous demo",
+        "aria-label": "Run the 30-second FE Copilot autonomous demo",
       }, [
         el("span", { class: "ap-icon", "aria-hidden": "true", text: "*" }),
         el("span", { class: "ap-label", text: "Show me the magic" }),
-        el("span", { class: "ap-sub", text: "45s" }),
+        el("span", { class: "ap-sub", text: "30s" }),
       ]),
-      el("span", { class: "autopilot-hint", text: "One click. Forty five seconds. Watch every page light up: industries, battlecards, FE Brain, Agent Builder, dashboards, health." }),
+      el("span", { class: "autopilot-hint", text: "One click. Thirty seconds. Industries, battlecards, FE Brain, Agent Builder, demo scenarios, health." }),
     ]);
 
     // Place under the lede paragraph but above the hero stats, if possible.
