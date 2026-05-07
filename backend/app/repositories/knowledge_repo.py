@@ -166,6 +166,7 @@ class KnowledgeRepo:
                     "chunk.index",
                     "text",
                 ],
+                request_timeout=12,
             )
             hits = self._shape_hits(self._extract_hits(res))
             if hits:
