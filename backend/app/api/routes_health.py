@@ -225,6 +225,18 @@ async def info() -> dict:
     key = settings.anthropic_api_key.strip()
     mock_mode = key in ("", "sk-ant-replace-me")
     es = get_es_repo()
+    prod = settings.app_env == "production"
+    es_block: Dict[str, Any] = {"available": es.available}
+    kib_block: Dict[str, Any] = {"available": kibana_client.ping()}
+    if not prod:
+        es_block["url"] = settings.elasticsearch_url
+        kib_block["url"] = settings.kibana_url
+        kib_block["discover"] = {
+            "briefs": kibana_client.discover_url("fec-briefs"),
+            "post_meetings": kibana_client.discover_url("fec-post-meetings"),
+            "audit": kibana_client.discover_url("fec-audit"),
+            "battlecards": kibana_client.discover_url("fec-battlecards"),
+        }
     return {
         "service": "fe-copilot",
         "version": __version__,
@@ -235,12 +247,8 @@ async def info() -> dict:
             "post_meeting": settings.model_for("post_meeting"),
             "live_meeting": settings.model_for("live_meeting"),
         },
-        "elasticsearch": {
-            "available": es.available,
-        },
-        "kibana": {
-            "available": kibana_client.ping(),
-        },
+        "elasticsearch": es_block,
+        "kibana": kib_block,
     }
 
 
@@ -313,10 +321,12 @@ async def health_full() -> Dict[str, Any]:
             "version": cluster.get("version", ""),
             "ping_ms": ping_ms,
             "available": es_available,
+            **({} if settings.app_env == "production" else {"url": settings.elasticsearch_url}),
         },
         "kibana": {
             "agent_builder_agent": _AGENT_BUILDER_AGENT_ID,
             "mcp_connector": _MCP_CONNECTOR_NAME,
+            **({} if settings.app_env == "production" else {"url": settings.kibana_url}),
         },
         "service": "fe-copilot",
         "version": __version__,

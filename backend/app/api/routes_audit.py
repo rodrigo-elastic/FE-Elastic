@@ -25,6 +25,7 @@ async def list_audit(limit: int = 200) -> dict:
         return {"entries": [], "totals": {"calls": 0, "input_tokens": 0, "output_tokens": 0}}
 
     _SCRUB = {"company_name", "meeting_id", "company", "account_name"}
+    prod = settings.app_env == "production"
     entries: list[dict] = []
     for line in path.read_text(encoding="utf-8").splitlines():
         line = line.strip()
@@ -32,8 +33,9 @@ async def list_audit(limit: int = 200) -> dict:
             continue
         try:
             entry = json.loads(line)
-            for k in _SCRUB:
-                entry.pop(k, None)
+            if prod:
+                for k in _SCRUB:
+                    entry.pop(k, None)
             entries.append(entry)
         except json.JSONDecodeError:
             continue
