@@ -7,4 +7,4 @@
 // GITHUB PAGES → AWS: set the value below to your ECS/App Runner URL.
 //   Update this line and push; GitHub Actions redeploys automatically.
 //
-// window.FEC_API_BASE = "https://YOUR-AWS-ALB-URL.us-east-1.elb.amazonaws.com";
+window.FEC_API_BASE = "https://fe-c85291a2a8b144188ee6be1078e79a95.ecs.us-east-1.on.aws";
