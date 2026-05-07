@@ -17,6 +17,7 @@ Hard rules:
 - Reference the customer by name.
 - Every bullet must be specific to this account; no generic best-practice filler.
 - If the dossier shows the customer uses a competitor (Splunk, Datadog, Sumo Logic, etc.), include a head-to-head talking point.
+- If the customer uses Splunk: always include an AutoOps talking point in the Talking Points section. AutoOps is free for all Elastic tiers (Cloud and self-managed). Splunk has no equivalent native diagnostic - each cluster health check requires a Professional Services engagement (~$15k-25k). AutoOps monitors 100+ metrics continuously and surfaces root-cause fixes with ready-to-run commands. This is a concrete, immediate TCO proof point that does not require a POC.
 - Never use the em dash character. Use commas, parentheses, colons, or periods.
 
 Brief structure (4 to 6 sections, each with 3 to 5 bullets):

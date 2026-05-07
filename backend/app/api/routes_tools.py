@@ -509,6 +509,41 @@ def _repo_search(repo: Any, query: str, top_k: int, mode: str) -> List[Any]:
         return repo.search(query, top_k) or []
 
 
+def _hits_to_response(query: str, hits: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Build a KnowledgeSearchOut-shaped dict directly from retrieved hits.
+
+    Used when the Claude synthesis call is unavailable (API credits exhausted
+    or mock mode). Returns the top-3 hit snippets as a structured answer with
+    citations so the FE Brain tool remains useful in offline/demo mode.
+    """
+    top = hits[:3]
+    snippets = []
+    citations = []
+    for i, h in enumerate(top, start=1):
+        title = (h.get("title") or "Elastic documentation").strip()
+        section = (h.get("section_heading") or "").strip()
+        text = (h.get("text") or h.get("snippet") or "").strip()
+        url = (h.get("url") or "").strip()
+        heading = f"**{title}**" + (f" - {section}" if section else "")
+        snippet = text[:400].rstrip() + ("..." if len(text) > 400 else "")
+        snippets.append(f"[{i}] {heading}\n{snippet}")
+        citations.append(
+            {
+                "n": i,
+                "url": url,
+                "title": title,
+                "section_heading": section,
+                "snippet": snippet,
+            }
+        )
+    answer = (
+        f"Here are the most relevant excerpts from the Elastic documentation for your question: "
+        f'"{query}"\n\n'
+        + "\n\n".join(snippets)
+    )
+    return {"answer": answer, "citations": citations}
+
+
 async def run_knowledge_search(payload: KnowledgeSearchRequest) -> Dict[str, Any]:
     """Hybrid + rerank search over the Elastic public docs corpus, synthesized by Mei."""
     query = payload.query.strip()
@@ -581,7 +616,12 @@ async def run_knowledge_search(payload: KnowledgeSearchRequest) -> Dict[str, Any
         },
     )
 
+    # When Claude is unavailable (credits exhausted, mock mode), synthesize
+    # the retrieved hits directly so the tool returns grounded content.
     data = result.model_dump()
+    if hits and not data.get("citations"):
+        data = _hits_to_response(query, hits)
+
     log.info(
         "tool.knowledge_search.complete",
         answer_len=len(data.get("answer") or ""),

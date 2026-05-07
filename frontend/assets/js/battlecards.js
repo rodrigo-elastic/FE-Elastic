@@ -18,6 +18,9 @@
     industry: "all",          // selected industry id; "all" or one of the 20 ids
     mainsOnly: false,         // toggle defaults off so all 31 cards are visible by default
     searchQuery: "",          // last applied search string
+    persona: (function () {
+      try { return localStorage.getItem("fec.bc.persona") || "sa"; } catch (_) { return "sa"; }
+    }()),                     // "sa" = Solution Architect | "ca" = Customer Architect
   };
 
   // Canonical 20 industry IDs aligned with W15A.
@@ -45,6 +48,65 @@
     ai_search_ecommerce: "bc.vert.ai_search_ecommerce.short",
     security_siem_xdr: "bc.vert.security_siem_xdr.short",
   };
+
+  // ---------------------------------------------------------------- community votes
+
+  const VOTES_KEY = "fec.bc.votes";
+  function _loadVotes() {
+    try { return JSON.parse(localStorage.getItem(VOTES_KEY) || "{}"); } catch (_) { return {}; }
+  }
+  function _saveVotes(v) {
+    try { localStorage.setItem(VOTES_KEY, JSON.stringify(v)); } catch (_) {}
+  }
+  function getVote(id) {
+    const v = _loadVotes();
+    return { up: v[id + ":up"] || 0, down: v[id + ":down"] || 0, mine: v[id + ":mine"] || null };
+  }
+  function castVote(id, dir) {
+    const v = _loadVotes();
+    const mine = v[id + ":mine"] || null;
+    if (mine === dir) {
+      v[id + ":" + dir] = Math.max(0, (v[id + ":" + dir] || 0) - 1);
+      delete v[id + ":mine"];
+    } else {
+      if (mine) v[id + ":" + mine] = Math.max(0, (v[id + ":" + mine] || 0) - 1);
+      v[id + ":" + dir] = (v[id + ":" + dir] || 0) + 1;
+      v[id + ":mine"] = dir;
+    }
+    _saveVotes(v);
+    return getVote(id);
+  }
+
+  function makeVoteRow(voteId, compact) {
+    const vote = getVote(voteId);
+    const row = el("div", { class: "bc-vote-row" + (compact ? " bc-vote-compact" : "") });
+    let upBtn, downBtn, scoreEl;
+
+    function refresh(v) {
+      const net = v.up - v.down;
+      upBtn.className = "bc-vote-btn up" + (v.mine === "up" ? " voted" : "");
+      upBtn.textContent = "👍 " + v.up;
+      downBtn.className = "bc-vote-btn down" + (v.mine === "down" ? " voted" : "");
+      downBtn.textContent = "👎 " + v.down;
+      scoreEl.textContent = net > 0 ? "+" + net : String(net);
+      scoreEl.className = "bc-vote-score" + (net > 0 ? " positive" : net < 0 ? " negative" : "");
+    }
+
+    upBtn = el("button", { type: "button", class: "bc-vote-btn up" + (vote.mine === "up" ? " voted" : ""), title: "Helpful", "aria-label": "Mark as helpful" }, "👍 " + vote.up);
+    downBtn = el("button", { type: "button", class: "bc-vote-btn down" + (vote.mine === "down" ? " voted" : ""), title: "Needs work", "aria-label": "Mark as needs work" }, "👎 " + vote.down);
+    const net = vote.up - vote.down;
+    scoreEl = el("span", { class: "bc-vote-score" + (net > 0 ? " positive" : net < 0 ? " negative" : "") }, net > 0 ? "+" + net : String(net));
+    const label = el("span", { class: "bc-vote-label" }, "Community rating");
+
+    upBtn.addEventListener("click", (e) => { e.stopPropagation(); refresh(castVote(voteId, "up")); });
+    downBtn.addEventListener("click", (e) => { e.stopPropagation(); refresh(castVote(voteId, "down")); });
+
+    row.appendChild(upBtn);
+    row.appendChild(downBtn);
+    row.appendChild(scoreEl);
+    if (!compact) row.appendChild(label);
+    return row;
+  }
 
   // ---------------------------------------------------------------- helpers
 
@@ -681,6 +743,7 @@
             ])
           );
         }
+        tile.appendChild(makeVoteRow(slugOf(card) + ":tp:" + i, true));
         grid.appendChild(tile);
       });
       wrap.appendChild(
@@ -760,12 +823,17 @@
 
     const dq = Array.isArray(card.discovery_questions) ? card.discovery_questions : [];
     if (dq.length) {
+      const dqList = el("ol", { class: "bc-dq-list" });
+      dq.forEach((q, i) => {
+        const li = el("li", { class: "bc-dq-item" });
+        li.appendChild(document.createTextNode(q));
+        li.appendChild(makeVoteRow(slugOf(card) + ":dq:" + i, true));
+        dqList.appendChild(li);
+      });
       wrap.appendChild(
-        el("section", { class: "bc-block" }, [
+        el("section", { class: "bc-block bc-block-discovery" }, [
           el("div", { class: "bc-block-lbl" }, "Discovery questions"),
-          el("ol", { class: "bc-dq-list" }, dq.map((q) =>
-            el("li", { class: "bc-dq-item" }, q)
-          )),
+          dqList,
         ])
       );
     }
@@ -840,6 +908,7 @@
 
     body.appendChild(left);
     body.appendChild(right);
+    body.setAttribute("data-persona", STATE.persona);
 
     // Show / hide.
     if (grid) grid.hidden = true;
@@ -1118,10 +1187,53 @@
     }
   }
 
+  function bindPersonaToggle() {
+    const host = $("#bc-persona-toggle-host");
+    if (!host) return;
+
+    const wrap = el("div", {
+      class: "bc-persona-toggle",
+      role: "group",
+      "aria-label": "View persona",
+    });
+
+    function makeBtn(value, icon, label, title) {
+      return el("button", {
+        type: "button",
+        class: "bc-persona-btn" + (STATE.persona === value ? " active" : ""),
+        "aria-pressed": STATE.persona === value ? "true" : "false",
+        "data-persona": value,
+        title,
+      }, [el("span", { class: "bc-persona-icon" }, icon), " " + label]);
+    }
+
+    const saBtn = makeBtn("sa", "🎯", "Solution Architect", "Discovery questions, deal research, competitive strategy");
+    const caBtn = makeBtn("ca", "⚙️", "Customer Architect", "Technical depth, proof, architecture - discovery questions hidden");
+
+    function setPersona(p) {
+      STATE.persona = p;
+      try { localStorage.setItem("fec.bc.persona", p); } catch (_) {}
+      saBtn.className = "bc-persona-btn" + (p === "sa" ? " active" : "");
+      saBtn.setAttribute("aria-pressed", p === "sa" ? "true" : "false");
+      caBtn.className = "bc-persona-btn" + (p === "ca" ? " active" : "");
+      caBtn.setAttribute("aria-pressed", p === "ca" ? "true" : "false");
+      const body = $("#bc-detail-body");
+      if (body) body.setAttribute("data-persona", p);
+    }
+
+    saBtn.addEventListener("click", () => setPersona("sa"));
+    caBtn.addEventListener("click", () => setPersona("ca"));
+
+    wrap.appendChild(saBtn);
+    wrap.appendChild(caBtn);
+    host.appendChild(wrap);
+  }
+
   function init() {
     bindSearch();
     bindVerticalFilter();
     bindIndustryFilter();
+    bindPersonaToggle();
     bindRouting();
     bindDetailToolbar();
     routeFromHash(); // shows grid until data arrives or hash is empty

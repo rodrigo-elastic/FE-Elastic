@@ -58,7 +58,7 @@
   {
     "id": "atlantico-sig-001",
     "account_id": "banco-atlantico",
-    "account_name": "Banco Atlantico",
+    "account_name": "Banco Atlántico",
     "signal_type": "usage_drop",
     "severity": "high",
     "arr_usd": 1800000,
@@ -72,7 +72,7 @@
   {
     "id": "atlantico-sig-002",
     "account_id": "banco-atlantico",
-    "account_name": "Banco Atlantico",
+    "account_name": "Banco Atlántico",
     "signal_type": "competitor_mention",
     "severity": "high",
     "arr_usd": 1800000,
@@ -86,7 +86,7 @@
   {
     "id": "atlantico-sig-003",
     "account_id": "banco-atlantico",
-    "account_name": "Banco Atlantico",
+    "account_name": "Banco Atlántico",
     "signal_type": "exec_change",
     "severity": "high",
     "arr_usd": 1800000,

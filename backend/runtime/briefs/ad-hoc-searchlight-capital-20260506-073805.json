@@ -1,0 +1,103 @@
+{
+  "meeting_id": "ad-hoc-searchlight-capital-20260506-073805",
+  "company_id": "ad-hoc-searchlight-capital",
+  "company_name": "Searchlight Capital",
+  "ad_hoc": true,
+  "generated_at": "2026-05-06T07:38:06.526475+00:00",
+  "headline": "Northwind Pay's EU banking licence + Datadog renewal create a 90-day window to consolidate observability and SIEM.",
+  "sections": [
+    {
+      "heading": "Why now",
+      "bullets": [
+        "EU banking licence granted in Q3 2025 raises the audit-grade observability bar; EU banking expectations now apply.",
+        "Datadog spend approaching $4M/year; renewal lands November 1.",
+        "Three-tool fragmentation (Splunk + Datadog + Grafana) is a known on-call pain point."
+      ]
+    },
+    {
+      "heading": "Recent signals",
+      "bullets": [
+        "Demo press: Northwind Pay secures EU banking licence after 3-year wait.",
+        "Demo background: 50M+ customers, secondary share sale led by an unnamed investor.",
+        "Demo engineering blog references Kafka + Kubernetes at heavy scale."
+      ]
+    },
+    {
+      "heading": "Likely pain points",
+      "bullets": [
+        "SIEM coverage gap surfaced by EU banking audit prep (open P1 ticket).",
+        "Datadog ingest spikes during card-promo campaigns drove $80k overage last month.",
+        "7 year audit retention makes Datadog index-rate pricing punitive."
+      ]
+    },
+    {
+      "heading": "Discovery questions",
+      "bullets": [
+        "What does the EU banking audit specifically require for SIEM coverage timeline?",
+        "What is the Datadog renewal envelope you are protecting?",
+        "Mike, where is the consolidation hardest technically: ingest, retention, or RBAC?"
+      ]
+    },
+    {
+      "heading": "Talking points (vs Datadog)",
+      "bullets": [
+        "Single platform: logs, metrics, traces, plus SIEM on one cluster, one license.",
+        "Frozen tier on object storage cuts 7 year retention costs 60-80 percent.",
+        "Native Kubernetes ingest, OTel collector first-class."
+      ]
+    },
+    {
+      "heading": "Risks and open questions",
+      "bullets": [
+        "Need successful POC at 80k EPS sustained ingest before any commitment.",
+        "Procurement needs to be looped in early; previous engagements stalled 2 weeks at signing.",
+        "EU banking regulatory mapping must be ready before architecture council review."
+      ]
+    }
+  ],
+  "artifact_path": "runtime/briefs/ad-hoc-searchlight-capital-20260506-073805.html",
+  "company_snapshot": {
+    "id": "ad-hoc-searchlight-capital",
+    "name": "Searchlight Capital",
+    "industry": "Banking & Financial Services",
+    "size": "10000+ employees",
+    "headquarters": null,
+    "website": null,
+    "tech_stack": {
+      "observability": [
+        "Splunk for SIEM + observability",
+        "Datadog APM",
+        "Oracle + DB2 mainframe",
+        "Java/Kotlin microservices",
+        "Kafka",
+        "AWS + on-prem"
+      ],
+      "search": [],
+      "cloud": [],
+      "other": []
+    },
+    "description": "Splunk renewal on desk. DORA deadline June."
+  },
+  "meeting_snapshot": {
+    "id": "ad-hoc-searchlight-capital-20260506-073805",
+    "company_id": "ad-hoc-searchlight-capital",
+    "title": "Discovery with Searchlight Capital",
+    "start_time": "2026-05-06T07:38:05.985303+00:00",
+    "end_time": "2026-05-06T07:38:05.985315+00:00",
+    "attendees": [],
+    "notes": "Splunk renewal on desk. DORA deadline June."
+  },
+  "sources_used": {
+    "news": [],
+    "tickets": [],
+    "past_transcripts": [],
+    "user_input": {
+      "company_name": "Searchlight Capital",
+      "industry": "Banking & Financial Services",
+      "size": "10000+ employees",
+      "tech_stack_notes": "Splunk for SIEM + observability, Datadog APM, Oracle + DB2 mainframe, Java/Kotlin microservices, Kafka, AWS + on-prem",
+      "notes": "Splunk renewal on desk. DORA deadline June.",
+      "meeting_title": "Discovery with Searchlight Capital"
+    }
+  }
+}

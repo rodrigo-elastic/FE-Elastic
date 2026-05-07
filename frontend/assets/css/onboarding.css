@@ -151,14 +151,14 @@
 .fec-onboard-btn[disabled] { opacity: 0.45; cursor: not-allowed; }
 
 .fec-onboard-btn.primary {
-  background: linear-gradient(180deg, #0077CC 0%, #005FA8 100%);
+  background: linear-gradient(180deg, #0B64DD 0%, #0951AD 100%);
   border-color: rgba(0, 119, 204, 0.6);
   color: #ffffff;
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.18);
 }
 .fec-onboard-btn.primary:hover {
-  background: linear-gradient(180deg, #1B8FE5 0%, #0077CC 100%);
-  border-color: #0077CC;
+  background: linear-gradient(180deg, #1B8FE5 0%, #0B64DD 100%);
+  border-color: #0B64DD;
 }
 
 [data-theme="dark"] .fec-onboard-btn {

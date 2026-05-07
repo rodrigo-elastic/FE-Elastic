@@ -41,7 +41,7 @@
   background: var(--bg);
   color: var(--ink);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 6px;
   padding: 11px 14px 11px 40px;
   font: 14px/1.4 Inter, system-ui, sans-serif;
   transition: border-color .15s, box-shadow .15s;
@@ -49,9 +49,107 @@
 .bc-page-search input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(0, 119, 204, 0.18);
+  box-shadow: 0 0 0 2px rgba(11, 100, 221, 0.18);
 }
 .bc-page-search input::placeholder { color: var(--muted-2); }
+
+/* ============================================================ Persona toggle */
+.bc-persona-toggle {
+  display: inline-flex;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.bc-persona-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font: 600 12px/1 Inter, system-ui, sans-serif;
+  cursor: pointer;
+  transition: background 120ms, color 120ms;
+  white-space: nowrap;
+}
+.bc-persona-btn:hover { color: var(--ink); background: var(--panel-3); }
+.bc-persona-btn.active {
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgba(43, 57, 79, 0.12);
+}
+.bc-persona-btn .bc-persona-icon { font-size: 13px; }
+/* Persona mode banner in detail view */
+.bc-persona-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  border-radius: 6px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.bc-persona-banner strong { color: var(--ink); }
+.bc-persona-banner-icon { font-size: 15px; }
+/* CA mode highlights technical sections */
+[data-persona="ca"] .bc-block.bc-block-discovery { display: none; }
+[data-persona="ca"] .bc-tp-tile { border-left: 3px solid var(--primary); }
+
+/* ============================================================ Vote buttons */
+.bc-vote-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-soft);
+}
+.bc-vote-compact { margin-top: 8px; padding-top: 6px; }
+.bc-vote-label {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--muted-2);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.bc-vote-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--muted);
+  font: 600 11px/1 Inter, system-ui, sans-serif;
+  cursor: pointer;
+  transition: background 100ms, border-color 100ms, color 100ms;
+}
+.bc-vote-btn:hover { border-color: var(--border-strong); color: var(--ink); }
+.bc-vote-btn.up.voted { background: rgba(0, 138, 94, 0.12); border-color: rgba(0, 138, 94, 0.4); color: #008A5E; }
+.bc-vote-btn.down.voted { background: rgba(198, 30, 37, 0.1); border-color: rgba(198, 30, 37, 0.35); color: #C61E25; }
+[data-theme="dark"] .bc-vote-btn.up.voted { color: #24C292; background: rgba(36, 194, 146, 0.14); border-color: rgba(36, 194, 146, 0.3); }
+[data-theme="dark"] .bc-vote-btn.down.voted { color: #F6726A; background: rgba(246, 114, 106, 0.14); border-color: rgba(246, 114, 106, 0.3); }
+.bc-vote-score {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted-2);
+  min-width: 18px;
+  text-align: center;
+}
+.bc-vote-score.positive { color: #008A5E; }
+.bc-vote-score.negative { color: #C61E25; }
+[data-theme="dark"] .bc-vote-score.positive { color: #24C292; }
+[data-theme="dark"] .bc-vote-score.negative { color: #F6726A; }
 
 /* ============================================================ Grid */
 .bc-grid {

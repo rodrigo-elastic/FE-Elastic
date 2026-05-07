@@ -17,11 +17,11 @@
 ## 30-second tour
 
 1. Open `frontend/index.html` and click "Show me the magic"
-2. Watch the autopilot run six tools across one customer scenario
-3. Open Kibana Agent Builder, click `fec_field_assistant`
+2. Watch the 45-second autopilot run the Searchlight Capital Splunk-displacement play across six steps (hook, quick research, brief, Field Assistant, live Agent Builder creation, recap)
+3. Open Kibana Agent Builder, click `fec_field_assistant` (and the freshly created "Splunk Displacement" agent)
 4. Ask: "TCO comparison vs Splunk at 200 GB/day"
 
-No setup needed: 8 demo scenarios pre-seeded, 12 tools live behind the MCP connector.
+No setup needed: 8 demo scenarios pre-seeded, 12 tools live behind the MCP connector, AutoOps cluster signals streaming from the `fe-summit-hackathon-ed0e8e` deployment.
 
 # FE Copilot
 
@@ -43,7 +43,7 @@ No setup needed: 8 demo scenarios pre-seeded, 12 tools live behind the MCP conne
 
 ## 30-second elevator
 
-Field Engineers run six customer meetings a day and burn fifteen hours a week on prep, MEDDPICC capture, Salesforce updates, and the swivel-chair between Splunk, Datadog, Slack, and Salesforce. FE Copilot collapses that loop into three agents and a tools rail that live inside Elastic. A pre-meeting researcher pulls live SEC EDGAR data and ships a PDF brief to Slack one hour before the call; a live companion whispers competitor and MEDDPICC alerts on every transcript turn; a post-meeting action engine fires six Salesforce writes plus a follow-up email draft on one click. Every tool is wired into the Elastic Cloud 9.3.4 Agent Builder over MCP, so the master agent `fec_field_assistant` chains them inside Kibana. All data is synthetic. All agents fall back to Haiku 4.5 mock mode so a judge can clone and run without an API key.
+Field Engineers run six customer meetings a day and burn fifteen hours a week on prep, deal qualification capture, Salesforce updates, and the swivel-chair between Splunk, Datadog, Slack, and Salesforce. FE Copilot collapses that loop into three agents and a tools rail that live inside Elastic. A pre-meeting researcher pulls live SEC EDGAR data and ships a PDF brief to Slack one hour before the call; a live companion whispers competitor and MEDDPICC alerts on every transcript turn; a post-meeting action engine fires six Salesforce writes plus a follow-up email draft on one click. The headline narrative is a Splunk displacement play for Searchlight Capital, a fictional FSI account 60 days from a Splunk renewal - automating Elastic's official **Race to Displace Security** sales play end to end: the autopilot creates a "Splunk Displacement" agent live in Kibana while the meeting brief surfaces real AutoOps cluster signals plus a free-vs-$15k-$25k competitive card against Splunk PS health checks. Every tool is wired into the Elastic Cloud 9.3.4 Agent Builder over MCP, so the master agent `fec_field_assistant` chains them inside Kibana. All data is synthetic. All agents fall back to Haiku 4.5 mock mode so a judge can clone and run without an API key.
 
 ## See it before you read it
 
@@ -58,17 +58,17 @@ Field Engineers run six customer meetings a day and burn fifteen hours a week on
 | Workflow loop | [docs/screenshots/workflow_demo.png](docs/screenshots/workflow_demo.png) | docs/gifs/workflow.gif |
 | Demo data seeder | [docs/screenshots/demo_data.png](docs/screenshots/demo_data.png) | docs/gifs/demo_data.gif |
 
-GIFs are produced by a sister agent and dropped into `docs/gifs/` ahead of submission. The 5-minute single-take video is scripted in [`docs/demo-script.md`](docs/demo-script.md) with a 31-shot storyboard in [`docs/storyboard.md`](docs/storyboard.md).
+GIFs are produced by a sister agent and dropped into `docs/gifs/` ahead of submission. The current production-ready video script (v4.1) is [`docs/video-script-v4-story.md`](docs/video-script-v4-story.md), built around the Searchlight Capital Splunk-displacement narrative; it supersedes the earlier `docs/demo-script.md` and `docs/video-script-v4.md`. The 31-shot storyboard still lives in [`docs/storyboard.md`](docs/storyboard.md).
 
 ## Why FE Copilot wins on every judging criterion
 
 ### FE Impact
 
-This is not a research demo, it is a tool I would ship to my own segment tomorrow. Six meetings a day, thirty minutes of prep each, fifteen hours a week per FE. The pre-meeting agent (`backend/app/agents/pre_meeting.py`) replaces that prep with a sourced brief in under sixty seconds. The post-meeting agent (`backend/app/agents/post_meeting.py`) replaces forty minutes of Salesforce hygiene per call with one click that fires six writes (Opportunity MEDDPICC, ContentNote, ContentDocumentLink, Competitor record, Deal_Health, Slack post). The math: at $0.02 per pipeline run on Haiku 4.5, the entire FE org pays for a year of inference in one cancelled prep meeting.
+This is not a research demo, it is a tool I would ship to my own segment tomorrow. Six meetings a day, thirty minutes of prep each, fifteen hours a week per FE. The pre-meeting agent (`backend/app/agents/pre_meeting.py`) replaces that prep with a sourced brief in under sixty seconds - the same brief that feeds into the ESAT (Elastic Strategy Architecture and Transformation deck) and seeds the Business Value Review the AE needs after the call. The post-meeting agent (`backend/app/agents/post_meeting.py`) replaces forty minutes of Salesforce hygiene per call with one click that fires six writes (Close Plan deal-qualification update, ContentNote, ContentDocumentLink, Competitor record, Deal_Health, Slack post). The math: at $0.02 per pipeline run on Haiku 4.5, the entire FE org pays for a year of inference in one cancelled prep meeting.
 
 ### Use of Workflows + Agent Builder
 
-The twelve FE tools (POC plan, SPL to ES|QL, compliance, stack extract, code sample, cost calc, capacity, knowledge search, troubleshoot, compare, orchestrator, proposal) are declared as Agent Builder external HTTP tools by `backend/scripts/sync_agent_builder.py`, and a master agent `fec_field_assistant` owns all twelve. Inside Kibana 9.3.4 a single prompt like "translate this SPL and price it at 200 GB/day for 12 months" causes the master agent to chain `fec_spl_to_esql` and then `fec_cost_calc`, no human in the loop. The complementary Kibana Workflow ([`backend/app/api/routes_workflows.py`](backend/app/api/routes_workflows.py)) watches `fec-transcript-inbox`, fires a webhook to the backend over ngrok, and runs the post-meeting agent end to end. Workflows trigger agents, agents invoke workflows, both ship today.
+The twelve FE tools (POC plan, SPL to ES|QL, compliance, stack extract, code sample, cost calc, capacity, knowledge search, troubleshoot, compare, orchestrator, proposal) are declared as Agent Builder external HTTP tools by `backend/scripts/sync_agent_builder.py`, and a master agent `fec_field_assistant` owns all twelve. Inside Kibana 9.3.4 a single prompt like "translate this SPL and price it at 200 GB/day for 12 months" causes the master agent to chain `fec_spl_to_esql` and then `fec_cost_calc`, no human in the loop. The autopilot demo goes one step further: it creates a "Splunk Displacement" agent live via `POST /agent-builder/agents` (description "Win financial services accounts away from Splunk before renewal locks", tools `fec_compare`, `fec_cost_calc`, `fec_proposal`, `fec_knowledge_search`); the kibana-view (`GET /api/v1/agent-builder/kibana-view`) highlights it in yellow and the recap card opens the real Kibana Agent Builder at `fe-summit-hackathon-ed0e8e.kb.us-west-1.aws.found.io`. The complementary Kibana Workflow ([`backend/app/api/routes_workflows.py`](backend/app/api/routes_workflows.py)) watches `fec-transcript-inbox`, fires a webhook to the backend over ngrok, and runs the post-meeting agent end to end. Workflows trigger agents, agents invoke workflows, both ship today.
 
 ### Polish
 
@@ -97,24 +97,87 @@ The full persona roster (12 named expert personas, one frozen prompt each):
 
 Two of the twelve MCP tools (`fec_capacity` and the calculator side of `fec_cost_calc`) are pure deterministic compute and intentionally have no persona: they are sized as calculators, not opinion engines. Lyra's persona owns the narrative wrapper around the cost calculator output.
 
+A new AutoOps router (`backend/app/api/routes_autoops.py`, prefix `/api/v1/autoops`) acts as a webhook relay for the live `fe-summit-hackathon-ed0e8e` Elastic Cloud deployment: `POST /webhook` ingests AutoOps outbound events into `backend/data/autoops_events.json`, `GET /alerts` returns raw events, `GET /summary` returns a structured cluster-health payload (status, alert counts, cluster name), and `GET /competitive` returns the four AutoOps-vs-Splunk talking points (free vs $15k-$25k Splunk PS health checks, same diagnostic). The pre-meeting prompt at `backend/app/agents/prompts/pre_meeting.py` enforces the rule: when the customer uses Splunk, always include an AutoOps talking point in the Talking Points section.
+
 ### Demo Quality
 
 Five minutes, single take, scripted to the second. The 31-shot storyboard in [`docs/storyboard.md`](docs/storyboard.md) lists URL, click sequence, voiceover cue, b-roll, and pre-conditions per shot. Twelve named failure modes have written fallback paths so a flaky API does not blow the take. Cache-priming step before recording so Claude responses land instantly. The same backend that serves the recording also serves a phone over ngrok if a judge wants to play with it live. English plus Spanish voiceover so the regional FE community can land it in their own market. Cue cards live in [`docs/cue-cards.md`](docs/cue-cards.md), persona talk tracks in [`docs/talk-tracks.md`](docs/talk-tracks.md).
 
+## How it works
+
+```mermaid
+flowchart TD
+    classDef elastic fill:#005571,stroke:#00BFB3,color:#fff
+    classDef claude fill:#0077CC,stroke:#1BA9F5,color:#fff
+    classDef output fill:#1a1a2e,stroke:#00BFB3,color:#d4d9e0
+    classDef problem fill:#2d1b1b,stroke:#F04E98,color:#d4d9e0
+    classDef action fill:#1b2d1b,stroke:#2dbe60,color:#d4d9e0
+
+    MORNING["8:42 AM — Searchlight Capital call at 9:00\nOn Splunk. Renewal in 60 days. DORA audit June.\nPrep time: 50 seconds with FE Copilot"]:::problem
+
+    MORNING --> PRE
+
+    subgraph PRE["① Pre-Meeting  ·  Race to Displace Security play"]
+        direction LR
+        EDGAR["SEC EDGAR\n10-K / 6-K filings"]
+        AUTOOPS["AutoOps\ncluster signals"]
+        BRIEF_OUT["Account brief\n+ displacement plan\n+ Splunk TCO card"]
+        EDGAR --> BRIEF_OUT
+        AUTOOPS --> BRIEF_OUT
+    end
+
+    subgraph LIVE["② During the Call  ·  Live Companion"]
+        direction LR
+        TX["Transcript turn"] --> ALERTS["MEDDPICC alerts\nCompetitor mentions\nField Assistant chat"]
+    end
+
+    subgraph POST["③ Post-Meeting  ·  One click"]
+        direction LR
+        POST_OUT["Action items · BVR draft\nFollow-up email · Proposal"]
+        SFDC["Salesforce\nClose Plan · Competitor\nDeal Health · ContentNote\nSlack post"]
+        POST_OUT --> SFDC
+    end
+
+    PRE --> LIVE
+    LIVE --> POST
+
+    subgraph KIBANA["Elastic Cloud 9.3.4  ·  Kibana"]
+        direction LR
+        AB["Agent Builder\nfec_field_assistant\n14 MCP tools\n+ Splunk Displacement agent"]
+        WF["Kibana Workflow\nfec-transcript-inbox\n→ triggers post-meeting"]
+    end
+
+    subgraph TOOLS["14 MCP Tools  ·  Expert Personas"]
+        direction TB
+        T1["SPL → ES|QL\n(Diego, ex-Splunk)"]
+        T2["Cost calc vs Splunk\n(Lyra, Pricing Arch)"]
+        T3["DORA / HIPAA / PCI\n(Priya, ex-PwC)"]
+        T4["FE Brain RAG\n3 837 doc chunks ELSER\n(Mei)"]
+        T5["Proposal / BVR\n(Carmen)"]
+        T6["Compare · POC plan\nStack extract · Code\nTroubleshoot · Capacity\nOrchestrator · Battlecard"]
+    end
+
+    AB -->|MCP over ngrok| TOOLS
+    WF -->|webhook| POST
+    TOOLS --> PRE
+    TOOLS --> LIVE
+```
+
 ## Architecture
 
-The full diagram, component descriptions, and three hero data flows live in [`docs/architecture.md`](docs/architecture.md). The short version:
+The full diagram, component descriptions, and three hero data flows live in [`docs/architecture.md`](docs/architecture.md). The technical stack:
 
 ```mermaid
 flowchart LR
     User["FE in browser"] -->|HTTPS| API["FastAPI :8123"]
     API --> Agents["3 agents<br/>pre / live / post"]
-    API --> Tools["12 MCP tools (incl. RAG)"]
+    API --> Tools["14 MCP tools (incl. RAG)"]
     Agents --> Anthropic["Anthropic Claude<br/>Haiku 4.5 / Opus 4.7"]
     Tools --> Anthropic
     Tools --> ES["Elastic Cloud 9.3.4<br/>fec-knowledge<br/>3837 chunks ELSER"]
-    Kibana["Kibana Agent Builder<br/>fec_field_assistant"] -->|MCP via ngrok| API
+    Kibana["Kibana Agent Builder<br/>fec_field_assistant<br/>+ Splunk Displacement"] -->|MCP via ngrok| API
     Wf["Kibana Workflow<br/>fec-transcript-inbox"] -->|webhook via ngrok| API
+    AutoOps["AutoOps<br/>fe-summit-hackathon-ed0e8e"] -->|outbound webhook| API
     API --> Runtime["runtime/<br/>slack.log, salesforce.log,<br/>audit.jsonl, briefs/, emails/"]
 ```
 
@@ -181,7 +244,7 @@ PYTHONPATH=backend python -m scripts.run_pipeline
 | # | Page | Path | Who it is for | What it does |
 |---|---|---|---|---|
 | 1 | Dashboard | [`/`](frontend/index.html) | Every FE | Calendar inbox with smart resolver that filters Elastic-internal invites and deprioritizes 17+ consulting firms ([`backend/app/services/company_resolver.py`](backend/app/services/company_resolver.py)). Hero stats, three entry modes (Quick Research, Transcript paste, Calendar). Screenshot: [docs/screenshots/dashboard.png](docs/screenshots/dashboard.png). |
-| 2 | Meeting workspace | [`/meeting.html?id=...`](frontend/meeting.html) | FE running a customer call | Three tabs: pre-meeting brief, live companion, post-meeting actions. Field Assistant mini-chat grounded in the brief and the last 8 transcript turns. Customer journey strip across the top. Screenshot: [docs/screenshots/meeting_revolut.png](docs/screenshots/meeting_revolut.png). |
+| 2 | Meeting workspace | [`/meeting.html?id=...`](frontend/meeting.html) | FE running a customer call | Three tabs: pre-meeting brief, live companion, post-meeting actions. The Brief tab auto-injects the AutoOps widget (`frontend/assets/js/autoops-widget.js`) which polls `/api/v1/autoops/summary` and `/api/v1/autoops/competitive` to show live cluster signals (JVM pressure, shard count, slow query) from the `fe-summit-hackathon-ed0e8e` deployment plus the AutoOps-vs-Splunk competitive card and an "Open AutoOps" button to the real console. Field Assistant mini-chat grounded in the brief and the last 8 transcript turns. Customer journey strip across the top. Screenshot: [docs/screenshots/meeting_revolut.png](docs/screenshots/meeting_revolut.png). |
 | 3 | Tools rail | [`/tools.html`](frontend/tools.html) | Every FE | Twelve collapsible panels: POC plan, SPL to ES\|QL, Compliance mapper, Stack extractor, Code sample, Cost calc, Capacity, Knowledge search, Troubleshoot, Compare, Orchestrator, Proposal. Each wraps a Claude expert persona. Screenshot: [docs/screenshots/tools.png](docs/screenshots/tools.png). |
 | 4 | FE Brain | [`/fe-brain.html`](frontend/fe-brain.html) | FE asking docs questions | Retrieval-augmented Q+A grounded in 3837 chunks of the official Elastic documentation, indexed in `fec-knowledge` with ELSER embeddings. Citations link back to the source page. Mei (Elastic Docs Lead) curates the corpus. |
 | 5 | Agent Builder | [`/agent-builder.html`](frontend/agent-builder.html) | FE wanting tool chaining | Chat surface for the master agent `fec_field_assistant` running inside Kibana 9.3.4. Streams reasoning steps and tool calls inline. One prompt chains SPL conversion plus cost. Screenshot: [docs/screenshots/agent_builder.png](docs/screenshots/agent_builder.png). |
@@ -193,7 +256,8 @@ The persistent left sidebar (`frontend/assets/js/tools-rail.js`) is on every pag
 
 ## Built with
 
-- **Elastic Cloud 9.3.4** with Kibana Agent Builder and Workflows; `fec-knowledge` index with 3837 chunks of ELSER-embedded documentation; six live customer-fit dashboards rendered from meeting context.
+- **Elastic Cloud 9.3.4** with Kibana Agent Builder and Workflows; `fec-knowledge` index with 3837 chunks of ELSER-embedded documentation; six live customer-fit dashboards rendered from meeting context; the live `fe-summit-hackathon-ed0e8e` deployment hosts the demo cluster.
+- **Elastic AutoOps** as a free TCO proof point against Splunk PS health checks: outbound webhooks land at `POST /api/v1/autoops/webhook` and the brief widget surfaces cluster signals plus a competitive card live during the call.
 - **Anthropic Claude** Haiku 4.5 as the cheap default ($0.02 per full pipeline run), Opus 4.7 enabled per agent for deep reasoning, prompt caching on the stable system block, structured output via `output_config.format`.
 - **Model Context Protocol (MCP)** server at `/api/v1/mcp/*` exposing twelve tools (the FE utilities plus the RAG search and orchestrator) for Kibana Agent Builder to introspect.
 - **ngrok** HTTPS tunnel so Kibana Cloud and the Workflow webhook can reach a backend running on a laptop.
@@ -204,7 +268,7 @@ The persistent left sidebar (`frontend/assets/js/tools-rail.js`) is on every pag
 
 ## Hackathon judging notes
 
-FE Copilot is the FE day-to-day workflow rebuilt from scratch on top of Elastic Cloud 9.3.4 and Anthropic Claude. Every claim in the demo is anchored in a file path you can open: the SEC EDGAR client, the Slack mock log, the six Salesforce writes, the master agent declaration, the Kibana Workflow webhook handler, the audit log with per-call token counts. The wow factor is not any single agent, it is the closed loop: a transcript document landing in `fec-transcript-inbox` triggers a Kibana Workflow that calls a webhook over ngrok that runs the post-meeting agent that writes Salesforce, Slack, and a follow-up email draft, all without a human in the loop. The reusability story is that the same three agents and twelve tools serve every FE segment because the dossier abstraction is segment-agnostic. The polish story is that judges can clone the repo, run `pip install`, and watch the full pipeline run in mock mode without an API key, then flip one env var to bring it live against Claude Opus 4.7.
+FE Copilot is the FE day-to-day workflow rebuilt from scratch on top of Elastic Cloud 9.3.4 and Anthropic Claude. Every claim in the demo is anchored in a file path you can open: the SEC EDGAR client, the Slack mock log, the six Salesforce writes, the master agent declaration, the Kibana Workflow webhook handler, the AutoOps webhook relay, the audit log with per-call token counts. The headline narrative is the Searchlight Capital Splunk-displacement play: a 45-second autopilot creates a "Splunk Displacement" agent live in Kibana, the brief widget shows real AutoOps cluster signals from `fe-summit-hackathon-ed0e8e` plus a free-vs-$15k-$25k competitive card against Splunk PS health checks, and the recap card opens the real Kibana Agent Builder with the new agent highlighted. The wow factor beyond that single play is the closed loop: a transcript document landing in `fec-transcript-inbox` triggers a Kibana Workflow that calls a webhook over ngrok that runs the post-meeting agent that writes Salesforce, Slack, and a follow-up email draft, all without a human in the loop. The reusability story is that the same three agents and twelve tools serve every FE segment because the dossier abstraction is segment-agnostic. The polish story is that judges can clone the repo, run `pip install`, and watch the full pipeline run in mock mode without an API key, then flip one env var to bring it live against Claude Opus 4.7.
 
 ## Project layout
 
@@ -212,21 +276,26 @@ FE Copilot is the FE day-to-day workflow rebuilt from scratch on top of Elastic 
 FE-Elastic/
   backend/                Python 3.11 FastAPI app
     app/
-      agents/             3 agents (pre / live / post) + frozen prompts + JSON schemas + offline mocks
-      api/                15 routers: agents, tools, briefs, meetings, calendar, salesforce,
-                          audit, demo-data, kibana, mcp, agent-builder, workflows, battlecards, health
+      agents/             3 agents (pre / live / post) + frozen prompts (pre_meeting.py enforces the
+                          AutoOps-vs-Splunk talking point) + JSON schemas + offline mocks
+      api/                16 routers: agents, tools, briefs, meetings, calendar, salesforce,
+                          audit, demo-data, kibana, mcp, agent-builder, workflows, battlecards,
+                          health, autoops (routes_autoops.py)
       integrations/       Anthropic + ES clients; Slack/Calendar/SFDC mocks; SEC EDGAR HTTP; Agent Builder
       repositories/       Read-only access over synthetic JSON fixtures (cached)
       services/           PDF builder, transcript parser, email drafter, company resolver, scenarios
       models/             Pydantic domain models
+    data/                 autoops_events.json (3 pre-seeded AutoOps events from fe-summit-hackathon)
     data/synthetic/       Generated fixtures (gitignored)
     scripts/              generate_synthetic_data.py, seed_elasticsearch.py, sync_agent_builder.py,
                           sync_kibana_workflow.py, run_pipeline.py
     tests/                30 tests, all passing in mock mode
   frontend/               13 static HTML pages + assets (no build step, 5 languages)
+    assets/js/            tools-rail.js, i18n.js, autoops-widget.js (Brief-tab AutoOps panel)
   infra/                  docker-compose.yml + Dockerfile.backend
-  docs/                   architecture.md, demo-script.md, storyboard.md, cue-cards.md,
-                          talk-tracks.md, judging-narrative.md, compliance.md, screenshots/, gifs/
+  docs/                   architecture.md, video-script-v4-story.md (current v4.1 script),
+                          storyboard.md, cue-cards.md, talk-tracks.md, judging-narrative.md,
+                          compliance.md, screenshots/, gifs/
   data/                   Demo scenario seeds (Black Friday, Credential Stuffing, Noisy Microservice, ...)
   runtime/                Slack/SFDC logs, audit.jsonl, generated PDFs, email drafts (gitignored)
   HANDOFF.md              Snapshot of project status, transfer notes, next-step priorities
@@ -240,10 +309,13 @@ What ships in this hackathon submission is opinionated and complete enough to us
 ### Near term (weeks 1 to 4 after submission)
 
 - **Production deploy on Fly.io**: Dockerfile, fly.toml, secrets list, and the seven-step playbook all live in `docs/deploy.md`. Replaces the ngrok dependency with a persistent URL the Kibana connector can target. Estimated effort: 2 hours including the Kibana re-sync. Cost: $0 on the free tier with cold-start trade-off, $5 to $10 per month on a small machine for warm.
-- **Salesforce live integration**: replace the SFDC mock with a real OAuth2 connection to a sandbox org. Map the existing six writes (Opportunity MEDDPICC fields, ContentNote, ContentDocumentLink, Competitor update, Deal_Health update, Slack post) to live calls. The mock surface stays as a fallback for offline demos. Estimated effort: 1 day for the OAuth flow, 1 day per object for field mapping.
+- **Salesforce live integration**: replace the SFDC mock with a real OAuth2 connection to a sandbox org. Map the existing six writes (Close Plan deal-qualification record, ContentNote, ContentDocumentLink, Competitor update, Deal_Health update, Slack post) to live calls. Note: legacy Opportunity MEDDPICC fields are read-only in the current Elastic Salesforce configuration - the writeback targets the Close Plan module, which is the current MEDDPICC capture model. The mock surface stays as a fallback for offline demos. Estimated effort: 1 day for the OAuth flow, 1 day per object for field mapping.
 - **Real Slack integration**: replace the Slack mock with a real workspace bot. Adds a `/fec` slash command so a FE can invoke the master agent without leaving Slack. Estimated effort: half a day for the bot scaffold, two days for the slash command persona work.
 - **FE Brain corpus expansion to 1000+ chunks**: add the Elastic Security detection rules repo, the EDOT (Elastic Distribution of OpenTelemetry) reference, the Cases workflow guide, and the Lens visualisation cookbook. Estimated effort: half a day to curate URLs, half a day to re-run the ingest.
 - **Thirteenth MCP tool: `fec_renewal_signals`**: scans deal-health and risk signals on an account and emits a retention play with talking points, owner, and Slack post. Builds on the live Renewal Defender workflow. Estimated effort: 1 day.
+- **AutoOps-as-MCP-tool (`fec_autoops_signals`)**: promote the AutoOps webhook relay into a first-class MCP tool the master agent can call mid-conversation, so a question like "is this customer's cluster healthy right now?" pulls live signals from `fe-summit-hackathon-ed0e8e` instead of waiting for the brief widget. Estimated effort: half a day on top of `routes_autoops.py`.
+- **Customer 360 data source (`fec_c360_snapshot`)**: pull C360 account view data (subscriptions, consumption credits, support ticket trends, feature adoption) from Salesforce/Tableau into the pre-meeting brief. Replaces the static synthetic dossier with live account health. Unlocks accurate "over-consuming vs. under-consuming" signals that currently require a Tableau login. Estimated effort: 2 days for the Salesforce OAuth + Tableau API path.
+- **Seismic BVR surfacing**: when the post-meeting agent detects a Race to Displace or GenAI deal, surface the matching Seismic Business Value Review template (BVR Race to Displace Security, BVR GenAI) as a Slack link so the AE has the right asset before the next call. Estimated effort: 1 day using `seismic_battlecard_lookup` extended to docs.
 
 ### Medium term (months 1 to 3)
 
@@ -278,20 +350,20 @@ The roadmap is intentionally honest: every item lists effort and value, and noth
 
 Elastic already pays for excellent competitive intelligence platforms. The 31 battlecards shipped in this repo are scaffolding meant to demonstrate the FE flow, NOT a replacement for the curated research that lives elsewhere. Concretely:
 
-- **Klue**: the source of truth for competitor positioning, win wires, and recent battlecard updates. Klue's research team maintains depth that no hackathon project can match.
+- **Seismic**: the current home for Elastic competitive content (battlecards, win wires, enablement decks). Klue was the prior system and is being retired; battlecards have moved to Seismic.
 - **Highspot / Showpad**: source of truth for sales collateral, certified pitch decks, and customer references.
 - **Salesforce / Gainsight**: source of truth for account ownership, opportunity stage, and renewal signals.
 - **Slack `#fe-help`, `#competitive`, regional FE channels**: live tribal knowledge.
 
 The intended near-term integration story (already in the roadmap above) is for FE Copilot to **read from these systems, not duplicate them**:
 
-1. The master agent (`fec_field_assistant`) and the user-built specialist agents (Migration Specialist, Compliance Pursuit, RFP Responder) get a `klue_battlecard_lookup` MCP tool that pulls the live Klue card for a given competitor at conversation time. The Sloane (`fec_compare`) persona then synthesizes Klue's facts plus Elastic's positioning into the response, with a citation back to the Klue card so the FE can verify and update at the source.
-2. The `fec_proposal` and `fec_compare` outputs render a "Sources" footer that lists every external system consulted (Klue card id, Highspot doc id, Salesforce account id) so judges and FEs see provenance, not invented intel.
+1. The master agent (`fec_field_assistant`) and the user-built specialist agents (Migration Specialist, Compliance Pursuit, RFP Responder) get a `seismic_battlecard_lookup` MCP tool that pulls the current Seismic card for a given competitor at conversation time. The Sloane (`fec_compare`) persona then synthesizes Seismic's facts plus Elastic's positioning into the response, with a citation back to the Seismic doc so the FE can verify and update at the source.
+2. The `fec_proposal` and `fec_compare` outputs render a "Sources" footer that lists every external system consulted (Seismic doc id, Highspot doc id, Salesforce account id) so judges and FEs see provenance, not invented intel.
 3. The Renewal defense workflow (`fec_user_renewal_defender`) consumes Salesforce risk signals and Gainsight health scores rather than the synthetic `fec-renewal-signals` index used in the demo.
 
-Why this matters: a hackathon project that overrides Klue would be rejected by every FE who trusts Klue's research. A hackathon project that **routes** Klue into the agent loop, layered with Elastic-specific synthesis and the FE's own meeting context, is genuinely additive. The 31 battlecards in this repo are demo scaffolding to make the agent flow tangible during the 3-minute video; in production they should be replaced by Klue lookups behind the same `fec_compare` and `fec_proposal` tool surface, with no UI change required.
+Why this matters: a hackathon project that overrides Seismic's competitive content would be rejected by every FE who trusts it. A hackathon project that **routes** Seismic into the agent loop, layered with Elastic-specific synthesis and the FE's own meeting context, is genuinely additive. The 31 battlecards in this repo are demo scaffolding to make the agent flow tangible during the 3-minute video; in production they should be replaced by Seismic lookups behind the same `fec_compare` and `fec_proposal` tool surface, with no UI change required.
 
-The `data/seed/battlecards.json` file is therefore intentionally fictional and lightweight. Real customer-facing competitive work should always start at Klue and end at Salesforce, with FE Copilot acting as the connective synthesizer in between.
+The `data/seed/battlecards.json` file is therefore intentionally fictional and lightweight. Real customer-facing competitive work should always start at Seismic and end at Salesforce, with FE Copilot acting as the connective synthesizer in between.
 
 ## Further documentation
 
@@ -299,7 +371,7 @@ The `docs/` directory has the long-form material. The pieces most worth opening:
 
 - [`docs/architecture.md`](docs/architecture.md): system diagram, component map, three hero data flows.
 - [`docs/submission.md`](docs/submission.md): hackathon pitch, judging-criterion cross-walks, bill-of-materials.
-- [`docs/demo-script.md`](docs/demo-script.md) and [`docs/storyboard.md`](docs/storyboard.md): the 5-minute single-take video plan.
+- [`docs/video-script-v4-story.md`](docs/video-script-v4-story.md) and [`docs/storyboard.md`](docs/storyboard.md): the production-ready v4.1 script (Searchlight Capital Splunk-displacement narrative) plus the 31-shot storyboard. `docs/demo-script.md` and `docs/video-script-v4.md` are kept as historical references; the v4.1 story script is the one to read.
 - [`docs/cue-cards.md`](docs/cue-cards.md), [`docs/talk-tracks.md`](docs/talk-tracks.md), [`docs/teleprompter.md`](docs/teleprompter.md): per-persona pitches and live-read cards.
 - [`docs/deploy.md`](docs/deploy.md): seven-step Fly.io playbook for replacing the ngrok dependency.
 - [`docs/supervisor.md`](docs/supervisor.md): single bash loop that keeps the backend, ngrok tunnel, and Agent Builder sync alive during a recording.

@@ -116,7 +116,7 @@ flowchart TB
 
 1. The FE clicks "Run Post-Meeting". The browser POSTs to `/api/v1/agents/post-meeting/{meeting_id}`.
 2. `post_meeting.py` runs a longer Claude call (Opus 4.7 by default) producing a structured payload: summary, action items with verbatim quotes, MEDDPICC update, competitor mentions, follow-up email body.
-3. The agent then writes six records via the Salesforce mock: Opportunity MEDDPICC fields, ContentNote, ContentDocumentLink, Competitor record, Deal_Health update, plus a Slack post. Each write is a JSON line in `runtime/salesforce.log` with an `_action` discriminator.
+3. The agent then writes six records via the Salesforce mock: Close Plan deal-qualification record, ContentNote, ContentDocumentLink, Competitor record, Deal_Health update, plus a Slack post. Each write is a JSON line in `runtime/salesforce.log` with an `_action` discriminator.
 4. The follow-up email is saved to `runtime/emails/` and surfaced in the UI with a copy button.
 5. The closed-loop variant: when a transcript document lands in `fec-transcript-inbox`, the Kibana Workflow triggers `/api/v1/workflows/triggered` over the ngrok tunnel, which calls the same post-meeting code path. Zero clicks, zero swivel chair.
 
@@ -126,17 +126,17 @@ FE Copilot is designed to be **additive** to the tools Elastic FEs already use, 
 
 | External system | What it owns today | Planned MCP tool | Replaces in-repo |
 |---|---|---|---|
-| **Klue** | Curated competitor battlecards, win wires, recent updates | `klue_battlecard_lookup({competitor_slug})` | `data/seed/battlecards.json` lookups |
+| **Seismic** | Curated competitive battlecards, win wires, enablement decks (replaced Klue as the Elastic competitive content platform) | `seismic_battlecard_lookup({competitor_slug})` | `data/seed/battlecards.json` lookups |
 | **Highspot or Showpad** | Certified pitch decks, pricing PDFs, customer references | `highspot_doc_search({query, persona})` | static text in `tools.py` proposal templates |
-| **Salesforce** | Account ownership, opp stage, MEDDPICC, renewal signals | `sfdc_account_snapshot({account_id})` | `runtime/post_meeting/*.json` salesforce mock writes |
+| **Salesforce** | Account ownership, opp stage, Close Plan deal-qualification, renewal signals | `sfdc_account_snapshot({account_id})` | `runtime/post_meeting/*.json` salesforce mock writes |
 | **Gainsight** | Customer health scores, usage trend | `gainsight_health({account_id})` | `data/seed/renewal_signals.json` synthetic risk feed |
 | **Slack `#competitive`, `#fe-help`** | Live tribal knowledge, rapid Q&A | `slack_search({query, channel})` | `fec_knowledge_search` over the public docs corpus only |
 
 The integration pattern reuses the same MCP tool surface already wired in `backend/app/api/routes_mcp.py`. Adding a new tool means: (a) define the persona prompt in `tools.py`, (b) add the schema in `schemas.py`, (c) implement the read against the external API in `routes_tools.py`, (d) register the tool in `sync_agent_builder.py`. No frontend changes are needed because Sloane (`fec_compare`), Carmen (`fec_proposal`), and Auro (`fec_orchestrator`) already render whatever upstream tools they call.
 
-The synthesis pattern is unchanged: an FE asks "How do we compete with Splunk on a 200 GB/day SIEM consolidation deal at Northwind Pay?", and the master agent calls `klue_battlecard_lookup("splunk")` to get the latest Klue facts, `sfdc_account_snapshot("northwind-pay")` to get the actual deal context, `fec_compare` and `fec_cost_calc` to layer the Elastic-specific math, and `fec_proposal` to draft the answer. The output cites every source so the FE can verify each claim at the originating system.
+The synthesis pattern is unchanged: an FE asks "How do we compete with Splunk on a 200 GB/day SIEM consolidation deal at Northwind Pay?", and the master agent calls `seismic_battlecard_lookup("splunk")` to get the current Seismic competitive card, `sfdc_account_snapshot("northwind-pay")` to get the actual deal context, `fec_compare` and `fec_cost_calc` to layer the Elastic-specific math, and `fec_proposal` to draft the answer. The output cites every source so the FE can verify each claim at the originating system.
 
-This is also the answer to the obvious objection ("Elastic already has Klue, why duplicate?"). FE Copilot is the synthesizer that lets one FE consume Klue, Highspot, Salesforce, and Gainsight in the same conversation, grounded in the meeting they just had, with audit-grade provenance. The 31 battlecards in the demo exist only because Klue access was not in-scope for the hackathon submission. Removing them in favor of the live `klue_battlecard_lookup` is a 1-day swap when the integration is greenlit.
+This is also the answer to the obvious objection ("Elastic already has Seismic for competitive content, why duplicate?"). FE Copilot is the synthesizer that lets one FE consume Seismic, Highspot, Salesforce, and Gainsight in the same conversation, grounded in the meeting they just had, with audit-grade provenance. The 31 battlecards in the demo exist only because Seismic API access was not in-scope for the hackathon submission. Removing them in favor of the live `seismic_battlecard_lookup` is a 1-day swap when the integration is greenlit.
 
 ## Why this shape wins
 

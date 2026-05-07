@@ -453,7 +453,7 @@
    view. Hash-based modulo over 10 buckets, mapped to a Lochmara-friendly
    palette. The card uses the hue as a left border accent plus a dot before
    the title; subtle background tint on hover. */
-.qr-kan-card[data-customer-color="0"], .qr-rec[data-customer-color="0"] { --qr-cust: #0077CC; }
+.qr-kan-card[data-customer-color="0"], .qr-rec[data-customer-color="0"] { --qr-cust: #0B64DD; }
 .qr-kan-card[data-customer-color="1"], .qr-rec[data-customer-color="1"] { --qr-cust: #00BFB3; }
 .qr-kan-card[data-customer-color="2"], .qr-rec[data-customer-color="2"] { --qr-cust: #F04E98; }
 .qr-kan-card[data-customer-color="3"], .qr-rec[data-customer-color="3"] { --qr-cust: #FEC514; }
@@ -473,7 +473,7 @@
 }
 .qr-kan-card[data-customer-color]:hover {
   border-color: var(--qr-cust, var(--primary));
-  box-shadow: 0 4px 14px color-mix(in srgb, var(--qr-cust, #0077CC) 18%, transparent);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--qr-cust, #0B64DD) 18%, transparent);
 }
 .qr-kan-dot {
   display: inline-block;
@@ -540,7 +540,7 @@
   height: 8px;
   border-radius: 50%;
 }
-.qr-legend-dot.l0 { background: #0077CC; }
+.qr-legend-dot.l0 { background: #0B64DD; }
 .qr-legend-dot.l1 { background: #00BFB3; }
 .qr-legend-dot.l2 { background: #F04E98; }
 .qr-legend-dot.l3 { background: #FEC514; }
@@ -550,7 +550,7 @@
    timeline colors. Yellow=scheduled, Lochmara=pre-meeting, teal=post-meeting,
    pink=transcript. */
 .qr-legend-dot.stage-scheduled  { background: var(--yellow, #FEC514); }
-.qr-legend-dot.stage-pre        { background: var(--primary, #0077CC); }
+.qr-legend-dot.stage-pre        { background: var(--primary, #0B64DD); }
 .qr-legend-dot.stage-post       { background: var(--teal, #00BFB3); }
 .qr-legend-dot.stage-transcript { background: var(--pink, #F04E98); }
 
@@ -586,7 +586,7 @@
 }
 
 .qr-customer-card:hover {
-  box-shadow: 0 4px 16px color-mix(in srgb, var(--qr-cust, #0077CC) 14%, transparent);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--qr-cust, #0B64DD) 14%, transparent);
 }
 
 .qr-customer-card:focus-visible {
@@ -599,7 +599,7 @@
   cursor: pointer;
 }
 
-.qr-customer-card[data-customer-color="0"] { --qr-cust: #0077CC; }
+.qr-customer-card[data-customer-color="0"] { --qr-cust: #0B64DD; }
 .qr-customer-card[data-customer-color="1"] { --qr-cust: #00BFB3; }
 .qr-customer-card[data-customer-color="2"] { --qr-cust: #F04E98; }
 .qr-customer-card[data-customer-color="3"] { --qr-cust: #FEC514; }
@@ -730,12 +730,12 @@
 .qr-customer-dot:hover,
 .qr-customer-dot:focus-visible {
   transform: translateY(-50%) scale(1.45);
-  box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--dot-color, var(--primary)), 0 4px 12px color-mix(in srgb, var(--dot-color, #0077CC) 40%, transparent);
+  box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--dot-color, var(--primary)), 0 4px 12px color-mix(in srgb, var(--dot-color, #0B64DD) 40%, transparent);
   outline: none;
 }
 
 .qr-customer-dot[data-stage="scheduled"]  { --dot-color: var(--yellow, #FEC514); }
-.qr-customer-dot[data-stage="pre"]        { --dot-color: var(--primary, #0077CC); }
+.qr-customer-dot[data-stage="pre"]        { --dot-color: var(--primary, #0B64DD); }
 .qr-customer-dot[data-stage="post"]       { --dot-color: var(--teal, #00BFB3); }
 .qr-customer-dot[data-stage="transcript"] { --dot-color: var(--pink, #F04E98); }
 .qr-customer-dot[data-stage="other"]      { --dot-color: var(--border-strong, #94a3b8); }
@@ -855,7 +855,7 @@
 }
 
 .qr-customer-detail-dot[data-stage="scheduled"]  { --dot-color: var(--yellow, #FEC514); }
-.qr-customer-detail-dot[data-stage="pre"]        { --dot-color: var(--primary, #0077CC); }
+.qr-customer-detail-dot[data-stage="pre"]        { --dot-color: var(--primary, #0B64DD); }
 .qr-customer-detail-dot[data-stage="post"]       { --dot-color: var(--teal, #00BFB3); }
 .qr-customer-detail-dot[data-stage="transcript"] { --dot-color: var(--pink, #F04E98); }
 .qr-customer-detail-dot[data-stage="other"]      { --dot-color: var(--border-strong, #94a3b8); }

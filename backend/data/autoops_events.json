@@ -1,0 +1,44 @@
+[
+  {
+    "id": "ao_20260506_001",
+    "cluster_id": "fe-summit-hackathon-ed0e8e",
+    "cluster_name": "fe-summit-hackathon",
+    "region": "us-west-1",
+    "severity": "warning",
+    "category": "jvm",
+    "title": "JVM Heap Pressure - data-0",
+    "description": "Node data-0 JVM heap usage peaked at 89% during the agent build session. GC pause time increased by 340ms average.",
+    "recommendation": "Increase heap to 32GB or add a second data node to distribute ingest load.",
+    "timestamp": "2026-05-06T08:23:14Z",
+    "resolved": true,
+    "resolved_at": "2026-05-06T08:41:02Z"
+  },
+  {
+    "id": "ao_20260506_002",
+    "cluster_id": "fe-summit-hackathon-ed0e8e",
+    "cluster_name": "fe-summit-hackathon",
+    "region": "us-west-1",
+    "severity": "info",
+    "category": "shards",
+    "title": "Shard Count Optimization",
+    "description": "14 indices with under 1GB each are consuming dedicated primary shards, adding unnecessary coordination overhead.",
+    "recommendation": "Use the _shrink API to merge small indices. Estimated 40% reduction in shard overhead.",
+    "timestamp": "2026-05-06T07:15:00Z",
+    "resolved": false,
+    "resolved_at": null
+  },
+  {
+    "id": "ao_20260505_001",
+    "cluster_id": "fe-summit-hackathon-ed0e8e",
+    "cluster_name": "fe-summit-hackathon",
+    "region": "us-west-1",
+    "severity": "info",
+    "category": "queries",
+    "title": "Slow Query - agent_conversations",
+    "description": "Wildcard query on agent_conversations index exceeded 800ms at peak. Nested field traversal without filter context.",
+    "recommendation": "Add a keyword sub-field and rewrite as a term query. Estimated 15x latency reduction.",
+    "timestamp": "2026-05-05T16:44:31Z",
+    "resolved": true,
+    "resolved_at": "2026-05-05T18:00:00Z"
+  }
+]

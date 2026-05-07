@@ -13,7 +13,7 @@
   <!-- seo:meta:start -->
   <meta name="description" content="Browse FE Copilot battlecards. Competitor counter positioning live from Elasticsearch, with one page sales kit detail views and a scoped Field Assistant chat." />
   <link rel="canonical" href="/battlecards.html" />
-  <meta name="theme-color" content="#0077CC" />
+  <meta name="theme-color" content="#0B64DD" />
   <meta name="author" content="Rodrigo Careaga" />
   <meta name="application-name" content="FE Copilot" />
   <meta property="og:type" content="website" />
@@ -64,13 +64,14 @@
       </div>
     </section>
 
-    <section class="bc-page-toolbar" aria-label="Search competitors">
+    <section class="bc-page-toolbar" aria-label="Search and filter competitors">
       <label class="bc-page-search" for="bc-search">
         <span class="visually-hidden">Search competitors</span>
         <svg class="bc-page-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
         <input id="bc-search" type="search" placeholder="Search competitors..." autocomplete="off" aria-label="Search competitors by name or tagline" />
       </label>
       <span class="muted small" id="bc-result-count" aria-live="polite"></span>
+      <div id="bc-persona-toggle-host" aria-label="Select view persona"></div>
     </section>
 
     <section class="bc-vertical-bar" aria-label="Filter by vertical" role="group">
@@ -174,6 +175,7 @@
     </div>
   </section>
 
+  <script src="/config.js"></script>
   <script src="/assets/js/tools-rail.js"></script>
   <script defer src="/assets/js/i18n.js"></script>
   <script defer src="/assets/js/api.js"></script>

@@ -142,7 +142,12 @@ class KnowledgeRepo:
     # -------------------------------------------------------- semantic backend
 
     def _search_semantic(self, query: str, top_k: int) -> List[Dict[str, Any]]:
-        """Pure ELSER semantic_text query. Original behaviour, unchanged shape."""
+        """ELSER semantic_text query with automatic BM25 fallback.
+
+        ELSER inference can be slow or unavailable in demo environments.
+        If the semantic query fails or returns 0 hits, we immediately fall back
+        to BM25 so the FE Brain tool always returns grounded citations.
+        """
         try:
             res = self._client.search(
                 index=INDEX_NAME,
@@ -162,10 +167,13 @@ class KnowledgeRepo:
                     "text",
                 ],
             )
+            hits = self._shape_hits(self._extract_hits(res))
+            if hits:
+                return hits
+            log.info("knowledge.semantic_empty_fallback_bm25", query=query[:80])
         except Exception as exc:
-            log.warning("knowledge.semantic_failed", error=str(exc), query=query[:120])
-            return []
-        return self._shape_hits(self._extract_hits(res))
+            log.warning("knowledge.semantic_failed_fallback_bm25", error=str(exc), query=query[:120])
+        return self._search_bm25(query, top_k)
 
     # -------------------------------------------------------- BM25 backend
 

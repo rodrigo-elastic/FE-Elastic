@@ -1,10 +1,10 @@
-# FE Copilot demo video v4 (story-driven rewrite)
+# FE Copilot demo video v4.1 (SKO May 2026 - displacement narrative update)
 
-> Production-ready 3:00 single take. Replaces v3 for the actual recording.
+> Production-ready 3:00 single take. Replaces v4 for the May 10 SKO recording.
 >
-> Why v4 exists: v3 is technically airtight (every phrase sourced) but emotionally flat. It opens with a quote, lists features, closes with a tagline. The best keynotes in the world (Jobs unveiling iPhone in 2007, Sinek's "Start with Why," Andy Raskin's "Greatest Sales Deck") never open with a quote. They open with **a scene**. They put the audience inside the protagonist's body before the product is ever named.
+> Why v4.1 exists: v4 built the right story architecture but was written before the autopilot narrative was finalized. The demo now runs a specific Splunk displacement play for "Searchlight Capital," a fictional FSI account with a 60-day Splunk renewal window. The clock shows 8:42 AM (not 7:42), the call is at 9:00 (not 8:00), and the demo ends with the FE clicking "See agents live in Kibana" to prove the connection between FE Copilot and the real Elastic cluster. AutoOps is a new feature added this sprint: it shows live cluster diagnostics in the meeting brief and surfaces the single strongest free differentiator against Splunk.
 >
-> v4 keeps every verified vocabulary win from v3 (Kulkarni quote, "context engineering," "Solutions Architects and Customer Architects," POV, Agent Builder, "Salesforce stays the system of record," "Move pilots to real-world impact"). But it rebuilds the architecture of the script around a single human moment: a Tuesday at 7:42 a.m., eighteen minutes before a customer call, with the Splunk renewal sitting on the customer's desk. That image lands in the judge's body in five seconds. Everything after that pays off the image.
+> All v4 rhetorical architecture is preserved. Only the lines that contradict the live demo are changed. Verify each change against the actual autopilot run before recording.
 
 ---
 
@@ -39,10 +39,10 @@ The shape is the classic Andy Raskin sales deck: Name a shift in the world, name
 | Pivot | Reset attention | 1:15 to 1:25 | Re-engage, smile lands first |
 | FE Brain | Proof 1: knowledge | 1:25 to 1:42 | Punchy, conversational |
 | Agent Builder | Proof 2: agents that stand next to you | 1:42 to 2:02 | Generous, open hands |
-| Battlecards plus Industries | Proof 3: ammunition | 2:02 to 2:18 | Crisp, confident |
-| Workspace | Proof 4: the work lives here | 2:18 to 2:33 | Warm, human |
-| Workflows | The differentiator that earns the rubric | 2:33 to 2:48 | Slow, deliberate |
-| CTA (the handoff) | Hand the baton, not a tagline | 2:48 to 3:00 | Eye contact, half-smile |
+| Battlecards plus Industries | Proof 3: ammunition + AutoOps kicker | 2:02 to 2:20 | Crisp, confident |
+| Workspace | Proof 4: the work lives here | 2:20 to 2:35 | Warm, human |
+| Workflows | The differentiator that earns the rubric | 2:35 to 2:50 | Slow, deliberate |
+| CTA (the handoff) | Hand the baton, not a tagline | 2:50 to 3:00 | Eye contact, half-smile |
 
 Autopilot now starts at 0:30 and runs for 45 seconds (matching the actual silence in the take), ending at 1:15. This is the only structural timing change: v3 had it at 0:20 to 1:00. Re-trim the autopilot end card by 5 seconds in your editor or, easier, do not retrim and let the recap card hang in frame for the extra 5 seconds while you breathe before the pivot.
 
@@ -57,11 +57,11 @@ Square brackets are operator cues, do NOT speak them. `[PAUSE]` means stop, brea
 ```
 [CAM B. Lean forward 2 cm. Quiet, almost confessional. As if telling a friend a story.]
 
-Tuesday morning. Seven forty-two a.m.
+Tuesday morning. Eight forty-two a.m.
 
-Your customer call is at eight.
+Your customer call is at nine.
 
-You haven't read their last earnings.
+You haven't read Searchlight Capital's last earnings.
 
 You haven't priced the Splunk renewal sitting on their desk.
 
@@ -112,10 +112,11 @@ So I built FE Copilot. One click. Watch.
 
 ```
 [CAM A locked wide. Hands on the desk near the mouse, NOT on the keyboard.]
-[The autopilot drives 9 sections. Captions narrate each one.]
-[At 0:45: small confident nod when the brief renders.]
-[At 1:00: small smile when the Field Assistant tool calls land.]
-[At 1:10: lean back slightly when the recap card lands. Let the silence breathe.]
+[The autopilot runs six steps: hook, quick-research, brief, Field Assistant, Agent Builder, recap. Captions narrate each one.]
+[At 0:45: small confident nod when the pre-meeting brief renders. The AutoOps cluster signals card appears inside the brief - that is the live TCO proof point against Splunk, no words needed.]
+[At 1:00: small smile when the Field Assistant displacement questions land: buyer, Splunk pain, DORA gap, champion, decision window.]
+[At 1:05: lean slightly when "Splunk Displacement" appears highlighted in yellow in the kibana-view. Let that sit for a beat.]
+[At 1:10: lean back when the completion card lands with "See agents live in Kibana." Let the silence breathe.]
 [Do NOT speak. Do NOT touch the keyboard. The autopilot is the speaker.]
 ```
 
@@ -126,11 +127,11 @@ So I built FE Copilot. One click. Watch.
 ```
 [CUT to CAM B at 1:15. Smile lands first. One full beat of eye contact before speaking.]
 
-Forty-five seconds.
+Fifty seconds.
 
 [PAUSE half a beat.]
 
-That brief. That POV plan. That Splunk TCO.
+That brief. That displacement plan. That Splunk TCO.
 
 Every one of those, by hand, costs you the morning.
 
@@ -167,7 +168,7 @@ Context engineering. In your hands.
 
 **Why it works**: Personifies the user before the tool. "You ping #ask-elastic. You wait" is what the judge does at 9 a.m. on a Wednesday, and they feel it. **Then** the click lands. Then the numbers (1,300 chunks, ELSER) arrive as evidence, not as the lead. "Context engineering. In your hands." rhymes with the B1 quote and gives the beat a visual close. Note the verified swap: "grounded in your data" replaces "hallucination-free."
 
-### B5. Agent Builder (1:42 to 2:02, 48 words)
+### B5. Agent Builder (1:42 to 2:02, 62 words)
 
 ```
 [CUT to CAM A. Click Agent Builder tab.]
@@ -182,22 +183,26 @@ I built three to stand next to you.
 
 RFP Responder. Migration Specialist. Compliance Pursuit.
 
-[Click the plus button. The Create dialog opens.]
+[Scroll down. A fourth agent is already there: "Splunk Displacement." It was built live during the autopilot, forty seconds ago.]
+
+That one was not here a minute ago.
 
 Click plus. Pick your tools. Ship a system prompt. Native MCP. Native A2A.
 
-[Close the dialog. Pan cursor to the "Open in Kibana" button.]
+[Completion card visible. Pan cursor to the "See agents live in Kibana" button.]
 
 And here's the part that matters.
 
 These agents don't live in this app. They live in your Kibana cluster.
 
+[Click "See agents live in Kibana." The real Kibana Agent Builder tab opens.]
+
 Your data. Your tenant. Your moat.
 ```
 
-**Why it works**: "I didn't build agents to replace you. I built three to stand next to you" disarms the third-rail "AI replaces FEs" objection in fifteen words. Every Elastic FE in the room exhales. The "Your data. Your tenant. Your moat." triplet at the end is the rule of three, used the way Steve Jobs used it on the original iPhone keynote: cadence through three short sentences. "Native MCP and Native A2A" preserves the verified Agent Builder GA-press vocabulary.
+**Why it works**: "I didn't build agents to replace you. I built three to stand next to you" disarms the third-rail "AI replaces FEs" objection in fifteen words. Every Elastic FE in the room exhales. "That one was not here a minute ago" is the moment the demo becomes undeniable: the autopilot built a real agent live, and now it is sitting in the list. The "Your data. Your tenant. Your moat." triplet is the rule of three, used the way Steve Jobs used it on the original iPhone keynote. Clicking "See agents live in Kibana" closes the loop with proof - the agent is not a screenshot, it lives in the real Kibana cluster. "Native MCP and Native A2A" preserves the verified Agent Builder GA-press vocabulary.
 
-### B6. Battlecards plus Industries (2:02 to 2:18, 36 words)
+### B6. Battlecards plus Industries (2:02 to 2:20, 52 words)
 
 ```
 [CUT to CAM A. Click Battlecards tab.]
@@ -215,11 +220,15 @@ Twenty industries. Eighty percent of your accounts covered.
 [Hold on the grid for one beat.]
 
 Whatever they throw at you, you're already standing on the answer.
+
+[PAUSE half a beat.]
+
+And that brief you saw render? AutoOps was already in it. Live cluster signals. Free. Splunk charges fifteen thousand dollars for the same call.
 ```
 
-**Why it works**: "Eight seconds before the room shifts" is a body count, not a feature. The judge has been in that room. The Splunk callback to B0 closes a setup-payoff arc the audience does not consciously notice but feels as craft. "Already standing on the answer" is a balance image: rooted, ready, not scrambling. Verified marketshare ordering preserved (Splunk first, AWS OpenSearch last).
+**Why it works**: "Eight seconds before the room shifts" is a body count, not a feature. The judge has been in that room. The Splunk callback to B0 closes a setup-payoff arc the audience does not consciously notice but feels as craft. The AutoOps kicker - "free, Splunk charges fifteen thousand" - is the TCO proof that turns the battlecard into an invoice conversation. No POC required. "Already standing on the answer" is a balance image: rooted, ready, not scrambling. Verified marketshare ordering preserved (Splunk first, AWS OpenSearch last).
 
-### B7. Workspace (2:18 to 2:33, 32 words)
+### B7. Workspace (2:20 to 2:35, 32 words)
 
 ```
 [CUT to CAM A. Click Workspace tab.]
@@ -239,7 +248,7 @@ Click. Done.
 
 **Why it works**: "Salesforce stays the system of record" is the verified line that pre-empts the "you built a CRM" judge objection in eight words. Preserved verbatim from v3. The artifact list is rhythm: four short noun phrases that paint comprehensiveness without you having to assert it. "Click. Done." is the smallest possible verb-object close.
 
-### B8. Workflows (2:33 to 2:48, 38 words)
+### B8. Workflows (2:35 to 2:50, 38 words)
 
 ```
 [CUT to CAM B. Slow the cadence by 15 percent. Quieter, deliberate.]
@@ -265,7 +274,7 @@ Before the customer's coffee is cold.
 
 **Why it works**: "Reasoning + deterministic actions" mirrors Ken Exner's "intelligent reasoning + dependable automation" framing from the Agent Builder GA press, which is what wins the "Use of Workflows + Agent Builder" rubric dimension. v4 adds the sensory close ("before the customer's coffee is cold") which is the line that earns the smile in the room. Sensory > technical when you are closing a beat.
 
-### B9. CTA (2:48 to 3:00, 38 words)
+### B9. CTA (2:50 to 3:00, 38 words)
 
 ```
 [CUT to CAM B. Slight smile. Hold one full beat before speaking.]
@@ -309,11 +318,11 @@ Move pilots to real-world impact.
 | 1:33 to 1:38 | B | 5 s | "Now? Ten seconds. Cited." (intimacy) |
 | 1:38 to 1:42 | A | 4 s | "Context engineering. In your hands." (citation hold) |
 | 1:42 to 2:02 | A | 20 s | Agent Builder flow |
-| 2:02 to 2:18 | A | 16 s | Battlecards plus Industries |
-| 2:18 to 2:33 | A | 15 s | Workspace expand |
-| 2:33 to 2:40 | B | 7 s | "Reasoning + deterministic" headline |
-| 2:40 to 2:48 | A | 8 s | YAML proof and "coffee is cold" |
-| 2:48 to 3:00 | B | 12 s | CTA close-up, the handoff |
+| 2:02 to 2:20 | A | 18 s | Battlecards plus Industries plus AutoOps kicker |
+| 2:20 to 2:35 | A | 15 s | Workspace expand |
+| 2:35 to 2:42 | B | 7 s | "Reasoning + deterministic" headline |
+| 2:42 to 2:50 | A | 8 s | YAML proof and "coffee is cold" |
+| 2:50 to 3:00 | B | 10 s | CTA close-up, the handoff |
 
 13 cuts across 3 minutes, one more than v3. The extra cut is the B-to-A-to-B-to-A flicker inside FE Brain (1:33, 1:38), which is deliberate: it gives the FE Brain beat a stutter-rhythm that mirrors the back-and-forth motion of asking and answering. Don't smooth it out in the edit.
 
@@ -324,9 +333,9 @@ Move pilots to real-world impact.
 - **B0 (cold open)**: Lean in 2 cm. Voice drops about 10 percent in volume. Eyes soften. You are confiding, not pitching. Hand still on the desk, no gesture. The line "Eighteen minutes" gets the longest pause in the entire video. Hold it. Let the judge feel the math.
 - **B1 (promise)**: Sit back. The Kulkarni quote gets a small framing gesture, hand at chest height, like quoting a colleague at a kitchen table. "So I built FE Copilot. One click. Watch." gets a small visible click of the trackpad with the right index finger. The judge sees the click trigger the autopilot.
 - **B2 (autopilot, silent)**: Hands flat on the desk. Glance at the screen at 0:45, 1:00, and 1:10. No talking. No nodding for the camera. This is silence as confidence; do not perform it.
-- **B3 (pivot)**: Smile lands one beat before the line "Forty-five seconds." "That brief. That POV plan. That Splunk TCO" gets one open-palm gesture per phrase, three small flickers like dealing cards.
+- **B3 (pivot)**: Smile lands one beat before the line "Fifty seconds." "That brief. That displacement plan. That Splunk TCO" gets one open-palm gesture per phrase, three small flickers like dealing cards. The "Splunk TCO" phrase lands heavier here because the AutoOps cluster signals card just rendered in the brief during the autopilot - the TCO proof is already on screen, the words just name it.
 - **B4 (FE Brain)**: "You ping #ask-elastic. You wait" gets a small head shake. "Now? Ten seconds. Cited" gets an eyebrow lift on "Now?" Not theatrical, just enough to mark the turn. "In your hands" gets a small open-palm gesture toward the camera.
-- **B5 (Agent Builder)**: "I didn't build agents to replace you" gets a small head shake. "I built three to stand next to you" gets an open-handed gesture, palms up. "Your data. Your tenant. Your moat" gets one small index-finger tap per word on the desk edge. The judge feels each one.
+- **B5 (Agent Builder)**: "I didn't build agents to replace you" gets a small head shake. "I built three to stand next to you" gets an open-handed gesture, palms up. On "That one was not here a minute ago" - pause one full beat, let the room sit with the fact that a real agent was just built live. "Your data. Your tenant. Your moat" gets one small index-finger tap per word on the desk edge. On the "See agents live in Kibana" click - hold eye contact with the camera as the real Kibana tab opens, do not look at the screen. The judge feels the confidence before they see the result.
 - **B6 (battlecards)**: "Eight seconds before the room shifts" gets a small lean forward. "Splunk. Datadog. CrowdStrike. AWS OpenSearch" gets one finger raised per name (four-count tally on the right hand). "Already standing on the answer" gets stillness; both hands flat on the desk.
 - **B7 (workspace)**: "Brief. Transcript. Email. POV plan" gets a left-to-right finger trace across the timeline on screen. "Click. Done." gets a small click of the trackpad on "Click" and an open hand on "Done."
 - **B8 (workflows)**: "The agent thinks. The workflow does" gets two slow nods, one per sentence. The cadence drops 15 percent on this beat; do not rush. "Before the customer's coffee is cold" gets a small smile and a half-second pause after, looking at the YAML.
@@ -360,9 +369,11 @@ The judge never consciously notices the motif. They feel a script that is scored
 | "Is the cost calculator accurate?" | Demo-grade estimates, labeled. Splunk and Datadog rates from public list pricing. Verified vs estimate badges per line. |
 | "Can the customer use this directly?" | The customer dashboard view in Kibana, yes. The standalone webapp, no. This is an FE tool. |
 | "What is the moat?" | Persona-driven prompts grounded in Elastic FE knowledge. The agent-and-Workflow loop closing back into Salesforce. The integration glue is the work. |
-| "Why not Klue?" | We use Klue. The roadmap has Klue as an upstream MCP tool the agents call at conversation time. FE Copilot is the synthesizer that fans Klue plus Salesforce plus Highspot plus Gainsight into a single grounded answer. |
+| "Why not Seismic / competitive content?" | The 31 battlecards are demo scaffolding - the production path is a `seismic_battlecard_lookup` MCP tool that pulls the live Seismic card for a given competitor. FE Copilot is the synthesizer that fans Seismic plus Salesforce plus Highspot plus Gainsight into a single grounded answer per meeting. Klue was the prior system; it is being retired and battlecards have moved to Seismic. |
+| "What is AutoOps?" | Free, continuous cluster diagnostics built into every Elastic tier - Cloud and self-managed. It monitors over 100 cluster metrics and surfaces root-cause fixes with ready-to-run commands. Splunk has no equivalent. Each Splunk cluster health-check requires a Professional Services engagement at $15k to $25k. AutoOps appears in the brief automatically when the customer runs Splunk. It is a live TCO proof point that does not require a POC to land. |
 | "Has any FE actually used this?" | Gabriel Moskovicz, Senior SA Lead in LATAM, shipped a Slack /agent for deal reviews on Elastic Serverless and EIS. Same demand, different shape. (Then: "and I am running it past three FEs this week.") |
-| "Why MEDDPICC?" | I do not name a methodology in the video. The proposal agent is structured around value-based selling, mapped to POV outcomes, not a specific framework. |
+| "Why MEDDPICC?" | MEDDPICC is Elastic's official deal qualification framework - it is documented in Seismic as the standard for every seller. The live companion surfaces MEDDPICC signals from the transcript in real time. The post-meeting agent writes the Close Plan update in Salesforce (the current MEDDPICC capture destination). |
+| "Is the Splunk displacement story just made up?" | No. Elastic has an official internal sales play called Race to Displace Security. FE Copilot automates that play end to end: brief, live companion, displacement agent, AutoOps TCO proof, and post-meeting Close Plan update. The demo runs the official play, not a fictional one. |
 | **NEW** "Why open with a scene instead of the product?" | Because no Elastic FE has ever wanted to watch a feature tour. They want to be told their morning is going to get easier. The scene puts them in the chair before the product is named. |
 
 ---
@@ -380,6 +391,9 @@ The judge never consciously notices the motif. They feel a script that is scored
 - "Grounded in your data"
 - **NEW**: "Stand next to you" (the v4 Agent Builder framing)
 - **NEW**: "Took back" (the v4 CTA framing)
+- **NEW v4.1**: "Splunk Displacement" (the agent created live in the demo)
+- **NEW v4.1**: "AutoOps" (Elastic's free cluster diagnostic - always say "free" in the same breath)
+- **NEW v4.1**: "Race to Displace Security" (Elastic's official internal sales play - use it if a judge asks whether the displacement narrative is real)
 
 **Never say** (drill these out before take 1):
 - "PoC is deprecated" (false; both POV and POC coexist)
@@ -399,9 +413,9 @@ The judge never consciously notices the motif. They feel a script that is scored
 If you only have time for one practice run, drill the cold open and the CTA. They are the bookends; if either is shaky, the take is wasted.
 
 ```
-B0: "Tuesday morning. Seven forty-two a.m.
-     Your customer call is at eight.
-     You haven't read their last earnings.
+B0: "Tuesday morning. Eight forty-two a.m.
+     Your customer call is at nine.
+     You haven't read Searchlight Capital's last earnings.
      You haven't priced the Splunk renewal sitting on their desk.
      Eighteen minutes.
      Every Solutions Architect at Elastic knows this morning."

@@ -21,6 +21,7 @@ from app.api import (
     routes_agent_builder,
     routes_agents,
     routes_audit,
+    routes_autoops,
     routes_battlecards,
     routes_briefs,
     routes_calendar,
@@ -119,6 +120,7 @@ app.include_router(routes_salesforce.router, prefix="/api/v1")
 app.include_router(routes_calendar.router, prefix="/api/v1")
 app.include_router(routes_tools.router, prefix="/api/v1")
 app.include_router(routes_agent_builder.router, prefix="/api/v1")
+app.include_router(routes_autoops.router, prefix="/api/v1")
 app.include_router(routes_mcp.router, prefix="/api/v1")
 app.include_router(routes_kibana.router, prefix="/api/v1")
 app.include_router(routes_demo_data.router, prefix="/api/v1")

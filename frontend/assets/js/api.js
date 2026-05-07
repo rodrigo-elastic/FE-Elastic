@@ -4,7 +4,14 @@
   Author: Rodrigo Careaga
   Date: 03-05-2026
 */
-const API_BASE = "/api/v1";
+// When deployed to GitHub Pages, config.js sets window.FEC_API_BASE to the
+// AWS backend URL. In local dev the variable is absent and we fall back to
+// the relative path so the same code works without any changes.
+const API_BASE = (
+  (typeof window !== "undefined" && window.FEC_API_BASE)
+    ? String(window.FEC_API_BASE).replace(/\/+$/, "")
+    : ""
+) + "/api/v1";
 
 // ============================================================ Error sanitizer
 // W25C error path audit: every fetch failure path eventually reaches a toast,

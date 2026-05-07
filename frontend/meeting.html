@@ -13,7 +13,7 @@
   <!-- seo:meta:start -->
   <meta name="description" content="FE Copilot per meeting view. Kibana style tabs for Brief, Post Meeting, Live and Context, themed for Elastic Field Engineers and grounded in customer data." />
   <link rel="canonical" href="/meeting.html" />
-  <meta name="theme-color" content="#0077CC" />
+  <meta name="theme-color" content="#0B64DD" />
   <meta name="author" content="Rodrigo Careaga" />
   <meta name="application-name" content="FE Copilot" />
   <meta property="og:type" content="website" />
@@ -127,6 +127,7 @@
         </div>
       </div>
       <div id="brief"><p class="muted">Brief not generated yet. Click <em>Run Pre-Meeting Agent</em>.</p></div>
+      <div id="autoops-widget"></div>
       <div id="abm-brief"></div>
     </section>
 
@@ -189,6 +190,8 @@
     <section id="toast-host" role="status" aria-live="polite" aria-atomic="false"></section>
   </main>
 
+  <script src="/assets/js/autoops-widget.js"></script>
+  <script src="/config.js"></script>
   <script src="/assets/js/i18n.js"></script>
   <script src="/assets/js/api.js"></script>
   <script src="/assets/js/ui.js"></script>

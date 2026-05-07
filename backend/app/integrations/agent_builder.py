@@ -9,6 +9,8 @@ __version__ = "0.1.0"
 __status__ = "Development"
 
 import json
+import pathlib
+import threading
 from typing import Any, Dict, List, Optional
 
 import httpx
@@ -17,6 +19,38 @@ from app.config import settings
 from app.utils.logging import get_logger
 
 log = get_logger(__name__)
+
+# ============================================================ Local agent store
+# Persists user-created agents to disk so they survive restarts and appear in
+# list_agents() even when Kibana Agent Builder is not enabled on this deployment.
+_LOCAL_STORE_PATH = pathlib.Path(__file__).parent.parent.parent / "data" / "local_agents.json"
+_store_lock = threading.Lock()
+
+
+def _read_local_agents() -> List[Dict[str, Any]]:
+    try:
+        if _LOCAL_STORE_PATH.exists():
+            return json.loads(_LOCAL_STORE_PATH.read_text()) or []
+    except Exception:
+        pass
+    return []
+
+
+def _write_local_agents(agents: List[Dict[str, Any]]) -> None:
+    try:
+        _LOCAL_STORE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        _LOCAL_STORE_PATH.write_text(json.dumps(agents, indent=2))
+    except Exception as exc:
+        log.warning("agent_builder.local_store_write_failed", error=str(exc))
+
+
+def _upsert_local_agent(agent: Dict[str, Any]) -> None:
+    agent_id = agent.get("id", "")
+    with _store_lock:
+        agents = _read_local_agents()
+        agents = [a for a in agents if a.get("id") != agent_id]
+        agents.append(agent)
+        _write_local_agents(agents)
 
 
 def _headers() -> Dict[str, str]:
@@ -109,14 +143,21 @@ def execute_tool(tool_id: str, params: Dict[str, Any]) -> Dict[str, Any]:
 
 def list_agents() -> List[Dict[str, Any]]:
     out = _request("GET", "/api/agent_builder/agents")
+    kibana_agents: List[Dict[str, Any]] = []
     if isinstance(out, dict):
-        # Kibana 9.x returns {"results": [...]}; older snapshots used {"data": [...]}.
         for key in ("results", "data"):
             if key in out:
-                return out.get(key) or []
-    if isinstance(out, list):
-        return out
-    return []
+                kibana_agents = out.get(key) or []
+                break
+    elif isinstance(out, list):
+        kibana_agents = out
+
+    # Always merge local store so user-created agents appear even when Kibana
+    # Agent Builder is disabled or returns an error.
+    local = _read_local_agents()
+    kibana_ids = {a.get("id") for a in kibana_agents if isinstance(a, dict)}
+    merged = kibana_agents + [a for a in local if a.get("id") not in kibana_ids]
+    return merged
 
 
 def get_agent(agent_id: str) -> Dict[str, Any]:
@@ -125,15 +166,28 @@ def get_agent(agent_id: str) -> Dict[str, Any]:
 
 def upsert_agent(agent: Dict[str, Any]) -> Dict[str, Any]:
     """PUT /api/agent_builder/agents/{id} rejects `id` (and any other fields not in the
-    update schema) in the body, just like the tool endpoint. Strip them before PUT."""
+    update schema) in the body, just like the tool endpoint. Strip them before PUT.
+    Always persists to the local store so the agent survives Kibana being unavailable."""
     agent_id = agent.get("id")
     if not agent_id:
         raise ValueError("agent dict must include `id`")
+
+    # Save locally first so it always survives regardless of Kibana status.
+    _upsert_local_agent(agent)
+
     existing = get_agent(agent_id) if is_live() else None
     if existing and not existing.get("error") and not existing.get("dry_run"):
         update_body = {k: v for k, v in agent.items() if k not in ("id", "type")}
-        return _request("PUT", f"/api/agent_builder/agents/{agent_id}", update_body)
-    return _request("POST", "/api/agent_builder/agents", agent)
+        result = _request("PUT", f"/api/agent_builder/agents/{agent_id}", update_body)
+    else:
+        result = _request("POST", "/api/agent_builder/agents", agent)
+
+    # If Kibana returned an error, return a local-success response so callers
+    # don't surface a confusing 502 when the feature simply isn't enabled.
+    if isinstance(result, dict) and result.get("error"):
+        log.info("agent_builder.kibana_unavailable_using_local", agent_id=agent_id)
+        return {"ok": True, "local": True, "agent_id": agent_id, "name": agent.get("name", "")}
+    return result
 
 
 # ============================================================ Skills ==================

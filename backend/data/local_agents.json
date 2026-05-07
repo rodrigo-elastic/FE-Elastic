@@ -1,0 +1,37 @@
+[
+  {
+    "id": "fec_user_discoveryagent",
+    "name": "DiscoveryAgent",
+    "description": "This agent will help do discovery questions that will guide much better to attack and solve issues.",
+    "configuration": {
+      "instructions": "You're a discovery expert in terms of needs of the customer",
+      "tools": [
+        {
+          "tool_ids": [
+            "fec_knowledge_search",
+            "fec_compare",
+            "fec_stack_extract"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "fec_user_splunk_displacement",
+    "name": "Splunk Displacement",
+    "description": "Win financial services accounts away from Splunk before renewal locks.",
+    "configuration": {
+      "instructions": "Compare Splunk TCO against Elastic. Map DORA gaps Splunk cannot cover. Identify champion signals and build the displacement case before the renewal deadline.",
+      "tools": [
+        {
+          "tool_ids": [
+            "fec_compare",
+            "fec_cost_calc",
+            "fec_proposal",
+            "fec_knowledge_search"
+          ]
+        }
+      ]
+    }
+  }
+]
