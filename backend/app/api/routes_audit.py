@@ -24,13 +24,17 @@ async def list_audit(limit: int = 200) -> dict:
     if not path.exists():
         return {"entries": [], "totals": {"calls": 0, "input_tokens": 0, "output_tokens": 0}}
 
+    _SCRUB = {"company_name", "meeting_id", "company", "account_name"}
     entries: list[dict] = []
     for line in path.read_text(encoding="utf-8").splitlines():
         line = line.strip()
         if not line:
             continue
         try:
-            entries.append(json.loads(line))
+            entry = json.loads(line)
+            for k in _SCRUB:
+                entry.pop(k, None)
+            entries.append(entry)
         except json.JSONDecodeError:
             continue
 

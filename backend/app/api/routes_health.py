@@ -236,18 +236,10 @@ async def info() -> dict:
             "live_meeting": settings.model_for("live_meeting"),
         },
         "elasticsearch": {
-            "url": settings.elasticsearch_url,
             "available": es.available,
         },
         "kibana": {
-            "url": settings.kibana_url,
             "available": kibana_client.ping(),
-            "discover": {
-                "briefs": kibana_client.discover_url("fec-briefs"),
-                "post_meetings": kibana_client.discover_url("fec-post-meetings"),
-                "audit": kibana_client.discover_url("fec-audit"),
-                "battlecards": kibana_client.discover_url("fec-battlecards"),
-            },
         },
     }
 
@@ -320,13 +312,11 @@ async def health_full() -> Dict[str, Any]:
             "cluster": cluster.get("cluster", ""),
             "version": cluster.get("version", ""),
             "ping_ms": ping_ms,
-            "url": settings.elasticsearch_url,
             "available": es_available,
         },
         "kibana": {
             "agent_builder_agent": _AGENT_BUILDER_AGENT_ID,
             "mcp_connector": _MCP_CONNECTOR_NAME,
-            "url": settings.kibana_url,
         },
         "service": "fe-copilot",
         "version": __version__,
@@ -340,7 +330,7 @@ async def elasticsearch_reconnect() -> dict:
     es.reconnect()
     if es.available:
         es.ensure_indices()
-    return {"available": es.available, "url": settings.elasticsearch_url}
+    return {"available": es.available}
 
 
 @router.post("/kibana/setup")

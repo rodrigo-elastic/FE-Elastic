@@ -40,7 +40,7 @@ ORPHAN_RULE_NAME = "FE Copilot - Orphan Action Item Workflow"
 ORPHAN_RULE_TAGS = ["fe-copilot", "workflow", "orphan-action"]
 ORPHAN_TIME_FIELD = "generated_at"
 
-DEFAULT_NGROK_URL = "https://headlamp-squatting-usable.ngrok-free.dev"
+DEFAULT_BACKEND_URL = "https://fe-c85291a2a8b144188ee6be1078e79a95.ecs.us-east-1.on.aws"
 
 INBOX_MAPPING: Dict[str, Any] = {
     "mappings": {
@@ -68,7 +68,7 @@ _post_meeting_agent = PostMeetingAgent()
 
 
 def _backend_base_url() -> str:
-    return os.environ.get("BACKEND_BASE_URL", DEFAULT_NGROK_URL).rstrip("/")
+    return os.environ.get("BACKEND_BASE_URL", DEFAULT_BACKEND_URL).rstrip("/")
 
 
 def _webhook_url() -> str:
@@ -661,7 +661,7 @@ def workflow_status() -> Dict[str, Any]:
         "inbox_index": INBOX_INDEX,
         "inbox_exists": inbox_exists,
         "webhook_url": _webhook_url(),
-        "ngrok_url": _backend_base_url(),
+        "backend_url": _backend_base_url(),
         "recent_fires": _read_recent_fires(5),
         "workflows": {
             "post_meeting": {
@@ -736,7 +736,7 @@ def workflow_sync() -> Dict[str, Any]:
         "rule_id": rule["id"],
         "rule_name": rule.get("name"),
         "webhook_url": _webhook_url(),
-        "ngrok_url": _backend_base_url(),
+        "backend_url": _backend_base_url(),
         "synced_at": datetime.now(timezone.utc).isoformat(),
         "orphan_connector_id": orphan_connector["id"],
         "orphan_connector_name": orphan_connector.get("name"),
@@ -758,7 +758,7 @@ def workflow_sync() -> Dict[str, Any]:
         "ok": True,
         "rule_id": rule["id"],
         "connector_id": connector["id"],
-        "ngrok_url": _backend_base_url(),
+        "backend_url": _backend_base_url(),
         "webhook_url": _webhook_url(),
         "inbox_index": INBOX_INDEX,
         "inbox_status": inbox_status,

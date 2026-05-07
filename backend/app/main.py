@@ -59,11 +59,15 @@ async def lifespan(_: FastAPI):
     log.info("app.shutdown")
 
 
+_is_prod = settings.app_env == "production"
 app = FastAPI(
     title="FE Copilot",
     description="AI-powered assistant for Field Engineers.",
     version=__version__,
     lifespan=lifespan,
+    openapi_url=None if _is_prod else "/openapi.json",
+    docs_url=None if _is_prod else "/docs",
+    redoc_url=None if _is_prod else "/redoc",
 )
 
 app.add_middleware(
