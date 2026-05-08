@@ -578,18 +578,20 @@
       await sleep(280, signal);
       const win = state.nodes.iframe.contentWindow;
       if (win && !win.location.pathname.includes("meeting")) {
-        await navTo("/meeting.html?id=northwind-mtg-prev-001&brief=1", signal);
+        await navTo("/meeting.html?id=northwind-mtg-001&brief=1", signal);
       }
     } catch (e) {
       if (e && e.name === "AbortError") throw e;
-      await navTo("/meeting.html?id=northwind-mtg-prev-001&brief=1", signal);
+      await navTo("/meeting.html?id=northwind-mtg-001&brief=1", signal);
     }
   }
 
   async function stepBrief(signal) {
     setCaption(2, "Competitive brief ready.",
       "Splunk TCO delta. DORA gaps. Migration path. Every claim cited.");
-    await sleep(500, signal);
+    // Wait for maybeAutoLoad to render the brief before scrolling
+    await waitForEl("#brief .brief-headline", 6000, signal);
+    await sleep(300, signal);
     await iframeScrollBy(320, signal);
     await sleep(300, signal);
     await iframeScrollBy(340, signal);
