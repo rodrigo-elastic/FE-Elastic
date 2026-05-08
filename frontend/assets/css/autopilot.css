@@ -392,6 +392,15 @@
   border: 0;
   box-shadow: 0 8px 24px rgba(27, 169, 245, 0.35);
 }
+.ap-complete .ap-btn.ap-btn-kibana {
+  background: linear-gradient(135deg, #FEC514, #F04E98);
+  border: 0;
+  color: #07080c;
+  font-weight: 700;
+  box-shadow: 0 8px 24px rgba(254, 197, 20, 0.35);
+  order: -1;
+}
+.ap-complete .ap-btn.ap-btn-kibana:hover { opacity: 0.9; background: linear-gradient(135deg, #FEC514, #F04E98); }
 
 /* ============================================================ Confetti */
 .ap-confetti-host {

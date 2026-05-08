@@ -79,6 +79,17 @@ app.add_middleware(
 )
 
 @app.middleware("http")
+async def no_cache_config_middleware(request: Request, call_next):
+    """Force no-cache for config.js so browsers always fetch the fresh routing logic."""
+    response = await call_next(request)
+    if request.url.path == "/config.js":
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
+
+
+@app.middleware("http")
 async def api_method_not_allowed_middleware(request: Request, call_next):
     """Convert 404 from the static frontend mount into a proper 405 for API paths.
 

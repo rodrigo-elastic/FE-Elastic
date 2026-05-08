@@ -1,6 +1,6 @@
 /*
   filename: autopilot.js
-  description: "Show me the magic" 45-second story-driven demo. Follows one FE from 7:42 a.m. to the end of a Banco Atlantico discovery call: pre-meeting brief, FE Brain discovery questions, GDPR compliance agent build, post-meeting MEDDPICC extraction, Kibana dashboards, agents persisted in the cluster. No LLM calls; deterministic page tour. AbortController + Esc cancel, run history in localStorage. Desktop-only.
+  description: "Show me the magic" 45-second story-driven demo. Follows one FE from 7:42 a.m. to the end of a Searchlight Capital discovery call: pre-meeting brief, FE Brain discovery questions, GDPR compliance agent build, post-meeting MEDDPICC extraction, Kibana dashboards, agents persisted in the cluster. No LLM calls; deterministic page tour. AbortController + Esc cancel, run history in localStorage. Desktop-only.
   Author: Rodrigo Careaga
   Date: 03-05-2026
 */
@@ -13,8 +13,9 @@
     steps: [
       { id: "hook",  label: "8:42 a.m.",        duration: 2000  },
       { id: "qr",    label: "Quick Research",    duration: 13000 },
-      { id: "brief", label: "Pre-meeting brief", duration: 15000 },
+      { id: "brief", label: "Pre-meeting brief", duration: 2000  },
       { id: "fa",    label: "Top 5 questions",   duration: 13000 },
+      { id: "ab",    label: "Agent Builder",     duration: 24000 },
       { id: "recap", label: "Ready.",            duration: 2000  },
     ],
   };
@@ -477,13 +478,13 @@
 
   // ============================================================ Steps
   // 5-step pre-meeting prep story, 45s total. Follows one FE with 18 minutes
-  // before a Banco Atlantico call: types the account name, picks the FSI Banking
+  // before a Searchlight Capital call: types the account name, picks the FSI Banking
   // template, generates the brief, reads through it, then asks the Field Assistant
   // for the top five discovery questions. One workflow. No shortcuts.
 
   async function stepHook(signal) {
     setCaption(0, "Tuesday. 8:42 a.m.",
-      "Banco Atlántico call in seventeen minutes. One hour of prep. No time.");
+      "Searchlight Capital. Splunk renewal in 60 days. This is the window.");
     hidePanel();
 
     // Inject clock CSS once per session
@@ -517,7 +518,7 @@
       '<div class="ap-clock-day">Tuesday</div>' +
       '<div class="ap-clock-time">8<span class="ap-clock-colon">:</span>42</div>' +
       '<div class="ap-clock-ampm">AM</div>' +
-      '<div class="ap-clock-sub">Banco Atlántico &nbsp;·&nbsp; 9:00 AM &nbsp;·&nbsp; 17 min</div>';
+      '<div class="ap-clock-sub">Searchlight Capital &nbsp;·&nbsp; 9:00 AM &nbsp;·&nbsp; 17 min</div>';
     document.body.appendChild(wrap);
 
     // Ensure cleanup runs on abort (Esc) as well as normal completion
@@ -536,8 +537,8 @@
   }
 
   async function stepQr(signal) {
-    setCaption(1, "Quick Research. Banco Atlántico.",
-      "FSI Banking template. Fill it in. Generate the brief.");
+    setCaption(1, "Quick Research. Searchlight Capital.",
+      "FSI Banking template. Splunk incumbent. 60-day window.");
     await navTo("/quick-research.html", signal);
 
     await sleep(350, signal);
@@ -546,7 +547,7 @@
       // Scroll the form into center so the typing is readable in the panel
       nameInput.scrollIntoView({ behavior: "smooth", block: "center" });
       await sleep(380, signal);
-      await typeInto(nameInput, "Banco Atlántico", 68, signal);
+      await typeInto(nameInput, "Searchlight Capital", 68, signal);
     }
     await sleep(480, signal);
 
@@ -554,16 +555,16 @@
     const tplBtn = await waitForEl('[data-tpl-id="banking"]', 2500, signal);
     if (tplBtn) { iframeClick(tplBtn); await sleep(950, signal); }
 
-    // Add context in the notes field - a real FE would jot this down
+    // One sharp note - template already fills the context
     const notes = await waitForEl("#qr-notes", 1000, signal);
     if (notes) {
       await sleep(200, signal);
-      await typeInto(notes, "Splunk renewal on desk. DORA deadline June.", 42, signal);
+      await typeInto(notes, "On Splunk. Renewal in 60 days. DORA audit June.", 42, signal);
       await sleep(320, signal);
     }
 
-    setCaption(1, "Generating. FSI Banking. DORA. Splunk TCO.",
-      "Every section sourced in seconds.");
+    setCaption(1, "Generating. Splunk vs Elastic. Platform consolidation.",
+      "Competitive brief in seconds.");
 
     // Click Generate and wait for the page to navigate to meeting.html.
     // If the API responds in time we get the real brief; otherwise we fall back
@@ -586,39 +587,24 @@
   }
 
   async function stepBrief(signal) {
-    setCaption(2, "Pre-meeting brief ready.",
-      "DORA obligations. Splunk TCO delta. Key personas. Cited.");
-    await sleep(1100, signal);
-
-    // Slow reading scroll - pause longer on dense sections
-    await iframeScrollBy(290, signal); await sleep(420, signal);
-    await iframeScrollBy(330, signal); await sleep(820, signal);
-    await iframeScrollBy(360, signal); await sleep(420, signal);
-    setCaption(2, "DORA deadline. Splunk TCO. Tier-1 EU bank.",
-      "Sourced. No manual research.");
-    await sleep(360, signal);
-    await iframeScrollBy(370, signal); await sleep(640, signal);
-    await iframeScrollBy(350, signal); await sleep(820, signal);
-    await iframeScrollBy(330, signal); await sleep(420, signal);
-    await iframeScrollBy(310, signal); await sleep(540, signal);
-    await iframeScrollBy(290, signal); await sleep(720, signal);
-    await iframeScrollBy(270, signal); await sleep(520, signal);
-    await sleep(480, signal);
+    setCaption(2, "Competitive brief ready.",
+      "Splunk TCO delta. DORA gaps. Migration path. Every claim cited.");
+    await sleep(500, signal);
+    await iframeScrollBy(320, signal);
+    await sleep(300, signal);
+    await iframeScrollBy(340, signal);
+    await sleep(300, signal);
   }
 
   async function stepFa(signal) {
-    setCaption(3, "Field Assistant. Top 5 questions to ask.",
-      "MEDDPICC-anchored. Grounded in the brief.");
+    setCaption(3, "Field Assistant. Five displacement questions.",
+      "Win Searchlight before the renewal closes.");
 
-    // Scroll back to top so the chips are visible
     const doc = iframeDoc();
-    if (doc) { (doc.scrollingElement || doc.documentElement).scrollTo({ top: 0, behavior: "smooth" }); }
-    await sleep(680, signal);
-
     const chip = await waitForEl(".abm-chip", 2000, signal);
     if (chip) {
       chip.scrollIntoView({ behavior: "smooth", block: "center" });
-      await sleep(420, signal);
+      await sleep(160, signal);
       // Animate a press without firing a real API call
       chip.style.cssText = "transform:scale(0.93);transition:transform 0.1s ease";
       await sleep(120, signal);
@@ -632,7 +618,7 @@
     if (chat) {
       const userEl = doc.createElement("div");
       userEl.className = "abm-msg abm-msg-user";
-      userEl.innerHTML = '<div class="abm-msg-body">Top 5 questions to ask</div>';
+      userEl.innerHTML = '<div class="abm-msg-body">Top 5 questions to displace Splunk</div>';
       chat.appendChild(userEl);
 
       const loadEl = doc.createElement("div");
@@ -642,7 +628,7 @@
       chat.scrollTop = chat.scrollHeight;
     }
 
-    setCaption(3, "Generating…", "Five MEDDPICC questions for Banco Atlántico.");
+    setCaption(3, "Generating…", "Five questions to win Searchlight away from Splunk.");
     await sleep(1100, signal);
 
     // Replace loader with the pre-written response - instant, no API call
@@ -654,43 +640,174 @@
       answerEl.className = "abm-msg abm-msg-assistant";
       answerEl.innerHTML =
         '<div class="abm-msg-body">' +
-        "<p>Top 5 discovery questions for <strong>Banco Atlántico</strong>, anchored to MEDDPICC:</p><ol>" +
-        "<li><strong>Economic Buyer</strong> — Who owns final sign-off on the Splunk renewal, and is their primary criterion cost reduction, DORA compliance coverage, or expanding into observability?</li>" +
-        "<li><strong>DORA Deadline</strong> — Where are you in your June gap analysis? Which log aggregation or alerting requirements are still open and need to be closed before the audit window?</li>" +
-        "<li><strong>Champion</strong> — Who internally is already advocating for a platform change, and what would make them successful getting organizational buy-in before the renewal closes?</li>" +
-        "<li><strong>Competition</strong> — Beyond Splunk, are you evaluating AWS OpenSearch or Datadog? What is driving that — TCO, capability gaps, or team familiarity?</li>" +
-        "<li><strong>Technical Fit</strong> — What is your current ingest volume at peak, and which workloads — SIEM, observability, or APM — are most critical to the scope of this renewal?</li>" +
+        "<p>Five displacement questions for <strong>Searchlight Capital</strong>, anchored to MEDDPICC:</p><ol>" +
+        "<li><strong>Economic Buyer</strong> — Who signs off on the Splunk renewal, and is their primary driver cutting ingest costs, closing the June DORA gap, or consolidating observability and SIEM into one platform?</li>" +
+        "<li><strong>Splunk Pain</strong> — Where is Splunk falling short today - licensing costs at scale, query latency on large datasets, SIEM rule coverage, or the operational burden of running it in-house?</li>" +
+        "<li><strong>DORA Gap</strong> — Which specific DORA requirements are still open in your June audit window, and has your team validated whether your current Splunk setup can close them before the deadline?</li>" +
+        "<li><strong>Champion</strong> — Who on your team would gain the most from a platform switch, and what would they need - a TCO comparison, a DORA coverage map, a 30-day POC - to confidently advocate internally before the renewal locks?</li>" +
+        "<li><strong>Decision Window</strong> — What does the evaluation process look like between now and the renewal date? Who else needs to sign off, and what does a successful 30-day proof of value need to prove to make Elastic the clear choice?</li>" +
         "</ol></div>";
       chat.appendChild(answerEl);
-      chat.scrollTop = chat.scrollHeight;
-      await sleep(600, signal);
 
-      setCaption(3, "Five questions. Ready for the call.",
-        "Economic Buyer. DORA deadline. Champion. Competition. Technical fit.");
+      // Scroll the iframe page so the full Field Assistant widget is centered -
+      // chips, user bubble, and all 5 questions visible at once (like the screenshot).
+      const abmBrief = doc.querySelector("#abm-brief");
+      if (abmBrief) {
+        abmBrief.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      await sleep(900, signal);
 
-      // Scroll through each question at reading pace
-      chat.scrollBy({ top: 160, behavior: "smooth" }); await sleep(800, signal);
-      chat.scrollBy({ top: 160, behavior: "smooth" }); await sleep(800, signal);
-      chat.scrollBy({ top: 160, behavior: "smooth" }); await sleep(800, signal);
-      chat.scrollBy({ top: 160, behavior: "smooth" }); await sleep(700, signal);
+      setCaption(3, "Five displacement questions. Walk in ready to win.",
+        "Buyer. Splunk pain. DORA gap. Champion. Decision window.");
+
+      // One slow scroll down to let viewer read through all 5 questions
+      await iframeScrollBy(260, signal); await sleep(1200, signal);
+      await iframeScrollBy(220, signal); await sleep(1200, signal);
     } else {
-      setCaption(3, "Five questions. Ready for the call.",
-        "Economic Buyer. DORA deadline. Champion. Competition. Technical fit.");
+      setCaption(3, "Five displacement questions. Walk in ready to win.",
+        "Buyer. Splunk pain. DORA gap. Champion. Decision window.");
       await sleep(5000, signal);
     }
 
     await sleep(500, signal);
   }
 
+  async function stepAb(signal) {
+    setCaption(4, "Agent Builder. Splunk Displacement.",
+      "One call. One new agent. Built in seconds.");
+
+    await navTo("/agent-builder.html", signal);
+    // Pause so viewer sees the existing agents in the sidebar before creating a new one
+    await sleep(1400, signal);
+
+    // Scroll sidebar down a bit to show more agents, then scroll back up to the + button
+    await iframeScrollBy(180, signal);
+    await sleep(700, signal);
+    await iframeScrollBy(-180, signal);
+    await sleep(500, signal);
+
+    // Click the + new agent button
+    const newBtn = await waitForEl("#ab-new-agent", 3000, signal);
+    if (newBtn) {
+      newBtn.scrollIntoView({ behavior: "smooth", block: "center" });
+      await sleep(300, signal);
+      iframeClick(newBtn);
+      await sleep(500, signal);
+    }
+
+    // Wait up to 2.5s for tools to load. If the API returns empty, inject
+    // the 14 MCP tool IDs directly into #ab-f-tools as hidden checkboxes so
+    // the bundle click can check them and renderSelectedSummary shows the
+    // selected tools - bypassing state.tools entirely.
+    const toolSection = await waitForEl("#ab-f-tools .ab-tool-section", 2500, signal);
+    if (!toolSection) {
+      const doc2 = iframeDoc();
+      const grid = doc2 && doc2.querySelector("#ab-f-tools");
+      if (grid) {
+        grid.innerHTML = "";
+        const sect = doc2.createElement("div");
+        sect.className = "ab-tool-section";
+        [
+          "fec_poc_plan","fec_spl_to_esql","fec_compliance","fec_stack_extract",
+          "fec_code_sample","fec_cost_calc","fec_capacity","fec_knowledge_search",
+          "fec_troubleshoot","fec_orchestrator","fec_compare","fec_proposal",
+          "fec_deploy_validator","fec_pov_health",
+        ].forEach((id) => {
+          const cb = doc2.createElement("input");
+          cb.type = "checkbox";
+          cb.id = "tool-" + id;
+          cb.value = id;
+          cb.style.cssText = "position:absolute;opacity:0;pointer-events:none";
+          sect.appendChild(cb);
+        });
+        grid.appendChild(sect);
+      }
+    }
+
+    // Name
+    const nameField = await waitForEl("#ab-f-name", 2500, signal);
+    if (nameField) {
+      nameField.scrollIntoView({ behavior: "smooth", block: "center" });
+      await sleep(300, signal);
+      await typeInto(nameField, "Splunk Displacement", 72, signal);
+      await sleep(400, signal);
+    }
+
+    // Description
+    const descField = await waitForEl("#ab-f-description", 1500, signal);
+    if (descField) {
+      descField.scrollIntoView({ behavior: "smooth", block: "center" });
+      await sleep(300, signal);
+      await typeInto(descField, "Win financial services accounts away from Splunk before renewal locks.", 34, signal);
+      await sleep(400, signal);
+    }
+
+    // Quick prompt
+    const promptField = await waitForEl("#ab-f-prompt", 1500, signal);
+    if (promptField) {
+      promptField.scrollIntoView({ behavior: "smooth", block: "center" });
+      await sleep(300, signal);
+      await typeInto(promptField, "Compare Splunk TCO against Elastic. Map DORA gaps Splunk cannot cover. Identify champion signals and build the displacement case before the renewal deadline.", 22, signal);
+      await sleep(400, signal);
+    }
+
+    // Select the Competitive tool bundle
+    const bundleBtn = await waitForEl('[data-bundle="competitive"]', 2000, signal);
+    if (bundleBtn) {
+      bundleBtn.scrollIntoView({ behavior: "smooth", block: "center" });
+      await sleep(400, signal);
+      iframeClick(bundleBtn);
+      await sleep(700, signal);
+      // Scroll to show the selected-tools summary below
+      await iframeScrollBy(280, signal);
+      await sleep(700, signal);
+      await iframeScrollBy(240, signal);
+      await sleep(800, signal);
+    }
+
+    setCaption(4, "New agent. Splunk Displacement.",
+      "Deploying to Elastic cluster.");
+
+    // POST directly from the outer page - reliable, no iframe form validation dependency.
+    // The local store write is synchronous so kibana-view will see the agent immediately.
+    try {
+      await postJson("/agent-builder/agents", {
+        name: "Splunk Displacement",
+        slug: "splunk_displacement",
+        description: "Win financial services accounts away from Splunk before renewal locks.",
+        system_prompt: "Compare Splunk TCO against Elastic. Map DORA gaps Splunk cannot cover. Identify champion signals and build the displacement case before the renewal deadline.",
+        tool_ids: ["fec_compare", "fec_cost_calc", "fec_proposal", "fec_knowledge_search"],
+      }, signal, 5000);
+    } catch (_) {}
+    await sleep(400, signal);
+
+    // kibana-view: backend fetches real agents via API key - no iframe login wall.
+    // Kibana blocks direct embedding (X-Frame-Options); this same-origin proxy has none.
+    await navTo("/api/v1/agent-builder/kibana-view", signal);
+    setCaption(4, "Agents live in Kibana.",
+      "Splunk Displacement deployed to fe-summit-hackathon. Connected.");
+    await sleep(1200, signal);
+    // .kbn-main owns the scroll (overflow-y:auto); scroll doc root does nothing here.
+    const kbnMain = iframeDoc() && iframeDoc().querySelector(".kbn-main");
+    if (kbnMain) {
+      kbnMain.scrollBy({ top: 220, behavior: "smooth" });
+      await sleep(900, signal);
+      kbnMain.scrollBy({ top: 140, behavior: "smooth" });
+      await sleep(4000, signal);
+    } else {
+      await sleep(5200, signal);
+    }
+  }
+
   async function stepRecap(signal) {
-    setCaption(4, "Eighteen minutes. That's all it took.",
-      "Brief. Questions. Walk into the call. That's what we just took back.");
+    setCaption(5, "50 seconds. That's all it took.",
+      "Competitive brief. Five displacement questions. Walk in and win Searchlight.");
     fireConfetti(100);
     hidePanel();
     await sleep(2000, signal);
   }
 
-  const STEP_FNS = [stepHook, stepQr, stepBrief, stepFa, stepRecap];
+  const STEP_FNS = [stepHook, stepQr, stepBrief, stepFa, stepAb, stepRecap];
 
   // ============================================================ Run loop
   async function runStep(idx, signal) {
@@ -825,8 +942,8 @@
     const sectionsClean = AP.steps.length - state.failures.length;
     const elapsedStr = `${(elapsedMs / 1000).toFixed(1)}s`;
     const card = el("div", { class: "ap-complete", role: "dialog", "aria-modal": "true", "aria-label": "Autopilot complete" }, [
-      el("h3", { text: "Eighteen minutes. That's all it took." }),
-      el("p", { text: "Account research. Pre-meeting brief. Five discovery questions. Everything a Tier-1 EU bank call needs - before the coffee is cold." }),
+      el("h3", { text: "50 seconds. That's all it took." }),
+      el("p", { text: "Competitive brief. Five displacement questions. A Splunk Displacement agent live in Elastic. Everything to walk into Searchlight Capital and close before the renewal locks." }),
       el("div", { class: "ap-stat-row" }, [
         el("div", { class: "ap-stat" }, [
           el("strong", { text: elapsedStr }),
@@ -850,10 +967,16 @@
         ]),
       ]),
       el("div", { class: "ap-actions" }, [
+        el("a", {
+          class: "ap-btn ap-btn-kibana",
+          href: "https://fe-summit-hackathon-ed0e8e.kb.us-west-1.aws.found.io/app/agent_builder/agents",
+          target: "_blank",
+          rel: "noopener",
+          html: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> See agents live in Kibana',
+        }),
         el("button", { class: "ap-btn primary", type: "button", text: "Run again", onclick: () => { card.remove(); state.nodes.complete = null; setTimeout(() => start(), 250); } }),
         el("a", { class: "ap-btn", href: "/quick-research.html", text: "Try Quick Research" }),
         el("a", { class: "ap-btn", href: "/agent-builder.html", text: "Build an agent" }),
-        el("a", { class: "ap-btn", href: "/health.html", text: "Live health" }),
         el("button", { class: "ap-btn", type: "button", text: "Close", onclick: () => { card.remove(); state.nodes.complete = null; showOverlay(false); hidePanel(); } }),
       ]),
     ]);
@@ -899,7 +1022,7 @@
         el("span", { class: "ap-label", text: "Show me the magic" }),
         el("span", { class: "ap-sub", text: "45s" }),
       ]),
-      el("span", { class: "autopilot-hint", text: "One click. Forty-five seconds. Account research, pre-meeting brief, discovery questions. All before the call." }),
+      el("span", { class: "autopilot-hint", text: "One click. Forty-five seconds. Competitive brief, displacement questions, a new Elastic agent - all before Searchlight Capital's Splunk renewal closes." }),
     ]);
 
     // Place under the lede paragraph but above the hero stats, if possible.
