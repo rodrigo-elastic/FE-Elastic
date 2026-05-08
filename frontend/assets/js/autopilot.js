@@ -566,13 +566,9 @@
     setCaption(1, "Generating. Splunk vs Elastic. Platform consolidation.",
       "Competitive brief in seconds.");
 
-    // Click Generate so the viewer sees the Researching spinner, then navigate
-    // directly to the pre-baked brief. No API wait - demo must never stall.
-    const submitBtn = await waitForEl("#qr-submit", 1000, signal);
-    if (submitBtn) {
-      iframeClick(submitBtn);
-      await sleep(1800, signal);
-    }
+    // Navigate directly - clicking submit would start a real API call that races
+    // with iframe.src change and leaves the panel stuck on the Researching spinner.
+    await sleep(700, signal);
     await navTo("/meeting.html?id=northwind-mtg-001&brief=1", signal);
   }
 
