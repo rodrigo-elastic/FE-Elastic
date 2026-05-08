@@ -67,6 +67,8 @@ const INDUSTRY_TEMPLATES = [
   bindQuickResearch();
   renderQuickResearchTemplates();
   bindTranscriptUpload();
+  loadAgents();
+  bindAgentSelector();
   await loadInfo();
   await loadCalendar();
   await loadMeetings();
@@ -537,6 +539,7 @@ function bindQuickResearch() {
     const label = submit.innerHTML;
     submit.disabled = true;
     submit.innerHTML = '<span class="spinner"></span> Researching...';
+    const agentId = (document.getElementById("qr-agent") || {}).value || "";
     const MODEL_LABELS = {
       "claude-haiku-4-5": "Haiku 4.5",
       "claude-sonnet-4-6": "Sonnet 4.6",
@@ -544,10 +547,20 @@ function bindQuickResearch() {
       "": "Haiku 4.5 (default)",
     };
     const modelLabel = MODEL_LABELS[body.model] || body.model || "Haiku 4.5 (default)";
-    statusEl.textContent = `Building dossier and calling Claude (${modelLabel})...`;
+    if (agentId) {
+      statusEl.textContent = `Running agent research (${agentId})...`;
+    } else {
+      statusEl.textContent = `Building dossier and calling Claude (${modelLabel})...`;
+    }
     showProgress();
     try {
-      const result = await apiPost("/agents/pre-meeting/ad-hoc", body);
+      let result;
+      if (agentId) {
+        body.agent_id = agentId;
+        result = await apiPost("/agents/pre-meeting/agent-research", body);
+      } else {
+        result = await apiPost("/agents/pre-meeting/ad-hoc", body);
+      }
       toast(`Brief generated for ${name}`, "ok");
       hideProgress();
       window.location.href = `/meeting.html?id=${encodeURIComponent(result.meeting_id)}&adhoc=1`;
@@ -559,6 +572,32 @@ function bindQuickResearch() {
       submit.disabled = false;
       submit.innerHTML = label;
     }
+  });
+}
+
+async function loadAgents() {
+  try {
+    const data = await apiGet("/agent-builder/agents");
+    const sel = document.getElementById("qr-agent");
+    if (!sel || !data || !data.agents) return;
+    (data.agents || []).forEach(function (a) {
+      if (a.id === "fec_field_assistant") return; // already hardcoded
+      const opt = document.createElement("option");
+      opt.value = a.id;
+      opt.textContent = a.name || a.id;
+      sel.appendChild(opt);
+    });
+  } catch (_) {}
+}
+
+function bindAgentSelector() {
+  const agentSel = document.getElementById("qr-agent");
+  const modelSel = document.getElementById("qr-model");
+  if (!agentSel || !modelSel) return;
+  agentSel.addEventListener("change", function () {
+    const hasAgent = agentSel.value !== "";
+    modelSel.disabled = hasAgent;
+    modelSel.classList.toggle("qr-model--disabled", hasAgent);
   });
 }
 
