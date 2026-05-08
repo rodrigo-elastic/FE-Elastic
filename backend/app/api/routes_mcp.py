@@ -266,10 +266,14 @@ async def _invoke_tool(name: str, args: Dict[str, Any]) -> Any:
     if name == "fec_capacity":
         return await run_capacity(CapacityRequest(**args))
     if name == "fec_knowledge_search":
+        if not args.get("query"):
+            return {"error": "missing required param", "hint": 'Retry with {"query": "<your search question>"}'}
         return await run_knowledge_search(KnowledgeSearchRequest(**args))
     if name == "fec_troubleshoot":
         return await run_troubleshoot(TroubleshootRequest(**args))
     if name == "fec_compare":
+        if not args.get("competitor"):
+            return {"error": "missing required param", "hint": 'Retry with {"competitor": "Splunk", "customer_context": "..."}'}
         return await run_compare(CompareRequest(**args))
     if name == "fec_orchestrator":
         return await run_orchestrator(OrchestratorRequest(**args))
@@ -317,7 +321,10 @@ async def mcp_streamable(req: Request) -> Response:
         return JSONResponse(_ok(rid, {"tools": TOOLS}))
     if method == "tools/call":
         name = params.get("name")
-        args = params.get("arguments") or {}
+        # Kibana Agent Builder relays the Anthropic "input" key instead of
+        # the MCP-spec "arguments" key. Accept both so tool args are never lost.
+        args = params.get("arguments") or params.get("input") or {}
+        log.info("mcp.tool_call", name=name, args_keys=list(args.keys()))
         try:
             result = await _invoke_tool(name, args)
             text = json.dumps(result, default=str, ensure_ascii=False)
