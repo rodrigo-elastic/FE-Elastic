@@ -234,17 +234,35 @@ class PreMeetingAgent(Agent):
         brief: Dict[str, Any],
         artifact: "object",
     ) -> str:
+        name = company.get("name", "Account")
+        headline = brief.get("headline", "")
+        sections = brief.get("sections", [])
+
+        # Pull the most useful bullets: first bullet of each of the first 3 sections.
+        highlights = []
+        for sec in sections[:3]:
+            bullets = sec.get("bullets", [])
+            if bullets:
+                highlights.append(f"  - *{sec['heading']}:* {bullets[0]}")
+
+        # Grab the first discovery question if present (last section often named "Questions").
+        question = ""
+        for sec in reversed(sections):
+            heading = sec.get("heading", "").lower()
+            if "question" in heading or "discovery" in heading:
+                bullets = sec.get("bullets", [])
+                if bullets:
+                    question = bullets[0]
+                break
+
         lines = [
-            f":memo: *Pre-Meeting Brief: {company['name']}*",
-            f"_Meeting:_ {meeting['title']} ({meeting['start_time']})",
+            f":memo: *Brief ready: {name}*",
+            f"_{meeting.get('title', 'Meeting')} - {meeting.get('start_time', '')}._",
             "",
-            f"*{brief['headline']}*",
+            f"*{headline}*",
             "",
         ]
-        for section in brief["sections"]:
-            lines.append(f"*{section['heading']}*")
-            for bullet in section["bullets"]:
-                lines.append(f"  - {bullet}")
-            lines.append("")
-        lines.append(f"_PDF artifact:_ {artifact}")
+        lines.extend(highlights)
+        if question:
+            lines += ["", f":speech_balloon: *Open with:* {question}"]
         return "\n".join(lines)

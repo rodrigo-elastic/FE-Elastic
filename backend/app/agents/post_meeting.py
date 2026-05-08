@@ -105,14 +105,22 @@ class PostMeetingAgent(Agent):
                 meeting_id=meeting_id,
             )
 
-        # Post Slack summary to #fe-copilot-briefs.
-        action_count = len(data.get("action_items", []))
+        # Post Slack summary with action items to #fe-copilot-briefs.
+        items = data.get("action_items", [])
+        high = [a for a in items if str(a.get("impact", "")).lower() == "high"]
+        unassigned = [a for a in items if not a.get("owner_email")]
+        item_lines = "\n".join(
+            f"  {'*' if str(a.get('impact','')).lower()=='high' else '-'} "
+            f"[{a.get('owner', 'unassigned')}] {a.get('title', '')}"
+            for a in items[:5]
+        )
         slack_mock.post_message(
             channel="#fe-copilot-briefs",
             text=(
-                f":memo: *Post-meeting complete* - {company.get('name', meeting_id)}\n"
-                f"{data.get('summary', '')[:200]}\n"
-                f"{action_count} action item{'s' if action_count != 1 else ''} logged."
+                f":checkered_flag: *Post-meeting: {company.get('name', meeting_id)}*\n"
+                f"{len(items)} action items | {len(high)} high-impact | {len(unassigned)} unassigned\n"
+                f"\n{item_lines}"
+                + (f"\n\n:rotating_light: {len(unassigned)} item(s) need an owner." if unassigned else "")
             ),
         )
 
