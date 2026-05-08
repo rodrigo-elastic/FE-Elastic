@@ -224,9 +224,6 @@ class PreMeetingAgent(Agent):
 
         get_es_repo().index_brief(record)
 
-        slack_text = self._format_slack(company, meeting, brief_dict, artifact_path)
-        slack_mock.post_message(channel=SLACK_CHANNEL, text=slack_text)
-
         log.info("pre_meeting.ad_hoc.complete", meeting_id=meeting_id, artifact=str(artifact_path))
         return record
 
