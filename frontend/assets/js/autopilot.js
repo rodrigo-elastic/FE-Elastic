@@ -566,24 +566,14 @@
     setCaption(1, "Generating. Splunk vs Elastic. Platform consolidation.",
       "Competitive brief in seconds.");
 
-    // Click Generate and wait for the page to navigate to meeting.html.
-    // If the API responds in time we get the real brief; otherwise we fall back
-    // to a pre-existing demo meeting so the demo never stalls.
+    // Click Generate so the viewer sees the Researching spinner, then navigate
+    // directly to the pre-baked brief. No API wait - demo must never stall.
     const submitBtn = await waitForEl("#qr-submit", 1000, signal);
-    const loadP = waitForLoad(signal, 6500);
-    if (submitBtn) iframeClick(submitBtn);
-
-    try {
-      await loadP;
-      await sleep(280, signal);
-      const win = state.nodes.iframe.contentWindow;
-      if (win && !win.location.pathname.includes("meeting")) {
-        await navTo("/meeting.html?id=northwind-mtg-001&brief=1", signal);
-      }
-    } catch (e) {
-      if (e && e.name === "AbortError") throw e;
-      await navTo("/meeting.html?id=northwind-mtg-001&brief=1", signal);
+    if (submitBtn) {
+      iframeClick(submitBtn);
+      await sleep(1800, signal);
     }
+    await navTo("/meeting.html?id=northwind-mtg-001&brief=1", signal);
   }
 
   async function stepBrief(signal) {
