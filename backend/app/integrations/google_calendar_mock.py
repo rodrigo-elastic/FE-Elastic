@@ -108,6 +108,21 @@ def _build_events() -> List[Dict[str, Any]]:
             {"email": "regional.manager@elastic.co"},
         ],
     },
+    # Scheduler test event - always 30 min away so the auto-brief fires on check.
+    {
+        "id": "gcal-evt-scheduler-test",
+        "summary": "Searchlight Capital x Elastic - Splunk displacement discovery",
+        "description": "Splunk renewal in 60 days. DORA audit gap. Decision maker is CFO.",
+        "start": {"dateTime": _iso(n + timedelta(minutes=30))},
+        "end": {"dateTime": _iso(n + timedelta(minutes=75))},
+        "organizer": {"email": "rodrigo.careaga@elastic.co"},
+        "attendees": [
+            {"email": "rodrigo.careaga@elastic.co", "responseStatus": "accepted"},
+            {"email": "james.liu@searchlightcap.example", "responseStatus": "accepted"},
+            {"email": "priya.sharma@searchlightcap.example", "responseStatus": "accepted"},
+        ],
+        "hangoutLink": "https://meet.google.com/fec-mock-slc-001",
+    },
 ]
 
 

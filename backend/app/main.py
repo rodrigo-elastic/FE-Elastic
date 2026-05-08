@@ -8,6 +8,7 @@ __copyright__ = "Copyright 2026, Rodrigo Careaga"
 __version__ = "0.1.0"
 __status__ = "Development"
 
+import asyncio
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -55,7 +56,14 @@ async def lifespan(_: FastAPI):
             log.info("app.startup.es_indices", statuses=statuses)
     except Exception as exc:
         log.warning("app.startup.es_ensure_failed", error=str(exc))
+
+    # Start the pre-meeting brief auto-scheduler.
+    from app.services.brief_scheduler import scheduler_loop
+    scheduler_task = asyncio.create_task(scheduler_loop())
+
     yield
+
+    scheduler_task.cancel()
     log.info("app.shutdown")
 
 

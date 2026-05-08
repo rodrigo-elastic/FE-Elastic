@@ -357,3 +357,10 @@ async def run_live_turn(meeting_id: str, turn_index: int, language: str = "Engli
             "model": model,
         }
     )
+
+
+@router.post("/pre-meeting/scheduler/check-now")
+async def scheduler_check_now() -> Dict[str, Any]:
+    """Manually trigger one scheduler cycle. Useful for testing without waiting 5 min."""
+    from app.services.brief_scheduler import check_and_brief
+    return await check_and_brief()
