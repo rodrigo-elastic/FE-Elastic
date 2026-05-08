@@ -17,8 +17,9 @@ from app.agents.base import Agent
 from app.agents.prompts import language_instruction, language_preamble, post_meeting as prompt
 from app.agents.schemas import PostMeetingResultOut
 from app.config import settings
-from app.integrations import salesforce_mock
+from app.integrations import salesforce_mock, slack_mock
 from app.integrations.claude_client import get_service
+from app.integrations.email_sender import send as send_email
 from app.repositories import synthetic
 from app.repositories.elasticsearch_repo import get_repo as get_es_repo
 from app.services import email_drafter
@@ -87,6 +88,32 @@ class PostMeetingAgent(Agent):
             meeting_id=meeting_id,
             email=data["follow_up_email"],
             to=meeting.get("attendees", []),
+        )
+
+        # Send real email to NOTIFY_EMAIL when configured.
+        notify_to = settings.notify_email
+        if notify_to:
+            fu_email = data.get("follow_up_email") or {}
+            action_lines = "\n".join(
+                f"- [{a.get('owner', 'unassigned')}] {a.get('title', '')}"
+                for a in data.get("action_items", [])
+            )
+            send_email(
+                to=notify_to,
+                subject=fu_email.get("subject") or f"[FEC] Post-meeting: {company.get('name', meeting_id)}",
+                body_markdown=fu_email.get("body_markdown", "") + f"\n\n---\n**Action items**\n{action_lines}",
+                meeting_id=meeting_id,
+            )
+
+        # Post Slack summary to #fe-copilot-briefs.
+        action_count = len(data.get("action_items", []))
+        slack_mock.post_message(
+            channel="#fe-copilot-briefs",
+            text=(
+                f":memo: *Post-meeting complete* - {company.get('name', meeting_id)}\n"
+                f"{data.get('summary', '')[:200]}\n"
+                f"{action_count} action item{'s' if action_count != 1 else ''} logged."
+            ),
         )
 
         # Extended Salesforce writes - the post-meeting flow drives the full deal record.

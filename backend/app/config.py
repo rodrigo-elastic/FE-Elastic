@@ -41,6 +41,14 @@ class Settings(BaseSettings):
     runtime_dir: Path = Field(Path("./runtime"), alias="RUNTIME_DIR")
     cors_allow_origins: List[str] = Field(default_factory=lambda: ["*"])
 
+    # Notifications - both are optional; omit to stay in dry-run mode.
+    slack_webhook_url: str = Field("", alias="SLACK_WEBHOOK_URL")
+    notify_email: str = Field("", alias="NOTIFY_EMAIL")
+    smtp_host: str = Field("smtp.gmail.com", alias="SMTP_HOST")
+    smtp_port: int = Field(587, alias="SMTP_PORT")
+    smtp_user: str = Field("", alias="SMTP_USER")
+    smtp_password: str = Field("", alias="SMTP_PASSWORD")
+
     def model_for(self, agent: str) -> str:
         """Resolve the model id for a given agent slug, falling back to MODEL_DEFAULT."""
         override = {
