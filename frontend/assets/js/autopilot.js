@@ -641,11 +641,11 @@
       answerEl.innerHTML =
         '<div class="abm-msg-body">' +
         "<p>Five displacement questions for <strong>Searchlight Capital</strong>, anchored to MEDDPICC:</p><ol>" +
-        "<li><strong>Economic Buyer</strong> — Who signs off on the Splunk renewal, and is their primary driver cutting ingest costs, closing the June DORA gap, or consolidating observability and SIEM into one platform?</li>" +
-        "<li><strong>Splunk Pain</strong> — Where is Splunk falling short today - licensing costs at scale, query latency on large datasets, SIEM rule coverage, or the operational burden of running it in-house?</li>" +
-        "<li><strong>DORA Gap</strong> — Which specific DORA requirements are still open in your June audit window, and has your team validated whether your current Splunk setup can close them before the deadline?</li>" +
-        "<li><strong>Champion</strong> — Who on your team would gain the most from a platform switch, and what would they need - a TCO comparison, a DORA coverage map, a 30-day POC - to confidently advocate internally before the renewal locks?</li>" +
-        "<li><strong>Decision Window</strong> — What does the evaluation process look like between now and the renewal date? Who else needs to sign off, and what does a successful 30-day proof of value need to prove to make Elastic the clear choice?</li>" +
+        "<li><strong>Economic Buyer</strong> - Who signs off on the Splunk renewal, and is their primary driver cutting ingest costs, closing the June DORA gap, or consolidating observability and SIEM into one platform?</li>" +
+        "<li><strong>Splunk Pain</strong> - Where is Splunk falling short today - licensing costs at scale, query latency on large datasets, SIEM rule coverage, or the operational burden of running it in-house?</li>" +
+        "<li><strong>DORA Gap</strong> - Which specific DORA requirements are still open in your June audit window, and has your team validated whether your current Splunk setup can close them before the deadline?</li>" +
+        "<li><strong>Champion</strong> - Who on your team would gain the most from a platform switch, and what would they need - a TCO comparison, a DORA coverage map, a 30-day POC - to confidently advocate internally before the renewal locks?</li>" +
+        "<li><strong>Decision Window</strong> - What does the evaluation process look like between now and the renewal date? Who else needs to sign off, and what does a successful 30-day proof of value need to prove to make Elastic the clear choice?</li>" +
         "</ol></div>";
       chat.appendChild(answerEl);
 

@@ -18,6 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       PYTHONPATH: backend
       ANTHROPIC_API_KEY: ""
     steps:
@@ -44,6 +45,8 @@ jobs:
     name: Lint (ruff + syntax + dashes)
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -80,6 +83,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       PYTHONPATH: backend
       APP_PORT: "8123"
       APP_HOST: "127.0.0.1"
