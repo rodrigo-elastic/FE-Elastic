@@ -116,6 +116,10 @@
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
             Create dashboard in Kibana
           </button>
+          <button class="btn ghost" id="generate-tar" type="button" title="Generate Technical Account Review for this account.">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+            Generate TAR
+          </button>
           <a class="btn ghost" id="download-pdf" target="_blank" rel="noopener" hidden aria-label="Download brief as PDF">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
             Download
@@ -147,6 +151,10 @@
           <button class="btn primary" id="run-post" type="button">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             Run Post-Meeting Agent
+          </button>
+          <button class="btn ghost" id="create-slide" type="button">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            Create slide
           </button>
         </div>
       </div>
@@ -198,6 +206,7 @@
   <script src="/assets/js/api-retry.js"></script>
   <script src="/assets/js/viz.js"></script>
   <script src="/assets/js/agent-builder-mini.js"></script>
+  <script src="/assets/js/tar-widget.js"></script>
   <script src="/assets/js/meeting.js?v=20260509b"></script>
   <script src="/assets/js/command-palette.js"></script>
 </body>

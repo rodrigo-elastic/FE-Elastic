@@ -4,6 +4,36 @@ All notable changes to FE Copilot are recorded here. Format follows [Keep a Chan
 
 ---
 
+## [1.1.0-hackathon] - 2026-05-10
+
+Submission-ready cut. Adds the QBR + TAR Customer Success workflows, polishes the workspace down to three fictional accounts, and ships the live Splunk-displacement narrative.
+
+### Added
+
+- **QBR generator** (`/qbr.html`, `backend/app/api/routes_qbr.py`): AE-facing Quarterly Business Review deck with Look Back / Current State / Look Forward sections. Synthesizes value realization, deployment health, and expansion opportunities from the meeting timeline. Generates a 4-slide PPTX deck and surfaces the rendered cards inline.
+- **TAR widget** (`backend/app/api/routes_tar.py`, `frontend/assets/js/tar-widget.js`): CA-facing Technical Account Review surfaced inside the meeting brief tab. Health score, feature gap table (ML Anomaly Detection, ILM, Fleet), prioritized recommendations, copy-ready QBR Look-Back bullets so technical wins feed directly into the AE narrative.
+- **Weekly customer-status slides** (`/weekly-slides.html`, `backend/app/api/routes_weekly_slides.py`): one slide per company per week, matching the FE field-engineering standup template (Actions, Renewals, Cases, Consumption, Feature Adoption, Risks/Notes). PPTX layout via python-pptx, posts the deck to Slack on demand.
+- **Create slide button** in the post-meeting tab: one click generates the customer-status PPTX from a single meeting record and uploads to Slack via bot token (or webhook fallback).
+- **Per-rule email toggle** in workflow settings: each Kibana rule has its own email on/off chip that syncs independently. No more all-or-nothing email enablement.
+- **Strict Elastic-inference guard** (`get_elastic_service()`, `call_structured(strict=True)`): customer data routed through the Elastic inference connector cannot fall back to the direct Anthropic API. Four fallback paths now raise instead of silently bypassing.
+- **Splunk Displacement narrative** for Searchlight Capital: cold-open + autopilot + post-meeting + slides all reinforce the 60-day renewal lock-in window. Replaces the prior Banco Atlántico account in the demo set.
+
+### Changed
+
+- **Three fictional accounts** (was Northwind Pay / Mercado Atlas / Banco Atlántico): Searchlight Capital (FSI / asset management) replaces Banco Atlántico to anchor the Splunk-displacement narrative the demo runs end-to-end.
+- **Synthetic data generator** (`backend/scripts/generate_synthetic_data.py`): regenerated companies, news, meetings, transcripts, tickets to match the new account roster.
+- **Workspace cleanup**: stale ad-hoc briefs and post-meetings purged from the `fec-briefs` and `fec-post-meetings` Elasticsearch indexes; only the 9 canonical artifacts (3 pre-meeting briefs + 6 post-meeting summaries) remain.
+- **Backend base URL**: now resolved via `settings.public_base_url` (driven by `BACKEND_BASE_URL` env, falls back to `http://localhost:{APP_PORT}`). PPTX download links work in local dev and production without code changes.
+- **`.env` loader**: pydantic-settings now searches `.env` then `../.env`, so the server picks up the repo-root `.env` when started from `backend/`.
+
+### Fixed
+
+- `httpx` import missing from `routes_weekly_slides.py` caused the Slack upload + webhook fallback to silently fail with `NameError`. Both paths now work.
+- Modal scroll regression in the Agent Builder iframe: `iframeScrollBy()` now scrolls the active `.ab-modal-card` container when the create-agent modal is open instead of the unreachable doc root.
+- Dead `_sync_watcher_email_watches` function removed from `routes_workflow_settings.py` (referenced an undefined `_WATCHER_WATCHES` symbol that broke `ruff check`).
+
+---
+
 ## [1.0.0-hackathon] - 2026-05-05
 
 First public release. Submission for the **Elastic FY27 SKO FE Summit Hackathon** (deadline 2026-05-10). Built solo over 30 days by Rodrigo Careaga, Senior Customer Architect at Elastic. MIT licensed.

@@ -252,6 +252,90 @@ async def info() -> dict:
     }
 
 
+@router.get("/status")
+async def status() -> Dict[str, Any]:
+    """Compact dashboard status pill - lighter than /health/full.
+
+    Returns a summary of service availability, key counts, LLM mode, and
+    whether the Kibana Agent Builder integration is live. Each sub-check is
+    isolated so individual failures never cause a 500.
+    """
+    # --- Elasticsearch ---
+    try:
+        es = get_es_repo()
+        es_up = es.available
+    except Exception:
+        es_up = False
+
+    # --- Kibana ---
+    try:
+        kib_up = kibana_client.ping()
+    except Exception:
+        kib_up = False
+
+    # --- LLM mode ---
+    try:
+        from app.integrations.claude_client import ElasticInferenceService, get_service
+        svc = get_service()
+        if getattr(svc, "mock_mode", False):
+            llm_mode = "mock"
+        elif isinstance(svc, ElasticInferenceService):
+            llm_mode = "elastic"
+        else:
+            llm_mode = "direct"
+    except Exception:
+        llm_mode = "mock"
+
+    # --- Brief count ---
+    try:
+        briefs_dir = settings.runtime_dir / "briefs"
+        briefs_count = len(list(briefs_dir.glob("*.json"))) if briefs_dir.exists() else 0
+    except Exception:
+        briefs_count = 0
+
+    # --- Workflows fired ---
+    try:
+        wf_path = settings.runtime_dir / "workflow_fires.jsonl"
+        if wf_path.exists():
+            workflows_fired = len([ln for ln in wf_path.read_text(encoding="utf-8").splitlines() if ln.strip()])
+        else:
+            workflows_fired = 0
+    except Exception:
+        workflows_fired = 0
+
+    # --- SFDC tasks ---
+    try:
+        from app.integrations.salesforce_mock import list_tasks  # noqa: PLC0415
+
+        sfdc_tasks = len(list_tasks(limit=9999))
+    except Exception:
+        sfdc_tasks = 0
+
+    # --- Agent Builder live ---
+    try:
+        from app.integrations.agent_builder import is_live  # noqa: PLC0415
+
+        agent_builder_live = is_live()
+    except Exception:
+        agent_builder_live = False
+
+    return {
+        "ok": es_up and kib_up,
+        "services": {
+            "elasticsearch": "up" if es_up else "down",
+            "kibana": "up" if kib_up else "down",
+            "llm": llm_mode,
+        },
+        "counts": {
+            "briefs": briefs_count,
+            "workflows_fired": workflows_fired,
+            "sfdc_tasks": sfdc_tasks,
+        },
+        "agent_builder_live": agent_builder_live,
+        "as_of": datetime.now(timezone.utc).isoformat(),
+    }
+
+
 @router.get("/health/full")
 async def health_full() -> Dict[str, Any]:
     """One-stop system health endpoint for the /health.html stats page.

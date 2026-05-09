@@ -75,6 +75,23 @@ def status() -> Dict[str, Any]:
     }
 
 
+@router.get("/inference-health")
+def inference_health() -> Dict[str, Any]:
+    if not ab.is_live():
+        return {"connectors": [], "overall": "not_configured", "live": False}
+    results = []
+    for connector_id in (ab.CONNECTOR_OPUS, ab.CONNECTOR_HAIKU):
+        results.append(ab.ping_inference_connector(connector_id))
+    ok_count = sum(1 for r in results if r.get("ok"))
+    if ok_count == 2:
+        overall = "healthy"
+    elif ok_count == 1:
+        overall = "degraded"
+    else:
+        overall = "down"
+    return {"connectors": results, "overall": overall, "live": ab.is_live()}
+
+
 @router.get("/tools")
 def list_tools() -> Dict[str, Any]:
     tools = ab.list_tools()

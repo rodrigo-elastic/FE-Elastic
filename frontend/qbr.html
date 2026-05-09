@@ -1,0 +1,229 @@
+<!--
+  filename: qbr.html
+  description: FE Copilot - QBR Generator. AE-facing executive quarterly business review deck.
+  Author: Rodrigo Careaga
+  Date: 09-05-2026
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FE Copilot - QBR</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/img/elastic/glyph-cluster-color.svg" />
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+  <style>
+    /* ── Page chrome ───────────────────────────────────────────── */
+    .qbr-page { max-width: 1280px; margin: 0 auto; padding: 24px 20px 60px; }
+
+    .qbr-toolbar {
+      display: flex; align-items: center; gap: 12px;
+      flex-wrap: wrap; margin-bottom: 28px;
+    }
+    .qbr-toolbar label {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 13px; cursor: pointer;
+    }
+    .qbr-toolbar select {
+      padding: 6px 10px; border-radius: 6px; font-size: 13px;
+      border: 1px solid var(--border, #ddd); background: var(--surface-2, #f5f7fa);
+      color: var(--text-1, #1a1a1a);
+    }
+    .qbr-meta { font-size: 12px; color: var(--text-2, #666); margin-left: auto; }
+
+    .qbr-empty {
+      text-align: center; padding: 60px 0; color: var(--text-2, #666); font-size: 15px;
+    }
+    .qbr-spinner {
+      display: inline-block; width: 18px; height: 18px; border: 2px solid #ddd;
+      border-top-color: #00BFB3; border-radius: 50%; animation: spin .7s linear infinite;
+      vertical-align: -4px; margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Preview area ─────────────────────────────────────────── */
+    .qbr-preview { display: flex; flex-direction: column; gap: 24px; }
+
+    /* ── Section card ─────────────────────────────────────────── */
+    .qbr-card {
+      background: #fff; border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.10);
+      overflow: hidden; font-family: Arial, Helvetica, sans-serif;
+      font-size: 13px; color: #1a1a1a;
+    }
+    .qbr-card-hdr {
+      padding: 10px 18px; font-weight: 700; font-size: 13px; color: #fff;
+    }
+    .hdr-red    { background: #E84B37; }
+    .hdr-navy   { background: #0F2D5C; }
+    .hdr-teal   { background: #00B4A2; }
+    .qbr-card-body { padding: 18px 20px; }
+
+    /* ── KPI row ──────────────────────────────────────────────── */
+    .qbr-kpis {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+      margin-bottom: 22px;
+    }
+    .qbr-kpi {
+      background: #f5f7fa; border: 1px solid #ddd; border-radius: 8px;
+      padding: 14px 12px; text-align: center;
+    }
+    .qbr-kpi-label { font-size: 11px; color: #888; margin-bottom: 4px; }
+    .qbr-kpi-value { font-size: 26px; font-weight: 800; color: #1a1a1a; line-height: 1.2; }
+    .qbr-kpi-trend { font-size: 13px; margin-top: 4px; }
+    .trend-up   { color: #3CB44B; }
+    .trend-down { color: #E84B37; }
+    .trend-stable { color: #F1A730; }
+
+    /* ── Sub-sections ─────────────────────────────────────────── */
+    .qbr-subsection { margin-top: 18px; }
+    .qbr-subsection-title {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .04em; color: #888; margin-bottom: 8px; border-bottom: 1px solid #eee;
+      padding-bottom: 4px;
+    }
+    .qbr-subsection ul { margin: 0; padding-left: 18px; }
+    .qbr-subsection li { margin-bottom: 5px; line-height: 1.5; }
+
+    /* ── Health score ─────────────────────────────────────────── */
+    .qbr-health-row {
+      display: grid; grid-template-columns: 160px 1fr 1fr; gap: 16px;
+      align-items: start;
+    }
+    .qbr-health-circle {
+      background: #f5f7fa; border-radius: 10px; padding: 18px 12px;
+      text-align: center; border: 1px solid #ddd;
+    }
+    .qbr-health-num { font-size: 48px; font-weight: 800; line-height: 1; }
+    .qbr-health-denom { font-size: 13px; color: #888; }
+    .qbr-health-label { font-size: 11px; color: #888; margin-top: 6px; }
+    .qbr-health-summary { font-size: 12px; color: #555; font-style: italic; margin-top: 8px; }
+    .health-green { color: #3CB44B; }
+    .health-gold  { color: #F1A730; }
+    .health-red   { color: #E84B37; }
+
+    .qbr-health-col { }
+    .qbr-health-col-title {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .04em; padding: 5px 10px; border-radius: 4px 4px 0 0;
+      color: #fff; margin-bottom: 0;
+    }
+    .qbr-health-col-body {
+      background: #f5f7fa; border-radius: 0 0 6px 6px; padding: 10px 12px;
+    }
+    .qbr-health-col-body ul { margin: 0; padding-left: 18px; }
+    .qbr-health-col-body li { margin-bottom: 5px; line-height: 1.5; font-size: 12px; }
+
+    /* ── Look Forward columns ─────────────────────────────────── */
+    .qbr-forward-cols {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+    }
+    .qbr-forward-col { }
+    .qbr-forward-col-title {
+      font-size: 11px; font-weight: 700; padding: 6px 10px;
+      border-radius: 4px 4px 0 0; color: #fff;
+    }
+    .fwd-gold  { background: #F1A730; }
+    .fwd-navy  { background: #0F2D5C; }
+    .fwd-teal  { background: #00B4A2; }
+    .qbr-forward-col-body {
+      background: #f5f7fa; border-radius: 0 0 6px 6px;
+      padding: 10px 12px; min-height: 80px;
+    }
+    .qbr-forward-col-body ul { margin: 0; padding-left: 18px; }
+    .qbr-forward-col-body li { margin-bottom: 6px; line-height: 1.5; font-size: 12px; }
+
+    /* ── Next Steps strip ─────────────────────────────────────── */
+    .qbr-next-steps {
+      margin-top: 22px; background: #f5f7fa; border-radius: 8px; padding: 14px 16px;
+    }
+    .qbr-next-steps-title { font-size: 11px; font-weight: 700; color: #E84B37; margin-bottom: 8px; }
+    .qbr-next-steps ul { margin: 0; padding-left: 18px; }
+    .qbr-next-steps li { margin-bottom: 5px; line-height: 1.5; font-size: 12px; }
+
+    /* ── Quarter meta badge ───────────────────────────────────── */
+    .qbr-quarter-badge {
+      font-size: 11px; font-weight: 700; background: #0B64DD; color: #fff;
+      border-radius: 4px; padding: 2px 8px; letter-spacing: .03em;
+    }
+    .qbr-company-badge {
+      font-size: 11px; font-weight: 700; background: #0F2D5C; color: #fff;
+      border-radius: 4px; padding: 2px 8px;
+    }
+
+    /* ── Download area ────────────────────────────────────────── */
+    .qbr-download-area {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 0; flex-wrap: wrap;
+    }
+
+    @media (max-width: 768px) {
+      .qbr-kpis { grid-template-columns: 1fr; }
+      .qbr-health-row { grid-template-columns: 1fr; }
+      .qbr-forward-cols { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="top-nav" aria-label="Primary navigation">
+      <a class="brand" href="/" aria-label="FE Copilot home">
+        <img src="/assets/img/elastic/glyph-cluster-color.svg" width="28" height="28" alt="" aria-hidden="true" />
+        <span>FE Copilot</span>
+      </a>
+      <div class="nav-links">
+        <a href="/" class="btn ghost">Home</a>
+        <a href="/workflow-demo.html" class="btn ghost">Workflows</a>
+        <a href="/audit.html" class="btn ghost">Audit</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="qbr-page" id="main-content">
+    <h1 style="margin-bottom:6px;font-size:24px;">Quarterly Business Review</h1>
+    <p style="color:#666;font-size:13px;margin-bottom:24px;">
+      Executive QBR deck generator. Select an account and quarter, then generate a 4-slide PPTX.
+    </p>
+
+    <div class="qbr-toolbar">
+      <label for="qbr-account">Account</label>
+      <select id="qbr-account" style="min-width:220px;">
+        <option value="">Loading accounts...</option>
+      </select>
+
+      <label for="qbr-quarter">Quarter</label>
+      <select id="qbr-quarter" style="min-width:130px;"></select>
+
+      <label style="gap:6px;">
+        <input type="checkbox" id="qbr-demo" />
+        Demo mode
+      </label>
+
+      <button class="btn btn-primary" id="qbr-generate">
+        Generate QBR
+      </button>
+
+      <span class="qbr-meta" id="qbr-meta"></span>
+    </div>
+
+    <div class="qbr-download-area" id="qbr-download-area" style="display:none;">
+      <a class="btn ghost" id="qbr-download" href="#" download>
+        Download PPTX
+      </a>
+      <span id="qbr-slide-name" style="font-size:12px;color:#888;"></span>
+    </div>
+
+    <div id="qbr-preview">
+      <div class="qbr-empty">
+        Select an account and quarter, then click <strong>Generate QBR</strong>.
+      </div>
+    </div>
+
+    <section id="toast-host" role="status" aria-live="polite" aria-atomic="false"></section>
+  </main>
+
+  <script src="/assets/js/api.js?v=20260509"></script>
+  <script src="/assets/js/ui.js?v=20260509"></script>
+  <script defer src="/assets/js/qbr.js?v=20260509"></script>
+</body>
+</html>

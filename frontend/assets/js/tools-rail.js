@@ -156,7 +156,7 @@
     return /\/fe-brain(\.html)?$/.test(location.pathname) || document.body.classList.contains("fe-brain-page");
   }
   function isWorkflowPage() {
-    return /\/workflow-demo(\.html)?$/.test(location.pathname) || document.body.classList.contains("workflow-page");
+    return /\/workflow-(demo|settings)(\.html)?$/.test(location.pathname) || document.body.classList.contains("workflow-page");
   }
   function isDemoDataPage() {
     return /\/demo-data(\.html)?$/.test(location.pathname);

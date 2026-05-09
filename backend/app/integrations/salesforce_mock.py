@@ -69,6 +69,38 @@ def create_task(
     }
 
 
+# ----------------------------------------------------------------------- update
+
+def update_task(task_id: str, *, status: str = "Completed") -> Dict[str, Any]:
+    """Mirror of PATCH /services/data/v60.0/sobjects/Task/{id}. Updates Status in the log file."""
+    log_path = _log_path()
+    if not log_path.exists():
+        return {"ok": False, "error": "log not found", "task_id": task_id}
+
+    updated = False
+    new_lines: List[str] = []
+    for line in log_path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            rec = json.loads(line)
+        except json.JSONDecodeError:
+            new_lines.append(line)
+            continue
+        if rec.get("Id") == task_id:
+            rec["Status"] = status
+            rec["LastModifiedDate"] = datetime.now(timezone.utc).isoformat()
+            updated = True
+        new_lines.append(json.dumps(rec))
+
+    import os as _os
+    tmp = log_path.with_suffix(".tmp")
+    tmp.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+    _os.replace(str(tmp), str(log_path))
+    return {"ok": True, "task_id": task_id, "status": status, "updated": updated}
+
+
 # ----------------------------------------------------------------------- read
 
 def list_tasks(*, what_id: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
@@ -85,6 +117,29 @@ def list_tasks(*, what_id: Optional[str] = None, limit: int = 50) -> List[Dict[s
         except json.JSONDecodeError:
             continue
         if what_id and rec.get("WhatId") != what_id:
+            continue
+        out.append(rec)
+    out.reverse()
+    return out[:limit]
+
+
+def list_open_tasks(*, limit: int = 50) -> List[Dict[str, Any]]:
+    """Return tasks where Status is not 'Completed'."""
+    log_path = _log_path()
+    if not log_path.exists():
+        return []
+    out: List[Dict[str, Any]] = []
+    for line in log_path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            rec = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if rec.get("_action"):
+            continue
+        if rec.get("Status", "") == "Completed":
             continue
         out.append(rec)
     out.reverse()

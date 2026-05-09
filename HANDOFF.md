@@ -45,7 +45,7 @@ Each Claude-backed tool has an expert persona prompt with knowledge pack: Marta 
 ### Three demo accounts (fictional, no real customer data)
 - Northwind Pay (fintech, EU banking licence Q3 2025, no CIK) - all news, employees, and figures are illustrative demo content.
 - Mercado Atlas (LATAM e-commerce + fintech, no CIK) - all news, employees, and figures are illustrative demo content.
-- Banco Atlántico (Spanish banking group, no CIK) - all news, employees, and figures are illustrative demo content.
+- Searchlight Capital (FSI / asset management, no CIK) - all news, employees, and figures are illustrative demo content. Drives the Splunk displacement narrative with a 60-day renewal lock-in window.
 
 ---
 
@@ -196,5 +196,5 @@ PYTHONPATH=backend python -m scripts.sync_agent_builder
 - Persistent sidebar visible from every page
 - Anthropic key in `.env` (rotate before transferring)
 - Elastic Agent Builder: scaffolded, needs Kibana 9 + Enterprise to go live
-- Demo data: fictional accounts (Northwind Pay, Mercado Atlas, Banco Atlántico) with illustrative .example URLs only
+- Demo data: fictional accounts (Searchlight Capital, Northwind Pay, Mercado Atlas) with illustrative .example URLs only
 - Languages: English, Spanish, Japanese, German, French

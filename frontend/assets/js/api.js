@@ -87,6 +87,71 @@ async function apiPost(path, body) {
   return res.json();
 }
 
+async function apiPatch(path, body) {
+  let res;
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: body ? JSON.stringify(body) : null,
+    });
+  } catch (netErr) {
+    throw new Error(`Network unavailable - check your connection (PATCH ${path})`);
+  }
+  if (!res.ok) {
+    let detail = String(res.status);
+    try {
+      const j = await res.json();
+      if (j && j.detail) detail = `${res.status} - ${sanitizeError(j.detail)}`;
+    } catch (_) {}
+    throw new Error(`PATCH ${path} failed: ${detail}`);
+  }
+  return res.json();
+}
+
+async function apiPut(path, body) {
+  let res;
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: body ? JSON.stringify(body) : null,
+    });
+  } catch (netErr) {
+    throw new Error(`Network unavailable - check your connection (PUT ${path})`);
+  }
+  if (!res.ok) {
+    let detail = String(res.status);
+    try {
+      const j = await res.json();
+      if (j && j.detail) detail = `${res.status} - ${sanitizeError(j.detail)}`;
+    } catch (_) {}
+    throw new Error(`PUT ${path} failed: ${detail}`);
+  }
+  return res.json();
+}
+
+async function apiDelete(path) {
+  let res;
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (netErr) {
+    throw new Error(`Network unavailable - check your connection (DELETE ${path})`);
+  }
+  if (!res.ok) {
+    let detail = String(res.status);
+    try {
+      const j = await res.json();
+      if (j && j.detail) detail = `${res.status} - ${sanitizeError(j.detail)}`;
+    } catch (_) {}
+    throw new Error(`DELETE ${path} failed: ${detail}`);
+  }
+  return res.status === 204 ? {} : res.json();
+}
+
 function getQueryParam(name) {
   return new URLSearchParams(window.location.search).get(name);
 }
@@ -94,4 +159,9 @@ function getQueryParam(name) {
 // Expose for non-module callers.
 if (typeof window !== "undefined") {
   window.sanitizeError = sanitizeError;
+  window.apiGet = apiGet;
+  window.apiPost = apiPost;
+  window.apiPut = apiPut;
+  window.apiPatch = apiPatch;
+  window.apiDelete = apiDelete;
 }

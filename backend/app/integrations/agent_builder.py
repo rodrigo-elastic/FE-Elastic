@@ -11,6 +11,7 @@ __status__ = "Development"
 import json
 import pathlib
 import threading
+import time
 from typing import Any, Dict, List, Optional
 
 import httpx
@@ -211,3 +212,127 @@ def converse(agent_id: str, message: str, conversation_id: Optional[str] = None)
     if conversation_id:
         body["conversation_id"] = conversation_id
     return _request("POST", "/api/agent_builder/converse", body)
+
+
+# ============================================================ Inference connectors =====
+# These IDs match the preconfigured Anthropic connectors in the Elastic cluster.
+CONNECTOR_OPUS = "Anthropic-Claude-Opus-4-5"
+CONNECTOR_HAIKU = "Anthropic-Claude-Haiku-4-5"
+
+_connector_cache: Dict[str, str] = {}
+
+
+def discover_connectors() -> Dict[str, str]:
+    """Discover Anthropic inference connectors registered in Kibana.
+
+    Calls GET /api/actions/connectors, filters for connectors whose
+    actionTypeId is '.inference' or whose name contains 'Anthropic' or
+    'Claude' (case-insensitive), then resolves haiku and opus IDs by
+    matching 'haiku' or 'opus' in the connector name.
+
+    Falls back to the hardcoded CONNECTOR_HAIKU / CONNECTOR_OPUS constants
+    when a matching connector is not found. Caches the result in
+    _connector_cache so the API is only called once per process.
+
+    Returns:
+        {"opus": <connector_id>, "haiku": <connector_id>}
+    """
+    global _connector_cache
+    if _connector_cache:
+        return _connector_cache
+
+    haiku_id: str = CONNECTOR_HAIKU
+    opus_id: str = CONNECTOR_OPUS
+
+    try:
+        result = _request("GET", "/api/actions/connectors")
+        connectors: List[Dict[str, Any]] = result if isinstance(result, list) else []
+
+        anthropic_connectors = [
+            c for c in connectors
+            if c.get("actionTypeId") == ".inference"
+            or "anthropic" in c.get("name", "").lower()
+            or "claude" in c.get("name", "").lower()
+        ]
+
+        for c in anthropic_connectors:
+            name_lower = c.get("name", "").lower()
+            cid = c.get("id", "")
+            if "haiku" in name_lower and cid:
+                haiku_id = cid
+            elif "opus" in name_lower and cid:
+                opus_id = cid
+    except Exception as exc:
+        log.warning("discover_connectors: could not fetch connectors, using hardcoded fallbacks: %s", exc)
+
+    _connector_cache = {"opus": opus_id, "haiku": haiku_id}
+    log.debug("discover_connectors: opus=%s haiku=%s", opus_id, haiku_id)
+    return _connector_cache
+
+
+def get_connector_for(model: str) -> str:
+    """Return the Kibana connector ID appropriate for *model*.
+
+    Uses discover_connectors() (cached after the first call) so the correct
+    ID is always returned even when the Kibana connector names differ from the
+    hardcoded fallback constants.
+
+    Args:
+        model: A model identifier string (e.g. "claude-haiku-4-5").
+
+    Returns:
+        The haiku connector ID when 'haiku' appears in *model* (case-insensitive),
+        otherwise the opus connector ID.
+    """
+    connectors = discover_connectors()
+    if "haiku" in model.lower():
+        return connectors["haiku"]
+    return connectors["opus"]
+
+
+def call_inference_connector(
+    connector_id: str,
+    messages: List[Dict[str, Any]],
+    *,
+    system: Optional[str] = None,
+    max_tokens: int = 8192,
+) -> Dict[str, Any]:
+    """Execute an Elastic inference connector (.inference type) via Kibana Actions API.
+
+    Sends messages in OpenAI-compatible format through Kibana so the call is tracked
+    in Elastic's usage metrics rather than going directly to Anthropic.
+    Returns the Kibana response dict or {"error": True, ...} on failure.
+    """
+    all_messages: List[Dict[str, Any]] = []
+    if system:
+        all_messages.append({"role": "system", "content": system})
+    all_messages.extend(messages)
+
+    body = {
+        "params": {
+            "subAction": "unified_completion",
+            "subActionParams": {
+                "body": {
+                    "messages": all_messages,
+                    "max_tokens": max_tokens,
+                }
+            },
+        }
+    }
+    return _request("POST", f"/api/actions/connector/{connector_id}/_execute", body)
+
+
+def ping_inference_connector(connector_id: str) -> Dict[str, Any]:
+    start = time.perf_counter()
+    try:
+        result = call_inference_connector(connector_id, [{"role": "user", "content": "Say OK"}], max_tokens=20)
+        end = time.perf_counter()
+        latency_ms = round((end - start) * 1000)
+        if result.get("error"):
+            return {"ok": False, "connector_id": connector_id, "latency_ms": latency_ms, "error": str(result.get("error"))}
+        model = result.get("data", {}).get("model", "")
+        return {"ok": True, "connector_id": connector_id, "latency_ms": latency_ms, "model": model}
+    except Exception as exc:
+        end = time.perf_counter()
+        latency_ms = round((end - start) * 1000)
+        return {"ok": False, "connector_id": connector_id, "latency_ms": latency_ms, "error": str(exc)}

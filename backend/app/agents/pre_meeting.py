@@ -17,6 +17,7 @@ from app.agents.base import Agent
 from app.agents.prompts import language_instruction, language_preamble, pre_meeting as prompt
 from app.agents.schemas import PreMeetingBriefOut
 from app.config import settings
+from app.integrations import salesforce_mock as _sfdc
 from app.integrations import sec_edgar, slack_mock
 from app.integrations.claude_client import get_service
 from app.repositories import synthetic
@@ -53,6 +54,15 @@ class PreMeetingAgent(Agent):
         # Real-data enrichment: pull recent SEC filings when the company is publicly listed.
         sec_filings = sec_edgar.fetch_recent_filings(company.get("sec_cik") or "", limit=5)
 
+        # Find open tasks for this company from SFDC mock (which mirrors post-meeting output)
+        _company_id = company["id"]
+        _all_open = _sfdc.list_open_tasks(limit=20)
+        open_action_items = [
+            t for t in _all_open
+            if (t.get("AccountId") or "").startswith("001")
+            and _company_id.replace("-", "")[:12].upper() in (t.get("AccountId") or "")
+        ][:5]
+
         dossier = {
             "company": company,
             "meeting": meeting,
@@ -60,6 +70,7 @@ class PreMeetingAgent(Agent):
             "tickets": synthetic.tickets_for(company["id"]),
             "past_transcripts": synthetic.past_transcripts_for(company["id"]),
             "sec_filings": sec_filings,
+            "open_action_items": open_action_items,
         }
 
         language = payload.get("language") or "English"
@@ -108,6 +119,7 @@ class PreMeetingAgent(Agent):
                     for t in dossier.get("past_transcripts", [])
                 ],
                 "sec_filings": sec_filings,
+                "open_action_items": len(open_action_items),
             },
         }
         out_dir = settings.runtime_dir / "briefs"

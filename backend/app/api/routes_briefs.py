@@ -9,15 +9,21 @@ __version__ = "0.1.0"
 __status__ = "Development"
 
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
+from pydantic import BaseModel
 
 from app.config import settings
 from app.repositories.elasticsearch_repo import get_repo as get_es_repo
 
 router = APIRouter(prefix="/briefs", tags=["briefs"])
+
+
+class PatchActionItem(BaseModel):
+    completed: bool
 
 
 def _brief_path(meeting_id: str) -> Path:
@@ -68,6 +74,8 @@ async def list_briefs(source: str = "auto") -> dict:
                     "company_id": rec.get("company_id"),
                     "summary": (rec.get("summary") or "")[:160],
                     "action_items": len(rec.get("action_items") or []),
+                    "done_tasks_count": sum(1 for a in (rec.get("action_items") or []) if a.get("completed")),
+                    "open_tasks_count": len(rec.get("action_items") or []) - sum(1 for a in (rec.get("action_items") or []) if a.get("completed")),
                     "generated_at": rec.get("generated_at"),
                     "source": "es",
                 }
@@ -112,6 +120,8 @@ async def list_briefs(source: str = "auto") -> dict:
                         "company_id": rec.get("company_id"),
                         "summary": (rec.get("summary") or "")[:160],
                         "action_items": len(rec.get("action_items") or []),
+                        "done_tasks_count": sum(1 for a in (rec.get("action_items") or []) if a.get("completed")),
+                        "open_tasks_count": len(rec.get("action_items") or []) - sum(1 for a in (rec.get("action_items") or []) if a.get("completed")),
                         "generated_at": rec.get("generated_at"),
                         "source": "disk",
                     }
@@ -185,6 +195,10 @@ async def get_post_meeting(meeting_id: str, source: str = "auto") -> dict:
         rec = es.get_post_meeting(meeting_id)
         if rec is not None:
             rec["_source_used"] = "es"
+            # Compute task completion counts
+            items = rec.get("action_items") or []
+            rec["done_tasks_count"] = sum(1 for a in items if a.get("completed"))
+            rec["open_tasks_count"] = len(items) - rec["done_tasks_count"]
             return rec
     path = settings.runtime_dir / "post_meeting" / f"{meeting_id}.json"
     if not path.exists():
@@ -192,4 +206,54 @@ async def get_post_meeting(meeting_id: str, source: str = "auto") -> dict:
     rec = json.loads(path.read_text(encoding="utf-8"))
     rec["_source_used"] = "disk"
     rec["exists"] = True
+    # Compute task completion counts
+    items = rec.get("action_items") or []
+    rec["done_tasks_count"] = sum(1 for a in items if a.get("completed"))
+    rec["open_tasks_count"] = len(items) - rec["done_tasks_count"]
     return rec
+
+
+@router.patch("/{meeting_id}/action-items/{idx}")
+async def patch_action_item(meeting_id: str, idx: int, body: PatchActionItem) -> dict:
+    """Mark a single action item complete or incomplete. Updates ES, disk, and SFDC mock."""
+    es = get_es_repo()
+
+    rec = None
+    if es.available:
+        rec = es.get_post_meeting(meeting_id)
+    if rec is None:
+        path = _post_path(meeting_id)
+        if not path.exists():
+            raise HTTPException(status_code=404, detail="Post-meeting record not found")
+        rec = json.loads(path.read_text(encoding="utf-8"))
+
+    items = rec.get("action_items") or []
+    if idx < 0 or idx >= len(items):
+        raise HTTPException(status_code=422, detail=f"Index {idx} out of range (0-{len(items) - 1})")
+
+    items[idx]["completed"] = body.completed
+    if body.completed:
+        items[idx]["completed_at"] = datetime.now(timezone.utc).isoformat()
+    else:
+        items[idx].pop("completed_at", None)
+    rec["action_items"] = items
+
+    # Persist to disk
+    disk_path = _post_path(meeting_id)
+    disk_path.parent.mkdir(parents=True, exist_ok=True)
+    disk_path.write_text(json.dumps(rec, default=str) + "\n", encoding="utf-8")
+
+    # Persist to ES
+    if es.available:
+        try:
+            es._client.index(index="fec-post-meetings", id=meeting_id, document=rec)  # noqa: SLF001
+        except Exception:
+            pass
+
+    # Update SFDC mock task status
+    sfdc_ids = rec.get("salesforce_task_ids") or []
+    if idx < len(sfdc_ids):
+        from app.integrations import salesforce_mock
+        salesforce_mock.update_task(sfdc_ids[idx], status="Completed" if body.completed else "Not Started")
+
+    return {"ok": True, "idx": idx, "completed": body.completed, "item": items[idx]}

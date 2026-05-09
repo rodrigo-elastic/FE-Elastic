@@ -16,7 +16,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=[".env", "../.env"],
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     app_env: str = Field("development", alias="APP_ENV")
     app_host: str = Field("0.0.0.0", alias="APP_HOST")
@@ -39,7 +43,16 @@ class Settings(BaseSettings):
     kibana_api_key: str = Field("", alias="KIBANA_API_KEY")
 
     runtime_dir: Path = Field(Path("./runtime"), alias="RUNTIME_DIR")
+    backend_base_url: str = Field("", alias="BACKEND_BASE_URL")
     cors_allow_origins: List[str] = Field(default_factory=lambda: ["*"])
+
+    @property
+    def public_base_url(self) -> str:
+        """Externally reachable base URL for download links."""
+        if self.backend_base_url:
+            return self.backend_base_url.rstrip("/")
+        port = self.app_port
+        return f"http://localhost:{port}"
 
     # Notifications - both are optional; omit to stay in dry-run mode.
     slack_webhook_url: str = Field("", alias="SLACK_WEBHOOK_URL")

@@ -194,7 +194,7 @@
       }
     });
 
-    // Per-rule output chip handlers — email syncs to Kibana immediately; others just save locally.
+    // Per-rule output chip handlers - email syncs to Kibana immediately; others just save locally.
     el.querySelectorAll("input[data-out-key]").forEach(function (input) {
       input.addEventListener("change", function () {
         var ruleId = input.getAttribute("data-rule-id");

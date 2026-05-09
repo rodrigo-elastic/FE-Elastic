@@ -467,12 +467,17 @@
     el.click();
   }
 
-  // Smooth-scroll the iframe's root element by deltaY pixels and wait for animation.
+  // Smooth-scroll the iframe's active scroll container by deltaY pixels.
+  // When the create-agent modal is open, .ab-modal-card owns the scroll
+  // (overflow-y:auto, max-height:calc(100vh - 48px)) - scrolling the doc
+  // root does nothing because the body is not the scrollable surface.
+  // Falls back to the doc root when no open modal is present.
   async function iframeScrollBy(deltaY, signal) {
     const doc = iframeDoc();
     if (!doc) { await sleep(700, signal); return; }
-    const root = doc.scrollingElement || doc.documentElement;
-    root.scrollBy({ top: deltaY, behavior: "smooth" });
+    const openModal = doc.querySelector(".ab-modal:not([hidden]) .ab-modal-card");
+    const target = openModal || doc.scrollingElement || doc.documentElement;
+    target.scrollBy({ top: deltaY, behavior: "smooth" });
     await sleep(720, signal);
   }
 

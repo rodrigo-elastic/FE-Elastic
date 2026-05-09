@@ -1,182 +1,152 @@
 /*
   filename: workflow-demo.js
-  description: Workflow demo page logic. Talks to /api/v1/workflows for sync, demo-fire, status, and recent webhook hits. Renders rule + connector ids and a live log of fires; auto-refreshes every 15 seconds.
+  description: FE Copilot - Workflow demo page. Fires the three Kibana workflows and renders the activity log.
   Author: Rodrigo Careaga
-  Date: 03-05-2026
+  Date: 08-05-2026
 */
 (function () {
-  const $status = document.getElementById("wf-status");
-  const $fires = document.getElementById("wf-fires");
-  const $fireResult = document.getElementById("wf-fire-result");
-  const $btnSync = document.getElementById("wf-sync");
-  const $btnRefresh = document.getElementById("wf-refresh");
-  const $btnFire = document.getElementById("wf-fire");
-  const $btnTriggerNow = document.getElementById("wf-trigger-now");
+  "use strict";
 
-  let refreshTimer = null;
+  var $log = document.getElementById("wf-log");
 
-  function pill(label, kind) {
-    return `<span class="wf-pill ${kind}">${label}</span>`;
+  // ------------------------------------------------------------------ helpers
+
+  function _relTime(iso) {
+    if (!iso) return "";
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return iso.slice(0, 16).replace("T", " ");
+    var diffMs = Date.now() - d.getTime();
+    if (diffMs < 60000)   return "just now";
+    if (diffMs < 3600000) return Math.floor(diffMs / 60000) + "m ago";
+    if (diffMs < 86400000) return Math.floor(diffMs / 3600000) + "h ago";
+    return Math.floor(diffMs / 86400000) + "d ago";
   }
 
-  function row(key, val) {
-    return `<div class="wf-row"><span class="wf-key">${key}</span><span class="wf-val">${val ?? "-"}</span></div>`;
+  function showResult(el, msg, isErr) {
+    if (!el) return;
+    el.textContent = msg;
+    el.className = "wf-card-result visible" + (isErr ? " err" : "");
   }
 
-  function fmtKind(s) {
-    if (!s) return "warn";
-    if (s === "registered") return "ok";
-    if (s.startsWith("missing") || s.startsWith("probe-error")) return "err";
-    return "warn";
+  function busy(btn, label) {
+    btn.disabled = true;
+    btn._orig = btn.textContent;
+    btn.textContent = label || "Running...";
   }
 
-  function renderStatus(data) {
-    const ruleKind = fmtKind(data.rule_status);
-    const connKind = fmtKind(data.connector_status);
-    const inboxPill = data.inbox_exists ? pill("exists", "ok") : pill("missing", "err");
-    const overall = data.registered
-      ? pill("workflow registered", "ok")
-      : pill("not registered", "warn");
-    $status.innerHTML = `
-      <div style="margin-bottom: 12px;">${overall}</div>
-      ${row("Rule status", `${pill(data.rule_status || "-", ruleKind)}`)}
-      ${row("Rule id", `<code>${data.rule_id || "-"}</code>`)}
-      ${row("Connector status", `${pill(data.connector_status || "-", connKind)}`)}
-      ${row("Connector id", `<code>${data.connector_id || "-"}</code>`)}
-      ${row("Inbox index", `<code>${data.inbox_index}</code> ${inboxPill}`)}
-      ${row("Webhook URL", `<code>${data.webhook_url}</code>`)}
-    `;
-    renderFires(data.recent_fires || []);
+  function done(btn) {
+    btn.disabled = false;
+    btn.textContent = btn._orig || "Fire";
   }
 
-  function renderFires(fires) {
-    if (!fires || fires.length === 0) {
-      $fires.innerHTML = '<div class="wf-empty">No fires yet. Click "Fire demo transcript" and wait ~60 seconds.</div>';
+  // ------------------------------------------------------------------ log
+
+  function renderLog(fires) {
+    if (!fires || !fires.length) {
+      $log.innerHTML = '<div class="wf-log-empty">No activity yet. Fire a workflow above.</div>';
       return;
     }
-    $fires.innerHTML = fires
-      .map((f) => {
-        const ok = f.processed === true;
-        const cls = ok ? "ok" : "err";
-        const tag = ok ? "PROCESSED" : "SKIPPED";
-        const when = f.received_at || "";
-        const reason = f.reason ? `<div>reason: <code>${f.reason}</code></div>` : "";
-        const post = f.post_meeting_id ? `<div>post-meeting id: <code>${f.post_meeting_id}</code></div>` : "";
-        const company = f.company_name ? `<div>company: <code>${f.company_name}</code></div>` : "";
-        const counts = f.processed
-          ? `<div>action items: <strong>${f.action_items ?? 0}</strong> · SFDC tasks: <strong>${f.sfdc_tasks ?? 0}</strong></div>`
-          : "";
-        return `<div class="wf-fire">
-          <span class="${cls}">[${tag}]</span> <span class="when">${when}</span>
-          <div>matched docs: ${f.matched_docs ?? 0}</div>
-          ${company}
-          ${post}
-          ${counts}
-          ${reason}
-        </div>`;
+    $log.innerHTML = fires.map(function (f) {
+      var ok = f.processed === true;
+      var company = f.company_name || f.account_name || "";
+      var workflow = f.workflow === "orphan-action" ? "Orphan action" : f.workflow === "renewal" ? "Renewal defense" : "Post-meeting";
+      var when = _relTime(f.received_at || f.created_at || "");
+      var detail = "";
+      if (ok && f.action_items != null) detail += f.action_items + " action items";
+      if (ok && f.sfdc_tasks)  detail += (detail ? " - " : "") + f.sfdc_tasks + " SFDC tasks";
+      if (ok && f.tasks_created != null) detail += (detail ? " - " : "") + f.tasks_created + " tasks created";
+      if (!ok && f.reason)     detail = f.reason;
+      return (
+        '<div class="wf-log-row">' +
+        '<div class="wf-log-dot ' + (ok ? "ok" : "skip") + '"></div>' +
+        '<div class="wf-log-body">' +
+        '<div class="wf-log-company">' +
+        "<strong>" + (company ? company : workflow) + "</strong>" +
+        " " +
+        '<span class="wf-pill ' + (ok ? "ok" : "skip") + '">' + (ok ? "done" : "skipped") + "</span>" +
+        "</div>" +
+        '<div class="wf-log-meta">' + (ok ? "&#x2713; " : "- ") + workflow + (when ? " &bull; " + when : "") + (detail ? " &bull; " + detail : "") + "</div>" +
+        "</div>" +
+        "</div>"
+      );
+    }).join("");
+  }
+
+  function loadLog() {
+    apiGet("/workflows/recent-fires?limit=12")
+      .then(function (d) { renderLog(d.fires || []); })
+      .catch(function () {});
+  }
+
+  // ------------------------------------------------------------------ workflow 1: post-meeting
+
+  document.getElementById("wf-fire").addEventListener("click", function () {
+    var btn = this;
+    var res = document.getElementById("wf-fire-result");
+    busy(btn, "Indexing...");
+    showResult(res, "", false);
+
+    apiPost("/workflows/demo-fire", {})
+      .then(function () {
+        showResult(res, "Transcript indexed. Kibana rule fires within ~60s - watch the log below.");
+        var ticks = 0;
+        var t = setInterval(function () {
+          loadLog();
+          if (++ticks >= 18) clearInterval(t);
+        }, 10000);
       })
-      .join("");
-  }
+      .catch(function (e) {
+        showResult(res, (typeof sanitizeError === "function" ? sanitizeError(e) : e.message) || "Failed", true);
+      })
+      .finally(function () { done(btn); });
+  });
 
-  async function loadStatus() {
-    try {
-      const data = await apiGet("/workflows/status");
-      renderStatus(data);
-    } catch (err) {
-      $status.innerHTML = `<div class="wf-error-line">Status fetch failed: ${(typeof sanitizeError === "function") ? sanitizeError(err) : (err && err.message) || "error"}</div>`;
-    }
-  }
+  // ------------------------------------------------------------------ workflow 2: orphan action
 
-  async function loadFires() {
-    try {
-      const data = await apiGet("/workflows/recent-fires?limit=10");
-      renderFires(data.fires || []);
-    } catch (err) {
-      // best-effort silent
-    }
-  }
+  document.getElementById("wf-fire-orphan").addEventListener("click", function () {
+    var btn = this;
+    var res = document.getElementById("wf-orphan-result");
+    busy(btn, "Running...");
+    showResult(res, "", false);
 
-  async function doSync() {
-    $btnSync.disabled = true;
-    $btnSync.textContent = "Syncing…";
-    try {
-      const r = await apiPost("/workflows/sync", {});
-      $fireResult.innerHTML = `<div class="wf-result"><strong>Workflow synced.</strong>
-        <pre>${JSON.stringify(r, null, 2)}</pre></div>`;
-      await loadStatus();
-    } catch (err) {
-      $fireResult.innerHTML = `<div class="wf-result is-err"><strong>Sync failed:</strong> ${(typeof sanitizeError === "function") ? sanitizeError(err) : (err && err.message) || "error"}</div>`;
-    } finally {
-      $btnSync.disabled = false;
-      $btnSync.textContent = "Sync workflow";
-    }
-  }
+    apiPost("/workflows/orphan-demo-fire", {})
+      .then(function () {
+        return apiPost("/workflows/post-meeting-action-orphan", { alert_id: "manual", rule_id: "manual", rule_name: "manual" });
+      })
+      .then(function (d) {
+        var n = (d && d.tasks_created) || 0;
+        showResult(res, n + " Salesforce task" + (n !== 1 ? "s" : "") + " created for unassigned high-impact items.");
+        loadLog();
+      })
+      .catch(function (e) {
+        showResult(res, (typeof sanitizeError === "function" ? sanitizeError(e) : e.message) || "Failed", true);
+      })
+      .finally(function () { done(btn); });
+  });
 
-  async function doFire() {
-    $btnFire.disabled = true;
-    $btnFire.textContent = "Indexing transcript…";
-    try {
-      const r = await apiPost("/workflows/demo-fire", {});
-      $fireResult.innerHTML = `<div class="wf-result">
-        <strong>Transcript indexed into <code>${r.index}</code>.</strong>
-        <div>doc id: <code>${r.doc_id}</code></div>
-        <div class="wf-status-note">${r.note || ""}</div>
-        <div style="margin-top:8px">Watching for the alerting rule to fire (auto-refresh every 15s)…</div>
-      </div>`;
-      // accelerate polling for ~3 minutes
-      let ticks = 0;
-      const fast = setInterval(async () => {
-        ticks += 1;
-        await loadFires();
-        await loadStatus();
-        if (ticks > 18) clearInterval(fast); // 18 * 10s = 3 min
-      }, 10000);
-    } catch (err) {
-      $fireResult.innerHTML = `<div class="wf-result is-err"><strong>Fire failed:</strong> ${(typeof sanitizeError === "function") ? sanitizeError(err) : (err && err.message) || "error"}</div>`;
-    } finally {
-      $btnFire.disabled = false;
-      $btnFire.textContent = "Fire demo transcript";
-    }
-  }
+  // ------------------------------------------------------------------ workflow 3: renewal defense
 
-  async function doTriggerNow() {
-    $btnTriggerNow.disabled = true;
-    $btnTriggerNow.textContent = "Triggering…";
-    try {
-      // Directly invoke the webhook endpoint with a synthetic payload so we don't have to wait
-      // for the Kibana scheduler. The handler will look up the most recent unprocessed doc.
-      // Workflow webhook fire: 12s budget per category, retry transient 5xx.
-      const body = {
-        alert_id: "manual-trigger",
-        rule_id: "manual",
-        rule_name: "manual-bypass",
-      };
-      const r = typeof window.apiPostWithRetry === "function"
-        ? await window.apiPostWithRetry("/workflows/triggered", body, { category: "workflow", silent: true, label: "Workflow trigger" })
-        : await apiPost("/workflows/triggered", body);
-      $fireResult.innerHTML = `<div class="wf-result">
-        <strong>Manual trigger result:</strong>
-        <pre>${JSON.stringify(r, null, 2)}</pre>
-      </div>`;
-      await loadStatus();
-    } catch (err) {
-      $fireResult.innerHTML = `<div class="wf-result is-err"><strong>Trigger failed:</strong> ${(typeof sanitizeError === "function") ? sanitizeError(err) : (err && err.message) || "error"}</div>`;
-    } finally {
-      $btnTriggerNow.disabled = false;
-      $btnTriggerNow.textContent = "Trigger now (skip wait)";
-    }
-  }
+  document.getElementById("wf-fire-renewal").addEventListener("click", function () {
+    var btn = this;
+    var res = document.getElementById("wf-renewal-result");
+    busy(btn, "Running...");
+    showResult(res, "", false);
 
-  function startAutoRefresh() {
-    if (refreshTimer) clearInterval(refreshTimer);
-    refreshTimer = setInterval(loadStatus, 15000);
-  }
+    apiPost("/workflows/renewal-demo-fire", {})
+      .then(function (d) {
+        var p = (d && d.play) || {};
+        var msg = (p.account_name || "Account") + " - severity " + (p.severity || "?") + " - due " + (p.due_date || "?") + ". " + (p.retention_play || "").slice(0, 160);
+        showResult(res, msg);
+        loadLog();
+      })
+      .catch(function (e) {
+        showResult(res, (typeof sanitizeError === "function" ? sanitizeError(e) : e.message) || "Failed", true);
+      })
+      .finally(function () { done(btn); });
+  });
 
-  $btnSync.addEventListener("click", doSync);
-  $btnRefresh.addEventListener("click", loadStatus);
-  $btnFire.addEventListener("click", doFire);
-  $btnTriggerNow.addEventListener("click", doTriggerNow);
+  // ------------------------------------------------------------------ init
 
-  loadStatus();
-  startAutoRefresh();
+  loadLog();
+  setInterval(loadLog, 15000);
 })();

@@ -360,7 +360,9 @@ async def run_live_turn(meeting_id: str, turn_index: int, language: str = "Engli
 
 
 @router.post("/pre-meeting/scheduler/check-now")
-async def scheduler_check_now() -> Dict[str, Any]:
-    """Manually trigger one scheduler cycle. Useful for testing without waiting 5 min."""
-    from app.services.brief_scheduler import check_and_brief
-    return await check_and_brief()
+async def scheduler_check_now(force: bool = False) -> Dict[str, Any]:
+    """Manually trigger one scheduler cycle. Pass ?force=true to reset the dedup set."""
+    from app.services import brief_scheduler
+    if force:
+        brief_scheduler._processed.clear()
+    return await brief_scheduler.check_and_brief()

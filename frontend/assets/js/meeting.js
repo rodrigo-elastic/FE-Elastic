@@ -762,6 +762,31 @@ function bindActions() {
     }
   });
 
+  document.getElementById("create-slide")?.addEventListener("click", async (ev) => {
+    const btn = ev.currentTarget;
+    const labelHTML = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Generating…';
+    try {
+      const result = await apiPost(`/weekly-slides/from-meeting/${meetingId}`, {});
+      const ch = result.slack_channel ? ` → ${result.slack_channel}` : "";
+      toast(`Slide created${ch}`, "ok");
+      const downloadHref = result.pptx_rel || result.pptx_url;
+      if (downloadHref) {
+        const link = document.createElement("a");
+        link.href = downloadHref;
+        link.download = result.slide_name || "slide.pptx";
+        link.click();
+      }
+    } catch (e) {
+      const safe = (typeof sanitizeError === "function") ? sanitizeError(e) : (e && e.message) || "error";
+      toast(`Slide failed: ${safe}`, "bad");
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = labelHTML;
+    }
+  });
+
   document.getElementById("create-dashboard")?.addEventListener("click", async (ev) => {
     const btn = ev.currentTarget;
     const labelHTML = btn.innerHTML;
@@ -1017,33 +1042,10 @@ function renderPost(post) {
   // Force-Field Analysis (executive snapshot)
   host.appendChild(renderForceField(post.meddpicc_signals || [], post.competitor_mentions || []));
 
-  const slideBtn = el("button", { class: "btn-sm btn-secondary", style: "margin-left:auto;font-size:12px;padding:3px 10px;" }, "Create slide ↗");
-  slideBtn.addEventListener("click", async () => {
-    slideBtn.disabled = true;
-    slideBtn.textContent = "Generating…";
-    try {
-      const result = await apiPost(`/weekly-slides/from-meeting/${meetingId}`, {});
-      const ch = result.slack_channel ? ` → ${result.slack_channel}` : "";
-      toast(`Slide created${ch}`, "ok");
-      if (result.pptx_url) {
-        const link = document.createElement("a");
-        link.href = result.pptx_url;
-        link.download = result.slide_name || "slide.pptx";
-        link.click();
-      }
-    } catch (e) {
-      toast("Slide failed: " + ((typeof sanitizeError === "function" ? sanitizeError(e) : e?.message) || "error"), "bad");
-    } finally {
-      slideBtn.disabled = false;
-      slideBtn.textContent = "Create slide ↗";
-    }
-  });
-
   const tools = el("div", { class: "section-tools", style: "display:flex;align-items:center;" }, [
     el("button", { class: "btn-link", onclick: () => toggleAll("post", true) }, "Expand all"),
     el("span", { class: "muted" }, " · "),
     el("button", { class: "btn-link", onclick: () => toggleAll("post", false) }, "Collapse all"),
-    slideBtn,
   ]);
   host.appendChild(tools);
 

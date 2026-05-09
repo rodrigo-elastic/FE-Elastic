@@ -694,6 +694,43 @@ def workflow_status() -> Dict[str, Any]:
     }
 
 
+@router.get("/stats")
+def workflow_stats() -> Dict[str, Any]:
+    """Aggregate counts across all post-meeting and orphan-action fire history."""
+    fires = _read_recent_fires(limit=1000)
+    orphan_fires = _read_recent_orphan_fires(limit=1000)
+
+    total_fires = len(fires) + len(orphan_fires)
+    processed = sum(1 for r in fires if r.get("processed")) + sum(
+        1 for r in orphan_fires if r.get("processed")
+    )
+    skipped = total_fires - processed
+    total_action_items = sum(int(r.get("action_items") or 0) for r in fires) + sum(
+        int(r.get("action_items") or 0) for r in orphan_fires
+    )
+    total_sfdc_tasks = sum(int(r.get("sfdc_tasks") or 0) for r in fires) + sum(
+        int(r.get("sfdc_tasks") or 0) for r in orphan_fires
+    )
+    orphan_count = len(orphan_fires)
+
+    all_timestamps = [
+        r.get("received_at")
+        for r in (fires + orphan_fires)
+        if r.get("received_at")
+    ]
+    last_fire_at = max(all_timestamps) if all_timestamps else None
+
+    return {
+        "total_fires": total_fires,
+        "processed": processed,
+        "skipped": skipped,
+        "total_action_items": total_action_items,
+        "total_sfdc_tasks": total_sfdc_tasks,
+        "orphan_fires": orphan_count,
+        "last_fire_at": last_fire_at,
+    }
+
+
 @router.post("/sync")
 def workflow_sync() -> Dict[str, Any]:
     """Idempotently create the inbox index, the .webhook connector, and the alerting rule."""

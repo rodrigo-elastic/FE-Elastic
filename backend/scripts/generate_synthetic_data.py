@@ -66,22 +66,23 @@ COMPANIES = [
         "ticker": None,
     },
     {
-        "id": "atlantico",
-        "name": "Banco Atlántico",
-        "industry": "Banking",
-        "size": "Enterprise (~210k employees)",
-        "headquarters": "Madrid, Spain",
-        "website": "https://www.bancoatlantico.example",
+        "id": "searchlightcap",
+        "name": "Searchlight Capital",
+        "industry": "Financial Services / Asset Management",
+        "size": "Enterprise (~3,800 employees)",
+        "headquarters": "New York, USA",
+        "website": "https://www.searchlightcap.example",
         "tech_stack": {
-            "observability": ["Splunk", "Dynatrace", "Grafana"],
-            "search": ["Elasticsearch (regional clusters)"],
-            "cloud": ["AWS", "Azure", "Google Cloud", "private cloud"],
-            "other": ["Red Hat OpenShift", "IBM mainframe (core banking)", "Atlas Multi-Cloud platform"],
+            "observability": ["Splunk Enterprise (incumbent)", "Datadog (APM only)", "PagerDuty"],
+            "search": ["Elasticsearch (legacy logging on a few teams)"],
+            "cloud": ["AWS", "Azure"],
+            "other": ["Snowflake", "Kubernetes (EKS)", "GitLab CI"],
         },
         "description": (
-            "Fictional global banking group headquartered in Spain. "
-            "Operates retail, corporate, and investment banking across Europe and the Americas; "
-            "internal 'Atlas Multi-Cloud' platform is the backbone of their multi-cloud digital strategy."
+            "Fictional global private-investment firm with $14B AUM across infrastructure, energy, "
+            "and financial services. Splunk is the incumbent SIEM and observability platform with a "
+            "60-day renewal window. DORA audit pending in Q3. Champions: Priya Sharma (VP Platform), "
+            "James Liu (Lead SRE), Sandra Park (CFO)."
         ),
         "sec_cik": None,
         "ticker": None,
@@ -145,30 +146,30 @@ NEWS = [
         "summary": "Demo annual report: risk factors, segment results, and audited financials. All figures are illustrative.",
     },
 
-    # --- Banco Atlántico ------------------------------------------------------
+    # --- Searchlight Capital --------------------------------------------------
     {
-        "company_id": "atlantico",
-        "title": "Banco Atlántico Press Room (announcements, strategy updates, ESG news, fictional)",
-        "source": "Banco Atlántico Press Room (demo)",
+        "company_id": "searchlightcap",
+        "title": "Searchlight Capital announces $4.2B Fund V close (fictional)",
+        "source": "Searchlight Capital Press Room (demo)",
         "days_ago": 5,
-        "url": "https://www.bancoatlantico.example/press-room",
-        "summary": "Demo press releases. Recent strategic updates emphasise the 'ONE Transformation' programme and Atlas Multi-Cloud platform rollout.",
+        "url": "https://www.searchlightcap.example/news/fund-v-close",
+        "summary": "Demo article: Searchlight Capital closes its fifth flagship fund at $4.2 billion, focusing on infrastructure, energy, and financial services. AUM crosses $14 billion across the platform.",
     },
     {
-        "company_id": "atlantico",
-        "title": "Banco Atlántico shareholders and investors (annual results, presentations, fictional)",
-        "source": "Banco Atlántico IR (demo)",
+        "company_id": "searchlightcap",
+        "title": "Searchlight Capital overview, strategy, and portfolio (fictional)",
+        "source": "Searchlight Capital (demo)",
         "days_ago": 12,
-        "url": "https://www.bancoatlantico.example/shareholders-and-investors",
-        "summary": "Demo investor portal: quarterly results, annual reports, ESG disclosures, and AGM materials. Latest reports emphasise digital-channel customer growth.",
+        "url": "https://www.searchlightcap.example/about",
+        "summary": "Demo background page: global private investment firm founded 2010; offices in New York, London, and Toronto; focused on long-duration infrastructure and FSI assets.",
     },
     {
-        "company_id": "atlantico",
-        "title": "Banco Atlántico overview, history, and global footprint (fictional)",
-        "source": "Banco Atlántico (demo)",
+        "company_id": "searchlightcap",
+        "title": "DORA in 2026 - what asset managers must report (fictional analyst note)",
+        "source": "FSI Analyst Watch (demo)",
         "days_ago": 20,
-        "url": "https://www.bancoatlantico.example/about",
-        "summary": "Demo background page: founded 1857 in a fictional Spanish region; operates in Europe, North America, South America with ~210k employees.",
+        "url": "https://www.fsianalyst.example/dora-2026",
+        "summary": "Demo analyst note: with DORA enforcement now in full swing, asset managers face quarterly attestation on operational resilience. Cited firms include Searchlight Capital, with a June audit window.",
     },
 ]
 
@@ -210,22 +211,22 @@ MEETINGS = [
      "attendees": ["rodrigo.careaga@elastic.co", "diego.alvarez@mercadoatlas.example"],
      "notes": "Past architecture review."},
 
-    # Banco Atlántico
-    {"id": "atlantico-mtg-001", "company_id": "atlantico",
-     "title": "Banco Atlántico x Elastic, Splunk renewal alternative review",
-     "starts_in_hours": 144, "duration_min": 45,
-     "attendees": ["rodrigo.careaga@elastic.co", "carlos.ruiz@bancoatlantico.example", "marina.lopez@bancoatlantico.example"],
-     "notes": "Upcoming. Splunk renewal landscape and Atlas Multi-Cloud platform integration."},
-    {"id": "atlantico-mtg-prev-001", "company_id": "atlantico",
-     "title": "Banco Atlántico x Elastic, exec discovery",
+    # Searchlight Capital
+    {"id": "searchlight-mtg-001", "company_id": "searchlightcap",
+     "title": "Searchlight Capital x Elastic, Splunk displacement (60-day renewal window)",
+     "starts_in_hours": 48, "duration_min": 45,
+     "attendees": ["rodrigo.careaga@elastic.co", "priya.sharma@searchlightcap.example", "james.liu@searchlightcap.example", "sandra.park@searchlightcap.example"],
+     "notes": "Upcoming. Final commercial review before Splunk renewal lock. Sandra Park (CFO) attending."},
+    {"id": "searchlight-mtg-prev-001", "company_id": "searchlightcap",
+     "title": "Searchlight Capital x Elastic, exec discovery",
      "starts_in_hours": -240, "duration_min": 45,
-     "attendees": ["rodrigo.careaga@elastic.co", "carlos.ruiz@bancoatlantico.example", "marina.lopez@bancoatlantico.example"],
-     "notes": "Past exec call."},
-    {"id": "atlantico-mtg-prev-002", "company_id": "atlantico",
-     "title": "Banco Atlántico x Elastic, regulatory mapping working session",
-     "starts_in_hours": -360, "duration_min": 30,
-     "attendees": ["rodrigo.careaga@elastic.co", "marina.lopez@bancoatlantico.example"],
-     "notes": "Past regulatory mapping session."},
+     "attendees": ["rodrigo.careaga@elastic.co", "priya.sharma@searchlightcap.example", "james.liu@searchlightcap.example"],
+     "notes": "First discovery call. Confirmed Splunk renewal in 60 days at $1.2M/year and DORA audit pending in June."},
+    {"id": "searchlight-mtg-prev-002", "company_id": "searchlightcap",
+     "title": "Searchlight Capital x Elastic, technical deep dive",
+     "starts_in_hours": -120, "duration_min": 60,
+     "attendees": ["rodrigo.careaga@elastic.co", "james.liu@searchlightcap.example"],
+     "notes": "Architecture review with James Liu. 2.4 TB/day ingest across 14 indexes; sized Elastic Cloud for parity with Splunk."},
 ]
 
 
@@ -305,40 +306,40 @@ TRANSCRIPTS = [
         ],
     },
 
-    # Banco Atlántico signals-rich
+    # Searchlight Capital signals-rich
     {
-        "meeting_id": "atlantico-mtg-prev-001",
-        "company_id": "atlantico",
+        "meeting_id": "searchlight-mtg-prev-001",
+        "company_id": "searchlightcap",
         "turns": [
-            {"speaker": "Rodrigo (Elastic FE)", "text": "Carlos, Marina, thanks for joining. What is driving Banco Atlántico's Splunk evaluation now?"},
-            {"speaker": "Carlos Ruiz (Banco Atlántico MD Tech)", "text": "Two reasons. Our Splunk contract renews March 1, 2027 at roughly 12 million euros. And our 'Atlas Multi-Cloud' platform needs a single observability layer across AWS, Azure, GCP, and the private cloud."},
-            {"speaker": "Marina Lopez (Banco Atlántico Architecture Lead)", "text": "Plus a 90 minute trading platform slowdown last quarter. Log ingestion lag was a contributing factor."},
-            {"speaker": "Rodrigo (Elastic FE)", "text": "How is Splunk performing day to day?"},
-            {"speaker": "Marina Lopez (Banco Atlántico Architecture Lead)", "text": "It works, but storage tier costs are punishing for our 10 year audit retention required by ECB and the local central bank. We need a more economical model."},
-            {"speaker": "Carlos Ruiz (Banco Atlántico MD Tech)", "text": "Evaluating Elastic, Sumo Logic, and Splunk renewal. Board wants 30 percent cost reduction at parity coverage."},
-            {"speaker": "Rodrigo (Elastic FE)", "text": "On metrics, what does success look like in 12 months?"},
-            {"speaker": "Carlos Ruiz (Banco Atlántico MD Tech)", "text": "Audit reporting from 21 days to under 7. Storage cost down 35 percent. Zero high severity logging incidents during peak trading windows."},
-            {"speaker": "Rodrigo (Elastic FE)", "text": "Decision process and timeline?"},
-            {"speaker": "Carlos Ruiz (Banco Atlántico MD Tech)", "text": "I sponsor it. CIO Group Tech signs. Architecture council reviews. Marina is the technical champion. Decision in Q4 2026."},
-            {"speaker": "Rodrigo (Elastic FE)", "text": "Marina, top technical concerns?"},
-            {"speaker": "Marina Lopez (Banco Atlántico Architecture Lead)", "text": "Frozen tier on object storage at 10 year retention, role based access at index level, SAML federation with our internal IDP, and clean integration with Atlas Multi-Cloud."},
-            {"speaker": "Rodrigo (Elastic FE)", "text": "All native. I'll send a Splunk to Elastic migration playbook plus regulatory mapping for ECB, local central bank, and FCA reporting controls."},
-            {"speaker": "Carlos Ruiz (Banco Atlántico MD Tech)", "text": "Please. Can we book a deep dive with Marina's architecture team next Wednesday?"},
+            {"speaker": "Rodrigo (Elastic FE)", "text": "Priya, James, thanks for the time. What is driving Searchlight Capital to look at Splunk alternatives now?"},
+            {"speaker": "Priya Sharma (Searchlight Capital VP Platform)", "text": "Two converging deadlines. Our Splunk contract renews on March 15, 2027 - and the renewal lock-in window is sixty days from today. And we have a DORA audit coming in June for our portfolio companies."},
+            {"speaker": "James Liu (Searchlight Capital Lead SRE)", "text": "On the technical side, Splunk storage costs at our 7-year audit retention are crushing the platform budget. We're at $1.2 million a year and growing."},
+            {"speaker": "Rodrigo (Elastic FE)", "text": "Got it. Who owns the displacement decision?"},
+            {"speaker": "Priya Sharma (Searchlight Capital VP Platform)", "text": "I sponsor it. Our CTO signs. James runs the technical evaluation. Sandra Park, our CFO, owns the commercial line."},
+            {"speaker": "James Liu (Searchlight Capital Lead SRE)", "text": "Decision criteria: single platform for SIEM and observability, native vector for our compliance search use case, and DORA-ready dashboards for deployment frequency, MTTR, change failure rate, and lead time."},
+            {"speaker": "Rodrigo (Elastic FE)", "text": "Timeline?"},
+            {"speaker": "Priya Sharma (Searchlight Capital VP Platform)", "text": "We need a go/no-go in 30 days. Splunk renewal locks in 60. We need 90 days for migration if we displace."},
+            {"speaker": "Rodrigo (Elastic FE)", "text": "What would block this?"},
+            {"speaker": "James Liu (Searchlight Capital Lead SRE)", "text": "We need a POC at our peak ingest of 2.4 TB/day across 14 indexes. If Elastic can't keep up at p99 under 200 ms query latency, we can't move."},
+            {"speaker": "Rodrigo (Elastic FE)", "text": "I'll send a POC plan covering 2.4 TB/day ingest, DORA dashboards out of the box, and a Splunk-to-Elastic TCO model. Can we target the technical deep dive next week?"},
+            {"speaker": "Priya Sharma (Searchlight Capital VP Platform)", "text": "Please. James will lead. Loop in Sandra by week three so commercial doesn't slip."},
+            {"speaker": "Rodrigo (Elastic FE)", "text": "Will do. I'll also draft the displacement narrative for your CTO and CFO before the next session."},
         ],
     },
-    # Banco Atlántico vanilla
+    # Searchlight Capital vanilla
     {
-        "meeting_id": "atlantico-mtg-prev-002",
-        "company_id": "atlantico",
+        "meeting_id": "searchlight-mtg-prev-002",
+        "company_id": "searchlightcap",
         "turns": [
-            {"speaker": "Rodrigo (Elastic FE)", "text": "Marina, working session on the regulatory mapping you asked for."},
-            {"speaker": "Marina Lopez (Banco Atlántico Architecture Lead)", "text": "Let's start with ECB GIM expectations."},
-            {"speaker": "Rodrigo (Elastic FE)", "text": "Audit log immutability, 10 year retention, role based access, full text search across all events."},
-            {"speaker": "Marina Lopez (Banco Atlántico Architecture Lead)", "text": "Local central bank reporting requirements?"},
-            {"speaker": "Rodrigo (Elastic FE)", "text": "Quarterly attestation, role based access reviews, segregation of duties. All natively supported."},
-            {"speaker": "Marina Lopez (Banco Atlántico Architecture Lead)", "text": "FCA for our UK retail operations?"},
-            {"speaker": "Rodrigo (Elastic FE)", "text": "PRA outsourcing rules apply. We have a customer-facing reference deck."},
-            {"speaker": "Marina Lopez (Banco Atlántico Architecture Lead)", "text": "Send the reference and we can review with our compliance team."},
+            {"speaker": "Rodrigo (Elastic FE)", "text": "James, walking through the architecture options for the 2.4 TB/day ingest."},
+            {"speaker": "James Liu (Searchlight Capital Lead SRE)", "text": "Start with sizing. We have 14 indexes, peaks at noon EST and at market close."},
+            {"speaker": "Rodrigo (Elastic FE)", "text": "Hot tier on i3en nodes, warm on d3.2xlarge, frozen on S3 with searchable snapshots at 7-year retention."},
+            {"speaker": "James Liu (Searchlight Capital Lead SRE)", "text": "What about query latency at the frozen tier? We pull the 18-month window for compliance audits."},
+            {"speaker": "Rodrigo (Elastic FE)", "text": "Frozen searchable snapshots return in 2-5 seconds for that window with the right shard layout. We can show you the benchmark."},
+            {"speaker": "James Liu (Searchlight Capital Lead SRE)", "text": "DORA dashboards out of the box?"},
+            {"speaker": "Rodrigo (Elastic FE)", "text": "Yes - deployment frequency, MTTR, change failure rate, lead time. Native in Elastic Observability with the GitLab integration."},
+            {"speaker": "James Liu (Searchlight Capital Lead SRE)", "text": "Send the architecture diagram and the benchmark. I want to walk Sandra through the TCO at next week's review."},
+            {"speaker": "Rodrigo (Elastic FE)", "text": "Sending today, with the Splunk-to-Elastic cost model and a 60-day displacement plan."},
         ],
     },
 ]
@@ -367,16 +368,16 @@ TICKETS = [
      "status": "Open", "priority": "P3", "days_ago": 17,
      "description": "Legacy Solr clusters are EOL on the team's schedule; migration to a single search platform is overdue."},
 
-    # Banco Atlántico
-    {"company_id": "atlantico", "subject": "Trading platform log ingestion lag",
-     "status": "Resolved", "priority": "P1", "days_ago": 21,
-     "description": "Lag during peak trading window contributed to a 90 minute slowdown."},
-    {"company_id": "atlantico", "subject": "Audit reporting cycle reduction project",
-     "status": "In Progress", "priority": "P2", "days_ago": 12,
-     "description": "Initiative to cut audit reporting cycle from 21 days to under 7 days."},
-    {"company_id": "atlantico", "subject": "Splunk cost reduction options for 2027 renewal",
-     "status": "Open", "priority": "P2", "days_ago": 4,
-     "description": "Procurement asked architecture council for vendor consolidation options ahead of the March 2027 renewal."},
+    # Searchlight Capital
+    {"company_id": "searchlightcap", "subject": "Splunk renewal lock-in window: 60 days remaining",
+     "status": "Open", "priority": "P1", "days_ago": 1,
+     "description": "Splunk auto-renewal triggers in 60 days at $1.2M/year. CFO Sandra Park needs a TCO + displacement plan before the lock window expires."},
+    {"company_id": "searchlightcap", "subject": "DORA audit prep - dashboards for deployment frequency, MTTR, change failure rate, lead time",
+     "status": "In Progress", "priority": "P1", "days_ago": 12,
+     "description": "June audit requires DORA-style operational resilience dashboards across all portfolio infrastructure. James Liu owns; Priya Sharma sponsors."},
+    {"company_id": "searchlightcap", "subject": "Splunk storage tier costs at 7-year retention",
+     "status": "Open", "priority": "P2", "days_ago": 20,
+     "description": "Compliance retention drives a hot/warm storage bill of ~$340K/year inside Splunk. Architecture council asked for alternatives."},
 ]
 
 

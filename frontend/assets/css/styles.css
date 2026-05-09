@@ -970,13 +970,23 @@ details[open] > summary .chevron { transform: rotate(180deg); opacity: 1; }
 }
 .actions-list li {
   position: relative;
-  padding: 14px 16px;
+  padding: 13px 16px 13px 44px;
   background: var(--panel-2);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  transition: border-color 140ms var(--easing);
+  transition: opacity 0.25s ease, border-color 0.15s ease;
 }
 .actions-list li:hover { border-color: var(--border-strong); }
+.ai-check-col { position: absolute; left: 16px; top: 15px; }
+.action-check { width: 16px; height: 16px; accent-color: var(--teal); cursor: pointer; margin: 0; }
+.action-check:disabled { opacity: 0.5; cursor: wait; }
+.actions-list li.done { opacity: 0.55; border-style: dashed; }
+.actions-list li.done .title { text-decoration: line-through; color: var(--muted); }
+.actions-list li.done .title::before { content: "✓ "; color: var(--teal); font-weight: 700; }
+.actions-list li.done .due { opacity: 0.5; }
+.all-done .actions-list { border: 1.5px solid var(--teal); border-radius: var(--radius); }
+#fec-allDone-toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(8px); background: var(--teal); color: #fff; padding: 9px 20px; border-radius: 999px; font-size: 13px; font-weight: 600; opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; z-index: 9999; }
+#fec-allDone-toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
 .actions-list .head {
   display: flex;
   justify-content: space-between;

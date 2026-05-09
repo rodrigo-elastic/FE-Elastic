@@ -59,42 +59,23 @@ def _build_events() -> List[Dict[str, Any]]:
         ],
         "hangoutLink": "https://meet.google.com/fec-mock-meli-001",
     },
-    # 3) Multi-party: Banco Atlántico + Helix Advisory + Apex Advisory + Elastic.
-    # Two consulting firms in the room; resolver should still pick Banco Atlántico.
+    # 3) Searchlight Capital follow-up - the displacement-confirmation working session.
     {
         "id": "gcal-evt-003",
-        "summary": "Banco Atlántico Splunk renewal review, architecture council",
-        "description": "Architecture council with Banco Atlántico + Helix Advisory + Apex Advisory risk team.",
-        "start": {"dateTime": _iso(n + timedelta(hours=144))},
-        "end": {"dateTime": _iso(n + timedelta(hours=144, minutes=60))},
-        "organizer": {"email": "rodrigo.careaga@elastic.co"},
-        "attendees": [
-            {"email": "rodrigo.careaga@elastic.co"},
-            {"email": "carlos.ruiz@bancoatlantico.example"},
-            {"email": "marina.lopez@bancoatlantico.example"},
-            {"email": "advisor1@helixadvisory.example"},
-            {"email": "risk.lead@apexadvisory.example"},
-        ],
-        "hangoutLink": "https://meet.google.com/fec-mock-atl-001",
-    },
-    # 4) Ambiguous: only consultants + a freemail attendee. Title carries the customer name ("Fjordbank").
-    # Resolver falls through domains (no match) and uses title-keyword fallback.
-    {
-        "id": "gcal-evt-004",
-        "summary": "Fjordbank Mexico, intro call (via Vega Consulting)",
-        "description": "Intro call brokered by Vega Consulting. Fjordbank contacts will dial in from a freemail.",
+        "summary": "Searchlight Capital x Elastic, displacement review with CFO",
+        "description": "60-day Splunk renewal lock; CFO Sandra Park bringing the TCO case to the renewal review.",
         "start": {"dateTime": _iso(n + timedelta(hours=72))},
-        "end": {"dateTime": _iso(n + timedelta(hours=72, minutes=30))},
+        "end": {"dateTime": _iso(n + timedelta(hours=72, minutes=45))},
         "organizer": {"email": "rodrigo.careaga@elastic.co"},
         "attendees": [
             {"email": "rodrigo.careaga@elastic.co"},
-            {"email": "broker.lead@vegaconsulting.example"},
-            {"email": "engagement.partner@vegaconsulting.example"},
-            {"email": "j.gomez99@freemail.example"},  # Fjordbank contact via personal mail (RFC 2606 reserved domain)
+            {"email": "priya.sharma@searchlightcap.example"},
+            {"email": "james.liu@searchlightcap.example"},
+            {"email": "sandra.park@searchlightcap.example"},
         ],
-        "hangoutLink": "https://meet.google.com/fec-mock-fjord-001",
+        "hangoutLink": "https://meet.google.com/fec-mock-slc-002",
     },
-    # 5) Internal-only event (no external attendees). Resolver should flag as "internal".
+    # 4) Internal-only event (no external attendees). Resolver should flag as "internal".
     {
         "id": "gcal-evt-005",
         "summary": "FE team weekly sync",

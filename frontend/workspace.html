@@ -122,7 +122,7 @@
           <div class="qr-row">
             <div class="qr-field grow">
               <label class="qr-lbl" for="tr-name" data-i18n="tr.field.company">Company</label>
-              <input type="text" id="tr-name" name="company_name" autocomplete="organization" required minlength="1" maxlength="120" data-i18n-placeholder="tr.placeholder.company" placeholder="e.g. Northwind Pay, Mercado Atlas, Banco Atlántico" aria-required="true" />
+              <input type="text" id="tr-name" name="company_name" autocomplete="organization" required minlength="1" maxlength="120" data-i18n-placeholder="tr.placeholder.company" placeholder="e.g. Searchlight Capital, Northwind Pay, Mercado Atlas" aria-required="true" />
             </div>
             <div class="qr-field">
               <label class="qr-lbl" for="tr-title" data-i18n="tr.field.title">Meeting title</label>
@@ -295,7 +295,155 @@
     <section id="toast-host" role="status" aria-live="polite" aria-atomic="false"></section>
   </main>
 
-  <script src="/config.js?v=20260507"></script>
+  <!-- Handover button (fixed, top-right area) -->
+  <button
+    type="button"
+    id="handover-fab"
+    class="btn"
+    aria-haspopup="dialog"
+    title="Hand over an account to a CA or AE"
+    style="
+      position: fixed;
+      bottom: 28px;
+      right: 24px;
+      z-index: 900;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 0 18px;
+      height: 44px;
+      border-radius: 22px;
+      background: var(--primary, #0B64DD);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      box-shadow: 0 4px 16px rgba(11,100,221,.35);
+      cursor: pointer;
+      transition: box-shadow .18s ease, transform .12s ease;
+    "
+  >
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Handover
+  </button>
+
+  <!-- Handover modal -->
+  <div id="handover-modal" hidden role="dialog" aria-modal="true" aria-labelledby="handover-modal-title">
+    <div class="handover-backdrop" data-handover-close></div>
+    <div class="handover-card">
+      <h3 id="handover-modal-title" style="margin: 0 0 4px 0; font-size: 16px;">Account Handover</h3>
+      <p class="muted small" style="margin: 0 0 18px 0;">Transfer account ownership to a CA or AE. A complete history document will be sent to their email.</p>
+
+      <label class="handover-lbl">
+        Account name
+        <input type="text" id="handover-company" placeholder="e.g. Searchlight Capital" autocomplete="organization" />
+      </label>
+
+      <label class="handover-lbl">
+        Transfer to (email)
+        <input type="email" id="handover-email" placeholder="ca.name@elastic.co" autocomplete="email" />
+      </label>
+
+      <label class="handover-lbl">
+        Their name (optional)
+        <input type="text" id="handover-name" placeholder="e.g. Maria Lopez" autocomplete="name" />
+      </label>
+
+      <label class="handover-lbl">
+        Your name (optional)
+        <input type="text" id="handover-from" placeholder="e.g. Rodrigo Careaga" autocomplete="name" />
+      </label>
+
+      <label class="handover-lbl">
+        Notes (optional)
+        <textarea id="handover-notes" rows="2" placeholder="Anything the new owner should know..."></textarea>
+      </label>
+
+      <div class="handover-actions">
+        <button type="button" data-handover-close>Cancel</button>
+        <button type="button" id="handover-submit" class="btn primary">Send handover</button>
+      </div>
+      <p id="handover-status" aria-live="polite" style="margin: 10px 0 0 0; font-size: 13px; min-height: 20px;"></p>
+    </div>
+  </div>
+
+  <style>
+    #handover-fab:hover { box-shadow: 0 6px 22px rgba(11,100,221,.50); transform: translateY(-1px); }
+    #handover-fab:active { transform: translateY(0); }
+
+    #handover-modal { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; }
+    #handover-modal[hidden] { display: none; }
+
+    .handover-backdrop {
+      position: absolute; inset: 0;
+      background: rgba(0, 0, 0, .52);
+      backdrop-filter: blur(2px);
+    }
+
+    .handover-card {
+      position: relative;
+      background: var(--panel, #fff);
+      border: 1px solid var(--border, #e2e8f0);
+      border-radius: 14px;
+      padding: 28px 28px 22px;
+      width: min(480px, calc(100vw - 32px));
+      max-height: calc(100vh - 48px);
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, .22);
+    }
+
+    .handover-lbl {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      margin-bottom: 14px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink, #1a1a1a);
+    }
+
+    .handover-lbl input,
+    .handover-lbl textarea {
+      font-family: inherit;
+      font-size: 13px;
+      padding: 8px 10px;
+      border: 1px solid var(--border, #d1d5db);
+      border-radius: 7px;
+      background: var(--bg, #fff);
+      color: var(--ink, #1a1a1a);
+      outline: none;
+      transition: border-color .15s;
+    }
+
+    .handover-lbl input:focus,
+    .handover-lbl textarea:focus { border-color: var(--primary, #0B64DD); box-shadow: 0 0 0 3px rgba(11,100,221,.14); }
+    .handover-lbl textarea { resize: vertical; }
+
+    .handover-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 6px;
+    }
+
+    .handover-actions button[data-handover-close] {
+      padding: 0 16px;
+      height: 36px;
+      border-radius: 8px;
+      border: 1px solid var(--border, #d1d5db);
+      background: transparent;
+      color: var(--ink, #1a1a1a);
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .handover-actions button[data-handover-close]:hover { background: var(--primary-soft, rgba(11,100,221,.08)); }
+
+    #handover-submit { padding: 0 20px; height: 36px; font-size: 13px; }
+    #handover-submit:disabled { opacity: .55; cursor: not-allowed; }
+  </style>
+
+  <script src="/config.js?v=20260509"></script>
   <script src="/assets/js/tools-rail.js"></script>
   <script defer src="/assets/js/i18n.js"></script>
   <script defer src="/assets/js/api.js"></script>
@@ -305,6 +453,108 @@
   <script defer src="/assets/js/quick-research-filter.js"></script>
   <script defer src="/assets/js/command-palette.js"></script>
   <script>
+    // ---- Handover modal ----
+    (function () {
+      var modal   = document.getElementById("handover-modal");
+      var fab     = document.getElementById("handover-fab");
+      var submit  = document.getElementById("handover-submit");
+      var status  = document.getElementById("handover-status");
+
+      function openModal() {
+        modal.removeAttribute("hidden");
+        document.getElementById("handover-company").focus();
+        document.body.style.overflow = "hidden";
+      }
+
+      function closeModal() {
+        modal.setAttribute("hidden", "");
+        document.body.style.overflow = "";
+        if (status) { status.textContent = ""; status.style.color = ""; }
+        if (submit) { submit.disabled = false; submit.textContent = "Send handover"; }
+      }
+
+      if (fab) fab.addEventListener("click", openModal);
+
+      if (modal) {
+        // Close on backdrop or Cancel buttons
+        modal.addEventListener("click", function (e) {
+          if (e.target.closest("[data-handover-close]")) closeModal();
+        });
+        // Close on Escape
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape" && !modal.hasAttribute("hidden")) closeModal();
+        });
+      }
+
+      if (submit) {
+        submit.addEventListener("click", function () {
+          var company  = (document.getElementById("handover-company").value || "").trim();
+          var toEmail  = (document.getElementById("handover-email").value || "").trim();
+          var toName   = (document.getElementById("handover-name").value || "").trim();
+          var fromName = (document.getElementById("handover-from").value || "").trim();
+          var notes    = (document.getElementById("handover-notes").value || "").trim();
+
+          if (!company) {
+            status.textContent = "Please enter the account name.";
+            status.style.color = "var(--danger, #dc3545)";
+            document.getElementById("handover-company").focus();
+            return;
+          }
+          if (!toEmail) {
+            status.textContent = "Please enter the recipient's email.";
+            status.style.color = "var(--danger, #dc3545)";
+            document.getElementById("handover-email").focus();
+            return;
+          }
+
+          submit.disabled = true;
+          submit.textContent = "Generating...";
+          status.textContent = "Collecting account data and calling Claude...";
+          status.style.color = "var(--muted, #6b7280)";
+
+          fetch("/api/v1/handover/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              company_name: company,
+              to_email: toEmail,
+              to_name: toName,
+              from_name: fromName || "SA",
+              notes: notes
+            })
+          })
+          .then(function (res) {
+            return res.json().then(function (data) {
+              return { ok: res.ok, status: res.status, data: data };
+            });
+          })
+          .then(function (result) {
+            if (result.ok && result.data.ok) {
+              var d = result.data;
+              status.textContent =
+                "Handover sent to " + d.to_email + ". " +
+                d.brief_count + " brief(s) and " + d.pm_count + " post-meeting record(s) included.";
+              status.style.color = "var(--success, #198754)";
+              submit.textContent = "Sent";
+            } else {
+              var msg = (result.data && result.data.detail) || "Unknown error.";
+              status.textContent = "Error: " + msg;
+              status.style.color = "var(--danger, #dc3545)";
+              submit.disabled = false;
+              submit.textContent = "Send handover";
+            }
+          })
+          .catch(function (err) {
+            status.textContent = "Network error: " + err.message;
+            status.style.color = "var(--danger, #dc3545)";
+            submit.disabled = false;
+            submit.textContent = "Send handover";
+          });
+        });
+      }
+    })();
+    // ---- End handover modal ----
+
     (function () {
       document.addEventListener("fec.transcript.analyzed", function () {
         if (window.QRFilter && typeof window.QRFilter.refresh === "function") {

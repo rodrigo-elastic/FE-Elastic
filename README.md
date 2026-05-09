@@ -52,7 +52,7 @@ Field Engineers run six customer meetings a day and burn fifteen hours a week on
 | Dashboard | [docs/screenshots/dashboard.png](docs/screenshots/dashboard.png) | docs/gifs/dashboard.gif |
 | Meeting (Mercado Atlas) | [docs/screenshots/meeting_meli.png](docs/screenshots/meeting_meli.png) | docs/gifs/meeting.gif |
 | Meeting (Northwind Pay) | [docs/screenshots/meeting_revolut.png](docs/screenshots/meeting_revolut.png) | docs/gifs/live_alerts.gif |
-| Meeting (Banco Atlántico) | [docs/screenshots/meeting_santander.png](docs/screenshots/meeting_santander.png) | docs/gifs/live_alerts.gif |
+| Meeting (Searchlight Capital) | [docs/screenshots/meeting_santander.png](docs/screenshots/meeting_santander.png) | docs/gifs/live_alerts.gif |
 | Tools rail | [docs/screenshots/tools.png](docs/screenshots/tools.png) | docs/gifs/tools.gif |
 | Agent Builder | [docs/screenshots/agent_builder.png](docs/screenshots/agent_builder.png) | docs/gifs/agent_builder.gif |
 | Workflow loop | [docs/screenshots/workflow_demo.png](docs/screenshots/workflow_demo.png) | docs/gifs/workflow.gif |
@@ -76,7 +76,7 @@ Persistent left sidebar on every page (`frontend/assets/js/tools-rail.js`). Five
 
 ### Reusability
 
-One codebase, every FE segment. The same three agents serve SMB, Mid-market, Enterprise, and Public Sector because the dossier abstraction (`backend/app/repositories/synthetic.py`) is segment-agnostic. The twelve tools (POC plan, SPL to ES|QL, compliance mapping, stack extract, code sample, cost calc, capacity, knowledge search, troubleshoot, compare, orchestrator, proposal) are the daily-driver utilities every FE asks for in chat. Each persona prompt (Marta, Diego, Priya, Aiko, Kenji, Mei, Ravi, Sloane, Auro, Carmen, Lyra, Sage) is a frozen system block in `backend/app/agents/prompts/tools.py` (plus the Renewal Defender service in `backend/app/services/renewal_defender.py`) that any FE can fork. Three demo accounts ship as fictional placeholders: Northwind Pay, Mercado Atlas, Banco Atlántico. Eight demo scenarios ship today: Black Friday, Credential Stuffing, Noisy Microservice, GDPR audit, Supply chain attack, FSI banking fraud, Healthcare HIPAA audit, Government CDM.
+One codebase, every FE segment. The same three agents serve SMB, Mid-market, Enterprise, and Public Sector because the dossier abstraction (`backend/app/repositories/synthetic.py`) is segment-agnostic. The twelve tools (POC plan, SPL to ES|QL, compliance mapping, stack extract, code sample, cost calc, capacity, knowledge search, troubleshoot, compare, orchestrator, proposal) are the daily-driver utilities every FE asks for in chat. Each persona prompt (Marta, Diego, Priya, Aiko, Kenji, Mei, Ravi, Sloane, Auro, Carmen, Lyra, Sage) is a frozen system block in `backend/app/agents/prompts/tools.py` (plus the Renewal Defender service in `backend/app/services/renewal_defender.py`) that any FE can fork. Three demo accounts ship as fictional placeholders: Searchlight Capital (FSI / asset management, the Splunk displacement narrative), Northwind Pay (EU fintech / Datadog displacement), Mercado Atlas (LATAM e-commerce / search relevance). Eight demo scenarios ship today: Black Friday, Credential Stuffing, Noisy Microservice, GDPR audit, Supply chain attack, FSI banking fraud, Healthcare HIPAA audit, Government CDM.
 
 The full persona roster (12 named expert personas, one frozen prompt each):
 
@@ -250,7 +250,7 @@ PYTHONPATH=backend python -m scripts.run_pipeline
 | 5 | Agent Builder | [`/agent-builder.html`](frontend/agent-builder.html) | FE wanting tool chaining | Chat surface for the master agent `fec_field_assistant` running inside Kibana 9.3.4. Streams reasoning steps and tool calls inline. One prompt chains SPL conversion plus cost. Screenshot: [docs/screenshots/agent_builder.png](docs/screenshots/agent_builder.png). |
 | 6 | Workflow demo | [`/workflow-demo.html`](frontend/workflow-demo.html) | FE leadership | Visualises the closed-loop: doc lands in `fec-transcript-inbox`, Kibana Workflow fires, webhook hits backend, post-meeting agent runs Salesforce + Slack. Screenshot: [docs/screenshots/workflow_demo.png](docs/screenshots/workflow_demo.png). |
 | 7 | Demo data | [`/demo-data.html`](frontend/demo-data.html) | Anyone reproducing the demo | Seeder for the eight scenarios (Black Friday, Credential Stuffing, Noisy Microservice, GDPR audit, Supply chain attack, FSI banking fraud, Healthcare HIPAA audit, Government CDM). Pushes docs into Elastic and creates paired FE + Customer dashboards. Screenshot: [docs/screenshots/demo_data.png](docs/screenshots/demo_data.png). |
-| 8 | Per-meeting workspace | `/meeting.html?id=<meeting_id>` | Account team | Same surface as #2 but parameterised by meeting_id. Three live demo accounts: `northwind-mtg-001`, `mercadoatlas-mtg-001`, `atlantico-mtg-001`. |
+| 8 | Per-meeting workspace | `/meeting.html?id=<meeting_id>` | Account team | Same surface as #2 but parameterised by meeting_id. Three live demo accounts: `northwind-mtg-001`, `mercadoatlas-mtg-001`, `searchlight-mtg-001`. |
 
 The persistent left sidebar (`frontend/assets/js/tools-rail.js`) is on every page. Same shortcuts everywhere.
 
