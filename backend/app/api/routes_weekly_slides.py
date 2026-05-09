@@ -19,7 +19,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from app.config import settings
-from app.integrations.claude_client import get_service
+from app.integrations.claude_client import get_elastic_service
 from app.utils.logging import get_logger
 
 log = get_logger(__name__)
@@ -267,8 +267,12 @@ Rules:
 
     model_name = settings.model_for("post_meeting")
 
+    # Always use the Elastic inference connector - customer data must not leave
+    # the Elastic infrastructure. strict=True blocks all fallback paths to the
+    # direct Anthropic API.
     try:
-        result: WeeklySlideOut = get_service().call_structured(
+        svc = get_elastic_service()
+        result: WeeklySlideOut = svc.call_structured(
             system=system,
             user=user,
             schema=_SLIDE_SCHEMA,
@@ -280,8 +284,13 @@ Rules:
             cache_system=True,
             mock_payload=mock_payload,
             audit_meta={"agent": "weekly_slides", "company": company_name},
+            strict=True,
         )
         slide = result.model_dump()
+    except RuntimeError as exc:
+        # get_elastic_service() raised - Kibana not configured or strict block triggered.
+        log.warning("weekly_slides.elastic_required", company=company_name, error=str(exc)[:200])
+        raise
     except Exception as exc:
         log.warning("weekly_slides.claude_failed", company=company_name, error=str(exc)[:200])
         slide = mock_payload.copy()
@@ -332,7 +341,13 @@ def get_weekly_slides(
     slides = []
     for company_name, company_records in grouped.items():
         sf = _extract_sf(company_records)
-        slide = _build_slide(company_name, company_records, sf)
+        try:
+            slide = _build_slide(company_name, company_records, sf)
+        except RuntimeError as exc:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Elastic inference connector required for customer data. {exc}",
+            )
         slides.append(slide)
 
     return {
