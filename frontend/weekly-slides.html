@@ -1,0 +1,269 @@
+<!--
+  filename: weekly-slides.html
+  description: FE Copilot - Weekly Customer Status Slides. One slide per customer with meetings this week.
+  Author: Rodrigo Careaga
+  Date: 09-05-2026
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Weekly Slides - FE Copilot</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/img/elastic/glyph-cluster-color.svg" />
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+  <style>
+    /* ── Page chrome ──────────────────────────────────────────────── */
+    .ws-page { max-width: 1280px; margin: 0 auto; padding: 24px 20px 60px; }
+
+    .ws-toolbar {
+      display: flex; align-items: center; gap: 12px;
+      flex-wrap: wrap; margin-bottom: 28px;
+    }
+    .ws-week-nav {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--surface-2, #f5f7fa); border-radius: 8px; padding: 6px 10px;
+    }
+    .ws-week-nav button {
+      background: none; border: none; cursor: pointer; font-size: 18px;
+      color: var(--text-1, #1a1a1a); padding: 0 4px; line-height: 1;
+    }
+    .ws-week-label {
+      font-size: 14px; font-weight: 600; min-width: 220px; text-align: center;
+      color: var(--text-1, #1a1a1a);
+    }
+    .ws-demo-badge {
+      font-size: 11px; font-weight: 700; background: #F1A730; color: #fff;
+      border-radius: 4px; padding: 2px 7px; letter-spacing: .03em;
+    }
+    .ws-meta { font-size: 12px; color: var(--text-2, #666); margin-left: auto; }
+    .ws-empty {
+      text-align: center; padding: 60px 0; color: var(--text-2, #666); font-size: 15px;
+    }
+    .ws-spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid #ddd;
+      border-top-color: #00BFB3; border-radius: 50%; animation: spin .7s linear infinite;
+      vertical-align: -4px; margin-right: 6px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Print ────────────────────────────────────────────────────── */
+    @media print {
+      .ws-toolbar, nav, header, footer, .ws-print-btn { display: none !important; }
+      .ws-slides-list { gap: 0; }
+      .ws-slide { page-break-after: always; box-shadow: none; border: 1px solid #ccc; }
+    }
+
+    /* ── Slide card ───────────────────────────────────────────────── */
+    .ws-slides-list { display: flex; flex-direction: column; gap: 48px; }
+
+    .ws-slide {
+      background: #fff; border-radius: 4px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.12);
+      overflow: hidden; font-family: Arial, Helvetica, sans-serif;
+      font-size: 12px; color: #1a1a1a;
+      width: 100%;
+    }
+
+    /* ── Slide header ─────────────────────────────────────────────── */
+    .ws-slide-hdr {
+      display: grid;
+      grid-template-columns: 220px 1fr 300px;
+      border-bottom: 1px solid #ddd;
+      min-height: 110px;
+    }
+
+    /* Logo + ARR block */
+    .ws-hdr-logo {
+      display: flex; flex-direction: column; gap: 6px;
+      padding: 14px 14px; border-right: 1px solid #ddd;
+      justify-content: center; align-items: flex-start;
+    }
+    .ws-logo-box {
+      border: 1px solid #bbb; border-radius: 4px;
+      width: 110px; height: 46px; display: flex; align-items: center;
+      justify-content: center; color: #999; font-size: 11px;
+      font-style: italic;
+    }
+    .ws-arr-pills { display: flex; flex-direction: column; gap: 4px; }
+    .ws-arr-pill {
+      background: #e8e8e8; border-radius: 12px;
+      padding: 3px 10px; font-size: 11px; color: #444; white-space: nowrap;
+    }
+    .ws-arr-pill span { font-weight: 700; }
+
+    /* Company title block */
+    .ws-hdr-title {
+      display: flex; flex-direction: column; justify-content: center;
+      align-items: center; padding: 14px 20px; text-align: center;
+      border-right: 1px solid #ddd;
+    }
+    .ws-hdr-title h2 {
+      font-size: 22px; font-weight: 800; margin: 0 0 2px; line-height: 1.2;
+      color: #1a1a1a;
+    }
+    .ws-hdr-title h3 {
+      font-size: 15px; font-weight: 500; margin: 0 0 6px; color: #444;
+    }
+    .ws-hdr-updated { font-size: 11px; font-style: italic; color: #888; }
+
+    /* Meta + temperature block */
+    .ws-hdr-meta {
+      display: flex; flex-direction: column;
+    }
+    .ws-meta-pills-wrap {
+      padding: 10px 12px; display: flex; flex-direction: column; gap: 5px;
+      border-bottom: 1px solid #ddd; flex: 1;
+    }
+    .ws-meta-pill {
+      background: #e8e8e8; border-radius: 12px;
+      padding: 3px 10px; font-size: 11px; color: #444;
+    }
+    .ws-meta-pill span { font-weight: 700; }
+    .ws-temp-box { flex-shrink: 0; }
+    .ws-temp-hdr {
+      background: #1A2D5A; color: #fff; font-weight: 700;
+      font-size: 13px; text-align: center; padding: 7px 10px;
+    }
+    .ws-temp-body { padding: 8px 10px 10px; text-align: center; }
+    .ws-temp-arrow { font-size: 20px; color: #1A2D5A; margin-bottom: 6px; }
+    .ws-temp-btns { display: flex; gap: 6px; justify-content: center; }
+    .ws-temp-btn {
+      border-radius: 20px; padding: 5px 14px; font-size: 12px; font-weight: 700;
+      border: none; cursor: default; opacity: .35;
+    }
+    .ws-temp-btn.active { opacity: 1; }
+    .ws-temp-btn.churn  { background: #E84B37; color: #fff; }
+    .ws-temp-btn.stable { background: #F1A730; color: #fff; }
+    .ws-temp-btn.growth { background: #3CB44B; color: #fff; }
+
+    /* ── Body row (4 columns) ─────────────────────────────────────── */
+    .ws-slide-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr .85fr;
+      border-bottom: 1px solid #ddd;
+      min-height: 260px;
+    }
+    .ws-slide-btm {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      border-bottom: 1px solid #ddd;
+      min-height: 130px;
+    }
+
+    /* ── Section generic ──────────────────────────────────────────── */
+    .ws-section { display: flex; flex-direction: column; border-right: 1px solid #ddd; }
+    .ws-section:last-child { border-right: none; }
+    .ws-section-hdr {
+      color: #fff; font-weight: 700; font-size: 13px;
+      padding: 8px 12px; text-align: center;
+    }
+    .ws-section-body { padding: 10px 12px; flex: 1; }
+    .ws-section-body ul { margin: 0; padding-left: 16px; }
+    .ws-section-body li { margin-bottom: 5px; line-height: 1.4; }
+
+    /* ── Section header colors ────────────────────────────────────── */
+    .hdr-red    { background: #E84B37; }
+    .hdr-navy   { background: #1A2D5A; }
+    .hdr-orange { background: #E06440; }
+    .hdr-teal   { background: #00B4A2; }
+    .hdr-gold   { background: #D4A017; }
+
+    /* ── Teal Consumption underline ───────────────────────────────── */
+    .hdr-teal-ul .ws-section-hdr {
+      background: #00B4A2;
+      text-decoration: underline;
+    }
+
+    /* ── Actions section specifics ────────────────────────────────── */
+    .ws-actions-sub { font-weight: 700; font-size: 11px; margin: 8px 0 4px; }
+    .ws-actions-sub:first-child { margin-top: 0; }
+
+    /* ── Renewals ─────────────────────────────────────────────────── */
+    .ws-renewal { margin-bottom: 10px; line-height: 1.4; }
+    .ws-renewal-label { font-weight: 600; }
+    .ws-renewal-sub { padding-left: 10px; color: #444; }
+
+    /* ── Cases ────────────────────────────────────────────────────── */
+    .ws-case { margin-bottom: 6px; line-height: 1.4; }
+    .ws-case a { color: #0070cc; }
+
+    /* ── Consumption WoW ──────────────────────────────────────────── */
+    .ws-wow { font-weight: 700; font-size: 13px; margin-bottom: 6px; }
+    .ws-wow-pill {
+      display: inline-block; background: #e8e8e8; border-radius: 10px;
+      padding: 2px 10px; font-size: 12px; font-weight: 700;
+    }
+
+    /* ── Footer icons ─────────────────────────────────────────────── */
+    .ws-slide-footer {
+      display: flex; align-items: center; justify-content: center;
+      gap: 28px; padding: 12px 20px;
+      background: #fff;
+    }
+    .ws-foot-item {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 4px; text-decoration: none; color: #555;
+      font-size: 10px; font-weight: 600;
+    }
+    .ws-foot-item:hover { color: #0070cc; }
+    .ws-foot-icon { width: 32px; height: 32px; object-fit: contain; }
+    .ws-foot-icon-placeholder {
+      width: 32px; height: 32px; background: #ddd; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; font-size: 14px;
+    }
+
+    /* ── Meeting badge ────────────────────────────────────────────── */
+    .ws-meeting-badge {
+      font-size: 10px; color: #888; padding: 4px 12px;
+      background: #f9f9f9; border-top: 1px solid #eee;
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="top-nav" aria-label="Primary navigation">
+      <a class="brand" href="/" aria-label="FE Copilot home">
+        <img src="/assets/img/elastic/glyph-cluster-color.svg" width="28" height="28" alt="" aria-hidden="true" />
+        <span>FE Copilot</span>
+      </a>
+      <div class="nav-links">
+        <a href="/" class="btn ghost">Home</a>
+        <a href="/workflow-demo.html" class="btn ghost">Workflows</a>
+        <a href="/audit.html" class="btn ghost">Audit</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="ws-page" id="main-content">
+    <div class="ws-toolbar">
+      <div class="ws-week-nav">
+        <button id="ws-prev" title="Previous week">&#8249;</button>
+        <span class="ws-week-label" id="ws-week-label">Loading...</span>
+        <button id="ws-next" title="Next week">&#8250;</button>
+      </div>
+
+      <button class="btn btn-primary" id="ws-generate">
+        Generate slides
+      </button>
+
+      <button class="btn ghost ws-print-btn" id="ws-print" style="display:none;" onclick="window.print()">
+        Print / Export PDF
+      </button>
+
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+        <input type="checkbox" id="ws-demo-mode" />
+        Demo mode (all meetings)
+      </label>
+
+      <span class="ws-meta" id="ws-meta"></span>
+    </div>
+
+    <div id="ws-slides-container">
+      <div class="ws-empty">Select a week and click <strong>Generate slides</strong> to create one slide per customer.</div>
+    </div>
+  </main>
+
+  <script src="/assets/js/api.js?v=20260509"></script>
+  <script defer src="/assets/js/weekly-slides.js?v=20260509"></script>
+</body>
+</html>

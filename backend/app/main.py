@@ -37,6 +37,7 @@ from app.api import (
     routes_salesforce,
     routes_stats,
     routes_tools,
+    routes_weekly_slides,
     routes_workflow_settings,
     routes_workflows,
 )
@@ -155,6 +156,7 @@ app.include_router(routes_workflow_settings.router, prefix="/api/v1")
 app.include_router(routes_notifications.router, prefix="/api/v1")
 app.include_router(routes_industries.router, prefix="/api/v1")
 app.include_router(routes_stats.router, prefix="/api/v1")
+app.include_router(routes_weekly_slides.router, prefix="/api/v1")
 app.include_router(routes_handover.router, prefix="/api/v1")
 
 # Serve the markdown docs folder (compliance.md, architecture.md, etc.) before the catch-all frontend mount.
