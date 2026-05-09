@@ -1017,38 +1017,131 @@ function renderPost(post) {
   // Force-Field Analysis (executive snapshot)
   host.appendChild(renderForceField(post.meddpicc_signals || [], post.competitor_mentions || []));
 
-  const tools = el("div", { class: "section-tools" }, [
+  const slideBtn = el("button", { class: "btn-sm btn-secondary", style: "margin-left:auto;font-size:12px;padding:3px 10px;" }, "Create slide ↗");
+  slideBtn.addEventListener("click", async () => {
+    slideBtn.disabled = true;
+    slideBtn.textContent = "Generating…";
+    try {
+      const result = await apiPost(`/weekly-slides/from-meeting/${meetingId}`, {});
+      const ch = result.slack_channel ? ` → ${result.slack_channel}` : "";
+      toast(`Slide created${ch}`, "ok");
+      if (result.pptx_url) {
+        const link = document.createElement("a");
+        link.href = result.pptx_url;
+        link.download = result.slide_name || "slide.pptx";
+        link.click();
+      }
+    } catch (e) {
+      toast("Slide failed: " + ((typeof sanitizeError === "function" ? sanitizeError(e) : e?.message) || "error"), "bad");
+    } finally {
+      slideBtn.disabled = false;
+      slideBtn.textContent = "Create slide ↗";
+    }
+  });
+
+  const tools = el("div", { class: "section-tools", style: "display:flex;align-items:center;" }, [
     el("button", { class: "btn-link", onclick: () => toggleAll("post", true) }, "Expand all"),
     el("span", { class: "muted" }, " · "),
     el("button", { class: "btn-link", onclick: () => toggleAll("post", false) }, "Collapse all"),
+    slideBtn,
   ]);
   host.appendChild(tools);
 
-  // Action items section: defaults to Matrix view; toggleable to List.
+  // Inject open-tasks badge styles once
+  if (!document.getElementById("fec-open-tasks-style")) {
+    const s = document.createElement("style");
+    s.id = "fec-open-tasks-style";
+    s.textContent = ".open-tasks-badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; background: rgba(250, 203, 61, 0.18); color: #FACB3D; border: 1px solid rgba(250, 203, 61, 0.4); margin-left: 6px; }";
+    document.head.appendChild(s);
+  }
+
+  // Action items section: List view (checkboxes) as default; Matrix as alternate.
   const actionsSec = el("details", { class: "post-section", open: "" });
+  const countEl = el("span", { class: "count" }, `${post.action_items.length}`);
+  const openBadgeEl = post.open_tasks_count > 0
+    ? el("span", { class: "open-tasks-badge" }, `${post.open_tasks_count} open`)
+    : null;
   actionsSec.appendChild(
     el("summary", {}, [
       el("h3", { class: "post-section-title teal" }, "Action items"),
       el("span", { class: "chevron" }, ""),
-      el("span", { class: "count" }, `${post.action_items.length}`),
+      countEl,
+      ...(openBadgeEl ? [openBadgeEl] : []),
     ])
   );
 
-  // Toggle group between Matrix and List
+  // Toggle group - List is default
   const toolbar = el("div", { class: "actions-toolbar" }, [
     el("div", { class: "toggle-group" }, [
-      el("button", { class: "active", "data-view": "matrix" }, "Matrix"),
-      el("button", { "data-view": "list" }, "List"),
+      el("button", { "data-view": "matrix" }, "Matrix"),
+      el("button", { class: "active", "data-view": "list" }, "List"),
     ]),
   ]);
   actionsSec.appendChild(toolbar);
 
-  const matrixHost = el("div", { class: "actions-matrix-host" });
+  const matrixHost = el("div", { class: "actions-matrix-host", style: "display:none" });
   matrixHost.appendChild(renderEisenhowerMatrix(post.action_items || []));
   actionsSec.appendChild(matrixHost);
 
-  const list = el("ul", { class: "actions-list", style: "display:none" });
-  post.action_items.forEach((a) => {
+  const list = el("ul", { class: "actions-list" });
+
+  function updateDoneCount() {
+    const done = list.querySelectorAll("li.done").length;
+    const total = post.action_items.length;
+    countEl.textContent = done > 0 ? `${done}/${total}` : `${total}`;
+
+    if (openBadgeEl) {
+      const openCount = list.querySelectorAll(".action-check:not(:checked)").length;
+      if (openCount > 0) {
+        openBadgeEl.textContent = `${openCount} open`;
+        openBadgeEl.style.display = "";
+      } else {
+        openBadgeEl.style.display = "none";
+      }
+    }
+
+    // All-done celebration
+    const wrapper = list.parentElement;
+    if (done === total && total > 0) {
+      wrapper.classList.add("all-done");
+
+      let toastEl = wrapper.querySelector("#fec-allDone-toast");
+      if (!toastEl) {
+        toastEl = el("div", { id: "fec-allDone-toast" }, "All items complete!");
+        wrapper.appendChild(toastEl);
+      }
+      toastEl.textContent = "All items complete!";
+      toastEl.classList.add("visible");
+      clearTimeout(toastEl._hideTimer);
+      toastEl._hideTimer = setTimeout(() => toastEl.classList.remove("visible"), 3000);
+    } else {
+      wrapper.classList.remove("all-done");
+    }
+  }
+
+  post.action_items.forEach((a, idx) => {
+    const isDone = !!a.completed;
+    const li = el("li", { class: isDone ? "done" : "", tabindex: "0" });
+
+    // Checkbox checkpoint
+    const checkbox = el("input", { type: "checkbox", class: "action-check", title: isDone ? "Mark incomplete" : "Mark complete" });
+    checkbox.checked = isDone;
+    checkbox.addEventListener("change", async () => {
+      const done = checkbox.checked;
+      li.classList.toggle("done", done);
+      checkbox.disabled = true;
+      try {
+        await apiPatch(`/briefs/${meetingId}/action-items/${idx}`, { completed: done });
+        updateDoneCount();
+      } catch (e) {
+        checkbox.checked = !done;
+        li.classList.toggle("done", !done);
+        toast(sanitizeError(e), "error");
+      }
+      checkbox.disabled = false;
+    });
+    li.appendChild(el("div", { class: "ai-check-col" }, [checkbox]));
+
     const head = el("div", { class: "head" }, [
       el("span", { class: "title" }, a.title),
       el("div", { class: "head-right" }, [
@@ -1074,11 +1167,26 @@ function renderPost(post) {
         "Source ↗"
       ),
     ]);
-    list.appendChild(el("li", {}, [head, ownerLine, desc, quoteRow]));
+    li.appendChild(head);
+    li.appendChild(ownerLine);
+    li.appendChild(desc);
+    li.appendChild(quoteRow);
+    list.appendChild(li);
   });
   actionsSec.appendChild(list);
+  updateDoneCount();
 
-  // Wire up toggle
+  // Keyboard shortcut: press "d" to check off the first unchecked action item
+  function onActionKeydown(e) {
+    if (e.key !== "d") return;
+    const tag = (document.activeElement || {}).tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+    const firstUnchecked = list.querySelector(".action-check:not(:checked)");
+    if (firstUnchecked) firstUnchecked.click();
+  }
+  document.addEventListener("keydown", onActionKeydown);
+
+  // Wire up matrix/list toggle
   toolbar.querySelectorAll("button").forEach((b) =>
     b.addEventListener("click", () => {
       toolbar.querySelectorAll("button").forEach((x) => x.classList.remove("active"));

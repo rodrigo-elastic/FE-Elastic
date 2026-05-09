@@ -43,6 +43,7 @@ class Settings(BaseSettings):
 
     # Notifications - both are optional; omit to stay in dry-run mode.
     slack_webhook_url: str = Field("", alias="SLACK_WEBHOOK_URL")
+    slack_bot_token: str = Field("", alias="SLACK_BOT_TOKEN")
     notify_email: str = Field("", alias="NOTIFY_EMAIL")
     smtp_host: str = Field("smtp.gmail.com", alias="SMTP_HOST")
     smtp_port: int = Field(587, alias="SMTP_PORT")
