@@ -583,10 +583,10 @@ def _build_put_actions(existing_actions: List[Dict[str, Any]], email_connector_i
     action first so toggling or changing the address is idempotent.
     """
     # Keep all non-email actions, preserving their connector_type_id from the GET response.
+    # Kibana GET returns connector_type_id and uuid on actions but PUT rejects them.
     kept = [
         {
             "id": a["id"],
-            "connector_type_id": a.get("connector_type_id", ""),
             "group": a.get("group", "query matched"),
             "params": a.get("params", {}),
             "frequency": a.get("frequency", {"summary": False, "notify_when": "onActiveAlert", "throttle": None}),
@@ -597,7 +597,6 @@ def _build_put_actions(existing_actions: List[Dict[str, Any]], email_connector_i
     if enabled:
         kept.append({
             "id": email_connector_id,
-            "connector_type_id": ".email",
             "group": "query matched",
             "params": {
                 "to": [email_address],
