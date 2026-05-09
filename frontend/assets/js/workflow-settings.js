@@ -108,6 +108,29 @@
       });
   }
 
+  function _syncRuleEmail(ruleId, enabled, inputEl) {
+    if (inputEl) inputEl.disabled = true;
+    var statusEl = document.getElementById("rs-" + ruleId);
+    if (statusEl) { statusEl.className = "ws-row-status applying"; statusEl.textContent = "Syncing..."; }
+
+    apiPost("/workflow-settings/kibana-rule/" + ruleId + "/sync-email", { enabled: enabled })
+      .then(function () {
+        if (inputEl) inputEl.disabled = false;
+        if (statusEl) { statusEl.className = "ws-row-status"; statusEl.textContent = ""; }
+        _showToast("Email " + (enabled ? "enabled" : "disabled") + " for this rule");
+      })
+      .catch(function (err) {
+        // Revert optimistic UI update.
+        if (!_ruleChannels[ruleId]) _ruleChannels[ruleId] = _defaultRuleOutputs();
+        _ruleChannels[ruleId]["email"] = !enabled;
+        if (inputEl) { inputEl.checked = !enabled; inputEl.disabled = false; }
+        if (statusEl) { statusEl.className = "ws-row-status err"; statusEl.textContent = "Email sync failed"; }
+        setTimeout(function () { if (statusEl) { statusEl.className = "ws-row-status"; statusEl.textContent = ""; } }, 3000);
+        var raw = err && err.message ? err.message : String(err);
+        _showToast("Email sync failed: " + raw.replace(/^POST [^ ]+ failed: \d+ - /, ""));
+      });
+  }
+
   // ------------------------------------------------------------------ Rules: render
 
   function renderRules(rules, kibanaUrl) {
@@ -171,14 +194,18 @@
       }
     });
 
-    // Per-rule output chip handlers — auto-save on change
+    // Per-rule output chip handlers — email syncs to Kibana immediately; others just save locally.
     el.querySelectorAll("input[data-out-key]").forEach(function (input) {
       input.addEventListener("change", function () {
         var ruleId = input.getAttribute("data-rule-id");
         var outKey = input.getAttribute("data-out-key");
         if (!_ruleChannels[ruleId]) _ruleChannels[ruleId] = _defaultRuleOutputs();
         _ruleChannels[ruleId][outKey] = input.checked;
-        _saveRuleOutputs(ruleId);
+        if (outKey === "email") {
+          _syncRuleEmail(ruleId, input.checked, input);
+        } else {
+          _saveRuleOutputs(ruleId);
+        }
       });
     });
 

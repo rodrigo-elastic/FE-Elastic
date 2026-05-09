@@ -71,6 +71,10 @@ class NewRuleBody(BaseModel):
     webhook_path: Optional[str] = None
 
 
+class RuleEmailBody(BaseModel):
+    enabled: bool = True
+
+
 # ============================================================ Storage helpers =======
 
 
@@ -369,6 +373,59 @@ def disable_kibana_rule(rule_id: str) -> Dict[str, Any]:
 
     log.info("workflow_settings.rule_disabled", rule_id=rule_id)
     return {"ok": True, "rule_id": rule_id, "action": "disabled"}
+
+
+@router.post("/kibana-rule/{rule_id}/sync-email")
+def sync_rule_email(rule_id: str, body: RuleEmailBody) -> Dict[str, Any]:
+    """Toggle the email action on a single Kibana rule without touching the others."""
+    if not settings.kibana_api_key:
+        raise HTTPException(status_code=409, detail="KIBANA_API_KEY not configured")
+
+    current = _load_settings()
+    email_address = current.get("email_address", "").strip()
+    if not email_address:
+        raise HTTPException(status_code=400, detail="No email address saved. Set it in Channels first.")
+
+    try:
+        with httpx.Client(timeout=15.0) as client:
+            email_c = _find_kibana_email_connector(client)
+            if not email_c:
+                raise HTTPException(status_code=502, detail="No .email connector found in Kibana.")
+
+            rule_resp = client.get(_kbn_url(f"/api/alerting/rule/{rule_id}"), headers=_kbn_headers())
+            rule_resp.raise_for_status()
+            rule = rule_resp.json()
+
+            actions = _build_put_actions(rule.get("actions") or [], email_c["id"], email_address, body.enabled)
+            put_body: Dict[str, Any] = {
+                "name": rule.get("name", ""),
+                "tags": rule.get("tags") or [],
+                "schedule": rule.get("schedule") or {"interval": "1m"},
+                "params": rule.get("params") or {},
+                "actions": actions,
+            }
+            if rule.get("notify_when"):
+                put_body["notify_when"] = rule["notify_when"]
+            if rule.get("throttle"):
+                put_body["throttle"] = rule["throttle"]
+
+            r = client.put(_kbn_url(f"/api/alerting/rule/{rule_id}"), headers=_kbn_headers(), json=put_body)
+            if not r.is_success:
+                raise RuntimeError(f"Kibana {r.status_code}: {r.text[:300]}")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        log.warning("workflow_settings.sync_rule_email_failed", rule_id=rule_id, error=str(exc)[:200])
+        raise HTTPException(status_code=502, detail=str(exc)[:400])
+
+    # Persist per-rule preference.
+    rc = current.get("rule_channels", {})
+    rc[rule_id] = {**rc.get(rule_id, {"slack": True}), "email": body.enabled}
+    current["rule_channels"] = rc
+    _save_settings(current)
+
+    log.info("workflow_settings.rule_email_synced", rule_id=rule_id, enabled=body.enabled)
+    return {"ok": True, "rule_id": rule_id, "email_enabled": body.enabled}
 
 
 RULE_TEMPLATES: Dict[str, Any] = {
