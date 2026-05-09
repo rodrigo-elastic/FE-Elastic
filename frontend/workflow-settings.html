@@ -1,0 +1,242 @@
+<!--
+  filename: workflow-settings.html
+  description: FE Copilot - Workflow Settings. Toggle Kibana alerting rules and notification channels.
+  Author: Rodrigo Careaga
+  Date: 08-05-2026
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FE Copilot - Workflow Settings</title>
+  <!-- seo:meta:start -->
+  <meta name="description" content="FE Copilot workflow settings. Toggle Kibana alerting rules and notification channels." />
+  <link rel="canonical" href="/workflow-settings.html" />
+  <meta name="theme-color" content="#0B64DD" />
+  <meta name="author" content="Rodrigo Careaga" />
+  <meta name="application-name" content="FE Copilot" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="FE Copilot - Workflow Settings" />
+  <meta property="og:description" content="FE Copilot workflow settings. Toggle Kibana alerting rules and notification channels." />
+  <meta property="og:image" content="/assets/img/elastic/glyph-cluster-color.svg" />
+  <meta property="og:url" content="/workflow-settings.html" />
+  <meta property="og:site_name" content="FE Copilot" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="FE Copilot - Workflow Settings" />
+  <meta name="twitter:description" content="FE Copilot workflow settings. Toggle Kibana alerting rules and notification channels." />
+  <meta name="twitter:image" content="/assets/img/elastic/glyph-cluster-color.svg" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <!-- seo:meta:end -->
+  <script>(function(){try{var t=localStorage.getItem("fec.theme");if(!t){t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";}document.documentElement.setAttribute("data-theme",t==="light"?"light":"dark");}catch(e){document.documentElement.setAttribute("data-theme","dark");}})();</script>
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+  <link rel="stylesheet" href="/assets/css/agent-builder.css" />
+  <link rel="icon" type="image/svg+xml" href="/assets/img/elastic/glyph-cluster-color.svg" />
+  <link rel="stylesheet" href="/assets/css/command-palette.css" />
+  <style>
+    .wf-tabs { display: flex; gap: 4px; margin: 18px 0 0; border-bottom: 2px solid var(--border-soft); }
+    .wf-tab { padding: 8px 18px; font-size: 13px; font-weight: 600; color: var(--muted); border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; border-radius: 6px 6px 0 0; transition: color .15s, border-color .15s; text-decoration: none; }
+    .wf-tab:hover { color: var(--ink); }
+    .wf-tab.active { color: var(--teal); border-bottom-color: var(--teal); }
+
+    .ws-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px; }
+    @media (max-width: 860px) { .ws-grid { grid-template-columns: 1fr; } }
+
+    .ws-card { background: var(--panel); border: 1px solid var(--border-soft); border-radius: 12px; padding: 20px; }
+    .ws-card-title { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0 0 16px; }
+
+    /* Toggle rows */
+    .ws-row { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-soft); gap: 12px; }
+    .ws-row:last-child { border-bottom: 0; }
+    .ws-row-info { flex: 1; }
+    .ws-row-label { font-size: 13px; font-weight: 600; color: var(--ink); }
+    .ws-row-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+    /* Pill badges */
+    .ws-pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+    .ws-pill.on  { background: var(--teal-soft); color: var(--teal); }
+    [data-theme="dark"] .ws-pill.on { color: #b9f5ed; }
+    .ws-pill.off { background: rgba(246,102,102,.15); color: #a8253a; }
+    [data-theme="dark"] .ws-pill.off { color: #ffb4b4; }
+    .ws-pill.warn { background: var(--yellow-soft); color: #8a6500; }
+    [data-theme="dark"] .ws-pill.warn { color: var(--yellow); }
+
+    /* Toggle switch */
+    .ws-toggle { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+    .ws-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .ws-slider { position: absolute; inset: 0; background: var(--border); border-radius: 22px; cursor: pointer; transition: background .2s; }
+    .ws-slider::before { content: ""; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: transform .2s; }
+    .ws-toggle input:checked + .ws-slider { background: var(--teal); }
+    .ws-toggle input:checked + .ws-slider::before { transform: translateX(18px); }
+    .ws-toggle input:disabled + .ws-slider { opacity: .5; cursor: not-allowed; }
+
+    .ws-footer { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
+    .ws-save-msg { font-size: 12px; color: var(--teal); }
+    .ws-open-link { font-size: 12px; color: var(--teal); text-decoration: none; }
+    .ws-open-link:hover { text-decoration: underline; }
+    .ws-loading { color: var(--muted); font-size: 13px; padding: 8px 0; }
+    .ws-error { color: #a8253a; font-size: 12px; padding: 8px 0; }
+    [data-theme="dark"] .ws-error { color: #ffb4b4; }
+    .ws-tmpl-card { background: var(--panel-2); border: 1px solid var(--border-soft); border-radius: 8px; padding: 10px 12px; cursor: pointer; transition: border-color .15s; }
+    .ws-tmpl-card:hover, .ws-tmpl-card.selected { border-color: var(--teal); }
+    .ws-tmpl-card.selected { background: var(--teal-soft); }
+    .ws-tmpl-label { font-size: 12px; font-weight: 700; color: var(--ink); }
+    .ws-tmpl-desc { font-size: 11px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+    .ws-del-btn { background: none; border: none; cursor: pointer; color: var(--muted); padding: 2px 5px; border-radius: 4px; font-size: 13px; line-height: 1; }
+    .ws-del-btn:hover { color: #a8253a; background: rgba(246,102,102,.12); }
+    [data-theme="dark"] .ws-del-btn:hover { color: #ffb4b4; }
+    .ws-row-status { font-size: 11px; color: var(--muted); margin-top: 2px; min-height: 14px; transition: opacity .2s; }
+    .ws-row-status.applying { color: var(--teal); }
+    .ws-row-status.err { color: #a8253a; }
+    [data-theme="dark"] .ws-row-status.err { color: #ffb4b4; }
+
+    /* Per-rule channel expand */
+    .ws-row-clickable { cursor: pointer; }
+    .ws-row-clickable:hover .ws-row-label { color: var(--teal); }
+    .ws-expand-arrow { font-size: 9px; color: var(--muted-2); margin-left: 5px; display: inline-block; }
+    .ws-rule-channels { padding: 10px 0 4px; border-top: 1px solid var(--border-soft); }
+    .ws-rule-ch-label { font-size: 10px; color: var(--muted); margin-bottom: 6px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+    .ws-ch-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .ws-ch-chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border); font-size: 11px; font-weight: 500; cursor: pointer; background: var(--panel-2); color: var(--ink); transition: border-color .15s, background .15s; user-select: none; }
+    .ws-ch-chip input[type="checkbox"] { margin: 0; width: 12px; height: 12px; accent-color: var(--teal); cursor: pointer; }
+    .ws-ch-chip:has(input:checked) { border-color: var(--teal); background: var(--teal-soft); }
+    [data-theme="dark"] .ws-ch-chip:has(input:checked) { color: #b9f5ed; }
+
+    /* Notification channel section label + input */
+    .ws-ch-section-label { font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); padding: 8px 0 4px; }
+    .ws-ch-input-wrap { margin-top: 5px; }
+    .ws-ch-input { width: 100%; padding: 5px 9px; border-radius: 6px; border: 1px solid var(--border); background: var(--panel-2); color: var(--ink); font-size: 12px; box-sizing: border-box; transition: border-color .15s; }
+    .ws-ch-input:focus { outline: none; border-color: var(--teal); }
+    .ws-ch-input::placeholder { color: var(--muted-2); }
+
+    /* Elastic inference status pill */
+    .ei-status-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; margin-bottom: 12px; }
+    .ei-status-checking { background: rgba(142,159,188,0.15); color: #8E9FBC; border: 1px solid rgba(142,159,188,0.3); }
+    .ei-status-healthy { background: rgba(22,197,192,0.15); color: #16C5C0; border: 1px solid rgba(22,197,192,0.35); }
+    .ei-status-degraded { background: rgba(250,203,61,0.15); color: #FACB3D; border: 1px solid rgba(250,203,61,0.35); }
+    .ei-status-down { background: rgba(198,30,37,0.15); color: #C61E25; border: 1px solid rgba(198,30,37,0.3); }
+    .ei-status-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  </style>
+</head>
+<body class="workflow-page">
+  <a class="skip-to-main" href="#main-content" data-i18n="a11y.skip_to_main">Skip to main content</a>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="FE Copilot home">
+      <img class="logo-elastic" src="/assets/img/elastic/logo-horizontal-white.svg" alt="Elastic" width="64" height="22" />
+      <span class="brand-sep">/</span>
+      <span class="name">FE <span class="accent">Copilot</span></span>
+      <span class="tag">Settings</span>
+    </a>
+    <div class="right">
+      <div class="lang-host" id="lang-host"></div>
+    </div>
+  </header>
+
+  <main class="container" id="main-content" tabindex="-1">
+    <section class="hero">
+      <h1>Workflow <span class="grad">Settings</span></h1>
+      <p class="lede">Enable or disable automation rules and notification channels.</p>
+    </section>
+
+    <nav class="wf-tabs" aria-label="Workflow navigation">
+      <a href="/workflow-demo.html" class="wf-tab">Demo</a>
+      <a href="/workflow-settings.html" class="wf-tab active">Settings</a>
+    </nav>
+
+    <div id="elastic-inference-status" class="ei-status-pill ei-status-checking">Elastic AI ···</div>
+
+    <div class="ws-grid">
+
+      <!-- Kibana alerting rules -->
+      <section class="ws-card" aria-labelledby="ws-h-rules">
+        <p class="ws-card-title" id="ws-h-rules">Automation rules</p>
+        <div id="ws-rules"><div class="ws-loading">Loading...</div></div>
+        <!-- Add rule inline form -->
+        <div id="ws-add-form" style="display:none; margin-top:14px; border-top:1px solid var(--border-soft); padding-top:14px;">
+          <div id="ws-templates" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px;"></div>
+          <div id="ws-add-fields" style="display:none; flex-direction:column; gap:8px;">
+            <input id="ws-rule-name" type="text" placeholder="Rule name" style="width:100%; padding:7px 10px; border-radius:7px; border:1px solid var(--border); background:var(--panel-2); color:var(--ink); font-size:13px; box-sizing:border-box;" />
+            <div style="display:flex; gap:8px; align-items:center;">
+              <input id="ws-rule-index" type="text" placeholder="Elasticsearch index" style="flex:1; padding:7px 10px; border-radius:7px; border:1px solid var(--border); background:var(--panel-2); color:var(--ink); font-size:13px;" />
+              <select id="ws-rule-schedule" style="padding:7px 8px; border-radius:7px; border:1px solid var(--border); background:var(--panel-2); color:var(--ink); font-size:13px;">
+                <option value="1m">every 1 min</option>
+                <option value="5m">every 5 min</option>
+                <option value="15m">every 15 min</option>
+                <option value="1h">every 1 hour</option>
+              </select>
+            </div>
+            <div style="display:flex; gap:8px; margin-top:2px;">
+              <button class="btn primary" id="ws-add-submit" type="button" style="font-size:12px; padding:5px 14px;">Create rule</button>
+              <button class="btn ghost" id="ws-add-cancel" type="button" style="font-size:12px; padding:5px 12px;">Cancel</button>
+              <span id="ws-add-msg" style="font-size:12px; color:var(--teal); align-self:center;"></span>
+            </div>
+          </div>
+        </div>
+        <div class="ws-footer">
+          <button class="btn ghost" id="ws-add-rule" type="button" style="font-size:12px; padding:4px 12px;">+ Add rule</button>
+          <button class="btn ghost" id="ws-refresh" type="button" style="font-size:12px; padding:4px 12px;">Refresh</button>
+          <a id="ws-kibana-link" href="#" target="_blank" class="ws-open-link">Open in Kibana</a>
+          <span id="ws-synced" style="font-size:11px; color:var(--muted-2); margin-left:auto;"></span>
+        </div>
+      </section>
+
+      <!-- Notification channels -->
+      <section class="ws-card" aria-labelledby="ws-h-channels">
+        <p class="ws-card-title" id="ws-h-channels">Notification channels</p>
+        <div id="ws-channels"><div class="ws-loading">Loading...</div></div>
+        <div class="ws-footer">
+          <button class="btn primary" id="ws-save" type="button" style="font-size:12px; padding:4px 14px;">Save</button>
+          <span class="ws-save-msg" id="ws-save-msg"></span>
+        </div>
+      </section>
+
+    </div>
+
+    <section id="toast-host" role="status" aria-live="polite" aria-atomic="false"></section>
+  </main>
+
+  <script src="/config.js?v=20260511"></script>
+  <script src="/assets/js/tools-rail.js"></script>
+  <script defer src="/assets/js/i18n.js"></script>
+  <script defer src="/assets/js/api.js"></script>
+  <script defer src="/assets/js/ui.js"></script>
+  <script defer src="/assets/js/api-retry.js"></script>
+  <script defer src="/assets/js/workflow-settings.js?v=20260511"></script>
+  <script defer src="/assets/js/command-palette.js"></script>
+  <script>
+    (function () {
+      function boot() {
+        try { applyI18n(); } catch (e) {}
+        try { renderLangPicker(document.getElementById("lang-host")); } catch (e) {}
+      }
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", boot);
+      } else {
+        boot();
+      }
+    })();
+  </script>
+  <script>
+    (function() {
+      var pill = document.getElementById("elastic-inference-status");
+      if (!pill) return;
+      fetch("/api/v1/agent-builder/inference-health")
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          var status = d.overall || "down";
+          pill.className = "ei-status-pill ei-status-" + status;
+          var dot = '<span class="ei-status-dot"></span> ';
+          var label = status === "healthy" ? "Elastic AI Connected"
+                    : status === "degraded" ? "Elastic AI Degraded"
+                    : status === "not_configured" ? "Elastic AI Not configured"
+                    : "Elastic AI Unreachable";
+          pill.innerHTML = dot + label;
+        })
+        .catch(function() {
+          pill.className = "ei-status-pill ei-status-down";
+          pill.innerHTML = '<span class="ei-status-dot"></span> Elastic AI Unreachable';
+        });
+    })();
+  </script>
+</body>
+</html>
