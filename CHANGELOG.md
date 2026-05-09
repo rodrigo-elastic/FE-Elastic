@@ -16,13 +16,16 @@ Submission-ready cut. Adds the QBR + TAR Customer Success workflows, polishes th
 - **Create slide button** in the post-meeting tab: one click generates the customer-status PPTX from a single meeting record and uploads to Slack via bot token (or webhook fallback).
 - **Per-rule email toggle** in workflow settings: each Kibana rule has its own email on/off chip that syncs independently. No more all-or-nothing email enablement.
 - **Strict Elastic-inference guard** (`get_elastic_service()`, `call_structured(strict=True)`): customer data routed through the Elastic inference connector cannot fall back to the direct Anthropic API. Four fallback paths now raise instead of silently bypassing.
-- **Splunk Displacement narrative** for Searchlight Capital: cold-open + autopilot + post-meeting + slides all reinforce the 60-day renewal lock-in window. Replaces the prior Banco Atlántico account in the demo set.
+- **SA-to-CA handover** (`backend/app/api/routes_handover.py`): collects briefs and post-meeting records for a named account, calls Claude to generate a structured handover document, emails it to the incoming CA/AE, and fires a Slack notification.
+- **AWS ECS Fargate deploy**: production backend now runs at `https://fe-c85291a2a8b144188ee6be1078e79a95.ecs.us-east-1.on.aws`. Kibana inference connector, Workflow webhooks, and AutoOps webhook all point at this URL. Fly.io workflow at `.github/workflows/deploy.yml` and `fly.toml` retained as legacy references.
+- **Splunk Displacement narrative** for Searchlight Capital: cold-open + autopilot + post-meeting + slides all reinforce the 60-day renewal lock-in window and the Q3 DORA audit. Replaces the prior Banco Atlántico account in the demo set.
 
 ### Changed
 
 - **Three fictional accounts** (was Northwind Pay / Mercado Atlas / Banco Atlántico): Searchlight Capital (FSI / asset management) replaces Banco Atlántico to anchor the Splunk-displacement narrative the demo runs end-to-end.
 - **Synthetic data generator** (`backend/scripts/generate_synthetic_data.py`): regenerated companies, news, meetings, transcripts, tickets to match the new account roster.
 - **Workspace cleanup**: stale ad-hoc briefs and post-meetings purged from the `fec-briefs` and `fec-post-meetings` Elasticsearch indexes; only the 9 canonical artifacts (3 pre-meeting briefs + 6 post-meeting summaries) remain.
+- **Autopilot bumped from 45 to 50 seconds** in `frontend/assets/js/autopilot.js` to match the storyboard timing for the six-step Searchlight Capital Splunk-displacement run.
 - **Backend base URL**: now resolved via `settings.public_base_url` (driven by `BACKEND_BASE_URL` env, falls back to `http://localhost:{APP_PORT}`). PPTX download links work in local dev and production without code changes.
 - **`.env` loader**: pydantic-settings now searches `.env` then `../.env`, so the server picks up the repo-root `.env` when started from `backend/`.
 

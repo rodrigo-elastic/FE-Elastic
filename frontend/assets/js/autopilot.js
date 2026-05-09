@@ -1,6 +1,6 @@
 /*
   filename: autopilot.js
-  description: "Show me the magic" 45-second story-driven demo. Follows one FE from 7:42 a.m. to the end of a Searchlight Capital discovery call: pre-meeting brief, FE Brain discovery questions, GDPR compliance agent build, post-meeting MEDDPICC extraction, Kibana dashboards, agents persisted in the cluster. No LLM calls; deterministic page tour. AbortController + Esc cancel, run history in localStorage. Desktop-only.
+  description: "Show me the magic" 50-second story-driven demo. Follows one FE from 7:42 a.m. to the end of a Searchlight Capital discovery call: pre-meeting brief, FE Brain discovery questions, GDPR compliance agent build, post-meeting MEDDPICC extraction, Kibana dashboards, agents persisted in the cluster. No LLM calls; deterministic page tour. AbortController + Esc cancel, run history in localStorage. Desktop-only.
   Author: Rodrigo Careaga
   Date: 03-05-2026
 */
@@ -9,7 +9,7 @@
 
   const AP = {
     storageKey: "fec.autopilot.lastRun",
-    totalSeconds: 45,
+    totalSeconds: 50,
     steps: [
       { id: "hook",  label: "8:42 a.m.",        duration: 2000  },
       { id: "qr",    label: "Quick Research",    duration: 13000 },
@@ -34,7 +34,7 @@
   };
 
   // Sum of per-step expected durations. This is the denominator the determinate
-  // top-progress bar uses to estimate ETA. Equals AP.totalSeconds * 1000 (~45s)
+  // top-progress bar uses to estimate ETA. Equals AP.totalSeconds * 1000 (~50s)
   // by construction; timeouts are worst-case fallbacks and would overstate the bar.
   AP.expectedTotalMs = AP.steps.reduce((acc, s) => acc + (s.duration || 0), 0);
 
