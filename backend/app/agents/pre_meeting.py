@@ -182,14 +182,19 @@ class PreMeetingAgent(Agent):
         language = payload.get("language") or "English"
         log.info("pre_meeting.ad_hoc.start", company=name, meeting_id=meeting_id, language=language)
 
+        # Ad-hoc Quick Research must finish under the AWS edge gateway timeout
+        # (~50s). Haiku 4.5 + medium effort + 2048 tokens lands at ~20-25s for
+        # a full brief; that's plenty of room for warm-up + PDF render + ES
+        # write before the client gives up. Don't bump these without checking
+        # /api/v1/audit p95 latency.
         result: PreMeetingBriefOut = get_service().call_structured(
             system=prompt.SYSTEM,
             user=language_preamble(language) + prompt.render_user_prompt(dossier) + language_instruction(language),
             schema=prompt.OUTPUT_SCHEMA,
             output_model=PreMeetingBriefOut,
-            model=(payload.get("model") or "").strip() or settings.model_for("pre_meeting"),
-            max_tokens=4096,
-            effort="high",
+            model=(payload.get("model") or "").strip() or "claude-haiku-4-5",
+            max_tokens=2048,
+            effort="medium",
             mock_payload=prompt.mock_response("acme-001"),  # generic fallback for offline demos
             audit_meta={
                 "agent": "pre_meeting",

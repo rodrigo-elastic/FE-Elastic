@@ -69,11 +69,16 @@ const INDUSTRY_TEMPLATES = [
   bindTranscriptUpload();
   loadAgents();
   bindAgentSelector();
-  await loadInfo();
-  await loadCalendar();
-  await loadMeetings();
-  await loadHistory();
-  await loadAudit();
+  // Run the five dashboard fetches in parallel. Sequentially, the first paint
+  // was waiting on cold-start latency * 5 (~5s on a fresh Fargate task);
+  // Promise.all collapses that to the slowest single call (~1s warm).
+  await Promise.all([
+    loadInfo(),
+    loadCalendar(),
+    loadMeetings(),
+    loadHistory(),
+    loadAudit(),
+  ]);
 })();
 
 async function loadCalendar() {
