@@ -58,7 +58,7 @@ Field Engineers run six customer meetings a day and burn fifteen hours a week on
 | Workflow loop | [docs/screenshots/workflow_demo.png](docs/screenshots/workflow_demo.png) | docs/gifs/workflow.gif |
 | Demo data seeder | [docs/screenshots/demo_data.png](docs/screenshots/demo_data.png) | docs/gifs/demo_data.gif |
 
-GIFs are produced by a sister agent and dropped into `docs/gifs/` ahead of submission. The current production-ready video script (v4.1) is [`docs/video-script-v4-story.md`](docs/video-script-v4-story.md), built around the Searchlight Capital Splunk-displacement narrative; it supersedes the earlier `docs/demo-script.md` and `docs/video-script-v4.md`. The 31-shot storyboard still lives in [`docs/storyboard.md`](docs/storyboard.md).
+GIFs are produced by a sister agent and dropped into `docs/gifs/` ahead of submission.
 
 ## Why FE Copilot wins on every judging criterion
 
@@ -105,7 +105,7 @@ A new AutoOps router (`backend/app/api/routes_autoops.py`, prefix `/api/v1/autoo
 
 ### Demo Quality
 
-Five minutes, single take, scripted to the second. The 31-shot storyboard in [`docs/storyboard.md`](docs/storyboard.md) lists URL, click sequence, voiceover cue, b-roll, and pre-conditions per shot. Twelve named failure modes have written fallback paths so a flaky API does not blow the take. Cache-priming step before recording so Claude responses land instantly. The same backend that serves the recording also serves a phone over ngrok if a judge wants to play with it live. English plus Spanish voiceover so the regional FE community can land it in their own market. Cue cards live in [`docs/cue-cards.md`](docs/cue-cards.md), persona talk tracks in [`docs/talk-tracks.md`](docs/talk-tracks.md).
+Three minutes, single take, scripted to the second around the Searchlight Capital Splunk-displacement narrative. The same backend that serves the recording also serves a phone over the AWS ECS Fargate URL if a judge wants to play with it live. English plus Spanish voiceover so the regional FE community can land it in their own market. Persona talk tracks live in [`docs/talk-tracks.md`](docs/talk-tracks.md).
 
 ## How it works
 
@@ -405,18 +405,16 @@ The `data/seed/battlecards.json` file is therefore intentionally fictional and l
 The `docs/` directory has the long-form material. The pieces most worth opening:
 
 - [`docs/architecture.md`](docs/architecture.md): system diagram, component map, three hero data flows.
-- [`docs/submission.md`](docs/submission.md): hackathon pitch, judging-criterion cross-walks, bill-of-materials.
-- [`docs/video-script-v4-story.md`](docs/video-script-v4-story.md) and [`docs/storyboard.md`](docs/storyboard.md): the production-ready v4.1 script (Searchlight Capital Splunk-displacement narrative) plus the 31-shot storyboard. `docs/demo-script.md` and `docs/video-script-v4.md` are kept as historical references; the v4.1 story script is the one to read.
-- [`docs/cue-cards.md`](docs/cue-cards.md), [`docs/talk-tracks.md`](docs/talk-tracks.md), [`docs/teleprompter.md`](docs/teleprompter.md): per-persona pitches and live-read cards.
-- [`docs/deploy.md`](docs/deploy.md): seven-step deploy playbook. The current production target is AWS ECS Fargate at `https://fe-c85291a2a8b144188ee6be1078e79a95.ecs.us-east-1.on.aws`; the legacy Fly.io path is kept for reference only.
-- [`docs/supervisor.md`](docs/supervisor.md): single bash loop that keeps the backend, ngrok tunnel, and Agent Builder sync alive during a recording.
+- [`docs/autopilot.md`](docs/autopilot.md): how the 50-second "Show me the magic" demo runs (six steps, captions, fallbacks).
+- [`docs/deploy.md`](docs/deploy.md): seven-step deploy playbook. The production target is AWS ECS Fargate at `https://fe-c85291a2a8b144188ee6be1078e79a95.ecs.us-east-1.on.aws`.
+- [`docs/supervisor.md`](docs/supervisor.md): single bash loop that keeps the backend and Agent Builder sync alive during a recording.
 - [`docs/audit-dashboard.md`](docs/audit-dashboard.md): the `fec-audit` Kibana dashboard that reads token usage live (Elastic monitoring Elastic).
 - [`docs/workflow-2.md`](docs/workflow-2.md): the second Kibana Workflow (orphan high-impact action items) that closes the agent-output-as-trigger loop.
+- [`docs/talk-tracks.md`](docs/talk-tracks.md): per-persona talk tracks the FE community can drop straight into a customer conversation.
 - [`docs/i18n.md`](docs/i18n.md), [`docs/theme.md`](docs/theme.md), [`docs/responsive.md`](docs/responsive.md), [`docs/a11y.md`](docs/a11y.md): five-language i18n, dark and light themes, mobile breakpoints, accessibility audit.
-- [`docs/compliance.md`](docs/compliance.md), [`docs/ci.md`](docs/ci.md), [`docs/freshness.md`](docs/freshness.md), [`docs/transcript-flow.md`](docs/transcript-flow.md): operational notes (license, GitHub Actions, demo data freshness, transcript ingest).
-- [`docs/announcements.md`](docs/announcements.md), [`docs/judging-narrative.md`](docs/judging-narrative.md), [`docs/judging-rubric.md`](docs/judging-rubric.md), [`docs/video-script-v2.md`](docs/video-script-v2.md), [`docs/badges.md`](docs/badges.md), [`docs/demo-checklist.md`](docs/demo-checklist.md): launch and submission collateral.
-
-QA reports from W19 onward (`docs/qa-w19*.md` through `docs/qa-w27*.md`) and the FE Brain corpus audits (`docs/fe-brain-*.md`, `docs/battlecards-*.md`) are kept in `docs/` as a working archive of audit waves; they are referenced from `docs/qa-overnight-batches.md` and `docs/qa-w26a-copy.md` rather than from this README.
+- [`docs/compliance.md`](docs/compliance.md), [`docs/ci.md`](docs/ci.md), [`docs/e2e.md`](docs/e2e.md), [`docs/freshness.md`](docs/freshness.md), [`docs/transcript-flow.md`](docs/transcript-flow.md): operational notes (license, GitHub Actions, e2e tests, demo data freshness, transcript ingest).
+- [`docs/fe-impact-math.md`](docs/fe-impact-math.md): the math behind the six-hours-per-FE-per-week claim.
+- [`docs/fork-it-in-30-minutes.md`](docs/fork-it-in-30-minutes.md): clone-and-run guide for an FE who wants to try this on their own segment.
 
 ## About the maker
 
