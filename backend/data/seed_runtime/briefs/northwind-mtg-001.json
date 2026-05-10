@@ -1,0 +1,134 @@
+{
+  "meeting_id": "northwind-mtg-001",
+  "company_id": "northwind",
+  "company_name": "Northwind Pay",
+  "generated_at": "2026-05-09T20:52:52.693035+00:00",
+  "headline": "Northwind Pay is at a critical juncture: EU banking licence now in hand, regulator expects unified audit-grade SIEM, and their Datadog spend (4M annually plus unpredictable overages) is the economic driver for consolidation by Q3 2026.",
+  "sections": [
+    {
+      "heading": "Strategic Context & Opportunity",
+      "bullets": [
+        "Northwind Pay secured EU banking licence Q3 2025 after 3-year wait, unlocking deposit-taking and lending; regulator now mandates unified SIEM and audit-ready observability across all systems.",
+        "Current stack fragmentation (Datadog for metrics, Splunk for SIEM, Grafana+Prometheus for infra, Elasticsearch on some workloads) creates three separate on-call rotations and compliance blind spots.",
+        "Datadog renewal November 1, 2026 at ~4M annually; Finance is forecasting 12-month renewal vs consolidation scenarios. Peak ingest spike during card promos last cycle cost 80k in overages, fueling cost predictability pressure.",
+        "Sarah Chen (VP Engineering) sponsors, CTO approves, Mike Taylor (Platform Lead) runs technical eval. Decision timeline: end of Q3 2026. Migration window: 6 months before Datadog renewal."
+      ]
+    },
+    {
+      "heading": "Recent Signals & Regulatory Pressure",
+      "bullets": [
+        "Auditor flagged SIEM coverage gap as part of EU banking licence audit prep (P1 open ticket); this is a compliance blocker, not a nice-to-have.",
+        "50M+ retail customers across 38 countries on multi-cloud (AWS, GCP); heavy Kafka + Kubernetes footprint means native K8s ingestion and event streaming integration are non-negotiable.",
+        "Secondary share sale completed; investor and board now scrutinizing OpEx. Consolidation conversation is linked to investor confidence in margin expansion and operational efficiency."
+      ]
+    },
+    {
+      "heading": "Technical & Commercial Pain Points",
+      "bullets": [
+        "Ingest at scale is the hard constraint: Mike Taylor stated POC must succeed at 80k events per second (peak campaign load). Failure to hit that target kills Elastic evaluation entirely.",
+        "7-year audit retention at Frankfurt + Dublin regions requires predictable, tiered storage costs (hot 7 days, warm 30, cold searchable snapshots). Datadog has no equivalent cost control mechanism at that scale.",
+        "SIEM must map to MITRE ATT&CK framework and pass regulator expectations for EU financial services (PSD2, AML/KYC audit trails). Splunk integration today is point-in-time, not unified."
+      ]
+    },
+    {
+      "heading": "Discovery & Validation Questions",
+      "bullets": [
+        "Confirm the 80k EPS baseline is sustained for how long during peak (hours, days?) and whether that includes trace ingest or is logs+metrics only.",
+        "Walk Mike through Elastic cross-cluster search (CCS/CCR) topology for break-glass investigations; clarify whether regulator expects real-time query sync or eventual consistency is acceptable.",
+        "Understand Splunk contract end date and any professional services lock-in (e.g., custom dashboards, tuning); Elastic AutoOps eliminates the need for expensive cluster health diagnostics (Splunk PS engagement typically 15k-25k per review).",
+        "Ask Sarah about procurement process and timeline for vendor discussions; she flagged two-week slip last cycle. Loop in procurement contact early to unblock approval workflows."
+      ]
+    },
+    {
+      "heading": "Talking Points & Value Mapping",
+      "bullets": [
+        "Cost consolidation: Replace Datadog (4M) + Splunk (est. 1.5M including PS) + Prometheus/Grafana maintenance with unified Elastic Cloud. Model shows 35-45% TCO reduction year-one, driven by index tiering and searchable snapshots at 7-year retention.",
+        "Splunk to Elastic SIEM transition: Elastic Security + Detection Engine covers MITRE ATT&CK natively; AutoOps is free on all tiers and surfaces root-cause cluster health without requiring Professional Services engagements (unlike Splunk cluster health reviews at 15k-25k per engagement). Immediate saving relative to Splunk's diagnostic model.",
+        "Kafka integration: Elastic connectors for Kafka ingest at 80k EPS with native backpressure handling. Reference architecture: Frankfurt + Dublin hot (i3), warm (d3), cold (searchable snapshots on GCS) for EU compliance.",
+        "Single pane for logs, metrics, traces, SIEM: Reduces on-call cognitive load, simplifies audit evidence chain for PSD2/AML. Regulatory mapping document will detail how Elastic Security satisfies EU banking expectations."
+      ]
+    },
+    {
+      "heading": "Risks & Open Questions",
+      "bullets": [
+        "POC execution risk: 80k EPS POC must complete before end of Q2 2026 to allow 6-month migration before November 1 Datadog renewal. Any delay compresses decision window. Propose POC start-date in current week.",
+        "Splunk SIEM rules migration: Unclear how much custom logic exists in Splunk today; if rules are complex, migration effort may exceed 4-week sprint. Request Splunk SIEM ruleset audit early.",
+        "Procurement sign-off: Sarah mentioned prior 2-week slip. Confirm procurement contact and alignment with vendor evaluation RFI before next meeting.",
+        "GCP searchable snapshots availability in Frankfurt region: Confirm GCS integration for cold-tier snapshots; if unavailable, fall back to S3 and model cross-region transfer costs."
+      ]
+    },
+    {
+      "heading": "Next Steps & Meeting Prep",
+      "bullets": [
+        "Send POC plan covering 80k EPS ingest, SIEM MITRE ATT&CK coverage, and Datadog vs Elastic cost model (target: Tuesday post-meeting).",
+        "Draft regulatory mapping document for EU banking expectations (PSD2, AML audit trails, retention, cross-cluster search break-glass).",
+        "Request Splunk SIEM ruleset snapshot and Datadog contract renewal terms from Sarah's team before follow-up Tuesday meeting.",
+        "Confirm reference architecture (Frankfurt hot/warm, Dublin hot/warm, GCS cold tier, CCS/CCR topology) with Mike's platform team by Friday."
+      ]
+    },
+    {
+      "heading": "Attendee Context",
+      "bullets": [
+        "Rodrigo Careaga (Elastic FE): Has already scoped two prior deep-dive calls with Mike on topology and ILM; owns POC delivery and regulatory mapping.",
+        "Sarah Chen (VP Engineering): Executive sponsor, decision-maker, procurement gatekeeper. Motivated by cost and compliance. Prefers structured timelines and early vendor alignment.",
+        "Mike Taylor (Platform Lead): Technical evaluator, Kubernetes + Kafka expert, owns POC execution success criteria. Skeptical; 80k EPS is the gating test."
+      ]
+    }
+  ],
+  "artifact_path": "/Users/rodrigocareaga/Downloads/FE-Elastic/runtime/briefs/northwind-mtg-001.html",
+  "slack_channel": "#fe-copilot-briefs",
+  "sources_used": {
+    "news": [
+      {
+        "title": "Northwind Pay secures EU banking licence after 3-year wait (fictional)",
+        "url": "https://www.northwindpay.example/news/eu-banking-licence",
+        "source": "Northwind Pay Newsroom (demo)",
+        "published_at": "2026-05-03T09:00:00+00:00"
+      },
+      {
+        "title": "Northwind Pay overview, products, history, and regulatory milestones (fictional)",
+        "url": "https://www.northwindpay.example/about",
+        "source": "Northwind Pay (demo)",
+        "published_at": "2026-04-25T09:00:00+00:00"
+      },
+      {
+        "title": "Northwind Pay Newsroom (latest press releases and product announcements, fictional)",
+        "url": "https://www.northwindpay.example/news",
+        "source": "Northwind Pay Newsroom (demo)",
+        "published_at": "2026-04-17T09:00:00+00:00"
+      }
+    ],
+    "tickets": [
+      {
+        "subject": "Datadog cost forecast vs Splunk renewal scenarios",
+        "priority": "P2",
+        "status": "In Progress",
+        "company_id": "northwind"
+      },
+      {
+        "subject": "SIEM coverage gap surfaced by regulator prep",
+        "priority": "P1",
+        "status": "Open",
+        "company_id": "northwind"
+      },
+      {
+        "subject": "Peak ingest spike during card-based promo campaigns",
+        "priority": "P2",
+        "status": "Resolved",
+        "company_id": "northwind"
+      }
+    ],
+    "past_transcripts": [
+      {
+        "meeting_id": "northwind-mtg-prev-001",
+        "turn_count": 13
+      },
+      {
+        "meeting_id": "northwind-mtg-prev-002",
+        "turn_count": 9
+      }
+    ],
+    "sec_filings": [],
+    "open_action_items": 0
+  }
+}

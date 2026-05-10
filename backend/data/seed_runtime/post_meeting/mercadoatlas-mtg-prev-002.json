@@ -1,0 +1,24 @@
+{
+  "meeting_id": "mercadoatlas-mtg-prev-002",
+  "company_id": "mercado-atlas",
+  "company_name": "Mercado Atlas",
+  "generated_at": "2026-04-28T09:45:00+00:00",
+  "summary": "Architecture review with Diego Alvarez. Walked through public roadmap for vector search (dense vector with HNSW GA, ELSER as built-in sparse model broadly available) and CCR latency improvements in 8.13. Diego asked about security roadmap (attack surface management + entity analytics) but deferred that conversation - wants to focus on search first. Action: send the search benchmark deck.",
+  "action_items": [
+    {"text": "Send search benchmark deck (HNSW + ELSER at Mercado Atlas catalog scale)", "owner": "Rodrigo", "due": "2026-04-29"},
+    {"text": "Schedule a separate Security session for ASM + entity analytics (Diego open but later)", "owner": "Rodrigo", "due": "2026-06-01"}
+  ],
+  "meddpicc_signals": [
+    {"category": "Decision Criteria", "signal": "Native dense vector + ELSER + improved CCR latency are technical must-haves"},
+    {"category": "Champion", "signal": "Diego Alvarez actively walking through evaluation criteria"}
+  ],
+  "competitor_mentions": [],
+  "follow_up_email": {
+    "subject": "Mercado Atlas - search benchmark deck",
+    "body": "Diego,\n\nAttaching the search benchmark we walked through - dense vector with HNSW + ELSER at your catalog scale, with the CCR 8.13 latency improvements detailed.\n\nHappy to circle back on Security ASM + entity analytics whenever you're ready.\n\nBest,\nRodrigo"
+  },
+  "salesforce_writes": {
+    "Opportunity": {"Name": "Mercado Atlas - Search + Datadog displacement", "StageName": "Technical Validation"}
+  },
+  "salesforce_task_ids": ["00T1A000003xPm3UAE"]
+}

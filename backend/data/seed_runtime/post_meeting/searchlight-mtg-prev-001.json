@@ -1,0 +1,187 @@
+{
+  "meeting_id": "searchlight-mtg-prev-001",
+  "company_id": "searchlightcap",
+  "company_name": "Searchlight Capital",
+  "generated_at": "2026-03-12T18:30:00.000000+00:00",
+  "summary": "First discovery call with Searchlight Capital. Confirmed Splunk renewal March 2027 at $1.2M/year. A DORA compliance audit is coming in June - the team has no tracking in place for deployment frequency or change failure rate, which is a hard gap. CFO is actively involved in the renewal decision, driven by cost growth in Splunk over the past two years. Main pain points are Splunk cost growth and the DORA metrics gap ahead of the June audit. Agreed to schedule a technical deep-dive with the platform engineering team.",
+  "action_items": [
+    {
+      "title": "Send TCO model comparing Splunk vs Elastic at current ingest volume",
+      "owner_name": "Rodrigo (Elastic FE)",
+      "owner_email": "rodrigo.careaga@elastic.co",
+      "due_date": "2026-03-19",
+      "impact": "high",
+      "description": "Build a 3-year TCO model anchored to Searchlight's current Splunk spend of $1.2M/year. Include storage tier savings, ingest cost delta, and total cost of migration. Flag as overdue - was due 2026-03-19.",
+      "source_quote": "We need to see hard numbers before we go back to the CFO. A side-by-side cost model would go a long way."
+    },
+    {
+      "title": "Confirm budget cycle timing and CFO approval process",
+      "owner_name": "AE Lead (Elastic)",
+      "owner_email": "ae.lead@elastic.co",
+      "due_date": "2026-03-20",
+      "impact": "med",
+      "description": "Connect with CFO's office to understand the budget calendar, approval thresholds, and whether a multi-year commitment would require board sign-off.",
+      "source_quote": "The CFO is going to want to see this go through the normal budget process. We should loop her in early."
+    },
+    {
+      "title": "Share current Splunk ingest volume and index breakdown",
+      "owner_name": "James Liu",
+      "owner_email": "james.liu@searchlightcap.example",
+      "due_date": "2026-03-15",
+      "impact": "med",
+      "description": "Pull daily ingest volume by index from Splunk's license usage dashboard and share with the Elastic team. Needed to finalize the TCO model.",
+      "source_quote": "I can pull the ingest numbers from the Splunk license dashboard. Give me a few days."
+    }
+  ],
+  "meddpicc_signals": [
+    {
+      "category": "Metrics",
+      "quote": "Splunk bill has gone up 40 percent in two years. CFO wants to see a path to flat or down by renewal.",
+      "note": "Cost reduction is the primary quantified success metric. DORA audit compliance is secondary."
+    },
+    {
+      "category": "Economic Buyer",
+      "quote": "The CFO is involved. She reviews every renewal over $500K.",
+      "note": "CFO is the economic buyer. Platform team does not have unilateral authority."
+    },
+    {
+      "category": "Decision Criteria",
+      "quote": "Cost reduction and DORA compliance are the two things we have to hit. Everything else is secondary.",
+      "note": "Two clear decision criteria: cost reduction vs Splunk and DORA metrics coverage ahead of June audit."
+    },
+    {
+      "category": "Decision Process",
+      "quote": "Platform team evaluates, brings a recommendation to the CFO, CFO signs off. Probably a 60-day process once we have a proposal.",
+      "note": "Linear process: platform eval, CFO recommendation, CFO sign-off. 60-day cycle from proposal."
+    },
+    {
+      "category": "Identify Pain",
+      "quote": "We have no deployment frequency tracking, no change failure rate. The auditors are going to flag that in June.",
+      "note": "DORA gap is a hard, time-bound pain. Splunk cost growth is the budget pain."
+    },
+    {
+      "category": "Champion",
+      "quote": "James runs the platform team. He would be the one making the recommendation.",
+      "note": "James Liu is the platform lead and likely internal champion. Needs qualification."
+    },
+    {
+      "category": "Competition",
+      "quote": "We are on Splunk today. Someone mentioned Datadog in passing but we have not evaluated it.",
+      "note": "Splunk is incumbent. Datadog mentioned briefly but not actively evaluated."
+    },
+    {
+      "category": "Timeline",
+      "quote": "The DORA audit is June. Renewal is March 2027. Those are the two dates that matter.",
+      "note": "June DORA audit is the near-term forcing function. March 2027 renewal is the commercial deadline."
+    }
+  ],
+  "competitor_mentions": [
+    {
+      "competitor": "Splunk",
+      "context": "Incumbent. $1.2M/year contract renewing March 2027. Cost has grown 40 percent over two years. Renewal window is 60 days."
+    },
+    {
+      "competitor": "Datadog",
+      "context": "Mentioned briefly in passing by James Liu. No active evaluation underway."
+    }
+  ],
+  "follow_up_email": {
+    "subject": "Recap and next steps: Searchlight Capital x Elastic discovery call",
+    "body_markdown": "Hi James,\n\nThanks for the time today. Here is the recap and what is coming next:\n\n**What we covered**\n- Splunk renewal March 2027 at $1.2M/year is the commercial forcing date.\n- DORA audit in June is the near-term pressure - no deployment frequency or change failure rate tracking in place today.\n- CFO is involved in renewals above $500K; she will want a clear cost story.\n\n**What is coming from me by March 19**\n1. TCO model: Splunk vs Elastic side-by-side anchored to your current spend.\n\n**What I need from you by March 15**\n- Daily ingest volume and index breakdown from Splunk's license usage dashboard.\n\n**Next step**\nOnce we have the ingest numbers, let's schedule a technical deep-dive with the platform team to walk through architecture and the DORA native dashboard.\n\nThanks,\nRodrigo"
+  },
+  "salesforce_task_ids": [
+    "00TSL001AA1BC2D3EF",
+    "00TSL002BB4CD5E6FG",
+    "00TSL003CC7DE8F9GH"
+  ],
+  "salesforce_tasks": [
+    {
+      "id": "00TSL001AA1BC2D3EF",
+      "url": "https://example.lightning.force.com/lightning/r/Task/00TSL001AA1BC2D3EF/view",
+      "subject": "Send TCO model comparing Splunk vs Elastic at current ingest volume"
+    },
+    {
+      "id": "00TSL002BB4CD5E6FG",
+      "url": "https://example.lightning.force.com/lightning/r/Task/00TSL002BB4CD5E6FG/view",
+      "subject": "Confirm budget cycle timing and CFO approval process"
+    },
+    {
+      "id": "00TSL003CC7DE8F9GH",
+      "url": "https://example.lightning.force.com/lightning/r/Task/00TSL003CC7DE8F9GH/view",
+      "subject": "Share current Splunk ingest volume and index breakdown"
+    }
+  ],
+  "salesforce_account": {
+    "Id": "001SEARCHLIGHT00001",
+    "Name": "Searchlight Capital",
+    "Industry": "Financial Services",
+    "NumberOfEmployees": "200-500",
+    "OwnerName": "Field Engineering",
+    "Type": "Prospect",
+    "Url": "https://example.lightning.force.com/lightning/r/Account/001SEARCHLIGHT00001/view"
+  },
+  "salesforce_writes": {
+    "account": {
+      "Id": "001SEARCHLIGHT00001",
+      "Name": "Searchlight Capital",
+      "Industry": "Financial Services",
+      "NumberOfEmployees": "200-500",
+      "OwnerName": "Field Engineering",
+      "Type": "Prospect",
+      "Url": "https://example.lightning.force.com/lightning/r/Account/001SEARCHLIGHT00001/view"
+    },
+    "opportunity": {
+      "Id": "006SEARCHLIGHT00001",
+      "AccountId": "001SEARCHLIGHT00001",
+      "Name": "Searchlight Capital - Observability Platform FY27",
+      "StageName": "Discovery",
+      "Amount": 480000,
+      "Probability": 15,
+      "CloseDate": "2027-01-31",
+      "OwnerName": "Field Engineering",
+      "Type": "New Business",
+      "Url": "https://example.lightning.force.com/lightning/r/Opportunity/006SEARCHLIGHT00001/view"
+    },
+    "note": {
+      "ok": true,
+      "note_id": "0695SL001CAC0D1001",
+      "url": "https://example.lightning.force.com/lightning/r/ContentNote/0695SL001CAC0D1001/view"
+    },
+    "meddpicc": {
+      "ok": true,
+      "opportunity_id": "006SEARCHLIGHT00001",
+      "fields_updated": [
+        "Metrics__c",
+        "Economic_Buyer__c",
+        "Decision_Criteria__c",
+        "Decision_Process__c",
+        "Identify_Pain__c",
+        "Champion__c",
+        "Competition__c"
+      ],
+      "evidence_chars": 521,
+      "url": "https://example.lightning.force.com/lightning/r/Opportunity/006SEARCHLIGHT00001/view"
+    },
+    "competitor": {
+      "ok": true,
+      "opportunity_id": "006SEARCHLIGHT00001",
+      "primary": "Splunk",
+      "others": [
+        "Datadog"
+      ]
+    },
+    "deal_health": {
+      "ok": true,
+      "opportunity_id": "006SEARCHLIGHT00001",
+      "deal_health_pct": 40,
+      "score": 3
+    },
+    "slack": {
+      "ok": true,
+      "channel": "#deal-searchlight",
+      "opportunity_id": "006SEARCHLIGHT00001"
+    },
+    "content_document": null
+  },
+  "email_draft_path": "runtime/emails/searchlight-mtg-prev-001.json"
+}

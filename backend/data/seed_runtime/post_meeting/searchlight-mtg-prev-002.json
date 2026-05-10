@@ -1,0 +1,176 @@
+{
+  "meeting_id": "searchlight-mtg-prev-002",
+  "company_id": "searchlightcap",
+  "company_name": "Searchlight Capital",
+  "generated_at": "2026-04-08T17:00:00.000000+00:00",
+  "summary": "Technical deep-dive with Searchlight Capital's platform engineering team. James Liu confirmed 2.4TB/day ingest across 14 indexes. At that volume, Elastic would cost approximately 40 percent less than their current Splunk contract - roughly $720K/year vs $1.2M. DORA gap confirmed: no deployment frequency, change failure rate, or mean time to restore tracking exists today. Walked through the Elastic DORA native dashboard live; team reaction was strong, Priya Sharma (Platform Lead) called it the clearest DORA implementation she has seen. Agreed on a 30-day POC scoped to 3 test servers. One risk flagged: the Splunk admin team has institutional loyalty to SPL and will need a migration story before they support a change.",
+  "action_items": [
+    {
+      "title": "Send POC architecture doc and 30-day timeline",
+      "owner_name": "Rodrigo (Elastic FE)",
+      "owner_email": "rodrigo.careaga@elastic.co",
+      "due_date": "2026-04-15",
+      "impact": "high",
+      "description": "Document the POC scope: 3 test servers, Elastic Agent installation, DORA dashboard configuration, and index mapping from Splunk to Elastic. Include a day-by-day timeline and success criteria. Flag as overdue - was due 2026-04-15.",
+      "source_quote": "Can you send us the POC plan in writing? We want to share it with the rest of the platform team before we kick off."
+    },
+    {
+      "title": "Prepare regulatory mapping for SEC Rule 17a-4 data retention requirements",
+      "owner_name": "Rodrigo (Elastic FE)",
+      "owner_email": "rodrigo.careaga@elastic.co",
+      "due_date": "2026-04-22",
+      "impact": "high",
+      "description": "Map Elastic's frozen tier, ILM policies, and WORM-compliant storage to SEC Rule 17a-4 requirements for broker-dealer electronic records. Searchlight is registered as an investment adviser; confirm applicability and any SEC 204-2 requirements as well.",
+      "source_quote": "We have SEC record-keeping obligations. I need to know Elastic can handle 17a-4 before this goes to legal."
+    },
+    {
+      "title": "Install Elastic Agent on 3 test servers and begin log forwarding",
+      "owner_name": "Priya Sharma",
+      "owner_email": "priya.sharma@searchlightcap.example",
+      "due_date": "2026-04-20",
+      "impact": "med",
+      "description": "Deploy Elastic Agent on 3 test servers in the dev environment. Configure log forwarding to the Elastic Cloud trial instance. Confirm data is flowing before the first POC check-in.",
+      "source_quote": "Priya, can your team get Elastic Agent on three boxes before the 20th? We want to start seeing real data early."
+    }
+  ],
+  "meddpicc_signals": [
+    {
+      "category": "Metrics",
+      "quote": "At 2.4TB a day, you are looking at roughly 40 percent below what we pay Splunk today. That is real money.",
+      "note": "40 percent cost reduction quantified against confirmed 2.4TB/day ingest. $480K/year savings estimate."
+    },
+    {
+      "category": "Economic Buyer",
+      "quote": "The CFO saw the ingest numbers. She is watching this one closely.",
+      "note": "CFO is engaged and aware of the technical evaluation. Budget authority confirmed above $500K."
+    },
+    {
+      "category": "Decision Criteria",
+      "quote": "DORA coverage has to be native - no custom dashboards, no manual data pipelines. And the cost has to be lower than what we pay today.",
+      "note": "Two hard criteria: native DORA coverage and cost below $1.2M/year. Both addressable."
+    },
+    {
+      "category": "Decision Process",
+      "quote": "POC runs 30 days. If it passes Priya's bar, it goes to the CFO as a recommendation. She decides.",
+      "note": "Clear process: 30-day POC, Priya's technical sign-off, CFO decision. No committee or board involvement noted."
+    },
+    {
+      "category": "Identify Pain",
+      "quote": "We have zero DORA coverage right now. The auditors are going to ask for deployment frequency and change failure rate in June and we have nothing to show them.",
+      "note": "DORA gap is an active compliance risk with a named audit date. High urgency."
+    },
+    {
+      "category": "Champion",
+      "quote": "Priya, this is your call on the technical side. If you say it works, I trust you.",
+      "note": "Priya Sharma confirmed as technical champion by James Liu. High credibility with the decision maker."
+    },
+    {
+      "category": "Competition",
+      "quote": "The Splunk admins are going to push back. They know SPL. They do not want to learn a new query language.",
+      "note": "Splunk admin team is an internal blocker. SPL-to-ES|QL migration story is needed to neutralize resistance."
+    }
+  ],
+  "competitor_mentions": [
+    {
+      "competitor": "Splunk",
+      "context": "Incumbent at $1.2M/year. Admin team has institutional loyalty to SPL. No DORA coverage. POC is a direct displacement evaluation."
+    }
+  ],
+  "follow_up_email": {
+    "subject": "Recap and next steps: Searchlight Capital x Elastic technical deep-dive",
+    "body_markdown": "Hi Priya and James,\n\nGreat session today. Here is the recap:\n\n**What we confirmed**\n- 2.4TB/day ingest across 14 indexes. At that volume, Elastic comes in approximately 40 percent below your current Splunk spend.\n- DORA gap is real and time-bound - deployment frequency, change failure rate, and MTTR are not tracked today. The native Elastic DORA dashboard covers all five metrics out of the box.\n- POC scope: 3 test servers, 30 days, using your dev environment.\n\n**What I am sending**\n1. POC architecture doc and 30-day timeline - by April 15.\n2. Regulatory mapping for SEC Rule 17a-4 - by April 22.\n\n**What I need from Priya**\n- Elastic Agent on 3 test servers with log forwarding active by April 20.\n\n**One thing to flag**\nI heard the Splunk admin team may have concerns about the query language shift. I will put together a quick SPL-to-ES|QL guide so they can see how their existing queries translate. Happy to do a short session with them if that helps.\n\nLet's plan a POC check-in for the week of April 28.\n\nThanks,\nRodrigo"
+  },
+  "salesforce_task_ids": [
+    "00TSL004DD0EF1G2HI",
+    "00TSL005EE3FG4H5IJ",
+    "00TSL006FF6GH7I8JK"
+  ],
+  "salesforce_tasks": [
+    {
+      "id": "00TSL004DD0EF1G2HI",
+      "url": "https://example.lightning.force.com/lightning/r/Task/00TSL004DD0EF1G2HI/view",
+      "subject": "Send POC architecture doc and 30-day timeline"
+    },
+    {
+      "id": "00TSL005EE3FG4H5IJ",
+      "url": "https://example.lightning.force.com/lightning/r/Task/00TSL005EE3FG4H5IJ/view",
+      "subject": "Prepare regulatory mapping for SEC Rule 17a-4 data retention requirements"
+    },
+    {
+      "id": "00TSL006FF6GH7I8JK",
+      "url": "https://example.lightning.force.com/lightning/r/Task/00TSL006FF6GH7I8JK/view",
+      "subject": "Install Elastic Agent on 3 test servers and begin log forwarding"
+    }
+  ],
+  "salesforce_account": {
+    "Id": "001SEARCHLIGHT00001",
+    "Name": "Searchlight Capital",
+    "Industry": "Financial Services",
+    "NumberOfEmployees": "200-500",
+    "OwnerName": "Field Engineering",
+    "Type": "Prospect",
+    "Url": "https://example.lightning.force.com/lightning/r/Account/001SEARCHLIGHT00001/view"
+  },
+  "salesforce_writes": {
+    "account": {
+      "Id": "001SEARCHLIGHT00001",
+      "Name": "Searchlight Capital",
+      "Industry": "Financial Services",
+      "NumberOfEmployees": "200-500",
+      "OwnerName": "Field Engineering",
+      "Type": "Prospect",
+      "Url": "https://example.lightning.force.com/lightning/r/Account/001SEARCHLIGHT00001/view"
+    },
+    "opportunity": {
+      "Id": "006SEARCHLIGHT00001",
+      "AccountId": "001SEARCHLIGHT00001",
+      "Name": "Searchlight Capital - Observability Platform FY27",
+      "StageName": "Technical Validation",
+      "Amount": 720000,
+      "Probability": 35,
+      "CloseDate": "2026-12-31",
+      "OwnerName": "Field Engineering",
+      "Type": "New Business",
+      "Url": "https://example.lightning.force.com/lightning/r/Opportunity/006SEARCHLIGHT00001/view"
+    },
+    "note": {
+      "ok": true,
+      "note_id": "0695SL002CAC0D2002",
+      "url": "https://example.lightning.force.com/lightning/r/ContentNote/0695SL002CAC0D2002/view"
+    },
+    "meddpicc": {
+      "ok": true,
+      "opportunity_id": "006SEARCHLIGHT00001",
+      "fields_updated": [
+        "Metrics__c",
+        "Economic_Buyer__c",
+        "Decision_Criteria__c",
+        "Decision_Process__c",
+        "Identify_Pain__c",
+        "Champion__c",
+        "Competition__c"
+      ],
+      "evidence_chars": 612,
+      "url": "https://example.lightning.force.com/lightning/r/Opportunity/006SEARCHLIGHT00001/view"
+    },
+    "competitor": {
+      "ok": true,
+      "opportunity_id": "006SEARCHLIGHT00001",
+      "primary": "Splunk",
+      "others": []
+    },
+    "deal_health": {
+      "ok": true,
+      "opportunity_id": "006SEARCHLIGHT00001",
+      "deal_health_pct": 60,
+      "score": 5
+    },
+    "slack": {
+      "ok": true,
+      "channel": "#deal-searchlight",
+      "opportunity_id": "006SEARCHLIGHT00001"
+    },
+    "content_document": null
+  },
+  "email_draft_path": "runtime/emails/searchlight-mtg-prev-002.json"
+}

@@ -1,0 +1,38 @@
+{
+  "meeting_id": "mercadoatlas-mtg-prev-001",
+  "company_id": "mercado-atlas",
+  "company_name": "Mercado Atlas",
+  "generated_at": "2026-04-25T10:00:00+00:00",
+  "summary": "Exec discovery with Lucia Fernandez (Director of Engineering) and Diego Alvarez (Search Tech Lead). Two pains: marketplace search relevance is plateauing (conversion flat 4 quarters) and Datadog spend just crossed $6M/year. Currently split: Solr for legacy product search + Elasticsearch for newer surfaces. Want one platform with native vector for semantic search. Datadog renews September 1. Board mandate is 30% cost reduction. Decision criteria: search latency p99 under 80ms at 10x current QPS, observability ingest cost down 30%, conversion lift of 2% on semantic-relevance pilot. Lucia sponsors, CTO signs, architecture council reviews. Diego is technical champion. Decision Q3 2026.",
+  "action_items": [
+    {"text": "Send search relevance benchmark deck (ELSER + dense vector at marketplace catalog scale)", "owner": "Rodrigo", "due": "2026-04-28"},
+    {"text": "Send Datadog migration cost model (Sao Paulo + Buenos Aires regions)", "owner": "Rodrigo", "due": "2026-04-28"},
+    {"text": "Book Wednesday deep dive with Diego on architecture", "owner": "Lucia Fernandez", "due": "2026-04-28"}
+  ],
+  "meddpicc_signals": [
+    {"category": "Metrics", "signal": "Datadog spend $6M/year; board wants 30% reduction"},
+    {"category": "Metrics", "signal": "Search p99 under 80ms target at 10x QPS"},
+    {"category": "Metrics", "signal": "2% conversion lift target on semantic-relevance pilot"},
+    {"category": "Economic Buyer", "signal": "CTO signs"},
+    {"category": "Decision Criteria", "signal": "Single platform with native vector + ELSER quality at catalog scale"},
+    {"category": "Decision Process", "signal": "Lucia sponsors, CTO signs, architecture council reviews"},
+    {"category": "Identify Pain", "signal": "Search relevance plateau (4 quarters flat conversion); fragmented search across Solr+ES"},
+    {"category": "Champion", "signal": "Diego Alvarez confirmed technical champion"},
+    {"category": "Competition", "signal": "Datadog renewal vs Elastic vs OpenSearch"},
+    {"category": "Compelling Event", "signal": "Datadog renewal September 1; conversion KPI under board scrutiny"}
+  ],
+  "competitor_mentions": [
+    {"competitor": "Datadog", "context": "Current observability incumbent; $6M/year; renewal Sept 1"},
+    {"competitor": "OpenSearch", "context": "Listed in evaluation alongside Elastic"},
+    {"competitor": "Apache Solr", "context": "Legacy product search, Mercado Atlas wants to consolidate off"}
+  ],
+  "follow_up_email": {
+    "subject": "Mercado Atlas - search benchmark + Datadog migration cost",
+    "body": "Lucia, Diego,\n\nGreat conversation today. Attaching:\n1) Search relevance benchmark - ELSER + dense vector at marketplace catalog scale\n2) Datadog migration cost model for Sao Paulo + Buenos Aires regions\n\nLooking forward to Wednesday's architecture deep dive with Diego.\n\nBest,\nRodrigo"
+  },
+  "salesforce_writes": {
+    "Account": {"Name": "Mercado Atlas", "Industry": "E-commerce / Fintech (LATAM)", "AnnualRevenue": "USD 14.3B"},
+    "Opportunity": {"Name": "Mercado Atlas - Search + Datadog displacement", "Amount": 2400000, "CloseDate": "2026-09-30", "StageName": "Discovery"}
+  },
+  "salesforce_task_ids": ["00T1A000003xPm1UAE", "00T1A000003xPm2UAE"]
+}

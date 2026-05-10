@@ -49,9 +49,41 @@ from app.utils.logging import get_logger
 log = get_logger(__name__)
 
 
+def _bootstrap_runtime_from_seed() -> None:
+    """Copy canonical post-meeting + brief artifacts from `data/seed_runtime/`
+    into `settings.runtime_dir/<subdir>/` on cold start. Only fills empty
+    directories so a long-running container with locally-generated artifacts
+    is never overwritten. Lets prod (where /app/runtime starts empty on each
+    Fargate task) ship with the same workspace state as a developer laptop.
+    """
+    import shutil
+    from pathlib import Path
+
+    # data/seed_runtime sits next to the app code at /app/data; settings.runtime_dir
+    # lives at /app/runtime in the container.
+    seed_root = Path(__file__).resolve().parents[2] / "data" / "seed_runtime"
+    if not seed_root.exists():
+        return
+    for sub in ("post_meeting", "briefs"):
+        src = seed_root / sub
+        if not src.exists():
+            continue
+        dst = settings.runtime_dir / sub
+        dst.mkdir(parents=True, exist_ok=True)
+        if any(dst.iterdir()):
+            continue  # operator/dev data already present, do not clobber
+        copied = 0
+        for f in src.glob("*.json"):
+            shutil.copy2(f, dst / f.name)
+            copied += 1
+        if copied:
+            log.info("app.startup.seed_runtime_copied", subdir=sub, files=copied)
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     log.info("app.startup", env=settings.app_env, version=__version__)
+    _bootstrap_runtime_from_seed()
     # Best-effort: ensure ES app indices exist if the cluster is reachable.
     try:
         from app.repositories.elasticsearch_repo import get_repo as get_es_repo

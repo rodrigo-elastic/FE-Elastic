@@ -1,0 +1,118 @@
+{
+  "meeting_id": "searchlight-mtg-001",
+  "company_id": "searchlightcap",
+  "company_name": "Searchlight Capital",
+  "generated_at": "2026-05-09T20:53:12.176363+00:00",
+  "headline": "Searchlight Capital faces a 60-day Splunk renewal lock-in window and a June DORA audit, creating an immediate window to displace Splunk with Elastic as a unified SIEM and observability platform that cuts storage costs by 40% and delivers DORA dashboards natively.",
+  "sections": [
+    {
+      "heading": "Strategic Context",
+      "bullets": [
+        "Splunk renewal locks in 60 days (March 15, 2027), triggering a $1.2M annual commitment with auto-renewal; Priya Sharma (VP Platform) and Sandra Park (CFO) control the go/no-go decision and own commercial sign-off.",
+        "DORA audit in June 2026 requires operational resilience dashboards (deployment frequency, MTTR, change failure rate, lead time) across portfolio infrastructure; James Liu (Lead SRE) must deliver these for compliance attestation.",
+        "Current Splunk bill is $1.2M annually with $340K/year locked in storage tier costs for 7-year audit retention; Elastic frozen tier with searchable snapshots on S3 cuts retention costs by 40% without performance degradation.",
+        "Searchlight Capital just closed $4.2B Fund V (announced May 4), crossing $14B AUM; operational excellence and audit readiness are now portfolio-wide expectations."
+      ]
+    },
+    {
+      "heading": "Recent Signals",
+      "bullets": [
+        "Fund V close (May 4) signals increased due-diligence rigor on portfolio operations; DORA compliance is now a governance requirement, not a nicety.",
+        "DORA analyst note (April 19) cites Searchlight Capital explicitly, confirming June audit is real and high-stakes for asset manager credibility.",
+        "Priya and James signaled in prior meeting that POC must prove 2.4 TB/day ingest with p99 query latency under 200 ms; no wiggle room on performance benchmarks."
+      ]
+    },
+    {
+      "heading": "Likely Pain Points",
+      "bullets": [
+        "Storage tier costs at 7-year retention are driving architecture council cost reviews; Splunk warm and cold tier administration consumes 15-20% of James Liu's team bandwidth with no native remediation tooling.",
+        "DORA dashboard delivery timeline is tight (8 weeks to June audit); Splunk's out-of-the-box DORA support is minimal, requiring custom development or a third-party app.",
+        "Splunk AutoOps equivalent does not exist; each cluster health check currently requires a $15K-25K Professional Services engagement, delaying troubleshooting and audit prep.",
+        "Frozen tier query latency against the 18-month compliance window (audit pull) is a known friction point; Searchlight Capital's audit team has complained about multi-minute query times on cold data."
+      ]
+    },
+    {
+      "heading": "Discovery Questions",
+      "bullets": [
+        "James: can you walk us through how many DORA compliance queries run monthly during audit prep, and which ones today time out or require manual SLA exceptions?",
+        "Priya: if we cut Splunk storage costs by 40% while improving compliance query performance, what would you reinvest in (headcount, other observability gaps, or a line-item reduction)?",
+        "Sandra: are there any contractual penalties if we exit Splunk before the March 2027 renewal, or is this a clean 60-day window to avoid lock-in?",
+        "James: how many of your current 14 Splunk indexes are read-heavy for compliance vs. operational SIEMs? Can we segment the migration in two waves to reduce risk?"
+      ]
+    },
+    {
+      "heading": "Talking Points",
+      "bullets": [
+        "Single platform advantage: Elastic replaces Splunk SIEM + Datadog APM with one unified observability stack, eliminating Datadog APM seat licenses (~$150K/year estimated), reducing tool sprawl, and streamlining SOC workflows.",
+        "DORA ready out of the box: Elastic Observability includes native DORA dashboards (deployment frequency, MTTR, change failure rate, lead time) integrated with GitLab CI; Splunk has no equivalent, requiring 4-6 weeks of custom development or a $10K app license.",
+        "AutoOps (free for all Elastic tiers) monitors 100+ cluster and index health metrics continuously, surfaces root-cause diagnostics, and provides ready-to-run remediation commands. This replaces Splunk's PS-driven cluster health checks ($15K-25K per engagement); total cost avoidance is $30K-50K/year.",
+        "Frozen tier with searchable snapshots: 18-month compliance queries return in 2-5 seconds (not 60+ seconds in Splunk); 7-year retention on S3 at $150K/year (vs. Splunk's $340K/year), freeing $190K annually and improving audit team productivity."
+      ]
+    },
+    {
+      "heading": "Risks and Open Questions",
+      "bullets": [
+        "POC must prove 2.4 TB/day ingest at p99 under 200 ms query latency across 14 indexes; if benchmark fails, James will default back to Splunk renewal. Schedule load-test with production-like shard topology and query patterns by May 18.",
+        "Sandra Park has not yet validated budget headroom for migration costs (Elastic licenses, data transfer, professional services for architecture and DORA dashboard customization); need a commercial review call with CFO by May 21 to avoid scope creep.",
+        "Splunk contract language may include early exit penalties or commit true-ups; legal review of the termination terms must happen before the 30-day go/no-go decision (due June 10).",
+        "Datadog APM integration risk: if James's team has built custom workflows on Datadog APM, the migration to Elastic APM may require re-testing; confirm whether Datadog is a hard blocker or a nice-to-have in the discovery call."
+      ]
+    }
+  ],
+  "artifact_path": "/Users/rodrigocareaga/Downloads/FE-Elastic/runtime/briefs/searchlight-mtg-001.html",
+  "slack_channel": "#fe-copilot-briefs",
+  "sources_used": {
+    "news": [
+      {
+        "title": "Searchlight Capital announces $4.2B Fund V close (fictional)",
+        "url": "https://www.searchlightcap.example/news/fund-v-close",
+        "source": "Searchlight Capital Press Room (demo)",
+        "published_at": "2026-05-04T09:00:00+00:00"
+      },
+      {
+        "title": "Searchlight Capital overview, strategy, and portfolio (fictional)",
+        "url": "https://www.searchlightcap.example/about",
+        "source": "Searchlight Capital (demo)",
+        "published_at": "2026-04-27T09:00:00+00:00"
+      },
+      {
+        "title": "DORA in 2026 - what asset managers must report (fictional analyst note)",
+        "url": "https://www.fsianalyst.example/dora-2026",
+        "source": "FSI Analyst Watch (demo)",
+        "published_at": "2026-04-19T09:00:00+00:00"
+      }
+    ],
+    "tickets": [
+      {
+        "subject": "Splunk renewal lock-in window: 60 days remaining",
+        "priority": "P1",
+        "status": "Open",
+        "company_id": "searchlightcap"
+      },
+      {
+        "subject": "DORA audit prep - dashboards for deployment frequency, MTTR, change failure rate, lead time",
+        "priority": "P1",
+        "status": "In Progress",
+        "company_id": "searchlightcap"
+      },
+      {
+        "subject": "Splunk storage tier costs at 7-year retention",
+        "priority": "P2",
+        "status": "Open",
+        "company_id": "searchlightcap"
+      }
+    ],
+    "past_transcripts": [
+      {
+        "meeting_id": "searchlight-mtg-prev-001",
+        "turn_count": 13
+      },
+      {
+        "meeting_id": "searchlight-mtg-prev-002",
+        "turn_count": 9
+      }
+    ],
+    "sec_filings": [],
+    "open_action_items": 0
+  }
+}

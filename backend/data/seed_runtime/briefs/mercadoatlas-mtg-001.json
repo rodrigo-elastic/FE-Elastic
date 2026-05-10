@@ -1,0 +1,129 @@
+{
+  "meeting_id": "mercadoatlas-mtg-001",
+  "company_id": "mercado-atlas",
+  "company_name": "Mercado Atlas",
+  "generated_at": "2026-05-09T20:53:30.165387+00:00",
+  "headline": "Mercado Atlas faces a 12-month critical path on search relevance lift and observability cost reduction, with a Q3 decision that hinges on semantic search capability and 30% vendor consolidation savings.",
+  "sections": [
+    {
+      "heading": "Strategic Context",
+      "bullets": [
+        "Board mandate is 30% observability cost reduction ahead of September 1 Datadog renewal; annual Datadog spend is $6M.",
+        "Marketplace conversion flat for 4 quarters; Lucia and Diego see semantic search as the primary lever to unlock a 2% uplift.",
+        "Dual search stack (Solr legacy + Elasticsearch newer) must consolidate to one platform with native vector support; Solr EOL is imminent.",
+        "Decision window is Q3 2026; Lucia sponsors, CTO signs, Diego is technical champion, Architecture Council reviews."
+      ]
+    },
+    {
+      "heading": "Recent Signals",
+      "bullets": [
+        "Earnings reports highlight growth in Mercado Atlas Pay and credit portfolio expansion, creating higher volumes for both search and observability telemetry.",
+        "Engineering blog documents heavy Kafka and Flink infrastructure, indicating complex event-driven workloads that observability platform must handle at scale.",
+        "Procurement formally triggered vendor consolidation inquiry, signaling finance pressure and appetite for migration discussions."
+      ]
+    },
+    {
+      "heading": "Pain Points to Validate",
+      "bullets": [
+        "Search latency p99 must drop to under 80ms at 10x current QPS; Diego flagged dense vector ingest throughput as a bottleneck risk.",
+        "ELSER quality and accuracy at Mercado Atlas's catalog scale is unproven; Diego needs confidence before committing to semantic pilot.",
+        "Cross-region replication latency between Sao Paulo and Buenos Aires is a blocker for firehose ingest replication; Elastic 8.13 improvements need benchmark validation.",
+        "Datadog cost per GB is unsustainable; Elastic's observability ingest pricing and compression efficiency are direct TCO levers."
+      ]
+    },
+    {
+      "heading": "Discovery Questions",
+      "bullets": [
+        "How many SKUs are in the Mercado Atlas product catalog, and what is the current ELSER embedding batch size and latency per document?",
+        "What is the weekly search QPS peak on marketplace search today, and what is the 10x target (is that for regional sharding or global)?",
+        "On the observability side, what is the current daily ingest volume in GB, breakdown by logs vs metrics, and what compression ratio would meet the 30% cost target?",
+        "Diego mentioned cross-region replication latency; is the Sao Paulo cluster active-active or replication-only? What is today's P99 latency?",
+        "Are there security or compliance requirements that would gate adoption of ELSER (data residency, model transparency)?"
+      ]
+    },
+    {
+      "heading": "Talking Points",
+      "bullets": [
+        "Elastic's semantic search via ELSER is built-in and free across all tiers (Cloud and self-managed); no third-party embedding service cost. Datadog's equivalent requires custom LLM integration or partner APIs, adding operational overhead and recurring fees.",
+        "Vector search with HNSW is GA and optimized for ingest throughput; Mercado Atlas can run a proof-of-concept on a subset of Mercado Atlas Pay transaction search or product catalog without infrastructure changes.",
+        "Consolidation of Solr + Elasticsearch onto one platform reduces ops toil, licensing, and knowledge fragmentation; Elastic can handle both legacy keyword and modern semantic workloads natively.",
+        "Observability cost model: migrate Datadog logs and metrics to Elastic, apply ILM and tiering strategies (hot/warm/cold), and achieve 30%+ savings. Provide a side-by-side cost projection before September renewal to lock board confidence.",
+        "Cross-region replication: Elastic 8.13+ provides sub-100ms P99 latency for Sao Paulo to Buenos Aires geo pairs; share public benchmark and offer a geo-failover test in their AWS/GCP footprint."
+      ]
+    },
+    {
+      "heading": "Risks & Open Questions",
+      "bullets": [
+        "Diego has not yet seen ELSER performance on Mercado Atlas's specific catalog; recommend a 72-hour POC on a product subset (e.g., Mercado Atlas Pay category) with HNSW vector ingest to de-risk the 2% conversion uplift claim.",
+        "Datadog renewal date is September 1; this is a hard stop for board decision. Confirm Lucia's timeline and whether CTO needs a comparative cost model by June 1 to allow vendor legal review.",
+        "No mention of real-time monitoring or alerting strategy post-migration; ensure Diego has input on Elastic's alerting and anomaly detection parity with Datadog before committing to full suite.",
+        "Security roadmap (entity analytics, attack surface management) was deferred by Diego; flag for future session, but do not block search + observability decision."
+      ]
+    },
+    {
+      "heading": "Pre-Meeting Prep",
+      "bullets": [
+        "Have ELSER benchmark deck and cross-region replication benchmark (8.13) ready to screen-share or email immediately post-call.",
+        "Prepare a 30-minute observability cost model template with Mercado Atlas's $6M Datadog baseline and tiered Elasticsearch scenarios (Cloud Standard, Cloud Enterprise, self-managed).",
+        "Confirm which Elastic tier (Cloud or self-managed) aligns with Mercado Atlas's AWS/GCP multi-cloud strategy and procurement procurement appetite (likely Cloud for faster time-to-value).",
+        "Bring a one-pager on Solr migration tooling and timeline; offer architecture review session with Diego and his team if needed."
+      ]
+    }
+  ],
+  "artifact_path": "/Users/rodrigocareaga/Downloads/FE-Elastic/runtime/briefs/mercadoatlas-mtg-001.html",
+  "slack_channel": "#fe-copilot-briefs",
+  "sources_used": {
+    "news": [
+      {
+        "title": "Mercado Atlas Investor Relations (earnings releases, presentations, filings, fictional)",
+        "url": "https://investor.mercadoatlas.example",
+        "source": "Mercado Atlas IR (demo)",
+        "published_at": "2026-05-01T09:00:00+00:00"
+      },
+      {
+        "title": "Mercado Atlas overview, business segments, and engineering culture (fictional)",
+        "url": "https://www.mercadoatlas.example/about",
+        "source": "Mercado Atlas (demo)",
+        "published_at": "2026-04-23T09:00:00+00:00"
+      },
+      {
+        "title": "Mercado Atlas annual report (fictional)",
+        "url": "https://investor.mercadoatlas.example/annual-report",
+        "source": "Mercado Atlas IR (demo)",
+        "published_at": "2026-04-15T09:00:00+00:00"
+      }
+    ],
+    "tickets": [
+      {
+        "subject": "Search relevance plateau on marketplace",
+        "priority": "P1",
+        "status": "In Progress",
+        "company_id": "mercado-atlas"
+      },
+      {
+        "subject": "Datadog cost growth trajectory",
+        "priority": "P2",
+        "status": "Open",
+        "company_id": "mercado-atlas"
+      },
+      {
+        "subject": "Solr to Elasticsearch migration on legacy product search",
+        "priority": "P3",
+        "status": "Open",
+        "company_id": "mercado-atlas"
+      }
+    ],
+    "past_transcripts": [
+      {
+        "meeting_id": "mercadoatlas-mtg-prev-001",
+        "turn_count": 13
+      },
+      {
+        "meeting_id": "mercadoatlas-mtg-prev-002",
+        "turn_count": 9
+      }
+    ],
+    "sec_filings": [],
+    "open_action_items": 0
+  }
+}

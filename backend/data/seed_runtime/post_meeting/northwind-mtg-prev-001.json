@@ -1,0 +1,36 @@
+{
+  "meeting_id": "northwind-mtg-prev-001",
+  "company_id": "northwind",
+  "company_name": "Northwind Pay",
+  "generated_at": "2026-04-27T10:00:00+00:00",
+  "summary": "Exec discovery with Sarah Chen (VP Engineering) and Mike Taylor (Platform Lead). Two converging drivers: the EU banking licence (Q3 2025) raises observability expectations, and Datadog spend is approaching $4M/year. Three-tool fragmentation - Splunk SIEM, Datadog APM, Grafana on Prometheus - with three on-call rotations. Decision criteria: single platform for logs/metrics/traces plus SIEM, native Kubernetes ingestion, predictable storage at 7-year audit retention. Datadog renews November 1; need 6-month migration window. POC requirement: 80k EPS at peak. Champion is Mike Taylor; economic buyer is the CTO via Sarah.",
+  "action_items": [
+    {"text": "Send POC plan covering 80k EPS ingest, MITRE ATT&CK SIEM coverage, and Datadog cost comparison", "owner": "Rodrigo", "due": "2026-04-30"},
+    {"text": "Loop in Northwind procurement contact early to avoid 2-week delay on legal review", "owner": "Rodrigo", "due": "2026-05-04"},
+    {"text": "Draft EU banking regulatory mapping (audit retention, encryption, role-based access)", "owner": "Rodrigo", "due": "2026-05-02"},
+    {"text": "Schedule Tuesday afternoon EU technical follow-up with Mike Taylor", "owner": "Sarah Chen", "due": "2026-05-04"}
+  ],
+  "meddpicc_signals": [
+    {"category": "Metrics", "signal": "Datadog spend approaching $4M/year; need 30% cost reduction"},
+    {"category": "Economic Buyer", "signal": "CTO signs the consolidation decision"},
+    {"category": "Decision Criteria", "signal": "Single platform for logs+metrics+traces+SIEM; native K8s ingest; predictable storage at 7yr retention"},
+    {"category": "Decision Process", "signal": "Sarah sponsors, CTO signs, Mike runs technical evaluation"},
+    {"category": "Identify Pain", "signal": "Three observability tools, three on-call rotations; SIEM gap flagged by regulator"},
+    {"category": "Champion", "signal": "Mike Taylor (Platform Lead) - confirmed technical champion, blocking criteria visible"},
+    {"category": "Competition", "signal": "Datadog renewal vs Elastic vs status quo; Splunk SIEM is incumbent"},
+    {"category": "Compelling Event", "signal": "EU banking licence audit; Datadog renewal November 1"}
+  ],
+  "competitor_mentions": [
+    {"competitor": "Datadog", "context": "Current APM/observability incumbent; ~$4M/year"},
+    {"competitor": "Splunk", "context": "Current SIEM; in scope for displacement"}
+  ],
+  "follow_up_email": {
+    "subject": "Northwind Pay - POC plan + EU banking mapping",
+    "body": "Sarah, Mike,\n\nThanks for the time today. As discussed, attaching the POC plan covering 80k EPS at peak ingest with MITRE ATT&CK SIEM coverage, plus the Datadog total-cost comparison.\n\nI'll have the EU banking regulatory mapping draft ready by Friday. I've also looped in our legal team so procurement review can start in parallel.\n\nLooking forward to Tuesday's technical deep dive with Mike.\n\nBest,\nRodrigo"
+  },
+  "salesforce_writes": {
+    "Account": {"Name": "Northwind Pay", "Industry": "Financial Services - Fintech", "AnnualRevenue": "EUR 2.1B"},
+    "Opportunity": {"Name": "Northwind Pay - Datadog displacement", "Amount": 1850000, "CloseDate": "2026-09-30", "StageName": "Discovery"}
+  },
+  "salesforce_task_ids": ["00T1A000003xPq2UAE", "00T1A000003xPq3UAE"]
+}

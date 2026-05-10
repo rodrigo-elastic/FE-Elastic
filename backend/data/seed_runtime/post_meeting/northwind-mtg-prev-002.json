@@ -1,0 +1,126 @@
+{
+  "meeting_id": "northwind-mtg-prev-002",
+  "company_id": "northwind",
+  "generated_at": "2026-05-09T22:51:27.757474+00:00",
+  "summary": "Rodrigo walked Mike through Elastic Cloud topology for Northwind Pay's EU workload, covering Frankfurt and Dublin regions with tiered storage (hot i3, warm d3, cold searchable snapshots). The team discussed index lifecycle policies spanning 7 days hot through 7-year retention and evaluated cross-cluster search options for break-glass regulatory investigations. Rodrigo committed to sending reference architecture diagrams and POC outline today for Mike's platform team review.",
+  "action_items": [
+    {
+      "title": "Send reference architecture diagram and POC outline",
+      "owner_name": "Rodrigo",
+      "owner_email": "rodrigo.careaga@elastic.co",
+      "due_date": "2026-05-06",
+      "impact": "high",
+      "description": "Deliver Elastic Cloud topology reference architecture diagram and proof-of-concept outline to Mike Taylor for review by Northwind Pay platform team. Diagram should include Frankfurt and Dublin regions with hot, warm, and cold tier configuration.",
+      "source_quote": "Send the reference architecture diagram and we can review with the platform team. Rodrigo: Sending today with the POC outline."
+    },
+    {
+      "title": "Review architecture with platform team and confirm CCS/CCR preference",
+      "owner_name": "Mike Taylor",
+      "owner_email": "mike.taylor@northwindpay.example",
+      "due_date": null,
+      "impact": "high",
+      "description": "Mike and the Northwind Pay platform team should review the reference architecture diagram and POC outline from Rodrigo, with focus on validating region selection (Frankfurt/Dublin), tiered storage approach, and determining whether cross-cluster search (CCS) or cross-cluster replication (CCR) better meets regulatory and break-glass investigation requirements.",
+      "source_quote": "Send the reference architecture diagram and we can review with the platform team."
+    }
+  ],
+  "meddpicc_signals": [
+    {
+      "category": "Identify Pain",
+      "quote": "Cross-cluster search to our Dublin region for break-glass investigations?",
+      "note": "Regulatory/compliance requirement for emergency data access scenarios."
+    },
+    {
+      "category": "Decision Criteria",
+      "quote": "CCS or CCR depending on freshness. We can pick based on regulator expectations.",
+      "note": "Freshness and regulatory requirements are key decision factors between CCS and CCR options."
+    },
+    {
+      "category": "Metrics",
+      "quote": "Hot for 7 days, warm for 30, cold via searchable snapshots on GCS at 7 year retention.",
+      "note": "7-year retention policy indicates compliance-driven architecture for financial services."
+    }
+  ],
+  "competitor_mentions": [],
+  "follow_up_email": {
+    "subject": "Elastic Cloud Reference Architecture and POC Outline for Northwind Pay EU Deployment",
+    "body_markdown": "Hi Mike,\n\nThanks for the productive technical deep dive today on your EU workload topology. As committed, I'm sending over the Elastic Cloud reference architecture diagram and POC outline covering Frankfurt and Dublin regions with our recommended tiered storage approach (hot i3, warm d3, cold searchable snapshots on GCS).\n\nPlease review with your platform team at your earliest convenience, with particular focus on:\n\n- Region and node sizing validation for your EU deployment\n- Index lifecycle policies (7 day hot, 30 day warm, 7 year cold retention)\n- Cross-cluster search vs. cross-cluster replication for your break-glass investigation workflows and regulatory requirements\n\nOnce your team has had a chance to review, let's schedule a follow-up to discuss any questions and confirm next steps toward the POC.\n\nBest regards,\nRodrigo"
+  },
+  "salesforce_task_ids": [
+    "00T6EE398629BCC4A2",
+    "00T171263BB7DB744B"
+  ],
+  "salesforce_tasks": [
+    {
+      "id": "00T6EE398629BCC4A2",
+      "url": "https://example.lightning.force.com/lightning/r/Task/00T6EE398629BCC4A2/view",
+      "subject": "Send reference architecture diagram and POC outline"
+    },
+    {
+      "id": "00T171263BB7DB744B",
+      "url": "https://example.lightning.force.com/lightning/r/Task/00T171263BB7DB744B/view",
+      "subject": "Review architecture with platform team and confirm CCS/CCR preference"
+    }
+  ],
+  "salesforce_account": {
+    "Id": "001NORTHWIND000000",
+    "Name": "Northwind Pay",
+    "Industry": "Financial Services / Fintech",
+    "NumberOfEmployees": "5,000+",
+    "OwnerName": "Field Engineering",
+    "Type": "Customer",
+    "Url": "https://example.lightning.force.com/lightning/r/Account/001NORTHWIND000000/view"
+  },
+  "salesforce_writes": {
+    "account": {
+      "Id": "001NORTHWIND000000",
+      "Name": "Northwind Pay",
+      "Industry": "Financial Services / Fintech",
+      "NumberOfEmployees": "5,000+",
+      "OwnerName": "Field Engineering",
+      "Type": "Customer",
+      "Url": "https://example.lightning.force.com/lightning/r/Account/001NORTHWIND000000/view"
+    },
+    "opportunity": {
+      "Id": "006NORTHWIND000000",
+      "AccountId": "001NORTHWIND000000",
+      "Name": "Northwind Pay - Observability Consolidation FY27",
+      "StageName": "Proposal/Price Quote",
+      "Amount": 1200000,
+      "Probability": 35,
+      "CloseDate": "2026-09-30",
+      "OwnerName": "Field Engineering",
+      "Type": "New Business",
+      "Url": "https://example.lightning.force.com/lightning/r/Opportunity/006NORTHWIND000000/view"
+    },
+    "note": {
+      "ok": true,
+      "note_id": "069EE2E8B21A3FD49F",
+      "url": "https://example.lightning.force.com/lightning/r/ContentNote/069EE2E8B21A3FD49F/view"
+    },
+    "meddpicc": {
+      "ok": true,
+      "opportunity_id": "006NORTHWIND000000",
+      "fields_updated": [
+        "Identify_Pain__c",
+        "Decision_Criteria__c",
+        "Metrics__c"
+      ],
+      "evidence_chars": 249,
+      "url": "https://example.lightning.force.com/lightning/r/Opportunity/006NORTHWIND000000/view"
+    },
+    "competitor": null,
+    "deal_health": {
+      "ok": true,
+      "opportunity_id": "006NORTHWIND000000",
+      "deal_health_pct": 43,
+      "score": 3
+    },
+    "slack": {
+      "ok": true,
+      "channel": "#deal-northwind",
+      "opportunity_id": "006NORTHWIND000000"
+    },
+    "content_document": null
+  },
+  "email_draft_path": "/Users/rodrigocareaga/Downloads/FE-Elastic/runtime/emails/northwind-mtg-prev-002.json"
+}
