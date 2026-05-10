@@ -333,7 +333,6 @@ FE-Elastic/
   Dockerfile              Production image, deployed to AWS ECS Fargate
   runtime/                Slack/SFDC logs, audit.jsonl, generated PDFs, email drafts,
                           slides/, qbr/, tar/, pov_health/ (gitignored)
-  HANDOFF.md              Snapshot of project status, transfer notes, next-step priorities
   LICENSE                 MIT
 ```
 
@@ -343,7 +342,7 @@ What ships in this hackathon submission is opinionated and complete enough to us
 
 ### Near term (weeks 1 to 4 after submission)
 
-- **Production deploy on AWS ECS Fargate (shipped)**: the backend now runs at `https://fe-c85291a2a8b144188ee6be1078e79a95.ecs.us-east-1.on.aws`. The Kibana inference connector, the Workflow webhooks, and the AutoOps webhook all point at that URL. The legacy Fly.io workflow at `.github/workflows/deploy.yml` and `fly.toml` are kept as historical references. Local dev still works against `host.docker.internal` for fast iteration.
+- **Production deploy on AWS ECS Fargate (shipped)**: the backend now runs at `https://fe-c85291a2a8b144188ee6be1078e79a95.ecs.us-east-1.on.aws`. The Kibana inference connector, the Workflow webhooks, and the AutoOps webhook all point at that URL. Image lives in ECR (`461485115270.dkr.ecr.us-east-1.amazonaws.com/fe-copilot:latest`); deploy is `docker buildx build --platform linux/amd64`, push to ECR, then `aws ecs update-service --force-new-deployment` on `fe-copilot-50d3` in cluster `genesys-fargate-kibana-donotdelete`. Local dev still works against `host.docker.internal` for fast iteration.
 - **Salesforce live integration**: replace the SFDC mock with a real OAuth2 connection to a sandbox org. Map the existing six writes (Close Plan deal-qualification record, ContentNote, ContentDocumentLink, Competitor update, Deal_Health update, Slack post) to live calls. Note: legacy Opportunity MEDDPICC fields are read-only in the current Elastic Salesforce configuration - the writeback targets the Close Plan module, which is the current MEDDPICC capture model. The mock surface stays as a fallback for offline demos. Estimated effort: 1 day for the OAuth flow, 1 day per object for field mapping.
 - **Real Slack integration**: replace the Slack mock with a real workspace bot. Adds a `/fec` slash command so a FE can invoke the master agent without leaving Slack. Estimated effort: half a day for the bot scaffold, two days for the slash command persona work.
 - **FE Brain corpus expansion to 1000+ chunks**: add the Elastic Security detection rules repo, the EDOT (Elastic Distribution of OpenTelemetry) reference, the Cases workflow guide, and the Lens visualisation cookbook. Estimated effort: half a day to curate URLs, half a day to re-run the ingest.
