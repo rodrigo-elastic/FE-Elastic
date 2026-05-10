@@ -59,9 +59,10 @@ def _bootstrap_runtime_from_seed() -> None:
     import shutil
     from pathlib import Path
 
-    # data/seed_runtime sits next to the app code at /app/data; settings.runtime_dir
-    # lives at /app/runtime in the container.
-    seed_root = Path(__file__).resolve().parents[2] / "data" / "seed_runtime"
+    # backend/data/seed_runtime/ ships in the image alongside the app code
+    # (parents[0]=app, parents[1]=backend); settings.runtime_dir lives at
+    # /app/runtime in the container and is task-scoped on Fargate.
+    seed_root = Path(__file__).resolve().parents[1] / "data" / "seed_runtime"
     if not seed_root.exists():
         return
     for sub in ("post_meeting", "briefs"):
