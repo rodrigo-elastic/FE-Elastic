@@ -14,7 +14,7 @@
   <a href="https://www.anthropic.com/"><img src="https://img.shields.io/badge/Built%20on-Anthropic%20Claude-0077CC.svg" alt="Built on Anthropic Claude" /></a>
 </p>
 
-## 30-second tour
+## 60-second tour
 
 1. Open `frontend/index.html` and click "Show me the magic"
 2. Watch the 50-second autopilot run the Searchlight Capital Splunk-displacement play across six steps (hook, quick research, brief, Field Assistant, live Agent Builder creation, recap)
@@ -41,7 +41,7 @@ No setup needed: 8 demo scenarios pre-seeded, 14 tools live behind the MCP conne
 
 ---
 
-## 30-second elevator
+## 60-second elevator
 
 Field Engineers run six customer meetings a day and burn fifteen hours a week on prep, deal qualification capture, Salesforce updates, and the swivel-chair between Splunk, Datadog, Slack, and Salesforce. FE Copilot collapses that loop into seven agent surfaces and a tools rail that live inside Elastic. A pre-meeting researcher pulls live SEC EDGAR data and ships a PDF brief to Slack one hour before the call; a live companion whispers competitor and MEDDPICC alerts on every transcript turn; a post-meeting action engine fires six Salesforce writes plus a follow-up email draft on one click; QBR, TAR, weekly-status, and SA-to-CA handover generators turn the same meeting timeline into AE-ready and CA-ready artifacts. The headline narrative is a Splunk displacement play for Searchlight Capital, a fictional FSI account 60 days from a Splunk renewal with a DORA audit pending in Q3 - automating Elastic's official **Race to Displace Security** sales play end to end: the autopilot creates a "Splunk Displacement" agent live in Kibana while the meeting brief surfaces real AutoOps cluster signals plus a free-vs-$15k-$25k competitive card against Splunk PS health checks. Every tool is wired into the Elastic Cloud 9.3.4 Agent Builder over MCP, so the master agent `fec_field_assistant` chains them inside Kibana. Customer data is routed through Kibana inference connectors with a strict no-fallback guard, never the direct Anthropic API. All data is synthetic. All agents fall back to Haiku 4.5 mock mode so a judge can clone and run without an API key.
 
