@@ -333,10 +333,93 @@ async def run_post_meeting_from_transcript(req: AdHocPostMeetingRequest) -> Dict
 
 @router.post("/post-meeting/{meeting_id}")
 async def run_post_meeting(meeting_id: str, language: str = "English", model: str = "") -> Dict[str, Any]:
+    """Run the post-meeting agent against a meeting on file.
+
+    Synthetic meeting ids hit `_post.run()` which expects a real transcript.
+    Ad-hoc Quick Research briefs (id pattern: `ad-hoc-<slug>-<timestamp>`)
+    have no transcript on disk - we synthesise turns from the brief's
+    discovery questions + talking points so the demo flow stays connected:
+    Quick Research -> Pre-Meeting brief -> Post-Meeting output without a
+    manual transcript upload.
+    """
     try:
         return await _post.run({"meeting_id": meeting_id, "language": language, "model": model})
+    except ValueError:
+        # Fall through to ad-hoc synthesis if a brief exists for this id.
+        pass
+
+    brief = _load_brief_for_meeting(meeting_id)
+    if brief is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"meeting {meeting_id} not found and no brief on file. Run Quick Research first or pick a meeting from the workspace.",
+        )
+
+    try:
+        return await _post.run_ad_hoc(
+            {
+                "company_name": brief.get("company_name") or "Customer",
+                "meeting_title": brief.get("meeting_title") or "Discovery call",
+                "industry": (brief.get("dossier") or {}).get("company_industry") or "",
+                "size": (brief.get("dossier") or {}).get("company_size") or "",
+                "notes": "Synthesised post-meeting from Quick Research brief; no recorded transcript.",
+                "transcript_source": "synthesised_from_brief",
+                "turns": _synth_turns_from_brief(brief),
+                "language": language,
+                "model": model,
+            }
+        )
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+def _load_brief_for_meeting(meeting_id: str) -> Optional[Dict[str, Any]]:
+    """Return the persisted brief JSON for an ad-hoc meeting_id, or None."""
+    path = settings.runtime_dir / "briefs" / f"{meeting_id}.json"
+    if path.exists():
+        try:
+            return json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            return None
+    # ES fallback: ad-hoc briefs are indexed too.
+    try:
+        from app.repositories.elasticsearch_repo import get_repo
+        es = get_repo()
+        if es.available:
+            doc = es.get_brief(meeting_id) if hasattr(es, "get_brief") else None
+            if doc:
+                return doc
+    except Exception:
+        pass
+    return None
+
+
+def _synth_turns_from_brief(brief: Dict[str, Any]) -> List[Dict[str, str]]:
+    """Build a minimal speaker-turn list from a brief's discovery + talking points
+    so the post-meeting prompt has structured input to chew on."""
+    customer_name = brief.get("company_name") or "Customer"
+    turns: List[Dict[str, str]] = [
+        {
+            "speaker": "Field Engineer",
+            "text": brief.get("headline") or f"Discovery call with {customer_name} on observability and platform consolidation.",
+        }
+    ]
+    for section in brief.get("sections", []) or []:
+        heading = (section.get("heading") or "").lower()
+        bullets = section.get("bullets") or []
+        if not bullets:
+            continue
+        if "discovery" in heading or "question" in heading:
+            for b in bullets[:5]:
+                turns.append({"speaker": "Field Engineer", "text": str(b)})
+                turns.append({"speaker": f"{customer_name} contact", "text": "Acknowledged; we'll come back with a written answer after this call."})
+        elif "talking" in heading or "pain" in heading or "risk" in heading:
+            for b in bullets[:3]:
+                turns.append({"speaker": f"{customer_name} contact", "text": str(b)})
+    if len(turns) < 3:
+        turns.append({"speaker": f"{customer_name} contact", "text": "We're looking to consolidate observability vendors and bring the cost down."})
+        turns.append({"speaker": "Field Engineer", "text": "Understood. We'll follow up with a TCO comparison and a phased migration plan."})
+    return turns
 
 
 @router.post("/live-meeting/{meeting_id}/turn/{turn_index}")
