@@ -257,10 +257,38 @@
 
 .qr-rec-list .qr-rec {
   margin-top: 8px;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .qr-rec-list .qr-rec:first-child {
   margin-top: 0;
+}
+
+/* Long brief headlines were stretching the row and pushing the Open / Run
+   CTAs off the right edge. Clamp the title to 3 lines, let the meta wrap,
+   and keep the action cluster glued to the right with margin-left:auto so
+   the buttons stay visible no matter how long the headline runs. */
+.qr-rec-list .qr-rec .info {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+.qr-rec-list .qr-rec .title {
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  line-height: 1.35;
+}
+.qr-rec-list .qr-rec .actions {
+  flex-shrink: 0;
+  margin-left: auto;
+  align-self: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .qr-rec-attendees {

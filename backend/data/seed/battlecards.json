@@ -2144,5 +2144,67 @@
       "What is the Vigilance MDR scope, and is it adequate for the broader SOC mission?"
     ],
     "clincher": "S1 ends the attack on the host. Elastic remembers it long enough to find the next one."
+  },
+  {
+    "id": "battlecard-snowflake",
+    "competitor": "Snowflake",
+    "competitor_slug": "snowflake",
+    "tagline": "Snowflake is the warehouse; Elastic is the real-time search and observability layer on top of it",
+    "key_pain": "Snowflake is excellent at structured analytics on cold data but expensive and slow for ad-hoc text search, log tail latency, and operational dashboards. Customers pipe logs into Snowflake for retention and then realize they still need an interactive search/SIEM layer for SOC and SRE workflows.",
+    "talking_points": [
+      {
+        "angle": "Latency",
+        "claim": "Sub-second log search and dashboard refresh; Snowflake virtual warehouses spin up in seconds and bill per query.",
+        "proof": "Elastic hot tier serves p95 < 1s for typical SOC queries. Snowflake compute warm-up plus credit burn make per-incident pivoting cost-prohibitive."
+      },
+      {
+        "angle": "Schema-on-read",
+        "claim": "ECS plus runtime fields keep unstructured logs queryable without pre-modeling.",
+        "proof": "Snowflake requires schema definition and VARIANT parsing for JSON; Elastic indexes any document and lets ES|QL or Lucene queries hit it immediately."
+      },
+      {
+        "angle": "Built-in SIEM and observability apps",
+        "claim": "Detection rules, APM, RUM, ML anomaly detection ship out of the box - no SQL workbench to build them in.",
+        "proof": "Snowflake needs Sigma, Hunters, Panther or a custom dbt stack on top to become a SIEM. Elastic Security is the product."
+      }
+    ],
+    "elastic_advantages": [
+      "Real-time ingest and search latency that Snowflake cannot match for log tails",
+      "Frozen tier on object storage for cheap long retention alongside hot search",
+      "Built-in SIEM, APM, RUM, ML on the same index - no separate analytics stack",
+      "Vector search and ELSER for RAG over the same logs without moving data",
+      "Open ECS schema and ES|QL; no per-query credit billing"
+    ],
+    "common_objections": [
+      {
+        "q": "We already have a Snowflake commit; everything goes there.",
+        "a": "Keep Snowflake for warehouse analytics. Elastic sits in front for the sub-second log search and SIEM workflows Snowflake is not built for. Many customers run both: Elastic for hot operational data, Snowflake for cold structured analytics."
+      },
+      {
+        "q": "Snowflake Cortex and notebooks give us AI on our data.",
+        "a": "Cortex is excellent for SQL-shaped analytics. Elastic's inference API plus ELSER plus hybrid retrieval is purpose-built for unstructured text and is what SREs and SOC analysts actually run against logs in seconds."
+      },
+      {
+        "q": "Why pay for another platform when Snowflake retains everything?",
+        "a": "The bill comparison usually flips when you count Snowflake credits burned by interactive log searches and dashboard refreshes. Elastic hot plus frozen tiers on object storage land cheaper at the access pattern SREs and SOCs actually use."
+      }
+    ],
+    "discovery_questions": [
+      "Are your SREs and SOC analysts querying Snowflake live, or do they have a separate operational tool?",
+      "What does Snowflake credit burn look like for ad-hoc log search and dashboard refresh?",
+      "Where does your incident response runbook expect sub-second pivots across logs, traces and identity?",
+      "What is your retention requirement and what mix of hot versus cold do you actually need?"
+    ],
+    "vertical": "direct_search_vector",
+    "industries": [
+      "fsi-banking",
+      "fsi-insurance",
+      "retail-ecommerce",
+      "tech-saas",
+      "healthcare-payers",
+      "media-streaming"
+    ],
+    "is_main_competitor": false,
+    "clincher": "Snowflake stores it. Elastic searches it."
   }
 ]

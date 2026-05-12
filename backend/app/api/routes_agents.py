@@ -342,6 +342,30 @@ async def run_post_meeting(meeting_id: str, language: str = "English", model: st
     Quick Research -> Pre-Meeting brief -> Post-Meeting output without a
     manual transcript upload.
     """
+    # Transcript-only artifacts (id pattern: `transcript-<slug>-<ts>`) come from
+    # the standalone Quick Research transcript analyzer; there is no source
+    # meeting to re-run. Return the persisted post-meeting doc instead so the
+    # meeting.html "Run Post-Meeting" CTA stays idempotent rather than 404-ing.
+    if meeting_id.startswith("transcript-"):
+        try:
+            es = get_es_repo()
+            if es.available and hasattr(es, "get_post_meeting"):
+                doc = es.get_post_meeting(meeting_id)
+                if doc:
+                    return doc
+        except Exception:
+            pass
+        disk = settings.runtime_dir / "post_meeting" / f"{meeting_id}.json"
+        if disk.exists():
+            try:
+                return json.loads(disk.read_text(encoding="utf-8"))
+            except Exception:
+                pass
+        raise HTTPException(
+            status_code=404,
+            detail=f"transcript artifact {meeting_id} has no stored post-meeting result. Re-upload the transcript from Quick Research.",
+        )
+
     try:
         return await _post.run({"meeting_id": meeting_id, "language": language, "model": model})
     except ValueError:
