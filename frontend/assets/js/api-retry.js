@@ -83,15 +83,34 @@
   // -------------------------------------------------------------------------
   async function fetchWithTimeout(url, init, timeoutMs, externalSignal) {
     const ctrl = new AbortController();
-    const onAbort = () => ctrl.abort();
+    let timedOut = false;
+    const onAbort = () => {
+      try { ctrl.abort(externalSignal && externalSignal.reason); }
+      catch (_) { ctrl.abort(); }
+    };
     if (externalSignal) {
-      if (externalSignal.aborted) ctrl.abort();
+      if (externalSignal.aborted) onAbort();
       else externalSignal.addEventListener("abort", onAbort, { once: true });
     }
-    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+    const timer = setTimeout(() => {
+      timedOut = true;
+      const reason = new Error("Request timed out after " + Math.round(timeoutMs / 1000) + "s");
+      reason.name = "TimeoutError";
+      try { ctrl.abort(reason); } catch (_) { ctrl.abort(); }
+    }, timeoutMs);
     try {
       const res = await fetch(url, Object.assign({}, init, { signal: ctrl.signal }));
       return res;
+    } catch (err) {
+      // Translate the opaque "signal is aborted without reason" DOMException
+      // into a clear message so the inline error and toast are readable.
+      if (timedOut) {
+        const e = new Error("Request timed out after " + Math.round(timeoutMs / 1000) + "s");
+        e.name = "AbortError";
+        e.__transient = true;
+        throw e;
+      }
+      throw err;
     } finally {
       clearTimeout(timer);
       if (externalSignal) externalSignal.removeEventListener("abort", onAbort);
