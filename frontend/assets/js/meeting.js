@@ -1059,7 +1059,7 @@ function renderPost(post) {
 
   // Action items section: List view (checkboxes) as default; Matrix as alternate.
   const actionsSec = el("details", { class: "post-section", open: "" });
-  const countEl = el("span", { class: "count" }, `${post.action_items.length}`);
+  const countEl = el("span", { class: "count" }, `${(post.action_items || []).length}`);
   const openBadgeEl = post.open_tasks_count > 0
     ? el("span", { class: "open-tasks-badge" }, `${post.open_tasks_count} open`)
     : null;

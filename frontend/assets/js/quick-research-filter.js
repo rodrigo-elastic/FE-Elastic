@@ -442,7 +442,12 @@
     // Transcript-only artifacts come back with company_id starting with
     // "transcript-" - flag them as 'transcript' stage so the dedicated
     // group is meaningful.
-    const isTranscript = String(b.company_id || "").startsWith("transcript-") && isPost;
+    // The backend writes transcript-only artifacts with meeting_id starting
+    // with "transcript-" while company_id stays the actual slugified customer.
+    // Check both so transcript artifacts land in the dedicated Kanban column.
+    const transcriptIdHit = String(b.meeting_id || b.id || "").startsWith("transcript-")
+      || String(b.company_id || "").startsWith("transcript-");
+    const isTranscript = transcriptIdHit && isPost;
     // Ad-hoc Quick Research briefs come back without company_id but with a
     // company_name. Slugify the name as a fallback id so the sanitizer's
     // "drop unknown customer" rule does not silently hide the user's own

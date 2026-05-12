@@ -25,6 +25,9 @@ from app.repositories import synthetic
 from app.repositories.elasticsearch_repo import get_repo as get_es_repo
 from app.services import transcript_parser
 from app.services import vtt_parser
+from app.utils.logging import get_logger
+
+log = get_logger(__name__)
 
 router = APIRouter(prefix="/agents", tags=["agents"])
 
@@ -282,7 +285,13 @@ async def run_pre_meeting_agent_research(req: AgentResearchRequest) -> Dict[str,
         json.dumps(record, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
     )
 
-    get_es_repo().index_brief(record)
+    # Best-effort ES indexing - the disk write above is authoritative for the
+    # demo path. Earlier this raised if ES was unreachable and 500'd the whole
+    # Quick Research call even though the brief had already been generated.
+    try:
+        get_es_repo().index_brief(record)
+    except Exception as exc:
+        log.warning("es.index_brief_failed", meeting_id=meeting_id, error=str(exc))
 
     return record
 
@@ -353,14 +362,14 @@ async def run_post_meeting(meeting_id: str, language: str = "English", model: st
                 doc = es.get_post_meeting(meeting_id)
                 if doc:
                     return doc
-        except Exception:
-            pass
+        except Exception as exc:
+            log.warning("es.get_post_meeting_failed", meeting_id=meeting_id, error=str(exc))
         disk = settings.runtime_dir / "post_meeting" / f"{meeting_id}.json"
         if disk.exists():
             try:
                 return json.loads(disk.read_text(encoding="utf-8"))
-            except Exception:
-                pass
+            except Exception as exc:
+                log.warning("post_meeting.disk_read_failed", meeting_id=meeting_id, error=str(exc))
         raise HTTPException(
             status_code=404,
             detail=f"transcript artifact {meeting_id} has no stored post-meeting result. Re-upload the transcript from Quick Research.",

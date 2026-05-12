@@ -560,11 +560,20 @@ function bindQuickResearch() {
     showProgress();
     try {
       let result;
+      // Pre-meeting agent can run 30-90s on cold start; raw apiPost has no
+      // timeout, which on a hung backend leaves the spinner forever. Route
+      // through the retry helper with an explicit 150s budget so failures
+      // surface as a toast instead of an infinite spin.
+      const llmOpts = { category: "llm", timeoutMs: 150000, retries: 0, silent: true, label: "Quick Research" };
       if (agentId) {
         body.agent_id = agentId;
-        result = await apiPost("/agents/pre-meeting/agent-research", body);
+        result = typeof window.apiPostWithRetry === "function"
+          ? await window.apiPostWithRetry("/agents/pre-meeting/agent-research", body, llmOpts)
+          : await apiPost("/agents/pre-meeting/agent-research", body);
       } else {
-        result = await apiPost("/agents/pre-meeting/ad-hoc", body);
+        result = typeof window.apiPostWithRetry === "function"
+          ? await window.apiPostWithRetry("/agents/pre-meeting/ad-hoc", body, llmOpts)
+          : await apiPost("/agents/pre-meeting/ad-hoc", body);
       }
       toast(`Brief generated for ${name}`, "ok");
       hideProgress();

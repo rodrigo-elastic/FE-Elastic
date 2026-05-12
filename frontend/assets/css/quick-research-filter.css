@@ -291,6 +291,17 @@
   justify-content: flex-end;
 }
 
+/* On mobile the parent .meetings li switches to flex-direction:column
+   (styles.css :1252); make sure the action cluster sits flush-left in that
+   layout instead of right-aligned in the middle of nowhere. */
+@media (max-width: 768px) {
+  .qr-rec-list .qr-rec .actions {
+    margin-left: 0;
+    justify-content: flex-start;
+    align-self: stretch;
+  }
+}
+
 .qr-rec-attendees {
   margin-top: 6px;
   font-size: 11px;
