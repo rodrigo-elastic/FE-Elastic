@@ -125,7 +125,25 @@
     let detail = String(res.status);
     try {
       const j = await res.json();
-      if (j && j.detail) detail = res.status + " - " + j.detail;
+      if (j && j.detail != null) {
+        // FastAPI/Pydantic 422 returns `detail` as a list of error objects.
+        // Flatten to "loc -> msg" so the toast is readable instead of
+        // "[object Object],[object Object]".
+        if (Array.isArray(j.detail)) {
+          const parts = j.detail.map((e) => {
+            if (e && typeof e === "object") {
+              const loc = Array.isArray(e.loc) ? e.loc.slice(-1)[0] : (e.loc || "");
+              return loc ? loc + ": " + (e.msg || "invalid") : (e.msg || JSON.stringify(e));
+            }
+            return String(e);
+          });
+          detail = res.status + " - " + parts.join("; ");
+        } else if (typeof j.detail === "string") {
+          detail = res.status + " - " + j.detail;
+        } else {
+          detail = res.status + " - " + JSON.stringify(j.detail);
+        }
+      }
     } catch (_) { /* body might not be JSON */ }
     const message = method + " " + path + " failed: " + detail;
     if (TRANSIENT_STATUSES.has(res.status)) {

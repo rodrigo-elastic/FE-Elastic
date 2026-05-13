@@ -52,14 +52,24 @@ function bindToolForm(formId, statusId, label, runner) {
     const labelHTML = submit.innerHTML;
     submit.disabled = true;
     submit.innerHTML = '<span class="spinner"></span> Running...';
-    status.textContent = "Calling Claude...";
+    // Compute tools (cost-calc, capacity) don't call Claude; show the right verb
+    // so users don't think they're being charged tokens for a deterministic calc.
+    const computeOnly = formId === "cost-form" || formId === "cap-form";
+    status.textContent = computeOnly ? "Computing..." : "Calling Claude...";
     try {
       await runner();
-      status.textContent = "";
+      status.textContent = "Done.";
+      // Scroll the result host into view so the user actually sees what changed.
+      // Helps when forms are inside `<details>` panels at the bottom of the page.
+      const resultId = formId.replace(/-form$/, "-result");
+      const resultHost = document.getElementById(resultId);
+      if (resultHost && resultHost.children.length) {
+        try { resultHost.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (_) {}
+      }
     } catch (e) {
       const safe = (typeof sanitizeError === "function") ? sanitizeError(e) : (e && e.message) || "unknown error";
-      toast(`Failed: ${safe}`, "bad");
-      status.textContent = "Failed; see toast.";
+      toast(`${label} failed: ${safe}`, "bad");
+      status.textContent = "Failed: " + safe;
     } finally {
       submit.disabled = false;
       submit.innerHTML = labelHTML;
@@ -246,8 +256,11 @@ async function runCostCalc() {
   if (!isNaN(cur) && cur > 0) body.current_spend_annual_usd = cur;
 
   // Pure-compute endpoint, 5s budget. Retry transient 5xx 1s/2s/4s.
+  // Compute endpoint: usually <500ms but cold-start on ECS can spike to ~6-8s.
+  // Bump budget to 15s and disable silent so any failure surfaces as a toast
+  // instead of leaving the FE staring at an empty result panel.
   const res = typeof window.apiPostWithRetry === "function"
-    ? await window.apiPostWithRetry("/tools/cost-calc", body, { category: "compute", silent: true, label: "Cost calc" })
+    ? await window.apiPostWithRetry("/tools/cost-calc", body, { category: "compute", timeoutMs: 15000, silent: false, label: "Cost calc" })
     : await apiPost("/tools/cost-calc", body);
   const host = document.getElementById("cost-result");
   clear(host);
@@ -380,9 +393,9 @@ async function runCapacity() {
     replicas: parseInt(document.getElementById("cap-replicas").value) || 1,
     peak_qps: parseInt(document.getElementById("cap-qps").value) || 100,
   };
-  // Pure-compute endpoint, 5s budget. Retry transient 5xx 1s/2s/4s.
+  // Same shape as cost-calc: bump to 15s and surface failures as a toast.
   const res = typeof window.apiPostWithRetry === "function"
-    ? await window.apiPostWithRetry("/tools/capacity", body, { category: "compute", silent: true, label: "Capacity" })
+    ? await window.apiPostWithRetry("/tools/capacity", body, { category: "compute", timeoutMs: 15000, silent: false, label: "Capacity" })
     : await apiPost("/tools/capacity", body);
   const host = document.getElementById("cap-result");
   clear(host);
