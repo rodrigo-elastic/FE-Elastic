@@ -879,9 +879,49 @@ def _create_one_dashboard(*, data_view_id: str, dashboard_id: str, title: str,
     return dashboard_id
 
 
+def _fe_industry_context() -> Dict[str, Any]:
+    return {
+        "id": "fsi-banking",
+        "name": "FSI banking fraud - account-takeover and rings",
+        "summary": ("Real-time fraud detection across retail and commercial "
+                    "banking. ML-driven rings, ATO, mule-account chains."),
+        "personas": [
+            {"role": "Head of Fraud",
+             "pain": "Detect ATO under 90s; rule-based stack is at 90 minutes."},
+            {"role": "CISO",
+             "pain": "Splunk renewal is 2x last year and DORA evidence is manual."},
+            {"role": "Chief Risk Officer",
+             "pain": "Cross-channel fraud is invisible: card, ACH, wire silos."},
+            {"role": "Compliance Officer",
+             "pain": "FRTB and DORA pulls take 3 weeks of audit-team time."},
+        ],
+        "regulations": ["DORA", "PCI DSS", "FRTB", "Basel III", "GDPR"],
+        "top_competitors": ["battlecard-splunk", "battlecard-datadog",
+                            "battlecard-sumologic"],
+    }
+
+
+def _fe_superset_panels(docs: Dict[str, List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
+    from app.services.scenarios.industry_factory import build_fe_superset_panels
+
+    cu_panels = _build_panels("customer", docs)
+    legacy_fe = _build_panels("fe", docs)
+    fe_only_extras = [p for p in legacy_fe
+                      if p.get("embeddableConfig", {}).get("savedVis", {})
+                          .get("type") == "markdown"
+                      and p.get("panelIndex") not in ("p_switch",)]
+    return build_fe_superset_panels(
+        _fe_industry_context(),
+        customer="Northwind Pay",
+        customer_panels=cu_panels,
+        fe_only_extras=fe_only_extras,
+        id_prefix="fsi-fe",
+    )
+
+
 def _create_dashboards(data_view_id: str,
                        docs: Dict[str, List[Dict[str, Any]]]) -> Dict[str, str]:
-    fe_panels = _build_panels("fe", docs)
+    fe_panels = _fe_superset_panels(docs)
     cu_panels = _build_panels("customer", docs)
     fe_id = _create_one_dashboard(
         data_view_id=data_view_id,

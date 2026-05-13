@@ -924,9 +924,50 @@ def _create_one_dashboard(*, data_view_id: str, dashboard_id: str, title: str,
     return dashboard_id
 
 
+def _fe_industry_context() -> Dict[str, Any]:
+    return {
+        "id": "gov-cdm",
+        "name": "Government CDM - federal continuous monitoring",
+        "summary": ("CISA CDM Dashboard requirement: asset, account, and "
+                    "config inventory with continuous drift detection."),
+        "personas": [
+            {"role": "Agency CISO",
+             "pain": "BOD 23-01 asset inventory across 12 sub-agencies is incomplete."},
+            {"role": "Mission Owner",
+             "pain": "Continuous ATO is still slide-deck driven, not telemetry-driven."},
+            {"role": "Compliance Officer",
+             "pain": "FISMA quarterly reports take 4 person-weeks."},
+            {"role": "CISA Liaison",
+             "pain": "Dashboard data is stale by the time it reaches CISA."},
+        ],
+        "regulations": ["FedRAMP High", "FISMA", "M-21-31", "NIST 800-53",
+                        "BOD 23-01", "CDM"],
+        "top_competitors": ["battlecard-splunk", "battlecard-microsoft-sentinel",
+                            "battlecard-chronicle", "battlecard-qradar"],
+    }
+
+
+def _fe_superset_panels(docs: Dict[str, List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
+    from app.services.scenarios.industry_factory import build_fe_superset_panels
+
+    cu_panels = _build_panels("customer", docs)
+    legacy_fe = _build_panels("fe", docs)
+    fe_only_extras = [p for p in legacy_fe
+                      if p.get("embeddableConfig", {}).get("savedVis", {})
+                          .get("type") == "markdown"
+                      and p.get("panelIndex") not in ("p_switch",)]
+    return build_fe_superset_panels(
+        _fe_industry_context(),
+        customer="Federal Continuity Agency",
+        customer_panels=cu_panels,
+        fe_only_extras=fe_only_extras,
+        id_prefix="gov-fe",
+    )
+
+
 def _create_dashboards(data_view_id: str,
                        docs: Dict[str, List[Dict[str, Any]]]) -> Dict[str, str]:
-    fe_panels = _build_panels("fe", docs)
+    fe_panels = _fe_superset_panels(docs)
     cu_panels = _build_panels("customer", docs)
     fe_id = _create_one_dashboard(
         data_view_id=data_view_id,

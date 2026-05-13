@@ -1717,15 +1717,58 @@ def _build_chart_panels(now: datetime, prefix: str,
     return panels
 
 
+def _fe_industry_context() -> Dict[str, Any]:
+    return {
+        "id": "noisy-microservice",
+        "name": "Noisy microservice - SRE observability",
+        "summary": ("A single microservice generating 10x the alert volume of "
+                    "its peers. Story: log-noise reduction + RCA in seconds."),
+        "personas": [
+            {"role": "SRE Lead",
+             "pain": "Alert fatigue is burning the on-call rotation."},
+            {"role": "Platform Engineering Director",
+             "pain": "MTTR is dominated by grep-across-tools, not by fix time."},
+            {"role": "VP Engineering",
+             "pain": "Datadog cardinality bill is up 40% YoY."},
+            {"role": "CTO",
+             "pain": "Observability stack is three vendors, no single pane."},
+        ],
+        "regulations": ["SOC 2", "ISO 27001"],
+        "top_competitors": ["battlecard-datadog", "battlecard-new-relic",
+                            "battlecard-honeycomb", "battlecard-grafana"],
+    }
+
+
+def _fe_superset_panels(now: datetime, data_view_id: str = None) -> List[Dict[str, Any]]:
+    from app.services.scenarios.industry_factory import build_fe_superset_panels
+
+    cu_panels = _build_customer_panels(now, data_view_id=data_view_id)
+    legacy_fe = _build_fe_panels_legacy(now, data_view_id=data_view_id)
+    fe_only_extras = [p for p in legacy_fe
+                      if p.get("embeddableConfig", {}).get("savedVis", {})
+                          .get("type") == "markdown"
+                      and p.get("panelIndex") not in ("fe-switch",)]
+    return build_fe_superset_panels(
+        _fe_industry_context(),
+        customer="Engineering platform team",
+        customer_panels=cu_panels,
+        fe_only_extras=fe_only_extras,
+        id_prefix="nm-fe",
+    )
+
+
 def get_dashboard_panels() -> List[Dict[str, Any]]:
-    """Backwards-compatible accessor used by the demo-data API. Returns the FE
-    view panel set (the historical default for SCENARIO_ID -> DASHBOARD_ID).
-    Vega-only build (no Lens) so this entry point keeps working even when the
-    data view has not been created yet."""
-    return _build_fe_panels(_now(), data_view_id=None)
+    """FE = customer panels (each prefaced by an FE value-callout) + legacy
+    FE-only markdown talk-track + discovery questions + say/do-not-say."""
+    return _fe_superset_panels(_now(), data_view_id=None)
 
 
 def _build_fe_panels(now: datetime, data_view_id: str = None) -> List[Dict[str, Any]]:
+    """Public entry used by the seed flow. Returns the FE superset."""
+    return _fe_superset_panels(now, data_view_id=data_view_id)
+
+
+def _build_fe_panels_legacy(now: datetime, data_view_id: str = None) -> List[Dict[str, Any]]:
     panels: List[Dict[str, Any]] = []
     panels.append(_markdown_panel("fe-switch", 0, 0, 48, 4, _md_switcher("fe"),
                                   "View switcher"))

@@ -1907,8 +1907,48 @@ def _build_panels(view: str) -> List[Dict[str, Any]]:
     return panels
 
 
+def _fe_industry_context() -> Dict[str, Any]:
+    return {
+        "id": "gdpr-audit",
+        "name": "GDPR audit - DSAR & breach reporting",
+        "summary": ("EU GDPR audit-readiness story: DSAR fulfillment, "
+                    "breach-notification timing, retention provenance."),
+        "personas": [
+            {"role": "DPO",
+             "pain": "DSAR fulfilment takes 12+ days; regulator allows 30."},
+            {"role": "CISO",
+             "pain": "72-hour breach-notification window is impossible to hit today."},
+            {"role": "Compliance Officer",
+             "pain": "Audit evidence pulls span 6+ systems, all manual."},
+            {"role": "General Counsel",
+             "pain": "GDPR Art. 30 records-of-processing are inconsistent across BUs."},
+        ],
+        "regulations": ["GDPR", "ePrivacy", "Schrems II", "DORA"],
+        "top_competitors": ["battlecard-splunk", "battlecard-microsoft-sentinel",
+                            "battlecard-sumologic"],
+    }
+
+
+def _fe_superset_panels() -> List[Dict[str, Any]]:
+    from app.services.scenarios.industry_factory import build_fe_superset_panels
+
+    cu_panels = _build_panels("customer")
+    legacy_fe = _build_panels("fe")
+    fe_only_extras = [p for p in legacy_fe
+                      if p.get("embeddableConfig", {}).get("savedVis", {})
+                          .get("type") == "markdown"
+                      and p.get("panelIndex") not in ("switcher",)]
+    return build_fe_superset_panels(
+        _fe_industry_context(),
+        customer="DPO office",
+        customer_panels=cu_panels,
+        fe_only_extras=fe_only_extras,
+        id_prefix="gdpr-fe",
+    )
+
+
 def get_dashboard_panels() -> List[Dict[str, Any]]:
-    return _build_panels("fe")
+    return _fe_superset_panels()
 
 
 # ============================================================ Kibana helpers =======
@@ -2033,7 +2073,7 @@ def _create_one_dashboard(
 
 
 def _create_dashboard(data_view_id: str) -> Dict[str, str]:
-    fe_panels = _build_panels("fe")
+    fe_panels = _fe_superset_panels()
     cu_panels = _build_panels("customer")
 
     fe_id = _create_one_dashboard(

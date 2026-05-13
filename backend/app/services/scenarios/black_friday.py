@@ -2095,17 +2095,65 @@ def _build_panels(view: str, specs: Dict[str, Dict[str, Any]],
     return panels
 
 
+def _flagship_industry_context() -> Dict[str, Any]:
+    """Stand-in industry config for the FE superset helpers. Black Friday is
+    a retail-ecommerce flagship; we hand-roll a context that drives the
+    discovery-questions and say/do-not-say blocks correctly."""
+    return {
+        "id": "retail-ecommerce",
+        "name": "Retail e-commerce - Black Friday",
+        "summary": ("Peak-traffic outage on the busiest shopping day. "
+                    "Observability + revenue-protection story."),
+        "personas": [
+            {"role": "VP Engineering",
+             "pain": "Cart abandonment during peak is costing us seven figures per minute."},
+            {"role": "SRE Lead",
+             "pain": "p99 spikes hidden behind aggregate dashboards in Datadog."},
+            {"role": "CFO",
+             "pain": "Outage MTTR maps directly to lost revenue and we cannot quantify it."},
+            {"role": "CISO",
+             "pain": "PCI-DSS evidence retention is expensive on the legacy SIEM."},
+        ],
+        "regulations": ["PCI DSS", "SOC 2", "GDPR"],
+        "top_competitors": ["battlecard-datadog", "battlecard-splunk",
+                            "battlecard-new-relic"],
+    }
+
+
 def get_dashboard_panels(lens_dv_id: Optional[str] = None) -> List[Dict[str, Any]]:
-    """FE-view dashboard panels. Kept for backwards compatibility with any
-    existing caller that imports this function. Customer view uses the
-    parallel `get_customer_panels()` companion. Pass `lens_dv_id` to upgrade
-    the p99 and funnel panels to live Lens visualizations."""
+    """FE-view dashboard panels.
+
+    FE = strict superset of the customer view: every customer panel is shown,
+    each prefaced by an FE value-callout markdown panel, followed by the
+    existing FE-only talk-track and the two new FE-only blocks (discovery
+    questions, say/do-not-say). Built by composing the customer panel list
+    via `get_customer_panels()` and the existing `_build_panels("fe", ...)`
+    output (which carries the FE-specific markdown framing)."""
+    from app.services.scenarios.industry_factory import build_fe_superset_panels
+
     specs = _shared_vega_specs()
     kpi_md = _kpi_markdown()
     fe_url = _dashboard_url(DASHBOARD_ID)
     customer_url = _dashboard_url(CUSTOMER_DASHBOARD_ID)
-    return _build_panels("fe", specs, kpi_md, fe_url, customer_url,
-                         lens_dv_id=lens_dv_id)
+    # Customer panels are the canonical inner block (do not mutate).
+    cu_panels = _build_panels("customer", specs, kpi_md, fe_url, customer_url,
+                              lens_dv_id=lens_dv_id)
+    # FE-only extras: take the existing FE panel set and keep only the
+    # markdown panels (talk track, MEDDPICC) - drop charts that are already
+    # in the customer view to avoid duplication.
+    legacy_fe = _build_panels("fe", specs, kpi_md, fe_url, customer_url,
+                              lens_dv_id=lens_dv_id)
+    fe_only_extras = [p for p in legacy_fe
+                      if p.get("embeddableConfig", {}).get("savedVis", {})
+                          .get("type") == "markdown"
+                      and p.get("panelIndex") not in ("switcher",)]
+    return build_fe_superset_panels(
+        _flagship_industry_context(),
+        customer="Lumen Apparel Digital",
+        customer_panels=cu_panels,
+        fe_only_extras=fe_only_extras,
+        id_prefix="bf-fe",
+    )
 
 
 def get_customer_panels(lens_dv_id: Optional[str] = None) -> List[Dict[str, Any]]:

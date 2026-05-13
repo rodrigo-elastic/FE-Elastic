@@ -956,9 +956,49 @@ def _create_one_dashboard(*, data_view_id: str, dashboard_id: str, title: str,
     return dashboard_id
 
 
+def _fe_industry_context() -> Dict[str, Any]:
+    return {
+        "id": "healthcare-hipaa",
+        "name": "Healthcare HIPAA audit - PHI access logging",
+        "summary": ("HIPAA Security Rule audit: PHI access provenance, "
+                    "break-the-glass events, OCR-defensible evidence."),
+        "personas": [
+            {"role": "CISO",
+             "pain": "OCR audit notice arrives; we have 10 days to produce evidence."},
+            {"role": "Compliance Officer",
+             "pain": "HIPAA Sec 164.312(b) audit logs are split across EHR, IAM, network."},
+            {"role": "Privacy Officer",
+             "pain": "Break-the-glass anomalies are invisible without manual review."},
+            {"role": "CIO",
+             "pain": "EHR latency is up; clinicians blame our analytics infra."},
+        ],
+        "regulations": ["HIPAA", "HITECH", "21st Century Cures Act", "GDPR"],
+        "top_competitors": ["battlecard-splunk", "battlecard-microsoft-sentinel",
+                            "battlecard-imprivata"],
+    }
+
+
+def _fe_superset_panels(docs: Dict[str, List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
+    from app.services.scenarios.industry_factory import build_fe_superset_panels
+
+    cu_panels = _build_panels("customer", docs)
+    legacy_fe = _build_panels("fe", docs)
+    fe_only_extras = [p for p in legacy_fe
+                      if p.get("embeddableConfig", {}).get("savedVis", {})
+                          .get("type") == "markdown"
+                      and p.get("panelIndex") not in ("p_switch",)]
+    return build_fe_superset_panels(
+        _fe_industry_context(),
+        customer="Crestline Health Network",
+        customer_panels=cu_panels,
+        fe_only_extras=fe_only_extras,
+        id_prefix="hc-fe",
+    )
+
+
 def _create_dashboards(data_view_id: str,
                        docs: Dict[str, List[Dict[str, Any]]]) -> Dict[str, str]:
-    fe_panels = _build_panels("fe", docs)
+    fe_panels = _fe_superset_panels(docs)
     cu_panels = _build_panels("customer", docs)
     fe_id = _create_one_dashboard(
         data_view_id=data_view_id,

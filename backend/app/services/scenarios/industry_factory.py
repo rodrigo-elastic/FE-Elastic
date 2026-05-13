@@ -555,63 +555,481 @@ def _md_customer_outcomes(industry: Dict[str, Any]) -> str:
             "change in the primary KPI.")
 
 
+# ---------------------------------------------------------------- FE superset helpers
+
+# Title-keyword based value-callout lookup. Each entry is a 2-3 line FE-value
+# blurb that explains why the chart matters in the conversation and the
+# talking point to drop. Keywords are matched case-insensitively against the
+# panel title. First match wins; falls through to a generic callout.
+_FE_CALLOUT_RULES: List[Tuple[str, Tuple[str, str]]] = [
+    ("severity", (
+        "Severity mix is your noise-vs-signal anchor",
+        "Use this when the customer brags about alert volume. Tie high+critical "
+        "share to the analyst hours they are burning today and pivot into the "
+        "Splunk-vs-Elastic cost-per-detection talk track.",
+    )),
+    ("trend", (
+        "30-day trend is the post-Elastic inflection",
+        "Day-18 is the deliberate rollout cut. Walk left-to-right, name the "
+        "operational pain in the first half, then claim the delta as quantified "
+        "value. Pair with the KPI in the proof-points block.",
+    )),
+    ("segment", (
+        "Segment breakdown surfaces the wedge",
+        "Find the worst segment, anchor it to the persona who owns it, and use "
+        "it as the land-and-expand wedge for phase 2. Avoid quoting absolute "
+        "numbers - this is synthetic.",
+    )),
+    ("regulation", (
+        "Regulatory dimension is your compliance moat",
+        "Lead with the regulation the customer named in discovery. Use this to "
+        "redirect away from feature-by-feature comparisons and toward audit-cost "
+        "reduction (the angle Splunk and Datadog can not easily counter).",
+    )),
+    ("compliance", (
+        "Compliance posture - the SIEM-replacement door opener",
+        "Anchor on the named regulation, then pivot to retention cost. Most "
+        "Splunk shops are paying premium for cold data that Elastic stores at "
+        "1/5 the price with searchable snapshots.",
+    )),
+    ("competitive", (
+        "Competitive map - position before they price-shop",
+        "Place yourself in the lower-right (low cost, high fit). If the customer "
+        "is on Splunk or Datadog, that is the displacement story. If they are "
+        "on Microsoft Sentinel, lead with feature-fit, not price.",
+    )),
+    ("proof point", (
+        "Proof point chart - the receipt",
+        "This is the 'show me the money' panel. Use the Baseline -> With Elastic "
+        "delta as the SKO-grade soundbite. Reinforce with one named reference "
+        "from the industry battle-pack.",
+    )),
+    ("recovery", (
+        "Recovery timeline - tells the MTTR story",
+        "Use this to anchor MTTR conversations. The shape of the curve is the "
+        "demo - widen the y-axis to make the recovery slope obvious.",
+    )),
+    ("funnel", (
+        "Funnel chart - business impact in dollars",
+        "Translate every dropped session into revenue. CFO-grade language: do "
+        "not say 'p99' here, say 'we recover $X per minute of avoided "
+        "abandonment'.",
+    )),
+    ("error", (
+        "Errors by service - finds the blast radius",
+        "Use this to demonstrate root-cause-in-seconds against Splunk's "
+        "search-language gymnastics. Click into a service to show pivoting.",
+    )),
+    ("p99", (
+        "p99 latency - the SRE proof panel",
+        "Engineering buyers care about this curve. Anchor on the SLO line; the "
+        "spike is where the customer is losing trust today.",
+    )),
+    ("cart", (
+        "Cart value lost - revenue at risk",
+        "CFO panel. Convert minutes-of-outage to dollars; this is the wedge "
+        "that gets observability funded outside of the SRE budget.",
+    )),
+    ("by service", (
+        "By-service breakdown - blast radius story",
+        "Use to localise the incident to one service and demonstrate the "
+        "drill-down speed Elastic gives vs. log-grepping in Splunk.",
+    )),
+    ("by job", (
+        "ML job breakdown - shows we did the modeling",
+        "Reinforces that the alerts are not rule-based. Tie this to the fraud "
+        "false-positive rate; most rule-based shops are at 20-30%.",
+    )),
+    ("by ring", (
+        "Fraud ring view - the AML story",
+        "Use the ring colour to demo graph-style pivots in Elastic. This is "
+        "the panel that closes the Head of Fraud persona.",
+    )),
+    ("country", (
+        "Geo distribution - shows the surface area",
+        "Lead with the unexpected country. Two beats of silence, then the "
+        "Elastic native geo-IP story.",
+    )),
+    ("loss prevented", (
+        "Loss prevented vs realised - the CFO close",
+        "Subtract realised from prevented for the dollar number. Round to a "
+        "nice integer; do not over-precision in front of finance.",
+    )),
+    ("volume", (
+        "Volume over time - establishes the workload",
+        "Use to right-size the proposal. The peak-to-trough ratio tells you "
+        "whether the customer needs hot tier or can land mostly on frozen.",
+    )),
+    ("alerts", (
+        "Alerts panel - your detection efficacy proof",
+        "Anchor on the high+critical bucket. Quote the customer's own SOC "
+        "intake number back to them; this panel turns it into headcount math.",
+    )),
+    ("outcome", (
+        "Outcomes panel - the close-the-loop slide",
+        "Each row is a CFO-grade promise. Read two out loud, then ask which "
+        "one their board would buy this quarter.",
+    )),
+    ("kpi", (
+        "KPI panel - the receipts board",
+        "Use as the final summary; tie each line back to a chart above. This "
+        "is the slide they will screenshot to their boss.",
+    )),
+    ("overview", (
+        "Overview panel - sets the room",
+        "Read the headline aloud, name the customer (fictional), and let it "
+        "anchor the next 8 minutes of demo.",
+    )),
+]
+
+
+def _fe_callout_for_title(title: str) -> Tuple[str, str]:
+    t = (title or "").lower()
+    for kw, payload in _FE_CALLOUT_RULES:
+        if kw in t:
+            return payload
+    return (
+        "FE value callout",
+        "Use this chart to anchor the next question; name the persona who feels "
+        "the pain and tie the shape of the curve to a dollar number or a "
+        "regulation they already mentioned.",
+    )
+
+
+def _value_callout_markdown(title: str, body: str) -> str:
+    """Styled markdown body for an FE value callout. ASCII dashes only."""
+    return (
+        f"**FE value -> {title}**\n\n"
+        f"> {body}\n\n"
+        "_Pair the next chart with this talking point. Keep it 15 seconds._"
+    )
+
+
+def _value_callout_panel(panel_id: str, x: int, y: int, w: int, h: int,
+                         for_title: str) -> Dict[str, Any]:
+    """Build a small markdown panel that prefaces a customer chart with the
+    FE-value talk track. Picks the body via title-keyword heuristics."""
+    title, body = _fe_callout_for_title(for_title)
+    md = _value_callout_markdown(title, body)
+    return _bf._markdown_panel(panel_id, x, y, w, h, md, f"FE value: {title}")
+
+
+def _discovery_questions_md(industry: Dict[str, Any]) -> str:
+    personas = industry.get("personas") or []
+    lines = [
+        "### Discovery questions (use these first)",
+        "",
+        "Open with the persona's pain, then ask the question. Listen for the "
+        "regulation, the incumbent vendor, and the renewal date.",
+        "",
+    ]
+    for p in personas[:4]:
+        role = p.get("role", "Stakeholder")
+        pain = p.get("pain", "")
+        question = _persona_question(role, pain)
+        lines.append(f"- **{role}** - _{pain}_")
+        lines.append(f"  - Ask: {question}")
+    if not personas:
+        lines.append("- (no persona catalog registered for this industry)")
+    return "\n".join(lines)
+
+
+def _persona_question(role: str, pain: str) -> str:
+    role_l = role.lower()
+    if "ciso" in role_l or "security" in role_l:
+        return ("What did your last SIEM renewal cost, and what would you do "
+                "with a 40-60% reduction in that line item?")
+    if "compliance" in role_l or "audit" in role_l:
+        return ("How many person-weeks did your last audit evidence pull take, "
+                "and which control still requires manual screenshots?")
+    if "observ" in role_l or "sre" in role_l or "platform" in role_l:
+        return ("Where is your team today on time-to-detect for a service-"
+                "level incident, and what does that cost you per outage hour?")
+    if "fraud" in role_l:
+        return ("What is your current false-positive rate on fraud alerts, "
+                "and what is it costing you in analyst time?")
+    if "cio" in role_l or "data" in role_l or "search" in role_l:
+        return ("Which customer-facing search experience is most expensive "
+                "today, and how is that latency tracked against revenue?")
+    if "owner" in role_l or "manager" in role_l or "director" in role_l:
+        return ("If you could collapse two of your current tools onto one "
+                "platform this fiscal year, which two would they be?")
+    return ("Which of the pains you just described would your board pay to "
+            "remove this quarter?")
+
+
+def _say_donot_say_md(industry: Dict[str, Any]) -> str:
+    competitors = industry.get("top_competitors") or []
+    has_splunk = any("splunk" in c.lower() for c in competitors)
+    has_datadog = any("datadog" in c.lower() for c in competitors)
+    has_sentinel = any("sentinel" in c.lower() for c in competitors)
+    say: List[str] = [
+        "Frame Elastic as the **search-powered platform** under SIEM, "
+        "observability, and customer search - one engine, three jobs.",
+        "Lead with the **named regulation** the customer raised, not with "
+        "features. Compliance language closes deals; feature lists do not.",
+        "When pricing comes up, anchor on **TCO per ingested GB** plus "
+        "**searchable snapshots**, not list price per node.",
+    ]
+    do_not: List[str] = [
+        "Do not say 'Elastic is cheap'. Say 'Elastic gives you predictable "
+        "cost at scale'. Cheap implies trade-offs the buyer will hunt for.",
+        "Do not bash the incumbent by name in the room. Say 'the legacy "
+        "platform' or 'your current SIEM' and let the customer fill the gap.",
+        "Do not over-promise on out-of-the-box ML. Say 'pre-built jobs you "
+        "can tune in a day' - it sets the right expectation.",
+    ]
+    if has_splunk:
+        say.append("With Splunk in the room: lead with **ingest cost per TB** "
+                   "and **SPL-to-ES|QL translation** (we have the tool).")
+        do_not.append("Do not promise a 1:1 SPL drop-in. The translation is "
+                      "fast but it is a migration, not a copy-paste.")
+    if has_datadog:
+        say.append("With Datadog in the room: lead with **cardinality cost** "
+                   "and **logs-on-the-same-platform-as-traces**.")
+        do_not.append("Do not get pulled into APM-vs-APM line-by-line. Re-frame "
+                      "to 'one query layer across logs, metrics, traces'.")
+    if has_sentinel:
+        say.append("With Sentinel in the room: lead with **multi-cloud** and "
+                   "**non-Azure data sources** (where Sentinel ingest is "
+                   "punitive).")
+        do_not.append("Do not attack the E5 bundle economics. You will lose. "
+                      "Re-frame to capability gaps in non-Microsoft estates.")
+    say_lines = "\n".join(f"- {s}" for s in say)
+    do_not_lines = "\n".join(f"- {s}" for s in do_not)
+    return (
+        "### Say this / do not say this (pre-sales playbook)\n\n"
+        "Built from Search 101 + the Observability How-NOT-to-Sell deck. "
+        "Pin this open during the demo.\n\n"
+        "**Say this:**\n\n" + say_lines + "\n\n"
+        "**Do not say this:**\n\n" + do_not_lines
+    )
+
+
+def _fe_intro_md(industry: Dict[str, Any], customer: str,
+                 customer_panel_count: int, fe_only_count: int) -> str:
+    return (
+        "## FE dashboard - superset of the customer view\n\n"
+        f"**Customer:** {customer}  \n"
+        f"_{industry.get('summary','')}_\n\n"
+        "This dashboard is the **strict superset** of the customer dashboard. "
+        f"Every one of the {customer_panel_count} customer panels is shown "
+        "below, each prefaced by a teal **FE value callout** that explains "
+        "why the chart matters in the conversation and the talking point to "
+        f"drop. Below the customer panels you will find {fe_only_count} "
+        "FE-only blocks: competitive landscape, compliance posture, proof "
+        "points, discovery questions, and the say-this/do-not-say-this "
+        "playbook.\n\n"
+        "Walk top-to-bottom in the demo. Each callout is a 15-second beat; "
+        "each chart is a 45-second beat."
+    )
+
+
+def _wrap_customer_panels_with_callouts(
+    customer_panels: List[Dict[str, Any]],
+    starting_y: int = 0,
+    id_prefix: str = "fe-wrap",
+) -> Tuple[List[Dict[str, Any]], int]:
+    """Take the unmodified customer panels and return a new list where each
+    panel is preceded by a small FE-value callout markdown panel. Vertical
+    layout is rebuilt: every customer row gets a 5-unit-tall callout slab on
+    top spanning the full width (w=48). The customer panel is shifted down
+    and its grid x/y are rewritten so the new layout flows cleanly.
+
+    Returns (panels, next_y).
+
+    The input list is NOT mutated; we deep-copy each panel.
+    """
+    out: List[Dict[str, Any]] = []
+    y = starting_y
+    # Walk customer panels in declared order. When two panels share the same
+    # original y (a side-by-side row), they share one callout slab.
+    i = 0
+    n = len(customer_panels)
+    seen_rows: List[List[Dict[str, Any]]] = []
+    cur_row: List[Dict[str, Any]] = []
+    last_y = None
+    for p in customer_panels:
+        py = p.get("gridData", {}).get("y", 0)
+        if last_y is None or py == last_y:
+            cur_row.append(p)
+        else:
+            seen_rows.append(cur_row)
+            cur_row = [p]
+        last_y = py
+    if cur_row:
+        seen_rows.append(cur_row)
+
+    cidx = 0
+    for row_idx, row in enumerate(seen_rows):
+        # One callout slab per row. Title comes from the first panel in the row.
+        first_title = row[0].get("title", "") or "panel"
+        cidx += 1
+        callout = _value_callout_panel(
+            f"{id_prefix}-co-{row_idx + 1}", 0, y, 48, 5, first_title,
+        )
+        out.append(callout)
+        y += 5
+        # Find the tallest panel in the row to advance y after the row.
+        row_max_h = 0
+        for j, panel in enumerate(row):
+            # Deep-copy via json round-trip so we can safely rewrite gridData.
+            np = json.loads(json.dumps(panel))
+            gd = np.get("gridData", {})
+            orig_w = gd.get("w", 24)
+            orig_h = gd.get("h", 12)
+            orig_x = gd.get("x", 0)
+            # Preserve relative x but stack rows at our new y.
+            new_x = orig_x
+            new_id = f"{id_prefix}-{row_idx + 1}-{j + 1}"
+            gd["x"] = new_x
+            gd["y"] = y
+            gd["i"] = new_id
+            gd["w"] = orig_w
+            gd["h"] = orig_h
+            np["gridData"] = gd
+            np["panelIndex"] = new_id
+            out.append(np)
+            if orig_h > row_max_h:
+                row_max_h = orig_h
+        y += row_max_h
+    return out, y
+
+
+def build_fe_superset_panels(
+    industry: Dict[str, Any],
+    customer: str,
+    customer_panels: List[Dict[str, Any]],
+    fe_only_extras: List[Dict[str, Any]] = None,
+    id_prefix: str = "fe",
+) -> List[Dict[str, Any]]:
+    """Compose the full FE-side superset dashboard.
+
+    Layout: [FE intro (full width)] + [for each customer row: callout + row] +
+    [fe_only_extras...] + [Discovery questions (full width)] +
+    [Say / do not say (full width)].
+
+    `customer_panels` is treated as immutable. `fe_only_extras` is a list of
+    pre-built panels (markdown or vega); their gridData y is rewritten so
+    they stack below the customer panels.
+    """
+    fe_only_extras = fe_only_extras or []
+    # 1) Intro panel.
+    intro_md = _fe_intro_md(industry, customer,
+                            customer_panel_count=len(customer_panels),
+                            fe_only_count=len(fe_only_extras) + 2)
+    panels: List[Dict[str, Any]] = []
+    y = 0
+    panels.append(_bf._markdown_panel(f"{id_prefix}-intro", 0, y, 48, 10,
+                                      intro_md, "FE superset - how to use"))
+    y += 10
+
+    # 2) Customer panels, each row prefaced with an FE-value callout.
+    wrapped, y = _wrap_customer_panels_with_callouts(
+        customer_panels, starting_y=y, id_prefix=f"{id_prefix}-cu",
+    )
+    panels.extend(wrapped)
+
+    # 3) FE-only extras (re-stacked).
+    for i, p in enumerate(fe_only_extras):
+        np = json.loads(json.dumps(p))
+        gd = np.get("gridData", {})
+        orig_w = gd.get("w", 48)
+        orig_h = gd.get("h", 10)
+        orig_x = gd.get("x", 0)
+        # Side-by-side panels in extras share the same original y; we honour
+        # that by detecting a non-zero x to mean "same row as the previous".
+        if i > 0 and orig_x > 0:
+            # Reuse previous y by stepping back one row height.
+            gd["y"] = y - orig_h
+        else:
+            gd["y"] = y
+            y += orig_h
+        new_id = f"{id_prefix}-extra-{i + 1}"
+        gd["i"] = new_id
+        gd["x"] = orig_x
+        gd["w"] = orig_w
+        gd["h"] = orig_h
+        np["gridData"] = gd
+        np["panelIndex"] = new_id
+        panels.append(np)
+
+    # 4) Discovery questions block.
+    disc_md = _discovery_questions_md(industry)
+    panels.append(_bf._markdown_panel(f"{id_prefix}-disc", 0, y, 48, 12,
+                                      disc_md, "Discovery questions"))
+    y += 12
+
+    # 5) Say / do not say block.
+    sd_md = _say_donot_say_md(industry)
+    panels.append(_bf._markdown_panel(f"{id_prefix}-say", 0, y, 48, 14,
+                                      sd_md, "Say this / do not say this"))
+    y += 14
+
+    return panels
+
+
 # ---------------------------------------------------------------- Panel builders ---
 
 def _panel_id(prefix: str, i: int) -> str:
     return f"{prefix}-p{i}"
 
 
+def _build_fe_only_extras(industry: Dict[str, Any], customer: str,
+                          metrics: List[Tuple[str, float, float, str]],
+                          segments: List[str],
+                          high_stake: bool) -> List[Dict[str, Any]]:
+    """FE-only extras (competitive landscape, compliance, proof points, wins).
+    These are appended after the customer-superset block. The y coordinates
+    are placeholders; build_fe_superset_panels re-stacks them."""
+    regs = industry.get("regulations", [])
+    comp = industry.get("top_competitors", [])
+    primary_metric, mean, _s, _u = metrics[0]
+    extras: List[Dict[str, Any]] = []
+    extras.append(_bf._vega_panel(_panel_id("fe-comp", 1), 0, 0, 24, 12,
+                                  "Competitive landscape",
+                                  _vega_competitor_landscape(comp)))
+    extras.append(_bf._markdown_panel(_panel_id("fe-md-comp", 2), 24, 0, 24, 12,
+                                      _md_competitive(industry),
+                                      "Competitive talk track"))
+    extras.append(_bf._vega_panel(_panel_id("fe-reg", 3), 0, 0, 24, 12,
+                                  "Compliance dimensions",
+                                  _vega_regulation_counts(regs or ["n/a"])))
+    extras.append(_bf._markdown_panel(_panel_id("fe-md-comp2", 4), 24, 0, 24, 12,
+                                      _md_compliance(industry),
+                                      "Compliance posture"))
+    extras.append(_bf._markdown_panel(_panel_id("fe-md-wins", 5), 0, 0, 24, 10,
+                                      _md_elastic_wins(industry),
+                                      "Elastic wins when"))
+    extras.append(_bf._markdown_panel(_panel_id("fe-md-kpi", 6), 24, 0, 24, 10,
+                                      _md_kpi_proof(industry),
+                                      "Proof points"))
+    extras.append(_bf._vega_panel(_panel_id("fe-proof", 7), 0, 0, 48, 10,
+                                  f"Proof point: {primary_metric}",
+                                  _vega_proof_point(primary_metric, mean)))
+    if high_stake and len(metrics) > 1:
+        second = metrics[1][0]
+        extras.append(_bf._vega_panel(_panel_id("fe-proof2", 8), 0, 0, 24, 10,
+                                      f"Proof point: {second}",
+                                      _vega_proof_point(second, metrics[1][1])))
+        extras.append(_bf._vega_panel(_panel_id("fe-trend", 9), 24, 0, 24, 10,
+                                      f"30-day trend: {primary_metric}",
+                                      _vega_kpi_trend(primary_metric, mean)))
+    return extras
+
+
 def _build_fe_panels(industry: Dict[str, Any], customer: str,
                      metrics: List[Tuple[str, float, float, str]],
                      segments: List[str],
                      high_stake: bool) -> List[Dict[str, Any]]:
-    regs = industry.get("regulations", [])
-    comp = industry.get("top_competitors", [])
-    primary_metric, mean, _s, _u = metrics[0]
-    panels: List[Dict[str, Any]] = []
-    y = 0
-
-    panels.append(_bf._markdown_panel(_panel_id("fe-md-pain", 1), 0, y, 48, 8,
-                                      _md_pain_headline(industry, customer),
-                                      "Customer pain"))
-    y += 8
-    panels.append(_bf._vega_panel(_panel_id("fe-comp", 2), 0, y, 24, 12,
-                                  "Competitive landscape",
-                                  _vega_competitor_landscape(comp)))
-    panels.append(_bf._markdown_panel(_panel_id("fe-md-comp", 3), 24, y, 24, 12,
-                                      _md_competitive(industry),
-                                      "Competitive talk track"))
-    y += 12
-    panels.append(_bf._vega_panel(_panel_id("fe-reg", 4), 0, y, 24, 12,
-                                  "Compliance dimensions",
-                                  _vega_regulation_counts(regs or ["n/a"])))
-    panels.append(_bf._markdown_panel(_panel_id("fe-md-comp2", 5), 24, y, 24, 12,
-                                      _md_compliance(industry),
-                                      "Compliance posture"))
-    y += 12
-    panels.append(_bf._markdown_panel(_panel_id("fe-md-wins", 6), 0, y, 24, 10,
-                                      _md_elastic_wins(industry),
-                                      "Elastic wins when"))
-    panels.append(_bf._markdown_panel(_panel_id("fe-md-kpi", 7), 24, y, 24, 10,
-                                      _md_kpi_proof(industry),
-                                      "Proof points"))
-    y += 10
-    panels.append(_bf._vega_panel(_panel_id("fe-proof", 8), 0, y, 48, 10,
-                                  f"Proof point: {primary_metric}",
-                                  _vega_proof_point(primary_metric, mean)))
-    y += 10
-    if high_stake:
-        # Two extra proof panels for the deluxe industries.
-        if len(metrics) > 1:
-            second = metrics[1][0]
-            panels.append(_bf._vega_panel(_panel_id("fe-proof2", 9), 0, y, 24, 10,
-                                          f"Proof point: {second}",
-                                          _vega_proof_point(second, metrics[1][1])))
-        panels.append(_bf._vega_panel(_panel_id("fe-trend", 10), 24, y, 24, 10,
-                                      f"30-day trend: {primary_metric}",
-                                      _vega_kpi_trend(primary_metric, mean)))
-        y += 10
-    return panels
+    """FE dashboard = customer dashboard (each panel prefaced by a value
+    callout) + FE-only extras + discovery questions + say/do-not-say."""
+    cu_panels = _build_customer_panels(industry, customer, metrics, segments,
+                                       high_stake)
+    extras = _build_fe_only_extras(industry, customer, metrics, segments,
+                                   high_stake)
+    return build_fe_superset_panels(industry, customer, cu_panels,
+                                    fe_only_extras=extras, id_prefix="fe-ind")
 
 
 def _build_customer_panels(industry: Dict[str, Any], customer: str,

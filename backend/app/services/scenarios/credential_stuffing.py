@@ -2157,11 +2157,50 @@ def _build_panels(view: str, lens_data_view_id: Optional[str] = None) -> List[Di
     return panels
 
 
+def _fe_industry_context() -> Dict[str, Any]:
+    return {
+        "id": "credstuff",
+        "name": "Credential stuffing - SOC defender",
+        "summary": ("Credential-stuffing wave detected via ML jobs across "
+                    "logins, ASN, and country dimensions."),
+        "personas": [
+            {"role": "CISO",
+             "pain": "Time-to-detect ATO is measured in hours, not seconds."},
+            {"role": "SOC Lead",
+             "pain": "Rule-based alerts in the legacy SIEM generate 30% false-positives."},
+            {"role": "Head of Fraud",
+             "pain": "Linking login anomalies to downstream fraud is manual today."},
+            {"role": "Compliance Officer",
+             "pain": "PCI DSS and DORA evidence pulls are 2-3 weeks of manual lift."},
+        ],
+        "regulations": ["PCI DSS", "DORA", "GDPR", "MITRE T1110.004"],
+        "top_competitors": ["battlecard-splunk", "battlecard-microsoft-sentinel",
+                            "battlecard-sumologic"],
+    }
+
+
+def _fe_superset_panels(lens_data_view_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    from app.services.scenarios.industry_factory import build_fe_superset_panels
+
+    cu_panels = _build_panels("customer", lens_data_view_id=lens_data_view_id)
+    legacy_fe = _build_panels("fe", lens_data_view_id=lens_data_view_id)
+    fe_only_extras = [p for p in legacy_fe
+                      if p.get("embeddableConfig", {}).get("savedVis", {})
+                          .get("type") == "markdown"
+                      and p.get("panelIndex") not in ("p_switch",)]
+    return build_fe_superset_panels(
+        _fe_industry_context(),
+        customer="SOC team",
+        customer_panels=cu_panels,
+        fe_only_extras=fe_only_extras,
+        id_prefix="cs-fe",
+    )
+
+
 def get_dashboard_panels() -> List[Dict[str, Any]]:
-    """Backwards-compatible: returns the FE-view panel layout (same panels the
-    legacy dashboard rendered, now with switcher + new charts). Without a
-    Lens-capable data view this falls back to the all-Vega layout."""
-    return _build_panels("fe", lens_data_view_id=None)
+    """FE = customer panels (each prefaced by an FE value-callout) + the
+    legacy FE-only markdown talk-track + discovery questions + say/do-not-say."""
+    return _fe_superset_panels(lens_data_view_id=None)
 
 
 # ============================================================ Kibana helpers =======
@@ -2310,7 +2349,7 @@ def _create_dashboard(
     When `lens_data_view_id` is provided the two highest-value panels render
     as Lens visualisations using that data view; otherwise every panel falls
     back to the legacy inline-data Vega layout."""
-    fe_panels = _build_panels("fe", lens_data_view_id=lens_data_view_id)
+    fe_panels = _fe_superset_panels(lens_data_view_id=lens_data_view_id)
     cu_panels = _build_panels("customer", lens_data_view_id=lens_data_view_id)
 
     fe_id = _create_one_dashboard(

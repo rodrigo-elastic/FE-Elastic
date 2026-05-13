@@ -1769,9 +1769,49 @@ def _build_panels(view: str) -> List[Dict[str, Any]]:
     return panels
 
 
+def _fe_industry_context() -> Dict[str, Any]:
+    return {
+        "id": "supply-chain",
+        "name": "Supply chain attack - DevSecOps response",
+        "summary": ("npm/SolarWinds-class supply chain compromise: detect the "
+                    "package, trace the blast radius, evict the implant."),
+        "personas": [
+            {"role": "CISO",
+             "pain": "Cannot answer 'are we exposed?' inside the 24h SEC disclosure window."},
+            {"role": "Head of AppSec",
+             "pain": "Package SBOM is in 3 systems; no single query layer."},
+            {"role": "DevSecOps Lead",
+             "pain": "Build-system telemetry is not joined to runtime telemetry."},
+            {"role": "Compliance Officer",
+             "pain": "EO 14028 / FedRAMP evidence pulls take weeks."},
+        ],
+        "regulations": ["EO 14028", "NIST 800-161", "FedRAMP", "SOC 2"],
+        "top_competitors": ["battlecard-splunk", "battlecard-microsoft-sentinel",
+                            "battlecard-chronicle"],
+    }
+
+
+def _fe_superset_panels() -> List[Dict[str, Any]]:
+    from app.services.scenarios.industry_factory import build_fe_superset_panels
+
+    cu_panels = _build_panels("customer")
+    legacy_fe = _build_panels("fe")
+    fe_only_extras = [p for p in legacy_fe
+                      if p.get("embeddableConfig", {}).get("savedVis", {})
+                          .get("type") == "markdown"
+                      and p.get("panelIndex") not in ("switcher",)]
+    return build_fe_superset_panels(
+        _fe_industry_context(),
+        customer="DevSecOps and SOC",
+        customer_panels=cu_panels,
+        fe_only_extras=fe_only_extras,
+        id_prefix="sc-fe",
+    )
+
+
 def get_dashboard_panels() -> List[Dict[str, Any]]:
-    """Returns the FE-view panel layout."""
-    return _build_panels("fe")
+    """FE = customer superset + FE-only talk track + discovery + say/do-not-say."""
+    return _fe_superset_panels()
 
 
 # ============================================================ Kibana helpers =======
@@ -1897,7 +1937,7 @@ def _create_one_dashboard(
 
 
 def _create_dashboard(data_view_id: str) -> Dict[str, str]:
-    fe_panels = _build_panels("fe")
+    fe_panels = _fe_superset_panels()
     cu_panels = _build_panels("customer")
 
     fe_id = _create_one_dashboard(
