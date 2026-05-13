@@ -315,7 +315,17 @@ def _build_handover(
 
     from anthropic import Anthropic  # noqa: PLC0415
 
-    client: Anthropic = svc._client  # type: ignore[attr-defined]
+    # get_service() now returns ElasticInferenceService (Kibana-routed) which
+    # wraps a direct ClaudeService at `._direct`. Reach for the inner
+    # ClaudeService when we need raw access to the Anthropic SDK client; the
+    # handover doc is plain text, not structured, so we bypass the
+    # structured-call paths and call messages.create directly.
+    inner = getattr(svc, "_direct", svc)
+    client: Anthropic = getattr(inner, "_client", None)
+    if client is None:
+        raise RuntimeError(
+            "Anthropic client not available. Set ANTHROPIC_API_KEY or run in mock mode."
+        )
 
     # Bumped from 1500 to 4000 tokens because the new prompt asks for a
     # chronological timeline + every action item + MEDDPICC + tickets, which
