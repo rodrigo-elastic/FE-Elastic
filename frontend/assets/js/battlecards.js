@@ -13,6 +13,7 @@
     source: "seed",
     activeSlug: null,
     miniMounted: null, // slug currently mounted into the chat panel
+    chatHandle: null,  // active BattlecardChat instance (for dispose on swap)
     lastFocus: null,
     vertical: "all",          // active vertical chip; "all" or one of the 4 keys
     industry: "all",          // selected industry id; "all" or one of the 20 ids
@@ -855,32 +856,36 @@
     const slug = slugOf(card);
     const host = $("#bc-chat-host");
     if (!host) return;
-    if (STATE.miniMounted === slug) return; // already mounted for this slug
-    if (!window.AgentBuilderMini || typeof AgentBuilderMini.mount !== "function") {
+    if (STATE.miniMounted === slug && STATE.chatHandle) return; // already mounted
+    // Tear down any previous instance before remounting so listeners + DOM
+    // do not leak when the FE swaps competitors.
+    if (STATE.chatHandle && typeof STATE.chatHandle.dispose === "function") {
+      try { STATE.chatHandle.dispose(); } catch (_) {}
+      STATE.chatHandle = null;
+    }
+    if (!window.BattlecardChat || typeof BattlecardChat.mount !== "function") {
       host.innerHTML = "";
       host.appendChild(
         el("div", { class: "bc-chat-fallback" }, [
-          el("strong", {}, "Field Assistant unavailable"),
-          el("span", {}, "Could not load the embedded chat. Reload the page to retry."),
+          el("strong", {}, "Specialist offline"),
+          el("span", {}, "Could not load the embedded chat. The battlecard is still readable; reload the page to retry."),
         ])
       );
       STATE.miniMounted = slug;
       return;
     }
-    const name = card.competitor || "Competitor";
-    AgentBuilderMini.mount(host, {
-      title: `Compare Elastic vs ${name}`,
-      contextLabel: name,
-      contextPreamble: buildPreamble(card),
-      storageKey: `fec.bc.${slug}`,
-      suggestions: [
-        { label: "Technical comparison", prompt: `Show me a technical comparison of Elastic vs ${name}. Use the fec_compare tool, then summarise the differences that matter most given the customer pain in the battlecard above.` },
-        { label: "TCO at 200 GB/day", prompt: `Run a TCO comparison of Elastic vs ${name} at 200 GB/day, 12 months retention. Use fec_compare or the cost calculator and show me the line items.` },
-        { label: "Top 3 reasons we win", prompt: `Top 3 reasons we win against ${name} for this customer profile, anchored to the proof points in the battlecard above.` },
-        { label: "Objections we cannot answer well", prompt: `Which ${name} objections do we struggle to counter, and what is the best holding answer? Be candid.` },
-        { label: "Customer discovery questions", prompt: `Give me 5 sharp discovery questions that surface a ${name} replacement opportunity, building on the discovery list above.` },
-      ],
-    });
+    try {
+      STATE.chatHandle = BattlecardChat.mount(host, { card });
+    } catch (e) {
+      console.warn("battlecard-chat.mount", (e && e.message) || e);
+      host.innerHTML = "";
+      host.appendChild(
+        el("div", { class: "bc-chat-fallback" }, [
+          el("strong", {}, "Specialist offline"),
+          el("span", {}, "The specialist chat could not start. The battlecard above is still ready to use."),
+        ])
+      );
+    }
     STATE.miniMounted = slug;
   }
 
@@ -941,6 +946,13 @@
     document.body.classList.remove("bc-detail-open");
     document.title = "FE Copilot - Battlecards";
     STATE.activeSlug = null;
+    // Dispose the specialist chat so listeners do not linger while the user
+    // browses the grid. A subsequent renderDetail() remounts a fresh handle.
+    if (STATE.chatHandle && typeof STATE.chatHandle.dispose === "function") {
+      try { STATE.chatHandle.dispose(); } catch (_) {}
+      STATE.chatHandle = null;
+      STATE.miniMounted = null;
+    }
     // Restore focus to the originating card if we still have it.
     if (STATE.lastFocus && document.body.contains(STATE.lastFocus)) {
       try { STATE.lastFocus.focus({ preventScroll: true }); } catch (_) { STATE.lastFocus.focus(); }

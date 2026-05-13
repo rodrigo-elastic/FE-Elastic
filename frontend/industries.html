@@ -1,6 +1,6 @@
 <!--
   filename: industries.html
-  description: FE Copilot - Industries catalog. Renders the 20 industries that cover ~80% of the Elastic customer base. Each card opens a detail modal that deep-links into battlecards, demo scenarios, and FE Copilot tools so a Field Engineer never starts from a blank canvas.
+  description: FE Copilot - Industries and Demo Data. Combined catalog of the 20 industries that cover ~80% of the Elastic customer base, with every demo data scenario surfaced inline on its parent industry card so a Field Engineer can seed a Kibana dashboard without leaving the page.
   Author: Rodrigo Careaga
   Date: 04-05-2026
 -->
@@ -9,22 +9,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FE Copilot - Industries</title>
+  <title>FE Copilot - Industries and Demo Data</title>
   <!-- seo:meta:start -->
-  <meta name="description" content="FE Copilot industries catalog. Twenty industries covering most of the Elastic customer base, each linking into battlecards, demo scenarios and FE tools." />
+  <meta name="description" content="FE Copilot industries catalog plus on-demand demo data. Twenty industries covering most of the Elastic customer base, each with seedable Kibana dashboards for live demos." />
   <link rel="canonical" href="/industries.html" />
   <meta name="theme-color" content="#0B64DD" />
   <meta name="author" content="Rodrigo Careaga" />
   <meta name="application-name" content="FE Copilot" />
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="FE Copilot - Industries" />
-  <meta property="og:description" content="FE Copilot industries catalog. Twenty industries covering most of the Elastic customer base, each linking into battlecards, demo scenarios and FE tools." />
+  <meta property="og:title" content="FE Copilot - Industries and Demo Data" />
+  <meta property="og:description" content="FE Copilot industries catalog plus on-demand demo data. Twenty industries covering most of the Elastic customer base, each with seedable Kibana dashboards for live demos." />
   <meta property="og:image" content="/assets/img/elastic/glyph-cluster-color.svg" />
   <meta property="og:url" content="/industries.html" />
   <meta property="og:site_name" content="FE Copilot" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="FE Copilot - Industries" />
-  <meta name="twitter:description" content="FE Copilot industries catalog. Twenty industries covering most of the Elastic customer base, each linking into battlecards, demo scenarios and FE tools." />
+  <meta name="twitter:title" content="FE Copilot - Industries and Demo Data" />
+  <meta name="twitter:description" content="FE Copilot industries catalog plus on-demand demo data. Twenty industries covering most of the Elastic customer base, each with seedable Kibana dashboards for live demos." />
   <meta name="twitter:image" content="/assets/img/elastic/glyph-cluster-color.svg" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <!-- seo:meta:end -->
@@ -95,7 +95,7 @@
       <img class="logo-elastic" src="/assets/img/elastic/logo-horizontal-white.svg" alt="Elastic" width="64" height="22" />
       <span class="brand-sep">/</span>
       <span class="name">FE <span class="accent">Copilot</span></span>
-      <span class="tag" data-i18n="topbar.tag.industries">Industries</span>
+      <span class="tag" data-i18n="topbar.tag.industries_and_demo">Industries and Demo Data</span>
     </a>
     <span class="sko-event" aria-hidden="true">
       FY27 Sales Kickoff
@@ -135,11 +135,12 @@
     <section class="hero">
       <h1>
         <span data-i18n="industries.title.1">20 industries.</span>
-        <span class="grad" data-i18n="industries.title.2">80% of customers.</span>
+        <span class="grad" data-i18n="industries.title.2">Demo data on demand.</span>
       </h1>
-      <p class="lede" data-i18n="industries.lede">
-        One Field Engineer who does not have to start from scratch. Every industry card chains the right
-        battlecards, demo scenarios, and FE Copilot tools so the first 10 minutes of a discovery call are pre-loaded.
+      <p class="lede" data-i18n="industries.lede_combined">
+        Every industry card chains battlecards, personas and FE Copilot tools, and now also exposes its demo
+        scenarios inline. One click seeds a story-driven dataset into your live Elastic cluster and opens both
+        the FE and Customer Kibana dashboards. Discovery, demo, and seed without leaving the page.
       </p>
     </section>
 

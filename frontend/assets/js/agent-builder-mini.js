@@ -522,5 +522,5 @@
     };
   }
 
-  global.AgentBuilderMini = { mount };
+  global.AgentBuilderMini = { mount, renderMarkdown, escapeHtml };
 })(window);

@@ -98,16 +98,18 @@
       },
       {
         id: "demo-data",
+        // Demo Data was merged into the Industries nav entry; point the onboarding
+        // pointer at the combined "Industries and Demo Data" link.
         targets: [
-          '.tools-sidebar a[href="/demo-data.html"]',
-          'a[href="/demo-data.html"]',
+          '.tools-sidebar a[href="/industries.html"]',
+          'a[href="/industries.html"]',
           ".tools-sidebar",
         ],
         position: "right",
         title: t("onboard.step4.title", "Customer-ready demos"),
         body: t(
           "onboard.step4.body",
-          "Eight scenarios with paired FE and Customer dashboards. Atlas Eyewear-style demos in 15 seconds, not half a day."
+          "Eight scenarios with paired FE and Customer dashboards, exposed inline on each industry card. Atlas Eyewear-style demos in 15 seconds, not half a day."
         ),
       },
       {

@@ -1,6 +1,6 @@
 /*
   filename: industries.js
-  description: Renders the /industries.html catalog. Loads the 20 industries from /api/v1/industries, filters across name + summary + persona role + regulation + competitor id, and opens a detail modal that deep-links into /battlecards.html, /demo-data.html, and /tools.html so a Field Engineer can jump from "what industry am I selling into" to "show me the asset" in one click.
+  description: Renders the /industries.html "Industries and Demo Data" page. Loads the 20 industries from /api/v1/industries plus every demo scenario from /api/v1/demo-data/scenarios, filters across name + summary + persona role + regulation + competitor id, and opens a detail modal that exposes the matching demo scenarios inline (seed button, FE dashboard link, Customer dashboard link). Replaces the legacy /demo-data.html standalone page so a Field Engineer can seed a Kibana dashboard without leaving the industry catalog.
   Author: Rodrigo Careaga
   Date: 04-05-2026
 */
@@ -13,6 +13,9 @@
     filtered: [],
     activeId: null,
     debounceTimer: null,
+    scenarios: [],          // raw list from /demo-data/scenarios
+    scenariosById: {},      // id -> scenario record
+    seedResults: {},        // scenario_id -> last successful seed response (persists per session)
   };
 
   // Map battlecard id ("battlecard-splunk") to a friendly competitor label.
@@ -50,6 +53,8 @@
     "splunk-cloud": "Splunk Cloud",
   };
 
+  // Friendly labels for the scenario chip pills used in the legacy `industry.scenario_ids` array.
+  // The modal demo-data section ALSO surfaces scenarios via this mapping when a registry record is missing.
   const SCENARIO_LABELS = {
     "black-friday": "Black Friday outage",
     "credstuff": "Credential stuffing",
@@ -59,6 +64,32 @@
     "fsi-banking-fraud": "FSI banking fraud",
     "healthcare-hipaa-audit": "Healthcare HIPAA audit",
     "gov-cdm-compliance": "Gov CDM compliance",
+  };
+
+  // Bridge: legacy short ids on industry.scenario_ids -> canonical scenario.id used by the demo-data registry.
+  // Keeps flagship scenarios (Black Friday on retail-ecommerce, credstuff on cyber, etc.) surfaced even when
+  // the registry record doesn't yet carry industry_id.
+  const SCENARIO_ID_ALIAS = {
+    "black-friday": "black-friday-outage",
+    "credstuff": "credential-stuffing",
+    "noisy-microservice": "noisy-microservice",
+    "gdpr-audit": "gdpr-audit-timeline",
+    "supply-chain": "supply-chain-attack",
+    "fsi-banking-fraud": "fsi-banking-fraud",
+    "healthcare-hipaa-audit": "healthcare-hipaa-audit",
+    "gov-cdm-compliance": "gov-cdm-compliance",
+  };
+
+  // Icons used when a scenario record carries no icon hint.
+  const SCENARIO_ICONS = {
+    "black-friday-outage": "🛒",
+    "credential-stuffing": "🔐",
+    "noisy-microservice": "🚨",
+    "gdpr-audit-timeline": "📋",
+    "supply-chain-attack": "🧩",
+    "fsi-banking-fraud": "🏦",
+    "healthcare-hipaa-audit": "🩺",
+    "gov-cdm-compliance": "🏛️",
   };
 
   const TOOL_LABELS = {
@@ -124,6 +155,47 @@
   }
 
   // ============================================================
+  // Scenario <-> Industry resolution
+  // ============================================================
+  // Returns the deduped scenario records that belong to a given industry, combining:
+  //   (a) every registry scenario whose `industry_id` matches industry.id, AND
+  //   (b) legacy scenarios referenced by industry.scenario_ids (aliased through SCENARIO_ID_ALIAS).
+  function scenariosForIndustry(industry) {
+    const seen = new Set();
+    const out = [];
+    (STATE.scenarios || []).forEach((s) => {
+      if (s && s.industry_id === industry.id && !seen.has(s.id)) {
+        seen.add(s.id);
+        out.push(s);
+      }
+    });
+    (industry.scenario_ids || []).forEach((sid) => {
+      const canonical = SCENARIO_ID_ALIAS[sid] || sid;
+      const rec = STATE.scenariosById[canonical];
+      if (rec && !seen.has(rec.id)) {
+        seen.add(rec.id);
+        out.push(rec);
+      } else if (!rec && !seen.has(canonical)) {
+        // Synthesize a minimal stub so the legacy chip still surfaces (even if the backend hasn't
+        // shipped a registry record yet). Seeding is disabled for stubs.
+        seen.add(canonical);
+        out.push({
+          id: canonical,
+          title: scenarioLabel(sid),
+          description: "Legacy scenario reference - seed handler not yet registered for this id.",
+          indices: [],
+          _stub: true,
+        });
+      }
+    });
+    return out;
+  }
+
+  function scenarioCountFor(industry) {
+    return scenariosForIndustry(industry).length;
+  }
+
+  // ============================================================
   // Cards
   // ============================================================
   function buildCard(industry) {
@@ -170,7 +242,7 @@
 
     const footer = el("footer", { class: "ind-card-footer" });
     const competitors = (industry.top_competitors || []).length;
-    const scenarios = (industry.scenario_ids || []).length;
+    const scenarios = scenarioCountFor(industry);
     const tools = (industry.tool_ids || []).length;
     footer.appendChild(
       el("span", { class: "ind-card-meta" }, [
@@ -196,6 +268,20 @@
       ])
     );
     card.appendChild(footer);
+
+    // Demo-data badge in the top-right of the card so the FE can see at-a-glance how many scenarios
+    // are seedable from this industry without opening the modal.
+    if (scenarios > 0) {
+      const badge = el("span", {
+        class: "ind-card-scn-badge",
+        title: scenarios + " demo " + (scenarios === 1 ? "scenario" : "scenarios") + " seedable from this industry",
+        "aria-label": scenarios + " demo " + (scenarios === 1 ? "scenario" : "scenarios"),
+      }, [
+        el("span", { class: "ind-card-scn-badge-dot", "aria-hidden": "true" }, ""),
+        el("span", { class: "ind-card-scn-badge-text" }, scenarios + " demo " + (scenarios === 1 ? "scenario" : "scenarios")),
+      ]);
+      card.appendChild(badge);
+    }
 
     card.addEventListener("click", () => openModal(industry.id));
     card.addEventListener("keydown", (ev) => {
@@ -244,6 +330,11 @@
       if ((it.regulations || []).some((r) => (r || "").toLowerCase().includes(q))) return true;
       if ((it.top_competitors || []).some((c) => (c || "").toLowerCase().includes(q))) return true;
       if ((it.top_competitors || []).some((c) => competitorLabel(c).toLowerCase().includes(q))) return true;
+      // Match against linked scenario titles/descriptions/customer names.
+      const scns = scenariosForIndustry(it);
+      if (scns.some((s) => (s.title || "").toLowerCase().includes(q))) return true;
+      if (scns.some((s) => (s.description || "").toLowerCase().includes(q))) return true;
+      if (scns.some((s) => (s.customer_name || "").toLowerCase().includes(q))) return true;
       return false;
     });
     renderGrid(STATE.filtered);
@@ -273,17 +364,6 @@
       competitorLabel(id)
     );
   }
-  function scenarioChip(id) {
-    return el(
-      "a",
-      {
-        class: "ind-chip ind-chip-link ind-chip-scn",
-        href: "/demo-data.html#" + encodeURIComponent(id),
-        "data-deep-link": "scenario",
-      },
-      scenarioLabel(id)
-    );
-  }
   function toolChip(id) {
     return el(
       "a",
@@ -302,6 +382,122 @@
     ]);
     children.forEach((c) => section.appendChild(c));
     return section;
+  }
+
+  // ============================================================
+  // Inline Demo Data section (modal)
+  // ============================================================
+  function formatDocCounts(counts) {
+    if (!counts) return "";
+    const keys = Object.keys(counts);
+    const total = keys.reduce((a, k) => a + (Number.isFinite(counts[k]) ? counts[k] : 0), 0);
+    if (!total) return "";
+    return total.toLocaleString() + " docs indexed across " + keys.length + " " + (keys.length === 1 ? "index" : "indices");
+  }
+
+  function buildScenarioRow(scenario) {
+    const isStub = !!scenario._stub;
+    const row = el("div", { class: "ind-scn-row" + (isStub ? " is-stub" : ""), "data-scenario-id": scenario.id });
+
+    const head = el("div", { class: "ind-scn-head" });
+    head.appendChild(el("span", { class: "ind-scn-icon", "aria-hidden": "true" }, SCENARIO_ICONS[scenario.id] || "🧪"));
+    const titleWrap = el("div", { class: "ind-scn-titlewrap" });
+    titleWrap.appendChild(el("h5", { class: "ind-scn-title" }, scenario.title || scenario.id));
+    if (scenario.customer_name) {
+      titleWrap.appendChild(
+        el("div", { class: "ind-scn-customer muted small" }, "Customer: " + scenario.customer_name)
+      );
+    }
+    head.appendChild(titleWrap);
+    row.appendChild(head);
+
+    if (scenario.description) {
+      row.appendChild(el("p", { class: "ind-scn-desc" }, scenario.description));
+    }
+
+    const indicesList = (scenario.indices || []).join(" · ");
+    if (indicesList) {
+      row.appendChild(el("div", { class: "ind-scn-indices muted small" }, "Indices: " + indicesList));
+    }
+
+    const status = el("div", { class: "ind-scn-status muted small" }, "");
+    const seedBtn = el("button", {
+      class: "btn primary ind-scn-seed",
+      type: "button",
+      "aria-label": "Seed demo data for " + (scenario.title || scenario.id),
+    }, "Seed");
+    if (isStub) {
+      seedBtn.disabled = true;
+      seedBtn.title = "Backend has no seed handler registered for this scenario yet.";
+    }
+
+    const openFeBtn = el("a", {
+      class: "btn ghost ind-scn-link",
+      target: "_blank",
+      rel: "noreferrer noopener",
+      href: "#",
+      "aria-label": "Open FE Kibana dashboard for " + (scenario.title || scenario.id),
+    }, "Open FE dashboard");
+    const openCustBtn = el("a", {
+      class: "btn ghost ind-scn-link",
+      target: "_blank",
+      rel: "noreferrer noopener",
+      href: "#",
+      "aria-label": "Open Customer Kibana dashboard for " + (scenario.title || scenario.id),
+    }, "Open Customer dashboard");
+    openFeBtn.style.display = "none";
+    openCustBtn.style.display = "none";
+
+    // Restore links + status from any previous seed run in this session.
+    const prev = STATE.seedResults[scenario.id];
+    if (prev) {
+      if (prev.dashboard_url) { openFeBtn.href = prev.dashboard_url; openFeBtn.style.display = ""; }
+      if (prev.dashboard_url_customer) { openCustBtn.href = prev.dashboard_url_customer; openCustBtn.style.display = ""; }
+      const dc = formatDocCounts(prev.doc_counts);
+      if (dc) { status.textContent = dc + ". Dashboards rebuilt."; status.className = "ind-scn-status ok small"; }
+    }
+
+    seedBtn.addEventListener("click", async () => {
+      const label = seedBtn.innerHTML;
+      seedBtn.disabled = true;
+      seedBtn.innerHTML = '<span class="spinner"></span> Seeding...';
+      status.className = "ind-scn-status running small";
+      status.textContent = "Indexing docs and creating Kibana dashboards...";
+      try {
+        const r = await apiPost("/demo-data/" + encodeURIComponent(scenario.id) + "/seed", {});
+        STATE.seedResults[scenario.id] = r || {};
+        const dc = formatDocCounts(r && r.doc_counts);
+        status.className = "ind-scn-status ok small";
+        status.textContent = dc ? dc + ". Dashboards rebuilt." : "Dashboards rebuilt.";
+        if (r && r.dashboard_url) { openFeBtn.href = r.dashboard_url; openFeBtn.style.display = ""; }
+        if (r && r.dashboard_url_customer) { openCustBtn.href = r.dashboard_url_customer; openCustBtn.style.display = ""; }
+        if (typeof toast === "function") toast("Seeded " + (scenario.title || scenario.id), "ok");
+      } catch (e) {
+        const safe = (typeof sanitizeError === "function") ? sanitizeError(e) : (e && e.message) || String(e);
+        status.className = "ind-scn-status err small";
+        status.textContent = safe;
+        if (typeof toast === "function") toast("Seed failed: " + safe, "bad");
+      } finally {
+        seedBtn.disabled = isStub;
+        seedBtn.innerHTML = label;
+      }
+    });
+
+    const actions = el("div", { class: "ind-scn-actions" }, [seedBtn, openFeBtn, openCustBtn]);
+    row.appendChild(actions);
+    row.appendChild(status);
+    return row;
+  }
+
+  function buildDemoDataSection(industry) {
+    const scns = scenariosForIndustry(industry);
+    if (!scns.length) return null;
+    const wrap = el("div", { class: "ind-scn-list" });
+    scns.forEach((s) => wrap.appendChild(buildScenarioRow(s)));
+    return buildSection(
+      tx("industries.modal.demo_data", "Demo Data (" + scns.length + " " + (scns.length === 1 ? "scenario" : "scenarios") + ")"),
+      [wrap]
+    );
   }
 
   function renderModal(industry) {
@@ -345,12 +541,9 @@
       body.appendChild(buildSection(tx("industries.modal.competitors", "Top competitors"), [chips]));
     }
 
-    // Scenarios (deep-link to /demo-data.html#{scenario_id})
-    if (Array.isArray(industry.scenario_ids) && industry.scenario_ids.length) {
-      const chips = el("div", { class: "ind-chips" });
-      industry.scenario_ids.forEach((id) => chips.appendChild(scenarioChip(id)));
-      body.appendChild(buildSection(tx("industries.modal.scenarios", "Demo scenarios"), [chips]));
-    }
+    // Demo Data (inline seed + dashboard links) - new combined section.
+    const ddSection = buildDemoDataSection(industry);
+    if (ddSection) body.appendChild(ddSection);
 
     // Tools (deep-link to /tools.html?run={tool_id})
     if (Array.isArray(industry.tool_ids) && industry.tool_ids.length) {
@@ -495,8 +688,25 @@
   // ============================================================
   // Boot
   // ============================================================
+  // Fetch scenarios best-effort. On failure we still render industries with scenarios=0; the
+  // FE will just not see the inline demo data section. This keeps the page usable when the
+  // backend demo-data registry is offline.
+  async function loadScenarios() {
+    try {
+      const data = await apiGet("/demo-data/scenarios");
+      STATE.scenarios = Array.isArray(data && data.scenarios) ? data.scenarios : [];
+      STATE.scenariosById = {};
+      STATE.scenarios.forEach((s) => { if (s && s.id) STATE.scenariosById[s.id] = s; });
+    } catch (_e) {
+      STATE.scenarios = [];
+      STATE.scenariosById = {};
+    }
+  }
+
   async function load() {
     try {
+      // Load scenarios first so the per-card badges and modal section have data on first render.
+      await loadScenarios();
       const data = await apiGet("/industries");
       STATE.items = Array.isArray(data && data.items) ? data.items : [];
       STATE.filtered = STATE.items.slice();
@@ -506,6 +716,12 @@
       if (initial) {
         const match = STATE.items.find((it) => it.id === initial);
         if (match) openModal(match.id);
+      }
+      // Honor #demo-data hash (legacy link from /demo-data.html redirect) by scrolling to the grid
+      // so the FE lands on the right section even though there is no separate page anymore.
+      if ((location.hash || "").toLowerCase().indexOf("demo-data") === 1) {
+        const grid = document.getElementById("ind-grid");
+        if (grid) grid.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     } catch (e) {
       const grid = document.getElementById("ind-grid");

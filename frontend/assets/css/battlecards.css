@@ -457,7 +457,8 @@
   border-radius: var(--radius-lg);
   overflow: hidden;
 }
-.bc-chat-host > .abm-host {
+.bc-chat-host > .abm-host,
+.bc-chat-host > .bcc-host {
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -1151,4 +1152,220 @@ body.bc-detail-open.has-tools-rail .bc-detail { padding-left: 0; }
   .bc-action-btn { min-height: 40px; padding: 10px 12px; }
   .bc-action-btn.bc-action-primary,
   .bc-action-btn#bc-back-btn { min-height: 40px; padding: 10px 14px; }
+}
+
+/* ============================================================ Specialist chat
+   Per-competitor "Ask the X Specialist" chat panel rendered by
+   battlecard-chat.js into #bc-chat-host. Uses the same --primary / --panel /
+   --border tokens as the rest of the page to stay theme-aware. */
+.bcc-host {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+.bcc-mobile-toggle {
+  display: none;
+  width: 100%;
+  padding: 12px 14px;
+  font: 600 13px/1 Inter, system-ui, sans-serif;
+  color: var(--white);
+  background: linear-gradient(135deg, var(--primary), var(--pink));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+}
+.bcc-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+}
+.bcc-host.bcc-collapsed .bcc-panel { display: none; }
+.bcc-host.bcc-collapsed .bcc-mobile-toggle { display: block; }
+
+.bcc-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.bcc-title {
+  font: 700 14px/1.2 Inter, system-ui, sans-serif;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.bcc-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  font: 600 10.5px/1 Inter, system-ui, sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+}
+.bcc-pill::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.bcc-pill-resolving { color: var(--muted); background: rgba(120, 120, 120, 0.08); }
+.bcc-pill-live      { color: #2bb673; background: rgba(43, 182, 115, 0.12); border-color: rgba(43, 182, 115, 0.32); }
+.bcc-pill-fallback  { color: #d4a017; background: rgba(212, 160, 23, 0.12); border-color: rgba(212, 160, 23, 0.32); }
+.bcc-pill-offline   { color: #c0392b; background: rgba(192, 57, 43, 0.10); border-color: rgba(192, 57, 43, 0.32); }
+.bcc-reset {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--ink-soft);
+  font: 600 11px/1 Inter, system-ui, sans-serif;
+  padding: 5px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.bcc-reset:hover { color: var(--ink); border-color: var(--primary); }
+
+.bcc-subtitle {
+  padding: 6px 16px 10px;
+  font: 400 12px/1.45 Inter, system-ui, sans-serif;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.bcc-chips {
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.bcc-chip {
+  font: 500 12px/1.2 Inter, system-ui, sans-serif;
+  color: var(--ink-soft);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  text-align: left;
+  max-width: 100%;
+  white-space: normal;
+}
+.bcc-chip:hover {
+  color: var(--ink);
+  border-color: var(--primary);
+  background: var(--panel-2);
+}
+
+.bcc-transcript {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px 14px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.bcc-msg { display: flex; flex-direction: column; }
+.bcc-msg-user { align-items: flex-end; }
+.bcc-msg-user .bcc-msg-body {
+  background: var(--primary);
+  color: var(--white);
+  border-radius: 14px 14px 4px 14px;
+  padding: 9px 12px;
+  max-width: 90%;
+  font: 500 13px/1.45 Inter, system-ui, sans-serif;
+}
+.bcc-msg-assistant { align-items: flex-start; }
+.bcc-msg-assistant .bcc-msg-body {
+  background: var(--panel-2);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 14px 14px 14px 4px;
+  padding: 10px 13px;
+  max-width: 96%;
+  font: 400 13px/1.55 Inter, system-ui, sans-serif;
+}
+.bcc-msg-assistant .bcc-msg-body p { margin: 0 0 8px; }
+.bcc-msg-assistant .bcc-msg-body p:last-child { margin-bottom: 0; }
+.bcc-msg-assistant .bcc-msg-body ul,
+.bcc-msg-assistant .bcc-msg-body ol { margin: 4px 0 8px; padding-left: 20px; }
+.bcc-msg-assistant .bcc-msg-body h1,
+.bcc-msg-assistant .bcc-msg-body h2,
+.bcc-msg-assistant .bcc-msg-body h3 { margin: 6px 0 4px; font-size: 14px; }
+.bcc-msg-assistant .bcc-msg-body code {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 0 4px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+.bcc-msg-assistant .bcc-msg-body pre {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  overflow-x: auto;
+  font-size: 12px;
+}
+.bcc-loader {
+  font: 500 12.5px/1.3 Inter, system-ui, sans-serif;
+  color: var(--muted);
+  font-style: italic;
+}
+.bcc-error { color: #c0392b; }
+
+.bcc-composer {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px 12px;
+  border-top: 1px solid var(--border);
+}
+.bcc-input {
+  flex: 1 1 auto;
+  resize: vertical;
+  font: 400 13px/1.45 Inter, system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  min-height: 40px;
+  max-height: 200px;
+}
+.bcc-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(0, 119, 204, 0.18);
+}
+.bcc-send {
+  flex: 0 0 auto;
+  font: 700 12.5px/1 Inter, system-ui, sans-serif;
+  color: var(--white);
+  background: var(--primary);
+  border: 1px solid var(--primary);
+  border-radius: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+  align-self: flex-end;
+}
+.bcc-send:hover { filter: brightness(1.08); }
+.bcc-send:disabled { opacity: 0.6; cursor: progress; }
+
+@media (max-width: 768px) {
+  .bcc-mobile-toggle { display: block; }
+  .bcc-host:not(.bcc-collapsed) .bcc-mobile-toggle {
+    margin-bottom: 10px;
+  }
+  .bcc-panel { min-height: 460px; }
 }

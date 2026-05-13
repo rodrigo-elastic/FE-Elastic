@@ -468,3 +468,98 @@
   .ind-search-wrap { flex: 1 1 100%; min-width: 0; }
   #ind-search { font-size: 14px; min-height: 44px; padding: 12px 14px 12px 36px; }
 }
+
+/* ============================================================ Combined: Demo Data badge on cards
+   Top-right pill on each industry card indicating how many seedable demo
+   scenarios are linked. Sits on top of the card via absolute positioning
+   so it doesn't disturb the existing card layout. Hidden when 0 scenarios. */
+.ind-card { position: relative; }
+.ind-card-scn-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: rgba(0, 191, 179, 0.16);
+  color: #006d66;
+  border: 1px solid rgba(0, 191, 179, 0.45);
+  border-radius: 999px;
+  pointer-events: none;
+}
+[data-theme="dark"] .ind-card-scn-badge {
+  background: rgba(0, 191, 179, 0.2);
+  color: #aef6ee;
+}
+.ind-card-scn-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  display: inline-block;
+}
+
+/* ============================================================ Combined: Inline Demo Data list in modal */
+.ind-scn-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ind-scn-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel-2);
+}
+.ind-scn-row.is-stub { opacity: 0.7; }
+.ind-scn-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.ind-scn-icon { font-size: 22px; line-height: 1; flex: 0 0 auto; }
+.ind-scn-titlewrap { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ind-scn-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.3;
+}
+.ind-scn-customer { font-size: 11px; }
+.ind-scn-desc {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-2);
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ind-scn-indices { font-size: 11px; }
+.ind-scn-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+.ind-scn-actions .btn { font-size: 12px; padding: 6px 12px; }
+.ind-scn-status { min-height: 14px; }
+.ind-scn-status.running { color: var(--yellow, #c08400); }
+.ind-scn-status.ok { color: var(--teal, #006d66); }
+.ind-scn-status.err { color: var(--red, #b03030); }
+
+@media (max-width: 640px) {
+  .ind-scn-actions { flex-direction: column; align-items: stretch; }
+  .ind-scn-actions .btn { width: 100%; text-align: center; }
+  .ind-card-scn-badge { top: 8px; right: 8px; font-size: 9px; padding: 2px 7px; }
+}

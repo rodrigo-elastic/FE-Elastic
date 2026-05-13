@@ -292,7 +292,13 @@ function bindTranscriptUpload() {
     statusEl.textContent = `Running post-meeting agent (${modelLabel})...`;
 
     try {
-      const res = await apiPost("/agents/post-meeting/from-transcript", {
+      // Post-meeting from a raw transcript runs Claude (Haiku ~25-40s, Sonnet
+      // ~50-80s) on top of VTT parsing. Raw apiPost has no timeout, which left
+      // the spinner hanging when the AWS ALB cut the connection at 60s with a
+      // 504. Route through apiPostWithRetry with a 150s budget so cold-start
+      // + slower models still fit, and disable retries (the agent run is
+      // expensive; retrying multiplies the wait).
+      const trBody = {
         company_name: name,
         meeting_title: title,
         industry,
@@ -302,7 +308,11 @@ function bindTranscriptUpload() {
         transcript_source: source,
         language: claudeLanguageName(),
         model,
-      });
+      };
+      const trOpts = { category: "llm", timeoutMs: 150000, retries: 0, silent: true, label: "Analyze transcript" };
+      const res = typeof window.apiPostWithRetry === "function"
+        ? await window.apiPostWithRetry("/agents/post-meeting/from-transcript", trBody, trOpts)
+        : await apiPost("/agents/post-meeting/from-transcript", trBody);
       const mid = res && res.meeting_id;
       if (!mid) {
         throw new Error("Backend did not return a meeting_id");

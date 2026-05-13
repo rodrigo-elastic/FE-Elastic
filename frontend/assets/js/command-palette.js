@@ -21,8 +21,7 @@
     { type: "pages", icon: "🧠", label: "FE Brain",        sub: "/fe-brain.html",       href: "/fe-brain.html",       keywords: "knowledge docs rag corpus" },
     { type: "pages", icon: "🤖", label: "Agent Builder",   sub: "/agent-builder.html",  href: "/agent-builder.html",  keywords: "agents prompts orchestrator" },
     { type: "pages", icon: "⚔",  label: "Battlecards",     sub: "/battlecards.html",    href: "/battlecards.html",    keywords: "competitive splunk datadog" },
-    { type: "pages", icon: "🏭", label: "Industries",      sub: "/industries.html",     href: "/industries.html",     keywords: "vertical sector verticals" },
-    { type: "pages", icon: "🧪", label: "Demo Data",       sub: "/demo-data.html",      href: "/demo-data.html",      keywords: "scenarios seed credstuff ddos ransomware" },
+    { type: "pages", icon: "🏭", label: "Industries and Demo Data", sub: "/industries.html",     href: "/industries.html",     keywords: "vertical sector verticals demo data scenarios seed credstuff ddos ransomware black friday" },
     { type: "pages", icon: "🌊", label: "Workflow",        sub: "/workflow-demo.html",  href: "/workflow-demo.html",  keywords: "pipeline demo orchestration" },
     { type: "pages", icon: "🩺", label: "Health",          sub: "/health.html",         href: "/health.html",         keywords: "status diagnostics uptime" },
     { type: "pages", icon: "📜", label: "Audit",           sub: "/audit.html",          href: "/audit.html",          keywords: "log compliance trail" },
@@ -177,7 +176,8 @@
       var industriesRaw = (out[4] && (out[4].items || out[4])) || [];
       // scenarios
       state.cache.scenarios = (Array.isArray(scenariosRaw) ? scenariosRaw : []).slice(0, 5).map(function (s) {
-        var dash = s.dashboard_url || s.dashboard_url_fe || "/demo-data.html#" + (s.id || "");
+        // Demo Data was merged into Industries; legacy fallback now points there.
+        var dash = s.dashboard_url || s.dashboard_url_fe || "/industries.html#demo-data";
         return {
           type: "scenarios",
           icon: s.id === "credstuff" ? "🔐" : s.id === "ddos" ? "🌐" : s.id === "ransomware" ? "🛡" : "🧪",

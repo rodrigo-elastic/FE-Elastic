@@ -23,6 +23,7 @@ from app.services.scenarios import (
     noisy_microservice,
     supply_chain_attack,
 )
+from app.services.scenarios import industry_registry
 from app.utils.logging import get_logger
 
 log = get_logger(__name__)
@@ -41,6 +42,11 @@ SCENARIOS = {
     healthcare_hipaa_audit.SCENARIO_ID: healthcare_hipaa_audit,
     government_cdm.SCENARIO_ID: government_cdm,
 }
+
+# Slot one synthetic scenario per industry from data/seed/industries.json into
+# the registry under SCENARIO_IDs of the shape `industry-<industry_id>`. The
+# hand-crafted flagship scenarios above are not overwritten.
+industry_registry.register_into(SCENARIOS)
 
 
 def _meta(mod) -> Dict[str, Any]:

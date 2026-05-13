@@ -85,17 +85,10 @@
     },
     {
       id: "industries",
-      label: "Industries",
+      label: "Industries and Demo Data",
       href: "/industries.html",
       icon:
         '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V8l4-3 4 3v13"/><path d="M13 21V12l4-2 4 2v9"/><path d="M9 12h.01"/><path d="M9 16h.01"/><path d="M17 14h.01"/><path d="M17 18h.01"/></svg>',
-    },
-    {
-      id: "demo-data",
-      label: "Demo Data",
-      href: "/demo-data.html",
-      icon:
-        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 11v6c0 1.7 4 3 9 3s9-1.3 9-3v-6"/></svg>',
     },
     {
       id: "workflow",
@@ -211,8 +204,9 @@
     if (p.id === "agent-builder" && isAgentBuilderPage()) { a.classList.add("active"); isActive = true; }
     if (p.id === "fe-brain" && isFeBrainPage()) { a.classList.add("active"); isActive = true; }
     if (p.id === "workflow" && isWorkflowPage()) { a.classList.add("active"); isActive = true; }
-    if (p.id === "demo-data" && isDemoDataPage()) { a.classList.add("active"); isActive = true; }
-    if (p.id === "industries" && isIndustriesPage()) { a.classList.add("active"); isActive = true; }
+    // Demo Data nav entry was merged into Industries; highlight Industries when the legacy
+    // /demo-data.html URL is hit (it now redirects to /industries.html#demo-data).
+    if (p.id === "industries" && (isIndustriesPage() || isDemoDataPage())) { a.classList.add("active"); isActive = true; }
     if (p.id === "battlecards" && isBattlecardsPage()) { a.classList.add("active"); isActive = true; }
     if (p.id === "audit" && isAuditPage()) { a.classList.add("active"); isActive = true; }
     if (p.id === "health" && isHealthPage()) { a.classList.add("active"); isActive = true; }
