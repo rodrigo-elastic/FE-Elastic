@@ -199,66 +199,120 @@ flowchart LR
     API --> Runtime["runtime/<br/>slack.log, salesforce.log,<br/>audit.jsonl, briefs/, emails/<br/>slides/, qbr/, tar/"]
 ```
 
-## Quickstart
+## Quickstart - get your own FE Copilot running in 5 steps
+
+Every FE can spin up their personal copy in under 10 minutes. The first three
+steps are mandatory; the last two unlock the Kibana-side integrations
+(specialist agents, email handover, Slack notifications).
+
+### Step 1. Clone, venv, install
 
 ```bash
-# 1. Clone
 git clone <repo-url> fe-copilot && cd fe-copilot
-
-# 2. Configure (mock mode runs without keys)
-cp .env.example .env
-# Optional: set ANTHROPIC_API_KEY, ELASTICSEARCH_URL + ELASTICSEARCH_API_KEY,
-# and KIBANA_URL + KIBANA_API_KEY for live mode. With placeholders the app
-# auto-enables mock mode and the seed JSON falls back transparently.
-
-# 3. Virtualenv + dependencies (Python 3.11+)
-python3 -m venv .venv
-source .venv/bin/activate
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r backend/requirements.txt
-# macOS arm64 only: WeasyPrint needs Pango + Cairo. Skip if you do not
-# need PDF output (the app auto-falls back to HTML briefs).
-#   brew install pango cairo libffi gdk-pixbuf
+```
 
-# 4. Generate synthetic data (deterministic, offline)
+macOS arm64 only, if you want PDF briefs:
+`brew install pango cairo libffi gdk-pixbuf`. Otherwise FE Copilot falls back
+to HTML briefs automatically.
+
+### Step 2. Fill `.env` with your keys
+
+```bash
+cp .env.example .env
+```
+
+Then open `.env` and set the four keys that matter. Everything else has a
+working default. Mock mode kicks in if you leave them blank.
+
+| Key | Where to get it | What it unlocks |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | https://console.anthropic.com/settings/keys | Every Claude-backed tool and agent. Start here. |
+| `ELASTICSEARCH_URL` + `ELASTICSEARCH_API_KEY` | Elastic Cloud console: deployment -> Manage -> API keys (give it `read,write,view_index_metadata` on `fec-*`) | Brief + post-meeting + audit log persistence, AutoOps webhook ingest, FE Brain corpus. |
+| `KIBANA_URL` + `KIBANA_API_KEY` | Same deployment, Kibana -> Stack Management -> API keys (privileges below). Set both keys to the same Cloud deployment as Elasticsearch. | Agent Builder integration, per-competitor specialist agents, custom tool CRUD, dashboards, email connector for handovers. |
+| `SLACK_WEBHOOK_URL` *(optional)* | https://api.slack.com/messaging/webhooks - create a Slack app, add an Incoming Webhook for your `#fe-copilot` channel | Brief + post-meeting + handover notifications get posted to Slack. Leave blank to skip; the app writes to `runtime/slack/*.json` instead. |
+
+**Kibana API key privileges** the integration needs (paste into the "Role
+descriptors" field when creating the key):
+
+```json
+{
+  "fec_copilot": {
+    "elasticsearch": {
+      "indices": [{"names": ["fec-*", "demo-*"], "privileges": ["all"]}]
+    },
+    "kibana": [{
+      "spaces": ["default"],
+      "base": [],
+      "feature": {
+        "actions": ["all"],
+        "alerting": ["all"],
+        "dashboard": ["all"],
+        "agent_builder": ["all"]
+      }
+    }]
+  }
+}
+```
+
+### Step 3. Seed local data + run
+
+```bash
 PYTHONPATH=backend python -m scripts.generate_synthetic_data
-
-# 5. Run the backend (also serves the frontend)
 PYTHONPATH=backend uvicorn app.main:app --reload --port 8123
-
-# 6. Optional: point Kibana at a remote backend
-# Production runs on AWS ECS Fargate at:
-#   https://fe-c85291a2a8b144188ee6be1078e79a95.ecs.us-east-1.on.aws
-# For local-into-Kibana you can also use ngrok:
-#   ngrok http 8123
-# then set BACKEND_BASE_URL and run:
-#   PYTHONPATH=backend python -m scripts.sync_agent_builder
-
-# 7. Open the dashboard
-open http://localhost:8123
 ```
 
-Hit a few endpoints to confirm the stack is up:
+Open http://localhost:8123. The dashboard, Quick Research, Workspace, FE
+Brain, Customer Health, and Industries pages already work end-to-end against
+the Anthropic key alone. Skip the next two steps if you only need that.
+
+### Step 4. Wire Kibana connectors (one-time)
+
+Open Kibana -> Stack Management -> Connectors and create:
+
+1. **Email connector** named `elastic-cloud-email` (the Elastic Cloud built-in
+   is automatically present on Cloud deployments; no SMTP setup required).
+   FE Copilot's handover, post-meeting follow-up emails, and workflow rule
+   notifications all route through this connector.
+2. **Anthropic inference connectors** (two of them) named
+   `Anthropic-Claude-Haiku-4-5` and `Anthropic-Claude-Opus-4-7` so every
+   agent call is visible in Kibana usage metrics. Set the `apiKey` to the
+   same Anthropic key from Step 2. FE Copilot's
+   `agent_builder.discover_connectors()` finds them automatically and falls
+   back to direct Anthropic if either is missing.
+
+### Step 5. Provision the agents + tools in Kibana
 
 ```bash
-curl -s http://127.0.0.1:8123/api/v1/health | jq .
-curl -s http://127.0.0.1:8123/api/v1/calendar/events | jq '.items[0]'
-curl -s -X POST http://127.0.0.1:8123/api/v1/tools/cost-calc \
-  -H "Content-Type: application/json" \
-  -d '{"ingest_gb_day":120,"retention_months":12,"current_spend_annual_usd":1500000}' | jq .
+# The master FE Copilot agent + the fourteen MCP tools
+PYTHONPATH=backend python -m scripts.sync_agent_builder
+
+# Optional: one specialist agent per competitor battlecard (33 agents)
+PYTHONPATH=backend python -m scripts.sync_battlecard_agents
 ```
 
-Run the test suite (no API key required):
+Both scripts are idempotent. Re-run any time you change a tool spec or add
+a new battlecard. Tail `runtime/audit.jsonl` to confirm the upserts landed.
+
+### Verify
 
 ```bash
-PYTHONPATH=backend pytest backend/tests -q
-# 30 passed
+curl -s http://127.0.0.1:8123/api/v1/health | jq .              # green = good
+PYTHONPATH=backend pytest backend/tests -q                       # 30 passed
+PYTHONPATH=backend python -m scripts.run_pipeline                # end-to-end smoke
 ```
 
-Smoke test the full agent pipeline:
+### Production deploy (optional)
 
-```bash
-PYTHONPATH=backend python -m scripts.run_pipeline
-```
+The team-shared production environment runs at
+`https://fe-c85291a2a8b144188ee6be1078e79a95.ecs.us-east-1.on.aws` on AWS ECS
+Fargate. If you want your own ECS deployment, see
+[`docs/deploy.md`](docs/deploy.md) for the seven-step playbook (build the
+linux/amd64 image, push to ECR, `aws ecs update-service --force-new-deployment`).
+For a quick local-into-Kibana hop without ECS, an ngrok tunnel works:
+`ngrok http 8123` then set `BACKEND_BASE_URL` and re-run
+`scripts/sync_agent_builder`.
 
 ## Feature tour
 
