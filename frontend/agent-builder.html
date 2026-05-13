@@ -77,6 +77,17 @@
           </div>
         </div>
         <div class="ab-sidebar-list" id="ab-sidebar-list" role="list" aria-live="polite"></div>
+
+        <div class="ab-sidebar-head" style="margin-top:18px">
+          <h2 class="ab-sidebar-title">Custom tools</h2>
+          <div class="ab-sidebar-actions">
+            <button type="button" class="ab-new-btn" id="ab-new-tool" title="Create a new Agent Builder tool (ES|QL)">
+              <span aria-hidden="true">+</span>
+              <span class="visually-hidden">New tool</span>
+            </button>
+          </div>
+        </div>
+        <div class="ab-sidebar-list" id="ab-tools-list" role="list" aria-live="polite"></div>
       </aside>
 
       <div class="ab-main">
@@ -170,6 +181,56 @@
     </div>
   </div>
 
+  <div class="ab-modal" id="ab-tool-modal" hidden role="dialog" aria-modal="true" aria-labelledby="ab-tool-modal-title">
+    <div class="ab-modal-backdrop" data-ab-tool-close></div>
+    <div class="ab-modal-card" role="document">
+      <header class="ab-modal-head">
+        <h3 id="ab-tool-modal-title">Create a custom tool (ES|QL)</h3>
+        <button type="button" class="ab-modal-close" data-ab-tool-close aria-label="Close create-tool dialog"><span aria-hidden="true">&times;</span></button>
+      </header>
+      <form id="ab-tool-form" class="ab-modal-form" onsubmit="return false">
+        <div class="ab-field-row">
+          <label class="ab-field">
+            <span class="ab-field-label">Slug</span>
+            <span class="ab-slug-row">
+              <span class="ab-slug-prefix">fec_user_tool_</span>
+              <input type="text" id="ab-tf-slug" maxlength="40" minlength="3" pattern="[a-z0-9_]{3,40}" required autocomplete="off" />
+            </span>
+            <span class="ab-field-error" data-error-for="slug"></span>
+          </label>
+          <label class="ab-field">
+            <span class="ab-field-label">Tags (comma-separated)</span>
+            <input type="text" id="ab-tf-tags" maxlength="200" autocomplete="off" placeholder="analytics, finance" />
+          </label>
+        </div>
+        <label class="ab-field">
+          <span class="ab-field-label">Description</span>
+          <textarea id="ab-tf-description" maxlength="600" minlength="10" rows="2" required placeholder="An ES|QL tool for analyzing financial trades with time filtering"></textarea>
+          <span class="ab-field-error" data-error-for="description"></span>
+        </label>
+        <label class="ab-field">
+          <span class="ab-field-label">
+            <span>ES|QL query (use ?paramName placeholders)</span>
+            <span class="ab-counter"><span id="ab-tf-query-count">0</span> / 4000</span>
+          </span>
+          <textarea id="ab-tf-query" maxlength="4000" minlength="4" rows="6" class="ab-mono" required placeholder="FROM financial_trades | WHERE execution_timestamp >= ?startTime | STATS trade_count=COUNT(*) BY symbol | SORT trade_count DESC | LIMIT ?limit"></textarea>
+          <span class="ab-field-error" data-error-for="query"></span>
+        </label>
+        <fieldset class="ab-field">
+          <legend class="ab-field-label">Parameters</legend>
+          <div id="ab-tf-params" class="ab-params-list"></div>
+          <button type="button" class="btn ghost" id="ab-tf-add-param" style="margin-top:8px">+ Add parameter</button>
+          <span class="ab-field-hint" style="display:block;margin-top:4px;color:var(--muted);font-size:11px">Each parameter declared here matches a <code>?placeholder</code> in the query above. The agent fills these at execute time; mark optional and add a defaultValue to let the agent skip them.</span>
+        </fieldset>
+        <div class="ab-modal-actions">
+          <button type="button" class="btn ghost" data-ab-tool-close>Cancel</button>
+          <button type="submit" class="btn primary" id="ab-tf-submit">Create tool</button>
+        </div>
+        <p class="ab-modal-status" id="ab-tf-status" aria-live="polite"></p>
+      </form>
+    </div>
+  </div>
+
   <script src="/config.js?v=20260509"></script>
   <script src="/assets/js/tools-rail.js"></script>
   <script defer src="/assets/js/i18n.js"></script>
@@ -177,6 +238,7 @@
   <script defer src="/assets/js/ui.js"></script>
   <script defer src="/assets/js/api-retry.js"></script>
   <script defer src="/assets/js/agent-builder.js"></script>
+  <script defer src="/assets/js/agent-builder-tools.js?v=20260513"></script>
   <script defer src="/assets/js/command-palette.js"></script>
 </body>
 </html>

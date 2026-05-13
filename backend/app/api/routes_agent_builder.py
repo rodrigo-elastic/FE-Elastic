@@ -26,16 +26,75 @@ router = APIRouter(prefix="/agent-builder", tags=["agent-builder"])
 
 
 USER_AGENT_PREFIX = "fec_user_"
+USER_TOOL_PREFIX = "fec_user_tool_"
 RESERVED_PREFIX = "fec_master_"
 RESERVED_IDS = {"fec_field_assistant"}
 SLUG_RE = re.compile(r"^[a-z0-9_]{3,40}$")
 AGENT_ID_RE = re.compile(r"^[a-z0-9_-]{3,80}$")
+TOOL_ID_RE = re.compile(r"^[a-z0-9_.-]{3,80}$")
+# Tool types Agent Builder accepts. `esql` is the only fully-supported custom
+# type today; `index_search` and `search` lookups are reserved for future.
+TOOL_TYPES = {"esql", "index_search", "search"}
+TOOL_PARAM_TYPES = {"string", "integer", "number", "boolean", "date", "keyword"}
 
 
 class ConverseRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=8000)
     conversation_id: Optional[str] = Field(None, max_length=120)
     agent_id: Optional[str] = Field("fec_field_assistant", max_length=120)
+
+
+class ToolParamSpec(BaseModel):
+    """One parameter the agent must pass to the ES|QL tool at execute time."""
+    type: str = Field(..., description="Pydantic type: string | integer | number | boolean | date | keyword.")
+    description: str = Field(..., min_length=1, max_length=400)
+    optional: Optional[bool] = None
+    defaultValue: Optional[Any] = None
+
+    @field_validator("type")
+    @classmethod
+    def _validate_type(cls, v: str) -> str:
+        if v not in TOOL_PARAM_TYPES:
+            raise ValueError(f"param.type must be one of {sorted(TOOL_PARAM_TYPES)}")
+        return v
+
+
+class CreateToolRequest(BaseModel):
+    """Custom Agent Builder tool. Today we support the `esql` shape; the
+    `query` is templated with `?param` placeholders the agent fills in."""
+    slug: str = Field(..., min_length=3, max_length=40)
+    type: str = Field(default="esql")
+    description: str = Field(..., min_length=10, max_length=600)
+    query: str = Field(..., min_length=4, max_length=4000)
+    tags: List[str] = Field(default_factory=list, max_length=12)
+    params: Dict[str, ToolParamSpec] = Field(default_factory=dict)
+
+    @field_validator("type")
+    @classmethod
+    def _validate_type(cls, v: str) -> str:
+        if v not in TOOL_TYPES:
+            raise ValueError(f"type must be one of {sorted(TOOL_TYPES)}")
+        return v
+
+    @field_validator("slug")
+    @classmethod
+    def _validate_slug(cls, v: str) -> str:
+        bare = v[len(USER_TOOL_PREFIX):] if v.startswith(USER_TOOL_PREFIX) else v
+        if not SLUG_RE.match(bare):
+            raise ValueError("slug must match ^[a-z0-9_]{3,40}$")
+        return bare
+
+
+class ExecuteToolRequest(BaseModel):
+    tool_id: str = Field(..., min_length=3, max_length=120)
+    tool_params: Dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("tool_id")
+    @classmethod
+    def _validate_tool_id(cls, v: str) -> str:
+        if not TOOL_ID_RE.match(v):
+            raise ValueError("tool_id must match ^[a-z0-9_.-]{3,80}$")
+        return v
 
 
 class CreateAgentRequest(BaseModel):
@@ -100,6 +159,129 @@ def list_tools() -> Dict[str, Any]:
         # so the Agent Builder UI always has a tool picker.
         tools = [{"id": t["id"], "name": t["name"], "description": t["description"]} for t in MCP_TOOLS]
     return {"tools": tools, "live": ab.is_live()}
+
+
+@router.get("/tools/{tool_id}")
+def get_tool(tool_id: str) -> Dict[str, Any]:
+    """Fetch one tool definition by id. Falls back to the local MCP catalogue
+    so the editor UI can preview built-in tool descriptions even when Kibana
+    is offline."""
+    if not TOOL_ID_RE.match(tool_id):
+        raise HTTPException(status_code=422, detail="tool_id must match ^[a-z0-9_.-]{3,80}$")
+    if ab.is_live():
+        result = ab.get_tool(tool_id)
+        if isinstance(result, dict) and not result.get("error"):
+            return result
+        if isinstance(result, dict) and result.get("status") == 404:
+            raise HTTPException(status_code=404, detail=f"tool '{tool_id}' not found")
+    # Local fallback: MCP catalogue entries are read-only stubs but useful for the UI.
+    for t in MCP_TOOLS:
+        if t.get("id") == tool_id:
+            return {"id": t["id"], "name": t.get("name"), "description": t.get("description"), "type": "builtin", "read_only": True}
+    raise HTTPException(status_code=404, detail=f"tool '{tool_id}' not found")
+
+
+@router.post("/tools")
+def create_tool(req: CreateToolRequest) -> Dict[str, Any]:
+    """Create a user-defined Agent Builder tool. The id is auto-prefixed with
+    `fec_user_tool_` so user-created tools never collide with the built-in
+    MCP catalogue."""
+    if not ab.is_live():
+        raise HTTPException(status_code=409, detail="Agent Builder not live: set KIBANA_API_KEY.")
+    tool_id = USER_TOOL_PREFIX + req.slug
+    # Reject any caller trying to overwrite a built-in MCP tool.
+    if any(t.get("id") == tool_id for t in MCP_TOOLS):
+        raise HTTPException(status_code=409, detail=f"tool id '{tool_id}' is reserved by the built-in catalogue")
+
+    params: Dict[str, Any] = {}
+    for name, spec in req.params.items():
+        body = {"type": spec.type, "description": spec.description}
+        if spec.optional is not None:
+            body["optional"] = spec.optional
+        if spec.defaultValue is not None:
+            body["defaultValue"] = spec.defaultValue
+        params[name] = body
+
+    payload: Dict[str, Any] = {
+        "id": tool_id,
+        "type": req.type,
+        "description": req.description,
+        "tags": list(dict.fromkeys(req.tags)),
+        "configuration": {"query": req.query, "params": params},
+    }
+    result = ab.upsert_tool(payload)
+    if isinstance(result, dict) and result.get("error"):
+        detail = result.get("body") or result.get("exception") or "Agent Builder tool upsert failed"
+        raise HTTPException(status_code=502, detail=str(detail)[:500])
+    return {"tool_id": tool_id, "type": req.type, "param_count": len(params), "tags": payload["tags"]}
+
+
+@router.put("/tools/{tool_id}")
+def update_tool(tool_id: str, req: CreateToolRequest) -> Dict[str, Any]:
+    """Update an existing user tool. Built-in tools are read-only and rejected."""
+    if not TOOL_ID_RE.match(tool_id):
+        raise HTTPException(status_code=422, detail="tool_id must match ^[a-z0-9_.-]{3,80}$")
+    if not tool_id.startswith(USER_TOOL_PREFIX):
+        raise HTTPException(status_code=403, detail=f"only user tools (id prefixed with '{USER_TOOL_PREFIX}') can be updated")
+    if not ab.is_live():
+        raise HTTPException(status_code=409, detail="Agent Builder not live: set KIBANA_API_KEY.")
+    # Reuse create_tool's payload shaping but force the URL id.
+    params: Dict[str, Any] = {}
+    for name, spec in req.params.items():
+        body = {"type": spec.type, "description": spec.description}
+        if spec.optional is not None:
+            body["optional"] = spec.optional
+        if spec.defaultValue is not None:
+            body["defaultValue"] = spec.defaultValue
+        params[name] = body
+    payload = {
+        "id": tool_id,
+        "type": req.type,
+        "description": req.description,
+        "tags": list(dict.fromkeys(req.tags)),
+        "configuration": {"query": req.query, "params": params},
+    }
+    result = ab.upsert_tool(payload)
+    if isinstance(result, dict) and result.get("error"):
+        status_code = 404 if result.get("status") == 404 else 502
+        detail = result.get("body") or result.get("exception") or "Agent Builder tool update failed"
+        raise HTTPException(status_code=status_code, detail=str(detail)[:500])
+    return {"tool_id": tool_id, "type": req.type, "param_count": len(params), "tags": payload["tags"]}
+
+
+@router.delete("/tools/{tool_id}")
+def delete_tool(tool_id: str) -> Dict[str, Any]:
+    """Delete a user-created tool. Built-in tools are protected."""
+    if not TOOL_ID_RE.match(tool_id):
+        raise HTTPException(status_code=422, detail="tool_id must match ^[a-z0-9_.-]{3,80}$")
+    if not tool_id.startswith(USER_TOOL_PREFIX):
+        raise HTTPException(status_code=403, detail=f"only user tools (id prefixed with '{USER_TOOL_PREFIX}') can be deleted")
+    if not ab.is_live():
+        raise HTTPException(status_code=409, detail="Agent Builder not live: set KIBANA_API_KEY.")
+    result = ab._request("DELETE", f"/api/agent_builder/tools/{tool_id}")
+    if isinstance(result, dict) and result.get("error"):
+        status_code = 404 if result.get("status") == 404 else 502
+        detail = result.get("body") or result.get("exception") or "Agent Builder tool delete failed"
+        raise HTTPException(status_code=status_code, detail=str(detail)[:500])
+    return {"deleted": True, "tool_id": tool_id}
+
+
+@router.post("/tools/_execute")
+def execute_tool(req: ExecuteToolRequest) -> Dict[str, Any]:
+    """Run a tool with the supplied params. Mirrors the Kibana 9.4+ contract
+    (`POST /api/agent_builder/tools/_execute`)."""
+    if not ab.is_live():
+        raise HTTPException(status_code=409, detail="Agent Builder not live: set KIBANA_API_KEY.")
+    # Try the canonical `_execute` path first (Stack 9.4+), fall back to the
+    # legacy `/execute` path the integration helper uses.
+    body = {"tool_id": req.tool_id, "tool_params": req.tool_params}
+    result = ab._request("POST", "/api/agent_builder/tools/_execute", body)
+    if isinstance(result, dict) and result.get("error") and result.get("status") in (404, 405):
+        result = ab.execute_tool(req.tool_id, req.tool_params)
+    if isinstance(result, dict) and result.get("error"):
+        detail = result.get("body") or result.get("exception") or "Agent Builder tool execute failed"
+        raise HTTPException(status_code=502, detail=str(detail)[:500])
+    return result
 
 
 @router.get("/agents")

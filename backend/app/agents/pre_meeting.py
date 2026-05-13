@@ -101,6 +101,7 @@ class PreMeetingAgent(Agent):
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "headline": brief_dict["headline"],
             "sections": brief_dict["sections"],
+            "presales_playbook": brief_dict.get("presales_playbook"),
             "artifact_path": str(artifact_path),
             "slack_channel": SLACK_CHANNEL,
             # Underlying sources Claude saw when producing the brief; surfaced in the UI
@@ -214,6 +215,7 @@ class PreMeetingAgent(Agent):
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "headline": brief_dict["headline"],
             "sections": brief_dict["sections"],
+            "presales_playbook": brief_dict.get("presales_playbook"),
             "artifact_path": str(artifact_path),
             "company_snapshot": company,
             "meeting_snapshot": meeting,

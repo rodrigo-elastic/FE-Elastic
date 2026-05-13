@@ -854,6 +854,9 @@ function showSkeleton(target) {
 function renderBrief(brief) {
   const host = document.getElementById("brief");
   clear(host);
+  // Expose the full brief so the Pre-sales Playbook widget can detect vertical
+  // (search vs observability) from the same data the agent used.
+  try { window.__lastBrief = brief; } catch (_) { /* ignore */ }
   host.appendChild(el("div", { class: "brief-headline" }, brief.headline));
 
   const tools = el("div", { class: "section-tools" }, [

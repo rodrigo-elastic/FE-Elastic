@@ -18,9 +18,33 @@ class BriefSectionOut(BaseModel):
     bullets: List[str]
 
 
+class PresalesPlaybookItemOut(BaseModel):
+    """One framework item with the canonical heading and account-specific body the agent generated."""
+    heading: str
+    body: str
+
+
+class PresalesPlaybookBlockOut(BaseModel):
+    """One framework block: which framework (search | observability) and three account-specific items."""
+    framework: Literal["search", "observability"]
+    items: List[PresalesPlaybookItemOut]
+
+
+class PresalesPlaybookOut(BaseModel):
+    """SKO 2026 pre-sales playbook applied to the current account by the agent.
+
+    `primary` is the framework that fits the account; `secondary` is set only when
+    the deal genuinely spans Search + Observability and the FE benefits from
+    both cards.
+    """
+    primary: PresalesPlaybookBlockOut
+    secondary: Optional[PresalesPlaybookBlockOut] = None
+
+
 class PreMeetingBriefOut(BaseModel):
     headline: str
     sections: List[BriefSectionOut]
+    presales_playbook: Optional[PresalesPlaybookOut] = None
 
 
 class ActionItemOut(BaseModel):

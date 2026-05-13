@@ -20,15 +20,78 @@ Hard rules:
 - If the customer uses Splunk: always include an AutoOps talking point in the Talking Points section. AutoOps is free for all Elastic tiers (Cloud and self-managed). Splunk has no equivalent native diagnostic - each cluster health check requires a Professional Services engagement (~$15k-25k). AutoOps monitors 100+ metrics continuously and surfaces root-cause fixes with ready-to-run commands. This is a concrete, immediate TCO proof point that does not require a POC.
 - Never use the em dash character. Use commas, parentheses, colons, or periods.
 
-Brief structure (4 to 6 sections, each with 3 to 5 bullets):
+Pre-sales frameworks (apply per vertical; the FE refers to these as the "Listen-Say-Ask" and "How NOT to Sell" cards):
+
+A) When the deal is Search / AI retrieval (Elasticsearch, vector, ELSER, semantic, marketplace search, GenAI grounding):
+   - Listen for: inconsistent relevance, scalability / performance issues, difficulty measuring success.
+   - Say: "This isn't just search, it's the retrieval layer for AI." / "You control relevance, not the vendor."
+   - Ask: "What happens today when search isn't optimized?"
+
+B) When the deal is Observability / SIEM / APM:
+   - Frame Elastic as a platform; do NOT lead with standalone features like Metrics, APM, or Case Management.
+   - Refuse to let the deal become a price or feature bake-off. Anchor on platform consolidation and TCO.
+   - Qualify hard: surface the owner, the pain, and the timeline. No owner, no pain, no timeline, no deal.
+
+Brief structure (5 to 6 sections, each with 3 to 5 bullets):
 1. Headline & strategic context (why this meeting matters now).
 2. Recent signals from news (last 30 days).
 3. Likely pain points (cite tickets, transcripts, news).
-4. Discovery questions to validate the hypothesis.
-5. Talking points (Elastic value mapped to their stack and pain).
+4. Discovery questions to validate the hypothesis. Include the "Ask" question from the framework above when relevant.
+5. Talking points (Elastic value mapped to their stack and pain). Include the "Say" lines verbatim when the deal is Search; explicitly avoid feature bake-off framing when the deal is Observability.
 6. Risks & open questions (include any internal blockers worth flagging).
 
+Plus a separate `presales_playbook` object (NOT one of the sections above):
+- Decide whether the deal is Search, Observability, or Both based on the dossier's tech stack, recent signals, and the meeting title.
+- Fill the three playbook items for the chosen framework with content that could ONLY have been written for THIS customer. The headings are fixed; the body must read like an FE wrote it after reading this specific dossier.
+- Every body MUST name at least two of: a specific incumbent tool from the dossier (Datadog, Splunk, Grafana, OpenSearch, etc.), a specific signal (open ticket, renewal date, audit deadline, board mandate, transcript line), a named stakeholder, a concrete workload (Kafka pipeline, Kubernetes pod logs, marketplace catalog, RAG over policy PDFs, etc.). Generic framework copy with the customer's name swapped in is NOT acceptable.
+
+- For the Search framework: items use headings "Listen for", "Say", "Ask".
+  - "Listen for" must enumerate the relevance / scale / measurement signals as they would appear in THIS customer's environment (cite incumbent tools, query languages, retention rules, the actual workflow the dossier hints at).
+  - "Say" must adapt the Search 101 lines ("retrieval layer for AI" and "you control relevance, not the vendor") to the customer's specific use case. Re-write them so they speak to Northwind-style observability search, or Mercado-style marketplace relevance, or a RAG-grounding story, etc. Pure verbatim slide copy is a fail; the spirit of the line must survive but the wording must reflect this account.
+  - "Ask" must rewrite "What happens today when search isn't optimized?" into a workflow-specific probe that names the customer's tool chain (e.g. API gateway -> Kafka -> Kubernetes pod logs, or catalog -> autocomplete -> checkout funnel) and ends in an answerable question.
+
+- For the Observability framework: items use headings "Lead with the platform", "Avoid the bake-off", "Qualify hard".
+  - "Lead with the platform" names this customer's specific point-tool fragmentation and the consolidation story across logs + metrics + traces + security.
+  - "Avoid the bake-off" identifies the specific bake-off risk for THIS deal (e.g. "Datadog will respond with a renewal discount aimed at the $X/year line"), and gives the FE the pivot off feature checklist back to TCO / consolidation.
+  - "Qualify hard" MUST explicitly state whether the dossier reveals an owner, a pain, and a timeline; name them when present, flag them as MISSING when absent. End with whether this is a real deal, an early conversation, or a fishing expedition.
+
+- If the deal is genuinely Both (the dossier shows real signal on both sides, not just a tangential mention), emit a `secondary` block with the other framework's three items filled at the same level of specificity. Do NOT emit a secondary block just to fill space; if the deal is single-vertical, leave `secondary` out.
+
 Output the structured object via the json_schema response format. The FE will see exactly what you write."""
+
+_PLAYBOOK_ITEM = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "heading": {
+            "type": "string",
+            "description": "Fixed framework heading (e.g. 'Listen for', 'Say', 'Ask', 'Lead with the platform', 'Avoid the bake-off', 'Qualify hard').",
+        },
+        "body": {
+            "type": "string",
+            "description": "Account-specific content. Cite this customer's stack, signals, tickets, and named stakeholders. Do not echo the generic framework prompt.",
+        },
+    },
+    "required": ["heading", "body"],
+}
+
+_PLAYBOOK_BLOCK = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "framework": {
+            "type": "string",
+            "enum": ["search", "observability"],
+            "description": "Which framework these three items belong to.",
+        },
+        "items": {
+            "type": "array",
+            "items": _PLAYBOOK_ITEM,
+            "description": "Exactly three items, in the canonical heading order for the chosen framework.",
+        },
+    },
+    "required": ["framework", "items"],
+}
 
 OUTPUT_SCHEMA = {
     "type": "object",
@@ -52,6 +115,16 @@ OUTPUT_SCHEMA = {
                 },
                 "required": ["heading", "bullets"],
             },
+        },
+        "presales_playbook": {
+            "type": "object",
+            "additionalProperties": False,
+            "description": "Per-account application of the SKO 2026 pre-sales frameworks. The headings are fixed; the agent fills the body of each item with content specific to this customer.",
+            "properties": {
+                "primary": _PLAYBOOK_BLOCK,
+                "secondary": _PLAYBOOK_BLOCK,
+            },
+            "required": ["primary"],
         },
     },
     "required": ["headline", "sections"],
@@ -152,6 +225,25 @@ _MOCKS = {
                 "EU banking regulatory mapping must be ready before architecture council review.",
             ]},
         ],
+        "presales_playbook": {
+            "primary": {
+                "framework": "observability",
+                "items": [
+                    {
+                        "heading": "Lead with the platform",
+                        "body": "Northwind already runs Splunk for SIEM, Datadog for APM, and Grafana for dashboards. Anchor on the consolidation story: one cluster for logs, metrics, traces, plus EU-banking SIEM. Do not open with Metrics or APM in isolation; the buyer (Mike) is fighting three-tool fatigue, not shopping for a fourth point tool.",
+                    },
+                    {
+                        "heading": "Avoid the bake-off",
+                        "body": "Datadog will push a price cut on renewal; refuse the feature checklist trap. Frame the conversation around 7-year audit retention TCO (Datadog index-rate vs Elastic frozen tier on S3) and EU banking SIEM scope, both of which Datadog cannot match natively.",
+                    },
+                    {
+                        "heading": "Qualify hard",
+                        "body": "Owner: Mike (Director of Platform Engineering) is the technical buyer; AE confirmed CFO sign-off needed above $2M. Pain: open P1 ticket on SIEM coverage gap surfaced by EU banking audit prep; $80k Datadog overage last month. Timeline: Datadog renewal November 1 is the hard date. All three qualifiers present; this is a real deal, not a fishing expedition.",
+                    },
+                ],
+            },
+        },
     },
     "mercado-atlas": {
         "headline": "Mercado Atlas's flat marketplace conversion + Datadog renewal converge on a search relevance plus observability consolidation play.",
@@ -187,6 +279,42 @@ _MOCKS = {
                 "Confirm the 30 percent cost target is hard or aspirational.",
             ]},
         ],
+        "presales_playbook": {
+            "primary": {
+                "framework": "search",
+                "items": [
+                    {
+                        "heading": "Listen for",
+                        "body": "Mercado Atlas's marketplace conversion has been flat 4 quarters: that is the inconsistent-relevance signal. Solr (legacy) + Elasticsearch (new surfaces) split is the scalability tell. The board's 30 percent cost mandate plus the open P1 ticket on search relevance plateau are the difficulty-measuring-success signals.",
+                    },
+                    {
+                        "heading": "Say",
+                        "body": "Open the relevance conversation with: \"This isn't just search, it's the retrieval layer for AI.\" When Diego pushes on tuning autonomy, follow with: \"You control relevance, not the vendor.\" Both lines map to ELSER plus learning-to-rank giving them a production semantic stack without rolling their own vector pipeline.",
+                    },
+                    {
+                        "heading": "Ask",
+                        "body": "Lead Lucia (architecture council) with: \"What happens today when search isn't optimized?\" Tie her answer to the marketplace conversion number and the Sao Paulo to Buenos Aires cross-region latency she already named as a constraint.",
+                    },
+                ],
+            },
+            "secondary": {
+                "framework": "observability",
+                "items": [
+                    {
+                        "heading": "Lead with the platform",
+                        "body": "Datadog renewal at $6M/year and the Solr + Elasticsearch split tee up the platform story: one cluster owns search relevance + observability + ML retrieval. Do not lead with APM or Metrics standalone; Lucia has already seen those decks from Datadog.",
+                    },
+                    {
+                        "heading": "Avoid the bake-off",
+                        "body": "Datadog will counter with a 20-30 percent renewal discount. Refuse the feature checklist. Anchor on the board's 30 percent cost target plus the latency story which Datadog has no answer for cross-region.",
+                    },
+                    {
+                        "heading": "Qualify hard",
+                        "body": "Owner: Lucia owns architecture council, Diego owns search engineering, both named on the meeting invite. Pain: marketplace conversion plateau is board-level. Timeline: Datadog renewal September 1 plus board-mandated cost review same quarter. Three qualifiers present.",
+                    },
+                ],
+            },
+        },
     },
     "atlantico": {
         "headline": "Banco Atlántico's Splunk renewal + 'Atlas Multi-Cloud' platform rollout open the door to a consolidated observability layer across all clouds.",

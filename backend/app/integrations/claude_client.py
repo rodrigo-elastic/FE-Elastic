@@ -9,6 +9,7 @@ __version__ = "0.1.0"
 __status__ = "Development"
 
 import json
+import re as _re_top
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional, Type, TypeVar
 
@@ -18,6 +19,26 @@ from app.config import settings
 from app.utils.logging import get_logger
 
 log = get_logger(__name__)
+
+
+# Trailing commas in arrays/objects are illegal in strict JSON but Claude
+# occasionally emits them on long structured outputs. Strip the easy cases
+# before json.loads so a single stray comma does not 500 the whole agent.
+_TRAILING_COMMA_RE = _re_top.compile(r",(\s*[}\]])")
+
+
+def _loads_tolerant(text: str) -> Any:
+    """Parse JSON, falling back to a trailing-comma-tolerant pass if strict mode fails.
+
+    Strict mode is tried first to keep the happy path cheap. The fallback only
+    removes commas immediately before `}` or `]`; it does not attempt to repair
+    structural damage, so any genuinely-broken payload still raises.
+    """
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        cleaned = _TRAILING_COMMA_RE.sub(r"\1", text)
+        return json.loads(cleaned)
 
 
 def _audit(record: Dict[str, Any]) -> None:
@@ -211,7 +232,7 @@ class ClaudeService:
 
         text = self._first_text_block(response)
         try:
-            data = json.loads(text)
+            data = _loads_tolerant(text)
         except json.JSONDecodeError as e:
             log.error("claude.json_parse_failed", error=str(e), preview=text[:200])
             raise
@@ -355,13 +376,15 @@ class ElasticInferenceService:
                 "input_tokens": in_tok, "output_tokens": out_tok, **(audit_meta or {})})
 
         # Parse JSON - strip markdown code fences if the model added them.
+        # Trailing-comma tolerant on both passes; long structured outputs
+        # occasionally include a stray comma and that should not 500 the call.
         try:
-            data = json.loads(content)
+            data = _loads_tolerant(content)
         except json.JSONDecodeError:
             m = _re.search(r"```(?:json)?\s*([\s\S]*?)```", content)
             if m:
                 try:
-                    data = json.loads(m.group(1))
+                    data = _loads_tolerant(m.group(1))
                 except json.JSONDecodeError:
                     data = None
             else:
