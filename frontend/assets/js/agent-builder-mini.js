@@ -39,10 +39,13 @@
     let src = String(text);
     // 1. Carve out fenced code so the content is not touched by inline rules.
     const codeBlocks = [];
+    // Sentinel must survive trim/escapeHtml. " CODE0 " loses its surrounding
+    // spaces during paragraph trim() and leaks a literal "CODE0" to the user;
+    // a unique multi-char marker is safe through every downstream pass.
     src = src.replace(/```([a-zA-Z0-9_+\-]*)\n?([\s\S]*?)```/g, (_, lang, code) => {
       const i = codeBlocks.length;
       codeBlocks.push({ lang: String(lang || "").trim(), code: String(code || "") });
-      return " CODE" + i + " ";
+      return "\n__FECBLOCK_" + i + "__\n";
     });
     // 2. Escape HTML on everything else.
     src = escapeHtml(src);
@@ -134,7 +137,7 @@
     // Links [text](url)
     html = html.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
     // 5. Restore fenced code blocks last so their content is untouched.
-    html = html.replace(/ CODE(\d+) /g, (_, n) => {
+    html = html.replace(/__FECBLOCK_(\d+)__/g, (_, n) => {
       const block = codeBlocks[+n] || { lang: "", code: "" };
       const cls = block.lang ? ' class="lang-' + escapeHtml(block.lang) + '"' : "";
       return "<pre><code" + cls + ">" + escapeHtml(block.code) + "</code></pre>";

@@ -1,0 +1,135 @@
+<!--
+  filename: customer-health.html
+  description: CA-first Customer Health dashboard. Aggregates AutoOps cluster
+  signals, POV Health (if applicable), renewal proximity + signals, ticket
+  trend, last contact, 90-day adoption trajectory, and rule-based proactive
+  tasks for every account into one screen. Powered by /api/v1/customer-health.
+  Author: Rodrigo Careaga
+  Date: 05-13-2026
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FE Copilot - Customer Health</title>
+  <meta name="description" content="Customer Architect dashboard. Cluster health, adoption trajectory, renewal risk and proactive tasks per account." />
+  <link rel="canonical" href="/customer-health.html" />
+  <script>(function(){try{var t=localStorage.getItem("fec.theme");if(!t){t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";}document.documentElement.setAttribute("data-theme",t==="light"?"light":"dark");}catch(e){document.documentElement.setAttribute("data-theme","dark");}})();</script>
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="/assets/img/elastic/glyph-cluster-color.svg" />
+  <style>
+    .ch-layout { display: grid; grid-template-columns: 320px 1fr; gap: 18px; margin-top: 14px; }
+    @media (max-width: 900px) { .ch-layout { grid-template-columns: 1fr; } }
+
+    .ch-list { display: flex; flex-direction: column; gap: 6px; max-height: 76vh; overflow-y: auto; padding-right: 4px; }
+    .ch-row { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); cursor: pointer; transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease; }
+    .ch-row:hover { transform: translateY(-1px); border-color: var(--border-strong); box-shadow: var(--shadow-md); }
+    .ch-row.is-selected { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(11, 100, 221, 0.18); }
+    .ch-row-head { display: flex; align-items: center; gap: 8px; }
+    .ch-row-name { flex: 1; font-weight: 700; font-size: 13.5px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ch-row-meta { display: flex; gap: 10px; flex-wrap: wrap; font-size: 11px; color: var(--muted); }
+
+    .ch-score { display: inline-flex; align-items: center; justify-content: center; min-width: 36px; padding: 3px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 800; color: #0a0d14; }
+    .ch-score.healthy { background: #00BFB3; }
+    .ch-score.watch { background: #FEC514; }
+    .ch-score.at_risk { background: #F58F2B; color: #fff; }
+    .ch-score.critical { background: #F04E98; color: #fff; }
+
+    .ch-detail { display: flex; flex-direction: column; gap: 16px; }
+    .ch-detail-head { display: flex; align-items: flex-start; gap: 14px; padding: 16px 18px; border: 1px solid var(--border); border-radius: 12px; background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%); }
+    .ch-detail-title { margin: 0; font-size: 20px; font-weight: 800; color: var(--ink); }
+    .ch-detail-sub { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+    .ch-detail-score-big { font-size: 30px; font-weight: 900; color: var(--ink); }
+    .ch-detail-score-block { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+
+    .ch-signals-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+    .ch-signal-card { border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; background: var(--panel); }
+    .ch-signal-lbl { font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+    .ch-signal-val { font-size: 18px; font-weight: 800; color: var(--ink); line-height: 1.15; }
+    .ch-signal-val.green { color: #00BFB3; }
+    .ch-signal-val.yellow { color: #FEC514; }
+    .ch-signal-val.red { color: #F04E98; }
+    .ch-signal-sub { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+
+    .ch-section { border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; background: var(--panel); }
+    .ch-section-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .ch-section-h h3 { margin: 0; font-size: 14px; font-weight: 800; color: var(--ink); letter-spacing: 0.01em; }
+    .ch-section-h .ch-trend { font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+    .ch-trend.up { background: rgba(0, 191, 179, 0.15); color: #00BFB3; }
+    .ch-trend.down { background: rgba(240, 78, 152, 0.15); color: #F04E98; }
+    .ch-trend.flat { background: var(--bg-grid); color: var(--muted); }
+
+    .ch-spark-wrap { position: relative; }
+    .ch-spark { width: 100%; height: 90px; display: block; }
+    .ch-spark-axis { font-size: 10px; fill: var(--muted); }
+    .ch-spark-line { fill: none; stroke: #1BA9F5; stroke-width: 2; }
+    .ch-spark-area { fill: rgba(27, 169, 245, 0.12); stroke: none; }
+    .ch-spark-dot { fill: #1BA9F5; }
+    .ch-spark-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+    .ch-features { display: flex; flex-wrap: wrap; gap: 8px; }
+    .ch-feature { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 12px; border: 1px solid var(--border); }
+    .ch-feature.active { background: rgba(0, 191, 179, 0.12); color: #00BFB3; border-color: rgba(0, 191, 179, 0.35); }
+    .ch-feature.warm { background: rgba(254, 197, 20, 0.12); color: #FEC514; border-color: rgba(254, 197, 20, 0.35); }
+    .ch-feature.cooling { background: rgba(245, 143, 43, 0.12); color: #F58F2B; border-color: rgba(245, 143, 43, 0.35); }
+    .ch-feature.stale { background: rgba(138, 143, 152, 0.12); color: var(--muted); }
+    .ch-feature-days { font-size: 10.5px; opacity: 0.85; }
+
+    .ch-task { display: flex; gap: 12px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); margin-bottom: 8px; }
+    .ch-task-sev { width: 4px; align-self: stretch; border-radius: 4px; flex-shrink: 0; }
+    .ch-task-sev.high { background: #F04E98; }
+    .ch-task-sev.medium { background: #FEC514; }
+    .ch-task-sev.low { background: #1BA9F5; }
+    .ch-task-sev.critical { background: #F04E98; box-shadow: 0 0 0 1px #F04E98; }
+    .ch-task-body { flex: 1; min-width: 0; }
+    .ch-task-title { font-weight: 700; font-size: 13.5px; color: var(--ink); }
+    .ch-task-rationale { font-size: 12.5px; color: var(--muted); margin-top: 4px; line-height: 1.45; }
+    .ch-task-meta { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; font-size: 11px; color: var(--muted); }
+    .ch-task-meta .pill { padding: 2px 8px; border-radius: 999px; background: var(--bg-grid); }
+    .ch-task-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+    .ch-task-btn { font-size: 11.5px; padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--panel-2); color: var(--ink); cursor: pointer; }
+    .ch-task-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .ch-task.is-scheduled { opacity: 0.55; }
+    .ch-task.is-scheduled .ch-task-title::before { content: "✓ "; color: #00BFB3; }
+
+    .ch-empty { padding: 28px; text-align: center; color: var(--muted); font-size: 13px; border: 1px dashed var(--border); border-radius: 10px; }
+  </style>
+</head>
+<body class="workspace-page">
+  <a class="skip-to-main" href="#main-content">Skip to main content</a>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="FE Copilot home">
+      <img class="logo-elastic" src="/assets/img/elastic/logo-horizontal-white.svg" alt="Elastic" width="64" height="22" />
+      <span class="brand-sep">/</span>
+      <span class="name">FE <span class="accent">Copilot</span></span>
+      <span class="tag">Customer Health</span>
+    </a>
+    <div class="right">
+      <a class="pill" href="/workspace.html">Workspace</a>
+      <a class="pill" href="/qbr.html">QBR</a>
+      <span class="pill" id="status" aria-live="polite">Loading...</span>
+    </div>
+  </header>
+
+  <main class="container" id="main-content" tabindex="-1">
+    <section class="hero">
+      <h1>Customer Health <span class="grad">at a glance.</span></h1>
+      <p class="lede">
+        Every account, every signal: cluster status, renewal proximity, ticket trend, adoption trajectory, and the proactive tasks your CA hat says to run before the next call.
+      </p>
+    </section>
+
+    <section class="ch-layout">
+      <aside class="ch-list" id="ch-list" aria-label="Customers ranked by health"></aside>
+      <section class="ch-detail" id="ch-detail" aria-live="polite"><div class="ch-empty">Pick a customer to see the full health view.</div></section>
+    </section>
+  </main>
+
+  <script src="/config.js?v=20260513"></script>
+  <script src="/assets/js/api.js"></script>
+  <script src="/assets/js/ui.js"></script>
+  <script src="/assets/js/api-retry.js"></script>
+  <script src="/assets/js/customer-health.js?v=20260513"></script>
+</body>
+</html>

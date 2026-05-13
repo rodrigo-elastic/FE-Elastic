@@ -336,7 +336,9 @@
 
       <label class="handover-lbl">
         Account name
-        <input type="text" id="handover-company" placeholder="e.g. Searchlight Capital" autocomplete="organization" />
+        <input type="text" id="handover-company" list="handover-accounts" placeholder="Pick an account..." autocomplete="off" />
+        <datalist id="handover-accounts"></datalist>
+        <span class="muted small" id="handover-company-hint" style="display:block;margin-top:4px;font-size:11px"></span>
       </label>
 
       <label class="handover-lbl">
@@ -473,7 +475,60 @@
         if (submit) { submit.disabled = false; submit.textContent = "Send handover"; }
       }
 
-      if (fab) fab.addEventListener("click", openModal);
+      // Cache the canonical list of accounts the backend knows about. The
+      // <datalist> drives the autocomplete; the JS check below enforces that
+      // the FE can only submit one of those names so we never POST a freeform
+      // string that the backend has zero data on.
+      var KNOWN_ACCOUNTS = [];
+      var KNOWN_NAMES_LOWER = new Set();
+
+      function loadAccounts() {
+        return fetch("/api/v1/handover/accounts", { headers: { "Accept": "application/json" } })
+          .then(function (r) { return r.ok ? r.json() : { accounts: [] }; })
+          .then(function (d) {
+            KNOWN_ACCOUNTS = (d && d.accounts) || [];
+            KNOWN_NAMES_LOWER = new Set(KNOWN_ACCOUNTS.map(function (a) { return (a.name || "").toLowerCase(); }));
+            var dl = document.getElementById("handover-accounts");
+            if (!dl) return;
+            dl.innerHTML = KNOWN_ACCOUNTS.map(function (a) {
+              var sources = (a.sources || []).join(", ");
+              return '<option value="' + a.name.replace(/"/g, "&quot;") + '">' + sources + '</option>';
+            }).join("");
+            var hint = document.getElementById("handover-company-hint");
+            if (hint) hint.textContent = KNOWN_ACCOUNTS.length + " account(s) with data on file.";
+          })
+          .catch(function () { /* offline; user gets free text + server-side validation */ });
+      }
+
+      // Live validation hint: show the FE whether their typed name will resolve.
+      var companyInput = document.getElementById("handover-company");
+      if (companyInput) {
+        companyInput.addEventListener("input", function () {
+          var v = (companyInput.value || "").trim().toLowerCase();
+          var hint = document.getElementById("handover-company-hint");
+          if (!hint) return;
+          if (!v) { hint.textContent = KNOWN_ACCOUNTS.length + " account(s) with data on file."; hint.style.color = ""; return; }
+          if (KNOWN_NAMES_LOWER.has(v)) {
+            hint.textContent = "✓ Match found - data ready.";
+            hint.style.color = "var(--success, #00BFB3)";
+          } else {
+            var partial = KNOWN_ACCOUNTS.filter(function (a) { return a.name.toLowerCase().indexOf(v) !== -1; });
+            if (partial.length) {
+              hint.textContent = "Did you mean: " + partial.slice(0, 3).map(function (a) { return a.name; }).join(", ") + "?";
+              hint.style.color = "var(--warning, #FEC514)";
+            } else {
+              hint.textContent = "No data on file for that account.";
+              hint.style.color = "var(--danger, #F04E98)";
+            }
+          }
+        });
+      }
+
+      if (fab) {
+        fab.addEventListener("click", function () { openModal(); loadAccounts(); });
+        // Pre-warm so the autocomplete is ready when the modal opens.
+        loadAccounts();
+      }
 
       if (modal) {
         // Close on backdrop or Cancel buttons
@@ -496,6 +551,15 @@
 
           if (!company) {
             status.textContent = "Please enter the account name.";
+            status.style.color = "var(--danger, #dc3545)";
+            document.getElementById("handover-company").focus();
+            return;
+          }
+          // Reject free-text that doesn't match an account on file. Prevents
+          // sending a handover for an account with zero data, which would
+          // produce a useless "No data on file" document.
+          if (KNOWN_NAMES_LOWER.size && !KNOWN_NAMES_LOWER.has(company.toLowerCase())) {
+            status.textContent = "Pick an account from the list - '" + company + "' has no data on file.";
             status.style.color = "var(--danger, #dc3545)";
             document.getElementById("handover-company").focus();
             return;

@@ -157,10 +157,15 @@
     if (text == null) return "";
     let src = String(text);
     const codeBlocks = [];
+    // Sentinel must survive trim/escapeHtml/paragraph wrapping. The previous
+    // " CODE0 " (with surrounding spaces) lost its trailing space when the
+    // paragraph builder trimmed each line, leaving a literal "CODE0" string
+    // visible to the user. Use a unique multi-char marker that no plausible
+    // user content contains and that won't be munged by trim() or escapeHtml.
     src = src.replace(/```([a-zA-Z0-9_+\-]*)\n?([\s\S]*?)```/g, (_, lang, code) => {
       const i = codeBlocks.length;
       codeBlocks.push({ lang: String(lang || "").trim(), code: String(code || "") });
-      return " CODE" + i + " ";
+      return "\n__FECBLOCK_" + i + "__\n";
     });
     src = escapeHtml(src);
     const lines = src.split(/\n/);
@@ -212,7 +217,7 @@
     html = html.replace(/(^|[\s(>])_([^_\n]+)_/g, "$1<em>$2</em>");
     html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
     html = html.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
-    html = html.replace(/ CODE(\d+) /g, (_, n) => {
+    html = html.replace(/__FECBLOCK_(\d+)__/g, (_, n) => {
       const block = codeBlocks[+n] || { lang: "", code: "" };
       const cls = block.lang ? ' class="lang-' + escapeHtml(block.lang) + '"' : "";
       return "<pre><code" + cls + ">" + escapeHtml(block.code) + "</code></pre>";

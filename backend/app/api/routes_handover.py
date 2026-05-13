@@ -22,6 +22,7 @@ from pydantic import BaseModel
 from app.config import settings
 from app.integrations import email_sender, slack_mock
 from app.integrations.claude_client import MODEL_HAIKU, get_service
+from app.repositories import synthetic
 from app.utils.logging import get_logger
 
 log = get_logger(__name__)
@@ -60,7 +61,12 @@ def _matches(name: str, target: str) -> bool:
 
 
 def _collect_account_data(company_name: str) -> Dict[str, Any]:
-    """Scan runtime dirs and return all records that match `company_name`."""
+    """Scan runtime dirs + synthetic repo and return everything we have on the
+    account: pre-meeting briefs, post-meeting records, scheduled meetings,
+    open support tickets, news snippets, and the company dossier itself.
+
+    Every record is timestamped where possible so the Claude prompt downstream
+    can produce a real chronological handover instead of a vague summary."""
     briefs_dir: Path = settings.runtime_dir / "briefs"
     pm_dir: Path = settings.runtime_dir / "post_meeting"
 
@@ -87,12 +93,109 @@ def _collect_account_data(company_name: str) -> Dict[str, Any]:
             if _matches(company_name, candidate):
                 post_meetings.append(rec)
 
+    # Synthetic enrichment: resolve the company id and pull the dossier,
+    # upcoming/past meetings, open tickets, and recent news so the handover
+    # has real dates and stakeholders to cite.
+    company: Dict[str, Any] = {}
+    upcoming: List[Dict[str, Any]] = []
+    past: List[Dict[str, Any]] = []
+    tickets: List[Dict[str, Any]] = []
+    news: List[Dict[str, Any]] = []
+
+    matched_company = None
+    for c in synthetic.companies():
+        if _matches(company_name, c.get("name", "")) or _matches(company_name, c.get("id", "")):
+            matched_company = c
+            break
+    if matched_company:
+        cid = matched_company.get("id", "")
+        company = matched_company
+        for m in synthetic.meetings():
+            if m.get("company_id") != cid:
+                continue
+            (upcoming if m.get("is_upcoming") else past).append(m)
+        tickets = synthetic.tickets_for(cid) or []
+        news = synthetic.news_for(cid) or []
+
+    # Pull explicit action items + MEDDPICC out of the post-meeting records so
+    # the prompt sees them as first-class lists rather than buried in a blob.
+    action_items: List[Dict[str, Any]] = []
+    meddpicc: List[Dict[str, Any]] = []
+    for pm in post_meetings:
+        for ai in (pm.get("action_items") or []):
+            if isinstance(ai, dict):
+                action_items.append({**ai, "source_meeting": pm.get("meeting_id"), "source_date": pm.get("generated_at")})
+        for sig in (pm.get("meddpicc_signals") or []):
+            if isinstance(sig, dict):
+                meddpicc.append({**sig, "source_meeting": pm.get("meeting_id"), "source_date": pm.get("generated_at")})
+
     return {
+        "company": company,
         "briefs": briefs,
         "post_meetings": post_meetings,
+        "upcoming_meetings": upcoming,
+        "past_meetings": past,
+        "tickets": tickets,
+        "open_tickets": [t for t in tickets if (t.get("status") or "").lower() in ("open", "in_progress", "new")],
+        "news": news[:8],
+        "action_items": action_items,
+        "meddpicc": meddpicc,
         "brief_count": len(briefs),
         "pm_count": len(post_meetings),
+        "upcoming_count": len(upcoming),
+        "past_count": len(past),
+        "open_ticket_count": sum(1 for t in tickets if (t.get("status") or "").lower() in ("open", "in_progress", "new")),
+        "action_item_count": len(action_items),
+        "meddpicc_count": len(meddpicc),
     }
+
+
+def _list_known_accounts() -> List[Dict[str, Any]]:
+    """Union of accounts from synthetic + disk briefs + disk post-meetings.
+    Powers the autocomplete on the workspace handover modal so the FE can
+    only pick accounts the system actually has data on."""
+    seen: Dict[str, Dict[str, Any]] = {}
+
+    def _add(name: str, source: str, company_id: str = ""):
+        if not name:
+            return
+        key = name.strip().lower()
+        if key in seen:
+            seen[key]["sources"].add(source)
+            return
+        seen[key] = {
+            "name": name.strip(),
+            "id": company_id or _slug(name),
+            "sources": {source},
+        }
+
+    for c in synthetic.companies():
+        _add(c.get("name", ""), "synthetic", c.get("id", ""))
+
+    briefs_dir = settings.runtime_dir / "briefs"
+    if briefs_dir.exists():
+        for p in briefs_dir.glob("*.json"):
+            try:
+                rec = json.loads(p.read_text(encoding="utf-8"))
+            except Exception:
+                continue
+            _add(rec.get("company_name") or rec.get("company_id") or "", "brief")
+
+    pm_dir = settings.runtime_dir / "post_meeting"
+    if pm_dir.exists():
+        for p in pm_dir.glob("*.json"):
+            try:
+                rec = json.loads(p.read_text(encoding="utf-8"))
+            except Exception:
+                continue
+            _add(rec.get("company_name") or rec.get("company_id") or "", "post_meeting")
+
+    out = []
+    for v in seen.values():
+        v["sources"] = sorted(v["sources"])
+        out.append(v)
+    out.sort(key=lambda x: x["name"].lower())
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -114,21 +217,36 @@ def _build_handover(
 ) -> str:
     """Call Claude (Haiku) and return the handover document as plain text."""
     system = (
-        "You are preparing a structured account handover document for a new Customer Advocate"
-        " (CA) taking over from a Solutions Architect (SA). Write a clear, concise handover"
-        " with these sections:\n"
-        "1) Account Overview\n"
-        "2) Relationship History (chronological)\n"
-        "3) Open Action Items\n"
-        "4) Key Stakeholders\n"
-        "5) Deal Status and Next Steps\n"
-        "6) Risks and Watchouts\n"
-        "Use only the data provided. Be direct and specific. Do not invent information."
-        " Use plain ASCII punctuation - no em dashes or special characters."
+        "You are preparing a thorough account handover document for a new Customer "
+        "Architect (CA) taking over from a Solutions Architect (SA). The CA needs "
+        "enough context to walk into the next call without re-reading every record. "
+        "Write a long, specific, evidence-cited document with these sections:\n"
+        "1) Account Overview (industry, size, tech stack, why Elastic is in the picture)\n"
+        "2) Chronological Timeline - every interaction with an ISO date, format `YYYY-MM-DD: <event>`. "
+        "Include every brief, post-meeting, upcoming meeting, and ticket open/close event you can find.\n"
+        "3) Key Stakeholders - name, title, email if known, role on the deal (champion / economic buyer / blocker / technical).\n"
+        "4) Open Action Items - one per line: `[OWNER] DUE YYYY-MM-DD - title (impact: low|med|high)` followed by a one-sentence description. List ALL of them; do not summarise.\n"
+        "5) Deal Status - MEDDPICC signals if available, opportunity stage, ARR, renewal date, competitor incumbents.\n"
+        "6) Open Support Tickets - subject, priority, status, age. Flag anything P1 / open more than 14 days.\n"
+        "7) Risks and Watchouts - what the new CA should not say, deadlines they must hit, dependencies they inherit.\n"
+        "8) Recommended Next Three Actions - concrete, time-boxed, owner-assigned.\n\n"
+        "Hard rules:\n"
+        "- Use only the data provided. Do NOT invent stakeholder names, dates, or facts.\n"
+        "- Every concrete claim must reference an ISO date or a meeting id.\n"
+        "- Plain ASCII punctuation only. No em dashes, no smart quotes.\n"
+        "- If a section has no data, write 'No data on file' rather than making something up.\n"
+        "- The document goes to a human reading on their phone. Be skimmable: short bullets, bold section headers, no walls of prose."
     )
 
+    company_ctx = json.dumps(account_data.get("company") or {}, indent=2, ensure_ascii=False)
     brief_ctx = json.dumps(account_data["briefs"], indent=2, ensure_ascii=False)
     pm_ctx = json.dumps(account_data["post_meetings"], indent=2, ensure_ascii=False)
+    upcoming_ctx = json.dumps(account_data.get("upcoming_meetings") or [], indent=2, ensure_ascii=False)
+    past_ctx = json.dumps(account_data.get("past_meetings") or [], indent=2, ensure_ascii=False)
+    tickets_ctx = json.dumps(account_data.get("tickets") or [], indent=2, ensure_ascii=False)
+    news_ctx = json.dumps(account_data.get("news") or [], indent=2, ensure_ascii=False)
+    action_items_ctx = json.dumps(account_data.get("action_items") or [], indent=2, ensure_ascii=False)
+    meddpicc_ctx = json.dumps(account_data.get("meddpicc") or [], indent=2, ensure_ascii=False)
 
     to_line = f"New owner: {to_name}" if to_name else ""
     notes_line = f"Additional context from {from_name}: {notes}" if notes else ""
@@ -139,13 +257,34 @@ def _build_handover(
         to_line,
         notes_line,
         "",
+        "=== COMPANY DOSSIER ===",
+        company_ctx,
+        "",
         f"=== PRE-MEETING BRIEFS ({account_data['brief_count']}) ===",
         brief_ctx,
         "",
         f"=== POST-MEETING RECORDS ({account_data['pm_count']}) ===",
         pm_ctx,
         "",
-        "Generate the account handover document now.",
+        f"=== UPCOMING MEETINGS ({account_data.get('upcoming_count', 0)}) ===",
+        upcoming_ctx,
+        "",
+        f"=== PAST MEETINGS ({account_data.get('past_count', 0)}) ===",
+        past_ctx,
+        "",
+        f"=== ACTION ITEMS EXTRACTED ({account_data.get('action_item_count', 0)}) ===",
+        action_items_ctx,
+        "",
+        f"=== MEDDPICC SIGNALS ({account_data.get('meddpicc_count', 0)}) ===",
+        meddpicc_ctx,
+        "",
+        f"=== SUPPORT TICKETS (open: {account_data.get('open_ticket_count', 0)}) ===",
+        tickets_ctx,
+        "",
+        f"=== RECENT NEWS ({len(account_data.get('news') or [])}) ===",
+        news_ctx,
+        "",
+        "Generate the full account handover document now.",
     ]
     user = "\n".join(p for p in user_parts if p is not None)
 
@@ -178,9 +317,12 @@ def _build_handover(
 
     client: Anthropic = svc._client  # type: ignore[attr-defined]
 
+    # Bumped from 1500 to 4000 tokens because the new prompt asks for a
+    # chronological timeline + every action item + MEDDPICC + tickets, which
+    # consistently runs longer than the old vague summary.
     response = client.messages.create(
         model=MODEL_HAIKU,
-        max_tokens=1500,
+        max_tokens=4000,
         system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
         messages=[{"role": "user", "content": user}],
     )
@@ -200,6 +342,14 @@ def _build_handover(
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
+
+
+@router.get("/accounts")
+async def list_accounts() -> Dict[str, Any]:
+    """List every account the system has data on. Powers the handover modal's
+    autocomplete so the FE can only pick accounts that actually exist."""
+    accounts = _list_known_accounts()
+    return {"accounts": accounts, "count": len(accounts)}
 
 
 @router.get("/preview/{company_name}")
