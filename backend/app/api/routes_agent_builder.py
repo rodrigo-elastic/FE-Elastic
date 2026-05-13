@@ -97,6 +97,14 @@ class ExecuteToolRequest(BaseModel):
         return v
 
 
+class DraftToolRequest(BaseModel):
+    """Natural-language tool description. Claude turns this into a full
+    ES|QL tool spec (slug, description, query, params, tags) the FE can
+    review and submit. No tool is created yet at the draft stage."""
+    description: str = Field(..., min_length=10, max_length=1200)
+    indices_hint: Optional[str] = Field(None, max_length=200, description="Optional comma-separated list of likely indices the tool should query, e.g. 'logs-*, fec-post-meetings'. Helps Claude pick the right FROM clause.")
+
+
 class CreateAgentRequest(BaseModel):
     name: str = Field(..., min_length=3, max_length=80)
     slug: str = Field(..., min_length=3, max_length=40)
@@ -179,6 +187,133 @@ def get_tool(tool_id: str) -> Dict[str, Any]:
         if t.get("id") == tool_id:
             return {"id": t["id"], "name": t.get("name"), "description": t.get("description"), "type": "builtin", "read_only": True}
     raise HTTPException(status_code=404, detail=f"tool '{tool_id}' not found")
+
+
+@router.post("/tools/draft")
+def draft_tool(req: DraftToolRequest) -> Dict[str, Any]:
+    """Turn a natural-language description into a ready-to-edit ES|QL tool
+    spec. Returns the same shape `POST /tools` accepts, so the UI can
+    pre-fill the create form. The tool is NOT persisted at this stage; the
+    FE clicks Create to commit.
+    """
+    from app.integrations.claude_client import ClaudeService
+    from pydantic import BaseModel as _BM
+    from typing import List as _List, Optional as _Opt
+
+    class _Param(_BM):
+        name: str
+        type: str
+        description: str
+        optional: _Opt[bool] = None
+        defaultValue: _Opt[Any] = None
+
+    class _Draft(_BM):
+        slug: str
+        description: str
+        query: str
+        tags: _List[str]
+        params: _List[_Param]
+        rationale: str
+
+    indices_hint = req.indices_hint or "logs-*, metrics-*, traces-*, fec-post-meetings, fec-briefs, fec-audit, fec-knowledge"
+    system = (
+        "You design ES|QL tools for Elastic Agent Builder. Given a natural-language "
+        "description from a Field Engineer, emit a JSON tool spec that another agent "
+        "can invoke as-is. Hard rules:\n"
+        "- query MUST be valid ES|QL syntax (FROM ... | WHERE ... | STATS ... | SORT ... | LIMIT ...).\n"
+        "- Any value that could reasonably vary per call (time windows, severity, limit, customer id, host, region, etc.) MUST be a ?paramName placeholder. Hardcoded literals like `LIMIT 10` or `level == \"error\"` are a fail; use `LIMIT ?limit` and `level == ?level` so the agent can override at run time.\n"
+        "- Every ?paramName in the query MUST appear in params, AND every entry in params MUST appear in the query. If a param is not used, drop it.\n"
+        "- For each param: type (string|integer|number|boolean|date|keyword), description (what the agent should pass), and prefer optional=true + a string defaultValue so the agent can omit safely. Dates default to ISO or Elastic relative syntax (e.g. `now-1h`).\n"
+        "- slug must be snake_case, 3-40 chars, [a-z0-9_]. It is the human-readable id; pick something searchable.\n"
+        "- description should explain WHEN the FE / agent should call this tool, not WHAT the ES|QL does line-by-line.\n"
+        "- Prefer indices the FE hinted at; otherwise pick from common Elastic patterns.\n"
+        "- tags: 1-4 short keywords for discovery (e.g. logs, errors, triage, security, sales).\n"
+        "- Never use the em dash character. Use commas, parentheses, colons, or periods.\n"
+        "- rationale (1-2 sentences): why this query shape is the right answer to the FE's description."
+    )
+    user = (
+        "FE description:\n"
+        f"{req.description.strip()}\n\n"
+        f"Likely indices: {indices_hint}\n\n"
+        "Emit the JSON tool spec now."
+    )
+
+    schema = {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "slug": {"type": "string"},
+            "description": {"type": "string"},
+            "query": {"type": "string"},
+            "tags": {"type": "array", "items": {"type": "string"}},
+            "params": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "properties": {
+                        "name": {"type": "string"},
+                        "type": {"type": "string", "enum": sorted(TOOL_PARAM_TYPES)},
+                        "description": {"type": "string"},
+                        "optional": {"type": "boolean"},
+                        "defaultValue": {
+                            "description": "Default value when the agent omits this param. Strings (use ISO format for dates) are safest.",
+                            "type": "string",
+                        },
+                    },
+                    "required": ["name", "type", "description"],
+                },
+            },
+            "rationale": {"type": "string"},
+        },
+        "required": ["slug", "description", "query", "tags", "params", "rationale"],
+    }
+
+    try:
+        service = ClaudeService()
+        result = service.call_structured(
+            system=system, user=user, schema=schema, output_model=_Draft,
+            model="claude-sonnet-4-6", max_tokens=2200, effort="medium",
+            mock_payload={
+                "slug": "demo_recent_errors",
+                "description": "List the most recent error logs grouped by service. Use when an FE asks 'show recent failures' or 'what's broken'.",
+                "query": "FROM logs-* | WHERE log.level == \"error\" AND @timestamp >= ?since | STATS error_count = COUNT(*) BY service.name | SORT error_count DESC | LIMIT ?limit",
+                "tags": ["logs", "errors", "triage"],
+                "params": [
+                    {"name": "since", "type": "date", "description": "ISO start time for the error window.", "optional": True, "defaultValue": "now-1h"},
+                    {"name": "limit", "type": "integer", "description": "Maximum services to return.", "optional": True, "defaultValue": 10},
+                ],
+                "rationale": "Mock draft for offline demo mode.",
+            },
+            audit_meta={"agent": "tool_draft", "tool": "agent_builder_tool_draft"},
+        )
+    except Exception as exc:
+        log.warning("tool_draft_failed", error=str(exc))
+        raise HTTPException(status_code=502, detail=f"draft failed: {exc}")
+
+    payload = result.model_dump()
+    # Normalise to the shape `POST /tools` expects (params as object keyed by name).
+    params_obj: Dict[str, Any] = {}
+    for p in payload.get("params") or []:
+        nm = (p.get("name") or "").strip()
+        if not nm:
+            continue
+        spec = {"type": p.get("type", "string"), "description": p.get("description", nm)}
+        if p.get("optional"):
+            spec["optional"] = True
+        if p.get("defaultValue") is not None:
+            spec["defaultValue"] = p.get("defaultValue")
+        params_obj[nm] = spec
+    bare_slug = payload["slug"][len(USER_TOOL_PREFIX):] if payload["slug"].startswith(USER_TOOL_PREFIX) else payload["slug"]
+    return {
+        "slug": bare_slug,
+        "type": "esql",
+        "description": payload["description"],
+        "query": payload["query"],
+        "tags": payload.get("tags") or [],
+        "params": params_obj,
+        "rationale": payload.get("rationale") or "",
+    }
 
 
 @router.post("/tools")

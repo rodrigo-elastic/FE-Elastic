@@ -186,6 +186,65 @@
     return raw;
   }
 
+  // ============================================================ NL draft
+
+  async function draftFromText() {
+    const nl = ($("#ab-tf-nl").value || "").trim();
+    const indices = ($("#ab-tf-indices").value || "").trim();
+    const status = $("#ab-tf-draft-status");
+    const btn = $("#ab-tf-draft-btn");
+    if (nl.length < 10) {
+      status.textContent = "Describe the tool in at least a full sentence.";
+      status.style.color = "var(--pink, #F04E98)";
+      return;
+    }
+    status.textContent = "Asking Claude to draft the ES|QL...";
+    status.style.color = "var(--muted, #8b919a)";
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = "Drafting...";
+    try {
+      const opts = { category: "llm", timeoutMs: 60000, retries: 0, silent: true, label: "Tool draft" };
+      const body = { description: nl };
+      if (indices) body.indices_hint = indices;
+      const draft = typeof window.apiPostWithRetry === "function"
+        ? await window.apiPostWithRetry("/agent-builder/tools/draft", body, opts)
+        : await (window.apiPost ? window.apiPost("/agent-builder/tools/draft", body) : Promise.reject(new Error("no api helper")));
+      applyDraft(draft);
+      status.textContent = "Draft ready - review and edit before clicking Create.";
+      status.style.color = "var(--teal, #00BFB3)";
+    } catch (e) {
+      status.textContent = "Draft failed: " + (e && e.message ? e.message : String(e));
+      status.style.color = "var(--pink, #F04E98)";
+    } finally {
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  }
+
+  function applyDraft(d) {
+    if (!d) return;
+    $("#ab-tf-slug").value = d.slug || "";
+    $("#ab-tf-description").value = d.description || "";
+    $("#ab-tf-query").value = d.query || "";
+    $("#ab-tf-tags").value = (d.tags || []).join(", ");
+    $("#ab-tf-params").innerHTML = "";
+    const params = d.params || {};
+    Object.keys(params).forEach((name) => {
+      const p = params[name] || {};
+      addParamRow({
+        name,
+        type: p.type || "string",
+        description: p.description || name,
+        optional: !!p.optional,
+        defaultValue: p.defaultValue,
+      });
+    });
+    // Refresh the query char counter.
+    const qc = $("#ab-tf-query-count");
+    if (qc) qc.textContent = String(($("#ab-tf-query").value || "").length);
+  }
+
   async function submitForm(ev) {
     if (ev && ev.preventDefault) ev.preventDefault();
     const status = $("#ab-tf-status");
@@ -247,6 +306,17 @@
     if (form) form.addEventListener("submit", submitForm);
     const addParam = $("#ab-tf-add-param");
     if (addParam) addParam.addEventListener("click", () => addParamRow());
+    const draftBtn = $("#ab-tf-draft-btn");
+    if (draftBtn) draftBtn.addEventListener("click", draftFromText);
+    const nl = $("#ab-tf-nl");
+    if (nl) {
+      nl.addEventListener("keydown", (ev) => {
+        if ((ev.metaKey || ev.ctrlKey) && ev.key === "Enter") {
+          ev.preventDefault();
+          draftFromText();
+        }
+      });
+    }
     const q = $("#ab-tf-query");
     const qc = $("#ab-tf-query-count");
     if (q && qc) {
