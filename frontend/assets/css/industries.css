@@ -94,6 +94,14 @@
   display: flex;
   align-items: flex-start;
   gap: 10px;
+  /* Make the title column shrinkable so it never collides with the demo
+     scenarios badge to its right, regardless of industry name length. */
+  flex-wrap: nowrap;
+}
+.ind-card-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .ind-card-icon {
   width: 36px;
@@ -474,14 +482,13 @@
    scenarios are linked. Sits on top of the card via absolute positioning
    so it doesn't disturb the existing card layout. Hidden when 0 scenarios. */
 .ind-card { position: relative; }
+/* Now flows inline at the end of the header row instead of overlapping the
+   title with absolute positioning. Shrinks/wraps gracefully on narrow cards. */
 .ind-card-scn-badge {
-  position: absolute;
-  top: 10px;
-  right: 10px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 3px 8px;
+  padding: 4px 9px;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -490,7 +497,10 @@
   color: #006d66;
   border: 1px solid rgba(0, 191, 179, 0.45);
   border-radius: 999px;
-  pointer-events: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  align-self: center;
+  margin-left: auto;
 }
 [data-theme="dark"] .ind-card-scn-badge {
   background: rgba(0, 191, 179, 0.2);
@@ -561,7 +571,7 @@
 @media (max-width: 640px) {
   .ind-scn-actions { flex-direction: column; align-items: stretch; }
   .ind-scn-actions .btn { width: 100%; text-align: center; }
-  .ind-card-scn-badge { top: 8px; right: 8px; font-size: 9px; padding: 2px 7px; }
+  .ind-card-scn-badge { font-size: 9px; padding: 3px 7px; }
 }
 
 /* ============================================================ Per-card Demo Data action row
@@ -647,3 +657,72 @@
   .ind-card-demo-actions { grid-template-columns: 1fr; }
   .ind-card-demo-btn { padding: 10px 12px; font-size: 12.5px; }
 }
+
+/* ============================================================ Minimalist card
+   Outer card shows only icon + title + 3 counts. Personas, regulations,
+   demo data buttons, and the rest of the detail live inside the modal.
+   This rule overrides the older padded layout for cards built by the
+   simplified buildCard(). */
+.ind-card-minimal {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 18px 16px;
+}
+.ind-card-minimal .ind-card-head {
+  align-items: center;
+}
+.ind-card-minimal .ind-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+.ind-card-counts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-soft, var(--border));
+}
+.ind-card-count {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 2px;
+  text-align: center;
+}
+.ind-card-count-n {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.1;
+  font-feature-settings: "tnum" 1;
+}
+.ind-card-count-lbl {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  line-height: 1.2;
+}
+
+/* Competitor chip in the modal: render with an "open in new tab" affordance
+   so the FE knows clicking will take them to the battlecard. */
+.ind-chip-comp {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.ind-chip-comp .ind-chip-external {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.65;
+  transition: opacity 120ms ease;
+}
+.ind-chip-comp:hover .ind-chip-external,
+.ind-chip-comp:focus-visible .ind-chip-external { opacity: 1; }
+.ind-chip-comp:hover { text-decoration: none; }

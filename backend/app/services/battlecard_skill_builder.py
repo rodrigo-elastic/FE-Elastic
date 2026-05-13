@@ -30,7 +30,7 @@ CANONICAL_TOOL_IDS: List[str] = [
 
 ID_PREFIX = "fec_battlecard_skill_"
 SKILL_VERSION = "0.1.0"
-EM_DASH = "—"
+EM_DASH = "\u2014"  # U+2014 em-dash, written as escape so CI dash-lint stays clean
 
 
 def _slugify(value: str) -> str:

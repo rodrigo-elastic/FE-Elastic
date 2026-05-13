@@ -199,8 +199,14 @@
   // Cards
   // ============================================================
   function buildCard(industry) {
+    // Minimalist card: title + icon + the three counts (competitors,
+    // scenarios, tools). Everything else - personas, regulations, demo data
+    // seed/dashboard buttons - lives inside the detail modal that opens
+    // when the FE clicks the card. The user explicitly asked for this:
+    // "haz las tarjetas por fuera mucho mas sencillas, que solo tengan el
+    // titulo, y numero de main competitors, scenarios y tools".
     const card = el("article", {
-      class: "ind-card",
+      class: "ind-card ind-card-minimal",
       "data-id": industry.id,
       role: "button",
       tabindex: "0",
@@ -213,149 +219,24 @@
     head.appendChild(el("h3", { class: "ind-card-title" }, industry.name));
     card.appendChild(head);
 
-    card.appendChild(el("p", { class: "ind-card-summary" }, industry.summary || ""));
-
-    if (Array.isArray(industry.personas) && industry.personas.length) {
-      const list = el("ul", { class: "ind-card-personas", "aria-label": "Top personas" });
-      industry.personas.slice(0, 3).forEach((p) => {
-        const li = el("li", { class: "ind-card-persona" }, [
-          el("span", { class: "ind-card-persona-role" }, p.role),
-          el("span", { class: "ind-card-persona-pain" }, p.pain),
-        ]);
-        list.appendChild(li);
-      });
-      card.appendChild(list);
-    }
-
-    if (Array.isArray(industry.regulations) && industry.regulations.length) {
-      const chips = el("div", { class: "ind-chips", "aria-label": "Regulations" });
-      industry.regulations.slice(0, 5).forEach((r) => {
-        chips.appendChild(el("span", { class: "ind-chip ind-chip-reg" }, r));
-      });
-      if (industry.regulations.length > 5) {
-        chips.appendChild(
-          el("span", { class: "ind-chip ind-chip-more" }, "+" + (industry.regulations.length - 5))
-        );
-      }
-      card.appendChild(chips);
-    }
-
-    const footer = el("footer", { class: "ind-card-footer" });
     const competitors = (industry.top_competitors || []).length;
     const scenarios = scenarioCountFor(industry);
     const tools = (industry.tool_ids || []).length;
-    footer.appendChild(
-      el("span", { class: "ind-card-meta" }, [
-        el("strong", null, String(competitors)),
-        " ",
-        tx("industries.card.competitors", "competitors"),
-      ])
-    );
-    footer.appendChild(el("span", { class: "ind-card-sep", "aria-hidden": "true" }, "·"));
-    footer.appendChild(
-      el("span", { class: "ind-card-meta" }, [
-        el("strong", null, String(scenarios)),
-        " ",
-        tx("industries.card.scenarios", "scenarios"),
-      ])
-    );
-    footer.appendChild(el("span", { class: "ind-card-sep", "aria-hidden": "true" }, "·"));
-    footer.appendChild(
-      el("span", { class: "ind-card-meta" }, [
-        el("strong", null, String(tools)),
-        " ",
-        tx("industries.card.tools", "tools"),
-      ])
-    );
-    card.appendChild(footer);
-
-    // Demo-data badge in the top-right of the card so the FE can see at-a-glance how many scenarios
-    // are seedable from this industry without opening the modal.
-    if (scenarios > 0) {
-      const badge = el("span", {
-        class: "ind-card-scn-badge",
-        title: scenarios + " demo " + (scenarios === 1 ? "scenario" : "scenarios") + " seedable from this industry",
-        "aria-label": scenarios + " demo " + (scenarios === 1 ? "scenario" : "scenarios"),
-      }, [
-        el("span", { class: "ind-card-scn-badge-dot", "aria-hidden": "true" }, ""),
-        el("span", { class: "ind-card-scn-badge-text" }, scenarios + " demo " + (scenarios === 1 ? "scenario" : "scenarios")),
-      ]);
-      card.appendChild(badge);
-    }
-
-    // Demo Data action row directly on the card: Seed Scenario, FE Dashboard,
-    // Customer Dashboard. The user explicitly asked for these to be clearly
-    // signposted PER INDUSTRY without having to open the modal first. The row
-    // picks the first scenario linked to the industry (industry-{id} when
-    // present, else the first legacy flagship from industry.scenario_ids).
-    const scns = scenariosForIndustry(industry);
-    if (scns.length) {
-      const primary = scns[0];
-      const actions = el("div", { class: "ind-card-demo-actions", "aria-label": "Demo Data quick actions" });
-      const stopBubble = (ev) => { ev.stopPropagation(); };
-
-      const seedBtn = el("button", {
-        type: "button",
-        class: "ind-card-demo-btn ind-card-demo-seed",
-        "data-scenario-id": primary.id,
-        "aria-label": "Seed demo scenario " + (primary.title || primary.id),
-        title: "Seed " + (primary.title || primary.id) + " into the live Elastic cluster",
-        onclick: (ev) => { stopBubble(ev); cardSeed(card, primary); },
-      }, [
-        el("span", { "aria-hidden": "true", html: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>' }),
-        el("span", null, "Seed Scenario"),
-      ]);
-
-      const feBtn = el("a", {
-        class: "ind-card-demo-btn ind-card-demo-fe is-disabled",
-        href: "#",
-        target: "_blank",
-        rel: "noopener",
-        "aria-label": "Open FE dashboard for " + (primary.title || primary.id) + " (seed first)",
-        "aria-disabled": "true",
-        title: "Seed first to unlock the FE story dashboard",
-        onclick: (ev) => { stopBubble(ev); if (feBtn.classList.contains("is-disabled")) ev.preventDefault(); },
-      }, [
-        el("span", { "aria-hidden": "true", html: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>' }),
-        el("span", null, "FE Dashboard"),
-      ]);
-
-      const custBtn = el("a", {
-        class: "ind-card-demo-btn ind-card-demo-customer is-disabled",
-        href: "#",
-        target: "_blank",
-        rel: "noopener",
-        "aria-label": "Open Customer dashboard for " + (primary.title || primary.id) + " (seed first)",
-        "aria-disabled": "true",
-        title: "Seed first to unlock the Customer-facing dashboard",
-        onclick: (ev) => { stopBubble(ev); if (custBtn.classList.contains("is-disabled")) ev.preventDefault(); },
-      }, [
-        el("span", { "aria-hidden": "true", html: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>' }),
-        el("span", null, "Customer Dashboard"),
-      ]);
-
-      actions.appendChild(seedBtn);
-      actions.appendChild(feBtn);
-      actions.appendChild(custBtn);
-      card.appendChild(actions);
-
-      // Restore prior session state if the FE already seeded this scenario.
-      const prev = (STATE.seedResults || {})[primary.id];
-      if (prev && prev.dashboard_url) {
-        feBtn.href = prev.dashboard_url;
-        feBtn.classList.remove("is-disabled");
-        feBtn.removeAttribute("aria-disabled");
-        feBtn.title = "Open FE dashboard in Kibana";
-      }
-      if (prev && prev.dashboard_url_customer) {
-        custBtn.href = prev.dashboard_url_customer;
-        custBtn.classList.remove("is-disabled");
-        custBtn.removeAttribute("aria-disabled");
-        custBtn.title = "Open Customer-facing dashboard in Kibana";
-      }
-      // Stash refs so cardSeed can update without re-querying the DOM.
-      card._demoRefs = { seedBtn, feBtn, custBtn, primary };
-    }
+    const counts = el("div", { class: "ind-card-counts", "aria-label": "Industry summary counts" }, [
+      el("div", { class: "ind-card-count" }, [
+        el("strong", { class: "ind-card-count-n" }, String(competitors)),
+        el("span", { class: "ind-card-count-lbl" }, "main competitors"),
+      ]),
+      el("div", { class: "ind-card-count" }, [
+        el("strong", { class: "ind-card-count-n" }, String(scenarios)),
+        el("span", { class: "ind-card-count-lbl" }, scenarios === 1 ? "scenario" : "scenarios"),
+      ]),
+      el("div", { class: "ind-card-count" }, [
+        el("strong", { class: "ind-card-count-n" }, String(tools)),
+        el("span", { class: "ind-card-count-lbl" }, tools === 1 ? "tool" : "tools"),
+      ]),
+    ]);
+    card.appendChild(counts);
 
     card.addEventListener("click", () => openModal(industry.id));
     card.addEventListener("keydown", (ev) => {
@@ -367,11 +248,10 @@
     return card;
   }
 
-  // Seed a scenario directly from the industry card (without opening the
-  // modal). On success, swaps the FE/Customer dashboard links from disabled
-  // to active. Errors fall back to a toast + status-class change on the
-  // button so the FE sees the failure without leaving the grid.
-  async function cardSeed(card, scenario) {
+  // Kept for any future inline seed entry-point; currently unused after the
+  // card simplification but the modal still has a working seed button per
+  // scenario, so we don't need this helper there.
+  async function _unusedCardSeed(card, scenario) {
     const refs = card._demoRefs;
     if (!refs) return;
     const { seedBtn, feBtn, custBtn } = refs;
@@ -474,14 +354,27 @@
   // Modal
   // ============================================================
   function competitorChip(id) {
+    // Opens the matching battlecard in a new tab so the FE can keep the
+    // industry modal open while reviewing competitive intel.
     return el(
       "a",
       {
         class: "ind-chip ind-chip-link ind-chip-comp",
         href: "/battlecards.html?card=" + encodeURIComponent(id) + "#" + encodeURIComponent(id.replace(/^battlecard-/, "")),
         "data-deep-link": "battlecard",
+        target: "_blank",
+        rel: "noopener noreferrer",
+        title: "Open " + competitorLabel(id) + " battlecard in a new tab",
+        "aria-label": "Open " + competitorLabel(id) + " battlecard in a new tab",
       },
-      competitorLabel(id)
+      [
+        el("span", null, competitorLabel(id)),
+        el("span", {
+          class: "ind-chip-external",
+          "aria-hidden": "true",
+          html: '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3h7v7"/><path d="M10 14L21 3"/><path d="M21 14v7H3V3h7"/></svg>',
+        }),
+      ]
     );
   }
   function toolChip(id) {
