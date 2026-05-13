@@ -357,6 +357,12 @@
       </label>
 
       <label class="handover-lbl">
+        Your email (gets a copy)
+        <input type="email" id="handover-from-email" placeholder="you@elastic.co" autocomplete="email" />
+        <span class="muted small" style="display:block;margin-top:4px;font-size:11px;">Leave blank to skip the confirmation copy.</span>
+      </label>
+
+      <label class="handover-lbl">
         Notes (optional)
         <textarea id="handover-notes" rows="2" placeholder="Anything the new owner should know..."></textarea>
       </label>
@@ -366,6 +372,19 @@
         <button type="button" id="handover-submit" class="btn primary">Send handover</button>
       </div>
       <p id="handover-status" aria-live="polite" style="margin: 10px 0 0 0; font-size: 13px; min-height: 20px;"></p>
+
+      <div id="handover-previews" hidden style="margin-top: 16px; border-top: 1px solid var(--border, #2a2f3a); padding-top: 14px;">
+        <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center;">
+          <strong style="font-size:13px;">Email preview</strong>
+          <span class="muted small" style="font-size:11px;" id="handover-mode-hint"></span>
+        </div>
+        <div role="tablist" aria-label="Email previews" style="display:flex; gap:4px; margin-bottom:8px;">
+          <button type="button" role="tab" aria-selected="true" data-handover-tab="recipient" id="handover-tab-recipient" style="padding:6px 12px; font-size:12px; border-radius:6px 6px 0 0; border:1px solid var(--border); border-bottom:none; background: var(--panel); color: var(--ink); cursor:pointer;">To recipient</button>
+          <button type="button" role="tab" aria-selected="false" data-handover-tab="sender" id="handover-tab-sender" hidden style="padding:6px 12px; font-size:12px; border-radius:6px 6px 0 0; border:1px solid var(--border); border-bottom:none; background: var(--panel-2); color: var(--muted); cursor:pointer;">Your copy</button>
+        </div>
+        <div id="handover-preview-meta" style="font-size:11.5px; color:var(--muted); margin-bottom:6px; font-family:ui-monospace,monospace;"></div>
+        <pre id="handover-preview-body" style="max-height: 360px; overflow-y: auto; padding: 12px 14px; background: var(--panel-2, #11141c); border: 1px solid var(--border-soft, #232733); border-radius: 6px; font-size: 12px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; color: var(--ink);"></pre>
+      </div>
     </div>
   </div>
 
@@ -547,6 +566,8 @@
           var toEmail  = (document.getElementById("handover-email").value || "").trim();
           var toName   = (document.getElementById("handover-name").value || "").trim();
           var fromName = (document.getElementById("handover-from").value || "").trim();
+          var fromEmailEl = document.getElementById("handover-from-email");
+          var fromEmail = fromEmailEl ? (fromEmailEl.value || "").trim() : "";
           var notes    = (document.getElementById("handover-notes").value || "").trim();
 
           if (!company) {
@@ -584,6 +605,7 @@
               to_email: toEmail,
               to_name: toName,
               from_name: fromName || "SA",
+              from_email: fromEmail,
               notes: notes
             })
           })
@@ -595,11 +617,50 @@
           .then(function (result) {
             if (result.ok && result.data.ok) {
               var d = result.data;
+              var copyMsg = d.from_email ? " Confirmation copy to " + d.from_email + "." : "";
+              var deliveries = d.deliveries || [];
+              var modes = deliveries.map(function (x) { return x.mode; });
+              var isDryRun = modes.indexOf("dry-run") !== -1;
               status.textContent =
-                "Handover sent to " + d.to_email + ". " +
-                d.brief_count + " brief(s) and " + d.pm_count + " post-meeting record(s) included.";
+                "Handover sent to " + d.to_email + "." + copyMsg + " " +
+                d.brief_count + " brief(s) and " + d.pm_count + " post-meeting record(s) included." +
+                (isDryRun ? " (SMTP not configured - emails staged to disk; previews below.)" : "");
               status.style.color = "var(--success, #198754)";
               submit.textContent = "Sent";
+
+              // Render previews of BOTH email bodies so the FE can see exactly
+              // what the CA and the SA-confirmation copy would each get.
+              try {
+                var previews = document.getElementById("handover-previews");
+                var tabRec = document.getElementById("handover-tab-recipient");
+                var tabSnd = document.getElementById("handover-tab-sender");
+                var meta = document.getElementById("handover-preview-meta");
+                var body = document.getElementById("handover-preview-body");
+                var modeHint = document.getElementById("handover-mode-hint");
+                if (previews) previews.hidden = false;
+                if (modeHint) modeHint.textContent = isDryRun
+                  ? "Dry-run: emails staged to runtime/emails/. Set SMTP_USER + SMTP_PASSWORD to actually deliver."
+                  : "Live: emails sent via SMTP.";
+
+                var byRole = {};
+                deliveries.forEach(function (x) { byRole[x.role] = x; });
+                function showRole(role) {
+                  var x = byRole[role];
+                  if (!x) return;
+                  meta.textContent = "To: " + x.to + "  |  Subject: " + (x.subject || "");
+                  body.textContent = x.body || "";
+                  tabRec.setAttribute("aria-selected", role === "recipient" ? "true" : "false");
+                  tabSnd.setAttribute("aria-selected", role === "sender_copy" ? "true" : "false");
+                  tabRec.style.background = role === "recipient" ? "var(--panel)" : "var(--panel-2)";
+                  tabSnd.style.background = role === "sender_copy" ? "var(--panel)" : "var(--panel-2)";
+                  tabRec.style.color = role === "recipient" ? "var(--ink)" : "var(--muted)";
+                  tabSnd.style.color = role === "sender_copy" ? "var(--ink)" : "var(--muted)";
+                }
+                if (tabSnd) tabSnd.hidden = !byRole["sender_copy"];
+                if (tabRec) tabRec.onclick = function () { showRole("recipient"); };
+                if (tabSnd) tabSnd.onclick = function () { showRole("sender_copy"); };
+                showRole("recipient");
+              } catch (previewErr) { console.warn("preview render failed", previewErr); }
             } else {
               var msg = (result.data && result.data.detail) || "Unknown error.";
               status.textContent = "Error: " + msg;

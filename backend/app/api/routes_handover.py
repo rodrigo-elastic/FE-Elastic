@@ -40,6 +40,7 @@ class HandoverRequest(BaseModel):
     to_email: str
     to_name: str = ""
     from_name: str = "SA"
+    from_email: str = ""
     notes: str = ""
 
 
@@ -416,15 +417,68 @@ async def generate_handover(req: HandoverRequest) -> Dict[str, Any]:
         log.error("handover.claude_failed", error=str(exc))
         raise HTTPException(status_code=502, detail=f"Claude error: {exc}") from exc
 
-    # 3. Send email
+    # 3. Send emails. Two messages with different framings:
+    #    a) Recipient (the CA) gets the full handover doc + intro framed as
+    #       "this account is now yours; here's everything we know".
+    #    b) Sender (the SA who triggered) gets a confirmation copy with the
+    #       same doc body + a header framed as "you just handed off X; the
+    #       receiving CA got the doc below".
     slug = _slug(req.company_name)
     ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
-    email_sender.send(
-        to=req.to_email,
-        subject=f"Account Handover: {req.company_name}",
-        body_markdown=handover_text,
-        meeting_id=f"handover-{slug}-{ts}",
+    deliveries: List[Dict[str, Any]] = []
+
+    recipient_intro = (
+        f"Hi {req.to_name or 'CA'},\n\n"
+        f"{req.from_name} has handed over the {req.company_name} account to you. "
+        f"The full context below was generated from {account_data['brief_count']} "
+        f"pre-meeting brief(s) and {account_data['pm_count']} post-meeting "
+        "record(s) plus all current ticket and renewal signals on file.\n\n"
+        f"Reply to {req.from_email or req.from_name} with any handover questions.\n\n"
+        "---\n\n"
     )
+    recipient_subject = f"Account Handover - {req.company_name}"
+    recipient_body = recipient_intro + handover_text
+    recipient_result = email_sender.send(
+        to=req.to_email,
+        subject=recipient_subject,
+        body_markdown=recipient_body,
+        meeting_id=f"handover-{slug}-{ts}-to-ca",
+    )
+    deliveries.append({
+        "role": "recipient",
+        "to": req.to_email,
+        "subject": recipient_subject,
+        "body": recipient_body,
+        **recipient_result,
+    })
+
+    if req.from_email and req.from_email.strip():
+        sender_intro = (
+            f"Hi {req.from_name},\n\n"
+            f"Confirming you handed off the {req.company_name} account to "
+            f"{req.to_name or req.to_email} at {req.to_email}.\n\n"
+            f"They received {account_data['brief_count']} brief(s), "
+            f"{account_data['pm_count']} post-meeting record(s), "
+            f"{account_data.get('open_ticket_count', 0)} open ticket(s), "
+            f"and {account_data.get('action_item_count', 0)} extracted action item(s). "
+            "Same document below for your records.\n\n"
+            "---\n\n"
+        )
+        sender_subject = f"[Copy] Account Handover sent - {req.company_name}"
+        sender_body = sender_intro + handover_text
+        sender_result = email_sender.send(
+            to=req.from_email,
+            subject=sender_subject,
+            body_markdown=sender_body,
+            meeting_id=f"handover-{slug}-{ts}-confirm",
+        )
+        deliveries.append({
+            "role": "sender_copy",
+            "to": req.from_email,
+            "subject": sender_subject,
+            "body": sender_body,
+            **sender_result,
+        })
 
     # 4. Slack notification
     slack_mock.post_message(
@@ -433,6 +487,7 @@ async def generate_handover(req: HandoverRequest) -> Dict[str, Any]:
             f":handshake: Account handover triggered for *{req.company_name}*"
             f" -> {req.to_email}"
             + (f" (from {req.from_name})" if req.from_name and req.from_name != "SA" else "")
+            + (f", copy to {req.from_email}" if req.from_email else "")
         ),
     )
 
@@ -440,6 +495,7 @@ async def generate_handover(req: HandoverRequest) -> Dict[str, Any]:
         "handover.generate.done",
         company=req.company_name,
         to=req.to_email,
+        cc=req.from_email or None,
         briefs=account_data["brief_count"],
         post_meetings=account_data["pm_count"],
     )
@@ -448,6 +504,8 @@ async def generate_handover(req: HandoverRequest) -> Dict[str, Any]:
         "ok": True,
         "company_name": req.company_name,
         "to_email": req.to_email,
+        "from_email": req.from_email or None,
+        "deliveries": deliveries,
         "handover": handover_text,
         "brief_count": account_data["brief_count"],
         "pm_count": account_data["pm_count"],
