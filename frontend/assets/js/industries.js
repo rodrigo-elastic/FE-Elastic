@@ -283,6 +283,80 @@
       card.appendChild(badge);
     }
 
+    // Demo Data action row directly on the card: Seed Scenario, FE Dashboard,
+    // Customer Dashboard. The user explicitly asked for these to be clearly
+    // signposted PER INDUSTRY without having to open the modal first. The row
+    // picks the first scenario linked to the industry (industry-{id} when
+    // present, else the first legacy flagship from industry.scenario_ids).
+    const scns = scenariosForIndustry(industry);
+    if (scns.length) {
+      const primary = scns[0];
+      const actions = el("div", { class: "ind-card-demo-actions", "aria-label": "Demo Data quick actions" });
+      const stopBubble = (ev) => { ev.stopPropagation(); };
+
+      const seedBtn = el("button", {
+        type: "button",
+        class: "ind-card-demo-btn ind-card-demo-seed",
+        "data-scenario-id": primary.id,
+        "aria-label": "Seed demo scenario " + (primary.title || primary.id),
+        title: "Seed " + (primary.title || primary.id) + " into the live Elastic cluster",
+        onclick: (ev) => { stopBubble(ev); cardSeed(card, primary); },
+      }, [
+        el("span", { "aria-hidden": "true", html: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>' }),
+        el("span", null, "Seed Scenario"),
+      ]);
+
+      const feBtn = el("a", {
+        class: "ind-card-demo-btn ind-card-demo-fe is-disabled",
+        href: "#",
+        target: "_blank",
+        rel: "noopener",
+        "aria-label": "Open FE dashboard for " + (primary.title || primary.id) + " (seed first)",
+        "aria-disabled": "true",
+        title: "Seed first to unlock the FE story dashboard",
+        onclick: (ev) => { stopBubble(ev); if (feBtn.classList.contains("is-disabled")) ev.preventDefault(); },
+      }, [
+        el("span", { "aria-hidden": "true", html: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>' }),
+        el("span", null, "FE Dashboard"),
+      ]);
+
+      const custBtn = el("a", {
+        class: "ind-card-demo-btn ind-card-demo-customer is-disabled",
+        href: "#",
+        target: "_blank",
+        rel: "noopener",
+        "aria-label": "Open Customer dashboard for " + (primary.title || primary.id) + " (seed first)",
+        "aria-disabled": "true",
+        title: "Seed first to unlock the Customer-facing dashboard",
+        onclick: (ev) => { stopBubble(ev); if (custBtn.classList.contains("is-disabled")) ev.preventDefault(); },
+      }, [
+        el("span", { "aria-hidden": "true", html: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>' }),
+        el("span", null, "Customer Dashboard"),
+      ]);
+
+      actions.appendChild(seedBtn);
+      actions.appendChild(feBtn);
+      actions.appendChild(custBtn);
+      card.appendChild(actions);
+
+      // Restore prior session state if the FE already seeded this scenario.
+      const prev = (STATE.seedResults || {})[primary.id];
+      if (prev && prev.dashboard_url) {
+        feBtn.href = prev.dashboard_url;
+        feBtn.classList.remove("is-disabled");
+        feBtn.removeAttribute("aria-disabled");
+        feBtn.title = "Open FE dashboard in Kibana";
+      }
+      if (prev && prev.dashboard_url_customer) {
+        custBtn.href = prev.dashboard_url_customer;
+        custBtn.classList.remove("is-disabled");
+        custBtn.removeAttribute("aria-disabled");
+        custBtn.title = "Open Customer-facing dashboard in Kibana";
+      }
+      // Stash refs so cardSeed can update without re-querying the DOM.
+      card._demoRefs = { seedBtn, feBtn, custBtn, primary };
+    }
+
     card.addEventListener("click", () => openModal(industry.id));
     card.addEventListener("keydown", (ev) => {
       if (ev.key === "Enter" || ev.key === " ") {
@@ -291,6 +365,52 @@
       }
     });
     return card;
+  }
+
+  // Seed a scenario directly from the industry card (without opening the
+  // modal). On success, swaps the FE/Customer dashboard links from disabled
+  // to active. Errors fall back to a toast + status-class change on the
+  // button so the FE sees the failure without leaving the grid.
+  async function cardSeed(card, scenario) {
+    const refs = card._demoRefs;
+    if (!refs) return;
+    const { seedBtn, feBtn, custBtn } = refs;
+    const originalLabel = seedBtn.innerHTML;
+    seedBtn.disabled = true;
+    seedBtn.classList.add("is-running");
+    seedBtn.innerHTML = '<span class="spinner" aria-hidden="true"></span><span>Seeding...</span>';
+    try {
+      const r = await apiPost("/demo-data/" + encodeURIComponent(scenario.id) + "/seed", {});
+      STATE.seedResults = STATE.seedResults || {};
+      STATE.seedResults[scenario.id] = r || {};
+      if (r && r.dashboard_url) {
+        feBtn.href = r.dashboard_url;
+        feBtn.classList.remove("is-disabled");
+        feBtn.removeAttribute("aria-disabled");
+        feBtn.title = "Open FE dashboard in Kibana";
+      }
+      if (r && r.dashboard_url_customer) {
+        custBtn.href = r.dashboard_url_customer;
+        custBtn.classList.remove("is-disabled");
+        custBtn.removeAttribute("aria-disabled");
+        custBtn.title = "Open Customer-facing dashboard in Kibana";
+      }
+      const dc = formatDocCounts(r && r.doc_counts);
+      if (typeof toast === "function") {
+        toast("Seeded " + (scenario.title || scenario.id) + (dc ? " - " + dc : ""), "ok");
+      }
+      seedBtn.classList.remove("is-running");
+      seedBtn.classList.add("is-done");
+      seedBtn.innerHTML = '<span aria-hidden="true">✓</span><span>Seeded</span>';
+    } catch (e) {
+      const safe = (typeof sanitizeError === "function") ? sanitizeError(e) : (e && e.message) || String(e);
+      if (typeof toast === "function") toast("Seed failed: " + safe, "bad");
+      seedBtn.classList.remove("is-running");
+      seedBtn.classList.add("is-error");
+      seedBtn.innerHTML = originalLabel;
+    } finally {
+      seedBtn.disabled = false;
+    }
   }
 
   function renderGrid(items) {
