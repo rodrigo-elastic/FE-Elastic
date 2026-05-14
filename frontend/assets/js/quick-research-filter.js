@@ -725,6 +725,21 @@
       mapBtn.textContent = "MAP -> Sheets";
       mapBtn.addEventListener("click", () => runMapToSheets(record, mapBtn));
       actions.appendChild(mapBtn);
+
+      // QBR: one-click executive deck for the current quarter. Renders the
+      // PPTX backend-side using the same post-meeting records the rest of
+      // the workspace already shows, so the AE never has to copy/paste a
+      // customer name into /qbr.html.
+      const qbrBtn = document.createElement("button");
+      qbrBtn.type = "button";
+      qbrBtn.className = "btn ghost";
+      qbrBtn.style.background = "linear-gradient(135deg, rgba(254,197,20,0.18), rgba(0,191,179,0.18))";
+      qbrBtn.style.color = "#0B64DD";
+      qbrBtn.style.borderColor = "rgba(11,100,221,0.4)";
+      qbrBtn.title = "Generate the executive QBR deck for this account (current quarter). Opens the PPTX in a new tab.";
+      qbrBtn.textContent = "QBR deck";
+      qbrBtn.addEventListener("click", () => runQbrFromCard(record, qbrBtn));
+      actions.appendChild(qbrBtn);
     }
 
     li.appendChild(actions);
@@ -927,6 +942,48 @@
     } catch (e) {
       const safe = (typeof window.sanitizeError === "function") ? window.sanitizeError(e) : (e && e.message) || String(e);
       if (typeof window.toast === "function") window.toast("MAP failed: " + safe, "bad");
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = labelHTML;
+    }
+  }
+
+  // ============================================================
+  // Inline QBR generation (from a workspace card or any caller that has
+  // a normalised record). Reuses the existing /api/v1/qbr/generate
+  // endpoint; opens the resulting PPTX in a new tab. We pass the customer
+  // name (the QBR endpoint uses company_id but accepts a fuzzy name match
+  // against post-meeting records on disk) and the current quarter.
+  // ============================================================
+  function _currentQuarter() {
+    const d = new Date();
+    const q = Math.floor(d.getMonth() / 3) + 1;
+    return d.getFullYear() + "-Q" + q;
+  }
+
+  async function runQbrFromCard(record, btn) {
+    const labelHTML = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Building QBR (40-60s)...';
+    try {
+      const quarter = _currentQuarter();
+      const company = record.customer_name || record.company_name || record.customer_id || "";
+      if (!company) throw new Error("Card has no customer name");
+      const opts = { category: "llm", timeoutMs: 120000, retries: 0, silent: true, label: "QBR deck" };
+      const result = window.apiPostWithRetry
+        ? await window.apiPostWithRetry("/qbr/generate", { company_id: company, quarter, demo: false }, opts)
+        : await window.apiPost("/qbr/generate", { company_id: company, quarter, demo: false });
+      const url = result && (result.pptx_url || result.download_url || result.pptx_rel);
+      if (url) {
+        const full = url.startsWith("http") ? url : (location.origin + url);
+        window.open(full, "_blank", "noopener,noreferrer");
+        if (typeof window.toast === "function") window.toast("QBR deck ready for " + company + " (" + quarter + ")", "ok");
+      } else {
+        if (typeof window.toast === "function") window.toast("QBR built but no download URL returned", "warn");
+      }
+    } catch (e) {
+      const safe = (typeof window.sanitizeError === "function") ? window.sanitizeError(e) : (e && e.message) || String(e);
+      if (typeof window.toast === "function") window.toast("QBR failed: " + safe, "bad");
     } finally {
       btn.disabled = false;
       btn.innerHTML = labelHTML;

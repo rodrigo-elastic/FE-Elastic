@@ -180,6 +180,50 @@
       head.appendChild(warBtn);
     }
 
+    // QBR shortcut: one-click executive deck for the current quarter.
+    // Uses the customer name as company_id (the backend does a fuzzy match
+    // against on-disk post-meeting records). Opens the PPTX in a new tab.
+    const qbrBtn = el("button", {
+      type: "button",
+      class: "btn ghost",
+      style: "background: linear-gradient(135deg, rgba(254,197,20,0.18), rgba(0,191,179,0.18)); color:#0B64DD; border:1px solid rgba(11,100,221,0.4); padding:8px 14px; border-radius:8px; font-weight:700; font-size:12.5px; cursor:pointer; margin-left:8px; align-self:center; white-space:nowrap;",
+      title: "Generate the executive QBR deck for this customer (current quarter). Opens the PPTX in a new tab.",
+      onclick: async (ev) => {
+        const btn = ev.currentTarget;
+        const lbl = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner" aria-hidden="true"></span> QBR (40-60s)...';
+        try {
+          const company = (d.customer && d.customer.name) || "";
+          const now = new Date();
+          const q = Math.floor(now.getMonth() / 3) + 1;
+          const quarter = now.getFullYear() + "-Q" + q;
+          const opts = { category: "llm", timeoutMs: 120000, retries: 0, silent: true, label: "QBR deck" };
+          const result = window.apiPostWithRetry
+            ? await window.apiPostWithRetry("/qbr/generate", { company_id: company, quarter, demo: false }, opts)
+            : await apiPost("/qbr/generate", { company_id: company, quarter, demo: false });
+          const url = result && (result.pptx_url || result.download_url || result.pptx_rel);
+          if (url) {
+            const full = url.startsWith("http") ? url : (location.origin + url);
+            window.open(full, "_blank", "noopener,noreferrer");
+            if (typeof window.toast === "function") window.toast("QBR ready for " + company + " (" + quarter + ")", "ok");
+          } else {
+            if (typeof window.toast === "function") window.toast("QBR built but no download URL returned", "warn");
+          }
+        } catch (e) {
+          const safe = (e && e.message) || String(e);
+          if (typeof window.toast === "function") window.toast("QBR failed: " + safe, "bad");
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = lbl;
+        }
+      },
+    }, [
+      el("span", { "aria-hidden": "true", html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>' }),
+      el("span", null, "QBR deck"),
+    ]);
+    head.appendChild(qbrBtn);
+
     host.appendChild(head);
 
     // Signals at-a-glance grid

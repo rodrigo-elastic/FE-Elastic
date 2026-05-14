@@ -891,6 +891,41 @@ function bindActions() {
     });
   })();
 
+  // Generate QBR: fires the executive deck for the current quarter using the
+  // existing /api/v1/qbr/generate endpoint. The customer name comes from the
+  // brief in window.__lastBrief (the same hook the presales playbook uses).
+  document.getElementById("generate-qbr")?.addEventListener("click", async (ev) => {
+    const btn = ev.currentTarget;
+    const labelHTML = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Generating QBR (40-60s)...';
+    try {
+      const brief = window.__lastBrief || {};
+      const company = brief.company_name || (brief.company_snapshot && brief.company_snapshot.name) || (brief.headline || "").replace(/['"`]/g, "").split(" ")[0] || meetingId;
+      const now = new Date();
+      const q = Math.floor(now.getMonth() / 3) + 1;
+      const quarter = now.getFullYear() + "-Q" + q;
+      const opts = { category: "llm", timeoutMs: 120000, retries: 0, silent: true, label: "QBR deck" };
+      const result = window.apiPostWithRetry
+        ? await window.apiPostWithRetry("/qbr/generate", { company_id: company, quarter, demo: false }, opts)
+        : await apiPost("/qbr/generate", { company_id: company, quarter, demo: false });
+      const url = result && (result.pptx_url || result.download_url || result.pptx_rel);
+      if (url) {
+        const full = url.startsWith("http") ? url : (location.origin + url);
+        window.open(full, "_blank", "noopener,noreferrer");
+        toast("QBR ready for " + company + " (" + quarter + ")", "ok");
+      } else {
+        toast("QBR built but no download URL returned", "warn");
+      }
+    } catch (e) {
+      const safe = (typeof sanitizeError === "function") ? sanitizeError(e) : (e && e.message) || "unknown error";
+      toast("QBR failed: " + safe, "bad");
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = labelHTML;
+    }
+  });
+
   document.getElementById("run-live")?.addEventListener("click", async (ev) => {
     const btn = ev.currentTarget;
     const labelHTML = btn.innerHTML;
