@@ -190,12 +190,13 @@
     <div class="qr-legend" role="note" aria-label="Workspace timeline legend">
       <span class="qr-legend-label" data-i18n="workspace.legend.label">Timeline legend</span>
       <span class="qr-legend-dots" aria-hidden="true">
+        <span class="qr-legend-dot stage-quickresearch" title="Quick Research (first call)"></span>
         <span class="qr-legend-dot stage-scheduled" title="Scheduled"></span>
         <span class="qr-legend-dot stage-pre" title="Pre-meeting"></span>
         <span class="qr-legend-dot stage-post" title="Post-meeting"></span>
         <span class="qr-legend-dot stage-transcript" title="Transcript"></span>
       </span>
-      <span class="qr-legend-text" data-i18n="workspace.legend.text">Yellow scheduled, Lochmara pre-meeting, teal post-meeting, pink transcript</span>
+      <span class="qr-legend-text" data-i18n="workspace.legend.text">Violet quick research (first call), yellow scheduled, Lochmara pre-meeting, teal post-meeting, pink transcript</span>
     </div>
 
     <section class="qr-filter-bar" aria-label="Filter and search workspace">
@@ -210,6 +211,7 @@
       <div class="qr-fb-row">
         <fieldset class="qr-fb-chips" id="qr-fb-stage" aria-label="Stage filter">
           <legend class="visually-hidden">Stage</legend>
+          <label><input type="checkbox" name="qr-stage-multi" value="quickresearch" checked> <span data-i18n="qr.filter.stage.quickresearch">Quick Research</span></label>
           <label><input type="checkbox" name="qr-stage-multi" value="scheduled" checked> <span data-i18n="qr.filter.stage.scheduled">Scheduled</span></label>
           <label><input type="checkbox" name="qr-stage-multi" value="pre" checked> <span data-i18n="qr.filter.stage.pre">Pre-meeting</span></label>
           <label><input type="checkbox" name="qr-stage-multi" value="post" checked> <span data-i18n="qr.filter.stage.post">Post-meeting</span></label>

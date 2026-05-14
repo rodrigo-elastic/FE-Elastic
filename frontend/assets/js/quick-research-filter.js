@@ -12,8 +12,12 @@
 (function () {
   "use strict";
 
-  const STAGE_ORDER = ["scheduled", "pre", "post", "transcript", "other"];
+  // Stage taxonomy. Quick Research is its own stage (first-call ad-hoc
+   // brief, no scheduled meeting yet) and renders in a distinct violet so a
+  // FE can tell it apart from a recurring pre-meeting brief at-a-glance.
+  const STAGE_ORDER = ["quickresearch", "scheduled", "pre", "post", "transcript", "other"];
   const STAGE_LABELS_KEY = {
+    quickresearch: "qr.records.group.quickresearch",
     scheduled: "qr.records.group.scheduled",
     pre: "qr.records.group.pre",
     post: "qr.records.group.post",
@@ -21,6 +25,7 @@
     other: "qr.records.group.other",
   };
   const STAGE_LABELS_FALLBACK = {
+    quickresearch: "Quick Research (first call)",
     scheduled: "Scheduled",
     pre: "Pre-meeting",
     post: "Post-meeting",
@@ -28,6 +33,7 @@
     other: "Other",
   };
   const STAGE_PILL_CLASS = {
+    quickresearch: "violet",
     scheduled: "upcoming",
     pre: "teal",
     post: "blue",
@@ -57,7 +63,7 @@
     stage: "all",
     // Multi-stage filter (workspace mode). All stages enabled by default;
     // unchecking a chip hides that color of dot from the timeline.
-    stageMulti: { scheduled: true, pre: true, post: true, transcript: true, other: true },
+    stageMulti: { quickresearch: true, scheduled: true, pre: true, post: true, transcript: true, other: true },
     range: "all",
     group: "stage",
     // workspace.html boots into "workspace" view. Legacy callers (quick-research,
@@ -438,7 +444,17 @@
       : ((typeof b.id === "string" && b.id.trim()) ? b.id.trim() : null);
     if (!briefKey) return null;
     const isPost = b.type === "post_meeting";
-    const stage = isPost ? "post" : "pre";
+    // Quick Research: ad-hoc pre-meeting brief without a real scheduled
+    // meeting. The backend marks these with `ad_hoc=true` and a meeting_id
+    // starting with "ad-hoc-". We give them their own stage + colour so a
+    // FE can see at-a-glance which entries are first-call discovery vs a
+    // recurring brief on a known account.
+    const isQuickResearch = !isPost && (b.ad_hoc === true ||
+      String(b.meeting_id || b.id || "").startsWith("ad-hoc-"));
+    let stage;
+    if (isQuickResearch) stage = "quickresearch";
+    else if (isPost) stage = "post";
+    else stage = "pre";
     // Transcript-only artifacts come back with company_id starting with
     // "transcript-" - flag them as 'transcript' stage so the dedicated
     // group is meaningful.

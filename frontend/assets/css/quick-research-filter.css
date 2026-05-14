@@ -588,10 +588,31 @@
 /* Workspace legend uses stage-coded dots so the FE can immediately decode the
    timeline colors. Yellow=scheduled, Lochmara=pre-meeting, teal=post-meeting,
    pink=transcript. */
+.qr-legend-dot.stage-quickresearch { background: #7C3AED; }
 .qr-legend-dot.stage-scheduled  { background: var(--yellow, #FEC514); }
 .qr-legend-dot.stage-pre        { background: var(--primary, #0B64DD); }
 .qr-legend-dot.stage-post       { background: var(--teal, #00BFB3); }
 .qr-legend-dot.stage-transcript { background: var(--pink, #F04E98); }
+
+/* Violet pill class for the Quick Research stage badge inside cards. */
+.pill.violet {
+  background: rgba(124, 58, 237, 0.16);
+  color: #7C3AED;
+  border-color: rgba(124, 58, 237, 0.45);
+}
+[data-theme="dark"] .pill.violet {
+  background: rgba(124, 58, 237, 0.28);
+  color: #C4A6FF;
+  border-color: rgba(124, 58, 237, 0.55);
+}
+/* And the same violet accent on the qr-rec list when the card is a Quick
+   Research entry (data-stage="quickresearch"). */
+.qr-rec[data-stage="quickresearch"] {
+  border-left: 3px solid #7C3AED !important;
+}
+.qr-kan-card[data-stage="quickresearch"] {
+  border-top: 3px solid #7C3AED;
+}
 
 .qr-legend-text {
   color: var(--muted);
