@@ -811,41 +811,85 @@ function bindActions() {
 
   // Generate TAR (Technical Account Review): CA-facing technical health
   // review built from the post-meeting record. Result is rendered inline
-  // via window.renderTAR (tar-widget.js).
-  document.getElementById("generate-tar")?.addEventListener("click", async (ev) => {
-    const btn = ev.currentTarget;
-    const labelHTML = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span> Generating TAR...';
-    try {
-      const opts = { category: "llm", timeoutMs: 90000, retries: 0, silent: true, label: "Generate TAR" };
-      const result = typeof window.apiPostWithRetry === "function"
-        ? await window.apiPostWithRetry(`/tar/from-meeting/${encodeURIComponent(meetingId)}`, {}, opts)
-        : await apiPost(`/tar/from-meeting/${encodeURIComponent(meetingId)}`, {});
-      // Render inline below the brief. Reuse #abm-brief region so the FE
-      // sees the TAR without scrolling to a new panel.
-      const host = document.getElementById("abm-brief") || document.getElementById("brief");
-      if (host && typeof window.renderTAR === "function") {
-        const wrap = document.createElement("div");
-        wrap.style.marginTop = "18px";
-        host.appendChild(wrap);
-        window.renderTAR(wrap, result);
-        try { wrap.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (_) {}
-      }
-      toast("TAR ready", "ok");
-    } catch (e) {
-      const safe = (typeof sanitizeError === "function") ? sanitizeError(e) : (e && e.message) || "unknown error";
-      // The TAR backend requires a post-meeting record. Surface that hint
-      // explicitly when the 404 / 422 fires.
-      const friendly = /not.*found|404|no.*post.?meeting/i.test(safe)
-        ? "TAR needs a post-meeting record first. Run Post-Meeting on the Post-meeting tab, then try again."
-        : safe;
-      toast(`TAR failed: ${friendly}`, "bad");
-    } finally {
-      btn.disabled = false;
-      btn.innerHTML = labelHTML;
+  // via window.renderTAR (tar-widget.js). TAR REQUIRES a post-meeting
+  // record on file - it summarises what came out of an actual call, not
+  // the pre-meeting hypothesis. For ad-hoc meetings (Quick Research) the
+  // button stays disabled with a tooltip explaining what to do first.
+  (function setupTar() {
+    const btn = document.getElementById("generate-tar");
+    if (!btn) return;
+    const isAdHoc = /^(ad-hoc-|transcript-)/.test(meetingId);
+
+    function setDisabledWithHint(reason) {
+      btn.disabled = true;
+      btn.title = reason;
+      btn.setAttribute("aria-disabled", "true");
+      btn.style.opacity = "0.55";
+      btn.style.cursor = "not-allowed";
     }
-  });
+    function setEnabled() {
+      btn.disabled = false;
+      btn.removeAttribute("aria-disabled");
+      btn.style.opacity = "";
+      btn.style.cursor = "";
+      btn.title = "Generate Technical Account Review for this account.";
+    }
+
+    // Ad-hoc Quick Research has no transcript, so TAR cannot run. Disable
+    // the button upfront with a clear tooltip pointing the FE to the right
+    // path. For real meetings the button stays clickable; if the post-meeting
+    // record is missing the click handler below surfaces the same hint as
+    // both a toast and an inline error note.
+    if (isAdHoc) {
+      setDisabledWithHint("TAR is built from a post-meeting record. Ad-hoc Quick Research has no transcript; paste one on the Quick Research Transcript analyzer to create the post-meeting first.");
+    }
+
+    btn.addEventListener("click", async (ev) => {
+      if (btn.disabled) {
+        // Surface the reason as a toast too so the FE sees it even on touch
+        // devices where hovering the tooltip is not possible.
+        toast(btn.title || "TAR not available yet", "bad");
+        return;
+      }
+      const labelHTML = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Generating TAR...';
+      try {
+        const opts = { category: "llm", timeoutMs: 90000, retries: 0, silent: true, label: "Generate TAR" };
+        const result = typeof window.apiPostWithRetry === "function"
+          ? await window.apiPostWithRetry(`/tar/from-meeting/${encodeURIComponent(meetingId)}`, {}, opts)
+          : await apiPost(`/tar/from-meeting/${encodeURIComponent(meetingId)}`, {});
+        const host = document.getElementById("abm-brief") || document.getElementById("brief");
+        if (host && typeof window.renderTAR === "function") {
+          const wrap = document.createElement("div");
+          wrap.style.marginTop = "18px";
+          host.appendChild(wrap);
+          window.renderTAR(wrap, result);
+          try { wrap.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (_) {}
+        }
+        toast("TAR ready", "ok");
+      } catch (e) {
+        const safe = (typeof sanitizeError === "function") ? sanitizeError(e) : (e && e.message) || "unknown error";
+        const friendly = /not.*found|404|no.*post.?meeting/i.test(safe)
+          ? "TAR needs a post-meeting record first. Run Post-Meeting on the Post-meeting tab, then try again."
+          : safe;
+        toast(`TAR failed: ${friendly}`, "bad");
+        // Also render the error inline near the button so the FE does not
+        // miss it after the toast fades.
+        const host = document.getElementById("brief");
+        if (host) {
+          const note = document.createElement("div");
+          note.className = "muted small";
+          note.style.cssText = "margin-top:10px; padding:8px 12px; border:1px solid var(--border, #2a2f3a); border-left:3px solid #F04E98; border-radius:6px;";
+          note.textContent = friendly;
+          host.appendChild(note);
+        }
+      } finally {
+        setEnabled();
+        btn.innerHTML = labelHTML;
+      }
+    });
+  })();
 
   document.getElementById("run-live")?.addEventListener("click", async (ev) => {
     const btn = ev.currentTarget;
