@@ -226,15 +226,25 @@
     const actions = el("div", { class: "map-actions" });
     const sheetsBtn = el("button", { class: "btn primary", type: "button", title: "Copy the plan to your clipboard and open Google Sheets. Paste into A1 with Cmd/Ctrl + V." }, "Open in Sheets");
     actions.appendChild(sheetsBtn);
+    // Re-generate, Email and Download PDF only make sense for a persisted
+    // MAP on a real meeting id. The universal template has no backing meeting
+    // so those endpoints 404; print to PDF from the browser instead via the
+    // toolbar Print button below.
     let regen = null;
+    let email = null;
+    let pdf = null;
     if (!isUniversalTemplate) {
       regen = el("button", { class: "btn ghost", type: "button" }, "Re-generate");
-      actions.appendChild(regen);
+      email = el("button", { class: "btn ghost", type: "button" }, "Email to champion");
+      pdf = el("button", { class: "btn ghost", type: "button" }, "Download PDF");
+      [regen, email, pdf].forEach(b => actions.appendChild(b));
+      const handover = el("a", { class: "btn ghost", href: `/customer-health.html?meeting_id=${encodeURIComponent(record.meeting_id)}` }, "Share with CA");
+      actions.appendChild(handover);
+    } else {
+      const print = el("button", { class: "btn ghost", type: "button", title: "Use the browser print dialog to save the template as PDF." }, "Print to PDF");
+      print.addEventListener("click", () => { try { window.print(); } catch (_) {} });
+      actions.appendChild(print);
     }
-    const email = el("button", { class: "btn ghost", type: "button" }, "Email to champion");
-    const pdf = el("button", { class: "btn ghost", type: "button" }, "Download PDF");
-    const handover = el("a", { class: "btn ghost", href: `/customer-health.html?meeting_id=${encodeURIComponent(record.meeting_id)}` }, "Share with CA");
-    [email, pdf, handover].forEach(a => actions.appendChild(a));
     wrap.appendChild(actions);
 
     sheetsBtn.addEventListener("click", async () => {
@@ -278,7 +288,7 @@
       }
     });
 
-    email.addEventListener("click", async () => {
+    if (email) email.addEventListener("click", async () => {
       const cust = prompt("Customer champion email (leave empty to skip):", "");
       const sa = prompt("SA email (leave empty to skip):", "");
       if (!cust && !sa) { toast("No recipients provided", "warn"); return; }
@@ -290,7 +300,7 @@
       }
     });
 
-    pdf.addEventListener("click", async () => {
+    if (pdf) pdf.addEventListener("click", async () => {
       try {
         const r = await apiPost(`/map/${encodeURIComponent(record.meeting_id)}/pdf`, {});
         if (r && r.artifact_url) window.open(r.artifact_url, "_blank", "noopener");
