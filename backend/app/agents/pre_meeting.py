@@ -183,20 +183,25 @@ class PreMeetingAgent(Agent):
         language = payload.get("language") or "English"
         log.info("pre_meeting.ad_hoc.start", company=name, meeting_id=meeting_id, language=language)
 
-        # Ad-hoc Quick Research must finish under the AWS edge gateway timeout
-        # (~50s). Haiku 4.5 + medium effort + 2048 tokens lands at ~20-25s for
-        # a full brief; that's plenty of room for warm-up + PDF render + ES
-        # write before the client gives up. Don't bump these without checking
-        # /api/v1/audit p95 latency.
+        # Ad-hoc Quick Research must finish under the AWS ECS direct-URL edge
+        # timeout (~60s, not configurable). Force Haiku on this path so the
+        # UI model picker cannot accidentally select Sonnet/Opus and push the
+        # call past 60s; lower effort + tighter max_tokens keep the p95 under
+        # ~25s including warm-up. Real meetings (/pre-meeting/{id}) still
+        # honor the user's model choice; only Quick Research is capped.
+        requested_model = (payload.get("model") or "").strip().lower()
+        if requested_model and "haiku" not in requested_model:
+            log.info("pre_meeting.ad_hoc.model_capped", requested=requested_model, used="claude-haiku-4-5")
+        ad_hoc_model = "claude-haiku-4-5"
         result: PreMeetingBriefOut = get_service().call_structured(
             system=prompt.SYSTEM,
             user=language_preamble(language) + prompt.render_user_prompt(dossier) + language_instruction(language),
             schema=prompt.OUTPUT_SCHEMA,
             output_model=PreMeetingBriefOut,
-            model=(payload.get("model") or "").strip() or "claude-haiku-4-5",
-            max_tokens=2048,
-            effort="medium",
-            mock_payload=prompt.mock_response("acme-001"),  # generic fallback for offline demos
+            model=ad_hoc_model,
+            max_tokens=2500,
+            effort="low",
+            mock_payload=prompt.mock_response("acme-001"),
             audit_meta={
                 "agent": "pre_meeting",
                 "mode": "ad_hoc",
@@ -205,7 +210,15 @@ class PreMeetingAgent(Agent):
             },
         )
         brief_dict = result.model_dump()
-        artifact_path = pdf_builder.render_pdf(company=company, meeting=meeting, brief=brief_dict)
+        # PDF render is best-effort: WeasyPrint cold-start can add 10-15s and
+        # is not on the critical demo path (the meeting.html page renders the
+        # brief from the JSON, not the PDF). Failures here must NOT block the
+        # response or the 60s edge timeout fires.
+        try:
+            artifact_path = pdf_builder.render_pdf(company=company, meeting=meeting, brief=brief_dict)
+        except Exception as exc:
+            log.warning("pre_meeting.ad_hoc.pdf_render_failed", error=str(exc))
+            artifact_path = ""
 
         record = {
             "meeting_id": meeting_id,
@@ -241,7 +254,12 @@ class PreMeetingAgent(Agent):
             json.dumps(record, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
         )
 
-        get_es_repo().index_brief(record)
+        # ES write is best-effort - the disk JSON above is authoritative and
+        # ES being slow / unreachable must not bust the 60s edge timeout.
+        try:
+            get_es_repo().index_brief(record)
+        except Exception as exc:
+            log.warning("pre_meeting.ad_hoc.es_index_failed", meeting_id=meeting_id, error=str(exc))
 
         log.info("pre_meeting.ad_hoc.complete", meeting_id=meeting_id, artifact=str(artifact_path))
         return record
