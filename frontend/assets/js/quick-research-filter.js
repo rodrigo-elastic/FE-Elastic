@@ -710,6 +710,23 @@
       actions.appendChild(cta);
     }
 
+    // Mutual Action Plan: every card that ties to a meeting (scheduled, pre,
+    // post, transcript artifact) gets a small "MAP -> Sheets" button. FE
+    // Copilot does NOT edit the MAP - it generates the data and ships it to
+    // Google Sheets via the clipboard so the SA can keep editing there.
+    if (record._meeting || record.brief_id || record.post_meeting_id) {
+      const mapBtn = document.createElement("button");
+      mapBtn.type = "button";
+      mapBtn.className = "btn ghost";
+      mapBtn.style.background = "linear-gradient(135deg, rgba(124,58,237,0.15), rgba(11,100,221,0.15))";
+      mapBtn.style.color = "#7C3AED";
+      mapBtn.style.borderColor = "rgba(124,58,237,0.4)";
+      mapBtn.title = "Generate the Mutual Action Plan and open Google Sheets - the plan is copied to your clipboard so you can paste it straight into A1.";
+      mapBtn.textContent = "MAP -> Sheets";
+      mapBtn.addEventListener("click", () => runMapToSheets(record, mapBtn));
+      actions.appendChild(mapBtn);
+    }
+
     li.appendChild(actions);
     return li;
   }
@@ -767,6 +784,150 @@
     } catch (e) {
       const safe = (typeof window.sanitizeError === "function") ? window.sanitizeError(e) : (e && e.message) || "unknown error";
       if (typeof window.toast === "function") window.toast("Post-Meeting failed: " + safe, "bad");
+      btn.disabled = false;
+      btn.innerHTML = labelHTML;
+    }
+  }
+
+  // ============================================================
+  // Mutual Action Plan -> Google Sheets
+  //
+  // FE Copilot does NOT host MAP editing; the canonical edit surface is
+  // Google Sheets. This handler:
+  //   1. Resolves the meeting id for the card (real meeting, brief, or
+  //      synthetic-from-customer-id fallback) so we can hit the existing
+  //      /api/v1/map endpoints that the MAP agent backs.
+  //   2. Calls GET /map/{id} first (cheap, instant if it already exists)
+  //      and falls back to POST /map/from-meeting/{id} to generate one.
+  //   3. Serialises the plan to TSV (Tab-Separated Values) so a paste into
+  //      Sheets cell A1 reflows cleanly: header rows + metadata + the
+  //      milestones grid + the workstreams + the stakeholders + the risks +
+  //      the cadence. Tab is the row separator inside a column-aware paste,
+  //      newline is the row separator.
+  //   4. Writes the TSV to navigator.clipboard.writeText.
+  //   5. Opens https://sheets.new in a new tab so the SA lands in a blank
+  //      sheet and Cmd/Ctrl + V drops the whole plan in.
+  // ============================================================
+
+  function _resolveMapMeetingId(record) {
+    if (record && record._meeting && record._meeting.id) return record._meeting.id;
+    if (record && record.brief_id) return record.brief_id;
+    if (record && record.post_meeting_id) return record.post_meeting_id;
+    if (record && record.id) return String(record.id).replace(/^brf:/, "");
+    return null;
+  }
+
+  function _planToTsv(record, customerName) {
+    const plan = (record && record.plan) || {};
+    const lines = [];
+    const push = (...cells) => lines.push(cells.map((c) => String(c == null ? "" : c).replace(/\t/g, " ").replace(/\r?\n/g, " ")).join("\t"));
+
+    push("Mutual Action Plan", customerName || record.company_name || "(customer)");
+    push("Target close", plan.target_close_date || "-");
+    push("Deal value (USD)", plan.deal_value_usd != null ? Number(plan.deal_value_usd).toLocaleString() : "-");
+    push("Generated", (record.generated_at || record.updated_at || "").slice(0, 19).replace("T", " "));
+    push("");
+    push("Goal");
+    push(plan.goal || "(no goal yet)");
+    if (plan.success_metric) push("Success metric", plan.success_metric);
+    push("");
+
+    push("Milestones");
+    push("Title", "Date", "Elastic owner", "Customer owner", "Status", "Blocker if missed");
+    (plan.milestones || []).forEach((m) => push(m.title || "", m.date || "", m.owner_elastic || "", m.owner_customer || "", m.status || "not_started", m.blocker_note || ""));
+    push("");
+
+    push("Workstreams");
+    push("Title", "Description", "Elastic owner", "Customer owner", "Status");
+    (plan.workstreams || []).forEach((w) => push(w.title || "", w.description || "", w.owner_elastic || "", w.owner_customer || "", w.status || ""));
+    push("");
+
+    push("Stakeholders");
+    push("Name", "Role", "Title", "Stance", "Notes");
+    (plan.stakeholders || []).forEach((s) => push(s.name || "", s.role || "", s.title || "", s.stance || "", s.notes || ""));
+    push("");
+
+    push("Risks");
+    push("Severity", "Title", "Description", "Mitigation");
+    (plan.risks || []).forEach((r) => push(r.severity || "medium", r.title || "", r.description || "", r.mitigation || ""));
+    push("");
+
+    const cadence = plan.cadence || {};
+    push("Cadence");
+    push("Weekly sync", cadence.weekly_sync || "-");
+    push("MAP review", cadence.map_review_cadence || "-");
+    push("Escalation", cadence.escalation_path || "-");
+
+    return lines.join("\n");
+  }
+
+  async function _copyToClipboard(text) {
+    if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
+      try { await navigator.clipboard.writeText(text); return true; } catch (_e) { /* fall through */ }
+    }
+    // Fallback: hidden textarea + execCommand("copy"). Works on older browsers
+    // and on http://localhost (which navigator.clipboard sometimes blocks).
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.top = "0";
+      ta.style.left = "0";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      return ok;
+    } catch (_e) {
+      return false;
+    }
+  }
+
+  async function runMapToSheets(record, btn) {
+    const labelHTML = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Building MAP...';
+    const meetingId = _resolveMapMeetingId(record);
+    if (!meetingId) {
+      if (typeof window.toast === "function") window.toast("Cannot find a meeting id for this card", "bad");
+      btn.disabled = false; btn.innerHTML = labelHTML;
+      return;
+    }
+    try {
+      let mapRec = null;
+      // Try the cached one first; instant if it exists.
+      try {
+        mapRec = await window.apiGet("/map/" + encodeURIComponent(meetingId));
+      } catch (_e) { /* fall through to generate */ }
+      if (!mapRec || mapRec.exists === false) {
+        btn.innerHTML = '<span class="spinner"></span> Generating MAP (25-40s)...';
+        const opts = { category: "llm", timeoutMs: 90000, retries: 0, silent: true, label: "MAP" };
+        mapRec = (window.apiPostWithRetry
+          ? await window.apiPostWithRetry("/map/from-meeting/" + encodeURIComponent(meetingId), {}, opts)
+          : await window.apiPost("/map/from-meeting/" + encodeURIComponent(meetingId), {}));
+      }
+      const tsv = _planToTsv(mapRec, record.customer_name);
+      const copied = await _copyToClipboard(tsv);
+      if (copied) {
+        if (typeof window.toast === "function") {
+          window.toast("MAP copied. Sheets is opening - paste into A1 (Cmd+V).", "ok");
+        }
+        window.open("https://sheets.new", "_blank", "noopener,noreferrer");
+      } else {
+        // Last resort: pop a textarea so the user can copy manually.
+        const blob = new Blob([tsv], { type: "text/tab-separated-values" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url; a.download = "mutual-action-plan-" + (record.customer_name || "customer").replace(/[^a-z0-9]+/gi, "-").toLowerCase() + ".tsv";
+        a.click();
+        if (typeof window.toast === "function") window.toast("Clipboard blocked. TSV downloaded - upload to Sheets via File > Import.", "warn");
+      }
+    } catch (e) {
+      const safe = (typeof window.sanitizeError === "function") ? window.sanitizeError(e) : (e && e.message) || String(e);
+      if (typeof window.toast === "function") window.toast("MAP failed: " + safe, "bad");
+    } finally {
       btn.disabled = false;
       btn.innerHTML = labelHTML;
     }
