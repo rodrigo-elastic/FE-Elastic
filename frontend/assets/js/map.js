@@ -277,29 +277,32 @@
       updated_at: today.toISOString(),
       status: "draft",
       plan: {
-        goal: {
-          outcome: "Land an Elastic deployment that replaces or augments the customer's current observability / search / security stack inside 90 days, with measurable ROI vs the incumbent.",
-          target_close_date: iso(90),
-          success_metric: "Signed contract for Elastic Cloud, with the POV's primary KPI hit (e.g. ingest cost down >=30% vs incumbent, or search relevance up >=20%, or MTTR down >=40%).",
-        },
+        // renderRight expects `plan.goal` as a single string (it just inlines
+        // it into a <p>), so flatten the outcome + close date here.
+        goal: "Land an Elastic deployment that replaces or augments the customer's current observability / search / security stack inside 90 days, with measurable ROI vs the incumbent. Target close: " + iso(90) + ".",
         target_close_date: iso(90),
         deal_value_usd: null,
         success_metric: "Signed contract for Elastic Cloud, with the POV's primary KPI hit (e.g. ingest cost down >=30% vs incumbent, or search relevance up >=20%, or MTTR down >=40%).",
+        // Field names below MUST match what renderLeft / renderRight read:
+        // stakeholders: name, role, title, stance, notes
+        // workstreams:  title, description, owner_elastic, owner_customer, status
+        // risks:        severity, title, description, mitigation
+        // cadence:      weekly_sync, map_review_cadence, escalation_path
         stakeholders: [
-          { role: "Economic Buyer", name: "[VP / CIO / CTO]", alignment: "neutral", note: "Owns the budget. Needs to see TCO vs incumbent and the strategic narrative." },
-          { role: "Technical Evaluator", name: "[Lead Architect / SRE Lead]", alignment: "neutral", note: "Owns the POV success criteria. Drives the hands-on validation." },
-          { role: "Champion", name: "[Engineering Manager / Platform Lead]", alignment: "aligned", note: "Day-to-day advocate. The person who replies on Slack." },
-          { role: "Procurement", name: "[Procurement / Vendor Mgmt]", alignment: "neutral", note: "Owns the commercial paperwork and vendor onboarding." },
-          { role: "Security / Compliance", name: "[CISO Office]", alignment: "neutral", note: "Owns the infosec questionnaire, DPIA, and any regulatory mapping." },
-          { role: "Legal", name: "[Legal Counsel]", alignment: "neutral", note: "MSA / DPA review." },
+          { name: "[VP / CIO / CTO]", role: "Economic Buyer", title: "C-level / VP", stance: "neutral", notes: "Owns the budget. Needs to see TCO vs incumbent and the strategic narrative." },
+          { name: "[Lead Architect / SRE Lead]", role: "Technical Evaluator", title: "Director / Lead", stance: "neutral", notes: "Owns the POV success criteria. Drives the hands-on validation." },
+          { name: "[Engineering Manager / Platform Lead]", role: "Champion", title: "Manager / Lead", stance: "aligned", notes: "Day-to-day advocate. The person who replies on Slack." },
+          { name: "[Procurement / Vendor Mgmt]", role: "Procurement", title: "Procurement Manager", stance: "neutral", notes: "Owns the commercial paperwork and vendor onboarding." },
+          { name: "[CISO Office]", role: "Security / Compliance", title: "Security Architect / CISO", stance: "neutral", notes: "Owns the infosec questionnaire, DPIA, and any regulatory mapping." },
+          { name: "[Legal Counsel]", role: "Legal", title: "Legal Counsel", stance: "neutral", notes: "MSA / DPA review." },
         ],
         workstreams: [
-          { name: "POV / Technical Evaluation", owner_elastic: "Solutions Architect", owner_customer: "Lead Architect", outcome: "POV success criteria met on the live cluster." },
-          { name: "Security & Compliance Review", owner_elastic: "Field Compliance Architect", owner_customer: "CISO Office", outcome: "Infosec questionnaire returned and risk items resolved." },
-          { name: "Commercial & TCO", owner_elastic: "Pricing Architect + AE", owner_customer: "Procurement + Economic Buyer", outcome: "Signed proposal with agreed pricing model and term." },
-          { name: "Executive Alignment", owner_elastic: "AE + Sales Director", owner_customer: "Economic Buyer", outcome: "Executive sponsor signed off on the project." },
-          { name: "Legal", owner_elastic: "Deal Desk", owner_customer: "Legal Counsel", outcome: "MSA / DPA / order form executed." },
-          { name: "Go-live Readiness", owner_elastic: "CA (post-handover)", owner_customer: "Platform Lead", outcome: "Production environment deployed, runbooks in place." },
+          { title: "POV / Technical Evaluation", description: "POV success criteria met on the live cluster.", owner_elastic: "Solutions Architect", owner_customer: "Lead Architect", status: "not_started" },
+          { title: "Security & Compliance Review", description: "Infosec questionnaire returned and risk items resolved.", owner_elastic: "Field Compliance Architect", owner_customer: "CISO Office", status: "not_started" },
+          { title: "Commercial & TCO", description: "Signed proposal with agreed pricing model and term.", owner_elastic: "Pricing Architect + AE", owner_customer: "Procurement + Economic Buyer", status: "not_started" },
+          { title: "Executive Alignment", description: "Executive sponsor signed off on the project.", owner_elastic: "AE + Sales Director", owner_customer: "Economic Buyer", status: "not_started" },
+          { title: "Legal", description: "MSA / DPA / order form executed.", owner_elastic: "Deal Desk", owner_customer: "Legal Counsel", status: "not_started" },
+          { title: "Go-live Readiness", description: "Production environment deployed, runbooks in place.", owner_elastic: "CA (post-handover)", owner_customer: "Platform Lead", status: "not_started" },
         ],
         milestones: [
           { id: "ms-01", title: "Joint Kickoff: MAP signed by both sides", date: iso(3), owner_elastic: "SA", owner_customer: "Champion", status: "not_started", blocker_note: "If kickoff slips, every downstream date slips one-for-one." },
@@ -316,15 +319,15 @@
           { id: "ms-12", title: "Go-live + handover to CA", date: iso(90), owner_elastic: "SA -> CA", owner_customer: "Platform Lead", status: "not_started", blocker_note: "First production workload onboarded; CA owns from here." },
         ],
         risks: [
-          { description: "Competing project consumes Champion's bandwidth.", mitigation: "Confirm weekly time commitment at kickoff." },
-          { description: "Budget freeze or fiscal-year cutoff before close date.", mitigation: "Confirm fiscal calendar with Procurement in week 1." },
-          { description: "Security questionnaire stretches over 30 days.", mitigation: "Start in parallel with the POV, not after." },
-          { description: "Existing incumbent contract has auto-renewal lock-in.", mitigation: "Identify cancellation window in week 1; brief AE." },
-          { description: "Holiday seasonality eats the executive-review window.", mitigation: "Anchor exec review off-cycle from public holidays." },
+          { severity: "medium", title: "Champion bandwidth", description: "Competing project consumes the Champion's bandwidth.", mitigation: "Confirm weekly time commitment at kickoff." },
+          { severity: "high", title: "Fiscal-year cutoff", description: "Budget freeze or fiscal-year cutoff before close date.", mitigation: "Confirm fiscal calendar with Procurement in week 1." },
+          { severity: "high", title: "Infosec drag", description: "Security questionnaire stretches over 30 days.", mitigation: "Start in parallel with the POV, not after." },
+          { severity: "medium", title: "Incumbent auto-renewal", description: "Existing incumbent contract has auto-renewal lock-in.", mitigation: "Identify cancellation window in week 1; brief AE." },
+          { severity: "low", title: "Holiday seasonality", description: "Public holidays eat the executive-review window.", mitigation: "Anchor exec review off-cycle from public holidays." },
         ],
         cadence: {
           weekly_sync: "Weekly 30-min sync, Champion + SA + AE (Tuesdays).",
-          map_review: "Bi-weekly MAP review with all named stakeholders.",
+          map_review_cadence: "Bi-weekly MAP review with all named stakeholders.",
           escalation_path: "Champion -> SA -> Sales Director on Elastic side; Champion -> Economic Buyer on customer side.",
         },
       },
