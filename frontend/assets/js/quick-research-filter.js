@@ -740,6 +740,21 @@
       qbrBtn.textContent = "QBR deck";
       qbrBtn.addEventListener("click", () => runQbrFromCard(record, qbrBtn));
       actions.appendChild(qbrBtn);
+
+      // QBR -> Sheets (parallel to MAP -> Sheets). FE Copilot's QBR PPTX is
+      // the formal artifact; Sheets is the working surface where the AE
+      // edits with the CSM. One click copies the QBR content as TSV and
+      // opens https://sheets.new.
+      const qbrSheets = document.createElement("button");
+      qbrSheets.type = "button";
+      qbrSheets.className = "btn ghost";
+      qbrSheets.style.background = "linear-gradient(135deg, rgba(254,197,20,0.18), rgba(124,58,237,0.15))";
+      qbrSheets.style.color = "#0B64DD";
+      qbrSheets.style.borderColor = "rgba(11,100,221,0.4)";
+      qbrSheets.title = "Generate the QBR and open Google Sheets - the content is copied to your clipboard so you can paste it straight into A1.";
+      qbrSheets.textContent = "QBR -> Sheets";
+      qbrSheets.addEventListener("click", () => runQbrToSheets(record, qbrSheets));
+      actions.appendChild(qbrSheets);
     }
 
     li.appendChild(actions);
@@ -959,6 +974,80 @@
     const d = new Date();
     const q = Math.floor(d.getMonth() / 3) + 1;
     return d.getFullYear() + "-Q" + q;
+  }
+
+  // Serialise the QBR response (the `content` object returned by
+  // POST /qbr/generate) to TSV ready to paste into Sheets cell A1.
+  function _qbrToTsv(content, customerName, quarter) {
+    const lines = [];
+    const push = (...cells) => lines.push(cells.map((c) => String(c == null ? "" : c).replace(/\t/g, " ").replace(/\r?\n/g, " ")).join("\t"));
+    push("Quarterly Business Review", customerName || content.company_name || "(customer)");
+    push("Quarter", quarter || content.quarter || "");
+    push("Use case", content.use_case || "");
+    push("");
+    push("Executive summary");
+    push(content.executive_summary || "");
+    push("");
+    const lb = content.look_back || {};
+    push("Look back");
+    push("Highlights"); (lb.highlights || []).forEach((x) => push("", x));
+    push("Outcomes"); (lb.outcomes || []).forEach((x) => push("", x));
+    push("Lessons"); (lb.lessons || []).forEach((x) => push("", x));
+    push("");
+    const cs = content.current_state || {};
+    push("Current state");
+    push("Deployment size", cs.deployment_size || "");
+    push("Health", cs.health || "");
+    push("Blockers"); (cs.blockers || []).forEach((x) => push("", x));
+    push("");
+    const lf = content.look_forward || {};
+    push("Look forward");
+    push("Opportunities"); (lf.opportunities || []).forEach((x) => push("", x));
+    push("Roadmap items"); (lf.roadmap_items || content.roadmap_items || []).forEach((x) => push("", x));
+    push("");
+    push("KPIs");
+    push("Name", "Value", "Trend");
+    (content.kpis || []).forEach((k) => push(k.name || "", k.value || "", k.trend || ""));
+    push("");
+    push("Next steps");
+    (content.next_steps || []).forEach((x, i) => push((i + 1) + ".", x));
+    return lines.join("\n");
+  }
+
+  async function runQbrToSheets(record, btn) {
+    const labelHTML = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Building QBR (40-60s)...';
+    try {
+      const quarter = _currentQuarter();
+      const company = record.customer_name || record.company_name || record.customer_id || "";
+      if (!company) throw new Error("Card has no customer name");
+      const opts = { category: "llm", timeoutMs: 120000, retries: 0, silent: true, label: "QBR -> Sheets" };
+      const result = window.apiPostWithRetry
+        ? await window.apiPostWithRetry("/qbr/generate", { company_id: company, quarter, demo: false }, opts)
+        : await window.apiPost("/qbr/generate", { company_id: company, quarter, demo: false });
+      const content = result && result.content;
+      if (!content) throw new Error("QBR response missing content");
+      const tsv = _qbrToTsv(content, company, quarter);
+      const ok = await _copyToClipboard(tsv);
+      if (ok) {
+        if (typeof window.toast === "function") window.toast("QBR copied. Paste into A1 (Cmd/Ctrl + V).", "ok");
+        window.open("https://sheets.new", "_blank", "noopener,noreferrer");
+      } else {
+        const blob = new Blob([tsv], { type: "text/tab-separated-values" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url; a.download = "qbr-" + (company || "customer").replace(/[^a-z0-9]+/gi, "-").toLowerCase() + "-" + quarter + ".tsv";
+        a.click();
+        if (typeof window.toast === "function") window.toast("Clipboard blocked. TSV downloaded; in Sheets use File > Import.", "warn");
+      }
+    } catch (e) {
+      const safe = (typeof window.sanitizeError === "function") ? window.sanitizeError(e) : (e && e.message) || String(e);
+      if (typeof window.toast === "function") window.toast("QBR -> Sheets failed: " + safe, "bad");
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = labelHTML;
+    }
   }
 
   async function runQbrFromCard(record, btn) {

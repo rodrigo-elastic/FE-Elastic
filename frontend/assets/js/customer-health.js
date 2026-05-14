@@ -224,6 +224,67 @@
     ]);
     head.appendChild(qbrBtn);
 
+    // QBR -> Sheets: same QBR backend, but render to TSV + clipboard + open
+    // sheets.new instead of opening the PPTX. The AE edits in Sheets and
+    // shares with the CSM there; PPTX stays as the formal artifact.
+    const qbrSheetsBtn = el("button", {
+      type: "button",
+      class: "btn ghost",
+      style: "background: linear-gradient(135deg, rgba(254,197,20,0.18), rgba(124,58,237,0.15)); color:#0B64DD; border:1px solid rgba(11,100,221,0.4); padding:8px 14px; border-radius:8px; font-weight:700; font-size:12.5px; cursor:pointer; margin-left:8px; align-self:center; white-space:nowrap;",
+      title: "Generate the QBR and open Google Sheets. The content is copied to your clipboard so you can paste it straight into A1.",
+      onclick: async (ev) => {
+        const btn = ev.currentTarget;
+        const lbl = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner" aria-hidden="true"></span> Building...';
+        try {
+          const company = (d.customer && d.customer.name) || "";
+          const now = new Date();
+          const q = Math.floor(now.getMonth() / 3) + 1;
+          const quarter = now.getFullYear() + "-Q" + q;
+          const opts = { category: "llm", timeoutMs: 120000, retries: 0, silent: true, label: "QBR -> Sheets" };
+          const result = window.apiPostWithRetry
+            ? await window.apiPostWithRetry("/qbr/generate", { company_id: company, quarter, demo: false }, opts)
+            : await apiPost("/qbr/generate", { company_id: company, quarter, demo: false });
+          const content = result && result.content;
+          if (!content) throw new Error("QBR response missing content");
+          // Use the global helper if available (workspace ships it); else
+          // fall back to a tight inline serialiser.
+          let tsv = "";
+          if (typeof window._qbrToTsv === "function") {
+            tsv = window._qbrToTsv(content, company, quarter);
+          } else {
+            const rows = [];
+            const p = (...c) => rows.push(c.map((x) => String(x == null ? "" : x).replace(/\t/g, " ").replace(/\n/g, " ")).join("\t"));
+            p("QBR", company); p("Quarter", quarter); p("");
+            p("Executive summary"); p(content.executive_summary || ""); p("");
+            p("Next steps");
+            (content.next_steps || []).forEach((x, i) => p((i + 1) + ".", x));
+            tsv = rows.join("\n");
+          }
+          let copied = false;
+          if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
+            try { await navigator.clipboard.writeText(tsv); copied = true; } catch (_) {}
+          }
+          if (copied) {
+            window.toast && window.toast("QBR copied. Paste into A1 (Cmd/Ctrl + V).", "ok");
+            window.open("https://sheets.new", "_blank", "noopener,noreferrer");
+          } else {
+            window.toast && window.toast("Clipboard blocked; PPTX remains downloadable from /qbr.html.", "warn");
+          }
+        } catch (e) {
+          window.toast && window.toast("QBR -> Sheets failed: " + ((e && e.message) || String(e)), "bad");
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = lbl;
+        }
+      },
+    }, [
+      el("span", { "aria-hidden": "true", html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>' }),
+      el("span", null, "QBR -> Sheets"),
+    ]);
+    head.appendChild(qbrSheetsBtn);
+
     host.appendChild(head);
 
     // Signals at-a-glance grid

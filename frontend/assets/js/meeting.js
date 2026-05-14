@@ -926,6 +926,67 @@ function bindActions() {
     }
   });
 
+  // QBR -> Sheets: same generate call, but render the response.content as
+  // TSV and copy it to the clipboard so the AE can paste into Google Sheets
+  // (where the AE actually edits and shares with the CSM).
+  document.getElementById("generate-qbr-sheets")?.addEventListener("click", async (ev) => {
+    const btn = ev.currentTarget;
+    const labelHTML = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Building (40-60s)...';
+    try {
+      const brief = window.__lastBrief || {};
+      const company = brief.company_name || (brief.company_snapshot && brief.company_snapshot.name) || meetingId;
+      const now = new Date();
+      const quarter = now.getFullYear() + "-Q" + (Math.floor(now.getMonth() / 3) + 1);
+      const opts = { category: "llm", timeoutMs: 120000, retries: 0, silent: true, label: "QBR -> Sheets" };
+      const result = window.apiPostWithRetry
+        ? await window.apiPostWithRetry("/qbr/generate", { company_id: company, quarter, demo: false }, opts)
+        : await apiPost("/qbr/generate", { company_id: company, quarter, demo: false });
+      const c = (result && result.content) || {};
+      const rows = [];
+      const p = (...cells) => rows.push(cells.map((x) => String(x == null ? "" : x).replace(/\t/g, " ").replace(/\n/g, " ")).join("\t"));
+      p("Quarterly Business Review", company); p("Quarter", quarter); p("Use case", c.use_case || ""); p("");
+      p("Executive summary"); p(c.executive_summary || ""); p("");
+      const lb = c.look_back || {};
+      p("Look back"); p("Highlights"); (lb.highlights || []).forEach((x) => p("", x));
+      p("Outcomes"); (lb.outcomes || []).forEach((x) => p("", x));
+      p("Lessons"); (lb.lessons || []).forEach((x) => p("", x)); p("");
+      const cs = c.current_state || {};
+      p("Current state"); p("Deployment size", cs.deployment_size || ""); p("Health", cs.health || "");
+      p("Blockers"); (cs.blockers || []).forEach((x) => p("", x)); p("");
+      const lf = c.look_forward || {};
+      p("Look forward"); p("Opportunities"); (lf.opportunities || []).forEach((x) => p("", x));
+      p("Roadmap items"); (lf.roadmap_items || c.roadmap_items || []).forEach((x) => p("", x)); p("");
+      p("KPIs"); p("Name", "Value", "Trend");
+      (c.kpis || []).forEach((k) => p(k.name || "", k.value || "", k.trend || "")); p("");
+      p("Next steps"); (c.next_steps || []).forEach((x, i) => p((i + 1) + ".", x));
+      const tsv = rows.join("\n");
+      let copied = false;
+      if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
+        try { await navigator.clipboard.writeText(tsv); copied = true; } catch (_) {}
+      }
+      if (copied) {
+        toast("QBR copied. Paste into A1 (Cmd/Ctrl + V).", "ok");
+        window.open("https://sheets.new", "_blank", "noopener,noreferrer");
+      } else {
+        const blob = new Blob([tsv], { type: "text/tab-separated-values" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "qbr-" + company.replace(/[^a-z0-9]+/gi, "-").toLowerCase() + "-" + quarter + ".tsv";
+        a.click();
+        toast("Clipboard blocked. TSV downloaded; in Sheets use File > Import.", "warn");
+      }
+    } catch (e) {
+      const safe = (typeof sanitizeError === "function") ? sanitizeError(e) : (e && e.message) || "unknown error";
+      toast("QBR -> Sheets failed: " + safe, "bad");
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = labelHTML;
+    }
+  });
+
   document.getElementById("run-live")?.addEventListener("click", async (ev) => {
     const btn = ev.currentTarget;
     const labelHTML = btn.innerHTML;
