@@ -139,17 +139,35 @@ async def from_meeting(meeting_id: str, body: FromMeetingBody) -> dict:
 
     Idempotent: returns the persisted MAP unless regenerate=true is set.
     """
+    # The frontend serves a "universal template" at /map.html when no
+    # meeting_id is provided. That template uses the reserved id
+    # "universal-template" which has no backing meeting in synthetic data,
+    # so trying to generate against it would raise inside the agent and 500.
+    # Return 422 with a clear message so the UI can render a friendly toast
+    # instead of a generic crash.
+    if meeting_id == "universal-template":
+        raise HTTPException(
+            status_code=422,
+            detail="The universal template cannot be generated against a missing meeting. "
+                   "Open /map.html?meeting_id=<real-meeting-id> or use POST /map/ad-hoc with a typed company.",
+        )
     existing = _map_path(meeting_id)
     if existing.exists() and not body.regenerate:
         return json.loads(existing.read_text(encoding="utf-8"))
     agent = MapAgent()
-    return await agent.run(
-        {
-            "meeting_id": meeting_id,
-            "target_close_date": body.target_close_date,
-            "deal_value_usd": body.deal_value_usd,
-        }
-    )
+    try:
+        return await agent.run(
+            {
+                "meeting_id": meeting_id,
+                "target_close_date": body.target_close_date,
+                "deal_value_usd": body.deal_value_usd,
+            }
+        )
+    except ValueError as exc:
+        # "meeting_id X not found in synthetic data" - surface 404 instead
+        # of an opaque 500 so the FE knows the meeting is the problem, not
+        # the backend.
+        raise HTTPException(status_code=404, detail=str(exc))
 
 
 @router.post("/ad-hoc")

@@ -157,19 +157,114 @@
     return wrap;
   }
 
+  // Serialise a MAP record to TSV the SA can paste straight into Google
+   // Sheets cell A1. Keep in sync with the same helper in
+   // quick-research-filter.js (workspace card -> Sheets button).
+  function planToTsv(record, customerName) {
+    const plan = (record && record.plan) || {};
+    const lines = [];
+    const push = (...cells) => lines.push(cells.map((c) => String(c == null ? "" : c).replace(/\t/g, " ").replace(/\r?\n/g, " ")).join("\t"));
+    push("Mutual Action Plan", customerName || record.company_name || "(customer)");
+    push("Target close", plan.target_close_date || "-");
+    push("Deal value (USD)", plan.deal_value_usd != null ? Number(plan.deal_value_usd).toLocaleString() : "-");
+    push("Generated", (record.generated_at || record.updated_at || "").slice(0, 19).replace("T", " "));
+    push("");
+    push("Goal");
+    push(plan.goal || "(no goal yet)");
+    if (plan.success_metric) push("Success metric", plan.success_metric);
+    push("");
+    push("Milestones");
+    push("Title", "Date", "Elastic owner", "Customer owner", "Status", "Blocker if missed");
+    (plan.milestones || []).forEach((m) => push(m.title || "", m.date || "", m.owner_elastic || "", m.owner_customer || "", m.status || "not_started", m.blocker_note || ""));
+    push("");
+    push("Workstreams");
+    push("Title", "Description", "Elastic owner", "Customer owner", "Status");
+    (plan.workstreams || []).forEach((w) => push(w.title || "", w.description || "", w.owner_elastic || "", w.owner_customer || "", w.status || ""));
+    push("");
+    push("Stakeholders");
+    push("Name", "Role", "Title", "Stance", "Notes");
+    (plan.stakeholders || []).forEach((s) => push(s.name || "", s.role || "", s.title || "", s.stance || "", s.notes || ""));
+    push("");
+    push("Risks");
+    push("Severity", "Title", "Description", "Mitigation");
+    (plan.risks || []).forEach((r) => push(r.severity || "medium", r.title || "", r.description || "", r.mitigation || ""));
+    push("");
+    const cadence = plan.cadence || {};
+    push("Cadence");
+    push("Weekly sync", cadence.weekly_sync || "-");
+    push("MAP review", cadence.map_review_cadence || "-");
+    push("Escalation", cadence.escalation_path || "-");
+    return lines.join("\n");
+  }
+
+  async function copyToClipboard(text) {
+    if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
+      try { await navigator.clipboard.writeText(text); return true; } catch (_e) { /* fall through */ }
+    }
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.cssText = "position:fixed;top:0;left:0;opacity:0";
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      return ok;
+    } catch (_e) { return false; }
+  }
+
   function renderRight(record, ctx) {
     const plan = record.plan || {};
     const wrap = el("section", { class: "map-panel" });
 
+    // Detect the universal template (no real meeting backing it). For the
+    // template path we hide Re-generate (would 500 against a meeting that
+    // doesn't exist) and lean on the "Open in Sheets" CTA.
+    const isUniversalTemplate = record.meeting_id === "universal-template" || record.ad_hoc === true && record.company_id === "elastic-universal-template";
+
     const actions = el("div", { class: "map-actions" });
-    const regen = el("button", { class: "btn ghost", type: "button" }, "Re-generate");
+    const sheetsBtn = el("button", { class: "btn primary", type: "button", title: "Copy the plan to your clipboard and open Google Sheets. Paste into A1 with Cmd/Ctrl + V." }, "Open in Sheets");
+    actions.appendChild(sheetsBtn);
+    let regen = null;
+    if (!isUniversalTemplate) {
+      regen = el("button", { class: "btn ghost", type: "button" }, "Re-generate");
+      actions.appendChild(regen);
+    }
     const email = el("button", { class: "btn ghost", type: "button" }, "Email to champion");
     const pdf = el("button", { class: "btn ghost", type: "button" }, "Download PDF");
     const handover = el("a", { class: "btn ghost", href: `/customer-health.html?meeting_id=${encodeURIComponent(record.meeting_id)}` }, "Share with CA");
-    [regen, email, pdf, handover].forEach(a => actions.appendChild(a));
+    [email, pdf, handover].forEach(a => actions.appendChild(a));
     wrap.appendChild(actions);
 
-    regen.addEventListener("click", async () => {
+    sheetsBtn.addEventListener("click", async () => {
+      const label = sheetsBtn.textContent;
+      sheetsBtn.disabled = true;
+      sheetsBtn.textContent = "Copying...";
+      try {
+        const tsv = planToTsv(record, record.company_name);
+        const ok = await copyToClipboard(tsv);
+        if (ok) {
+          toast("MAP copied. Paste into A1 (Cmd/Ctrl + V).", "ok");
+          window.open("https://sheets.new", "_blank", "noopener,noreferrer");
+        } else {
+          const blob = new Blob([tsv], { type: "text/tab-separated-values" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "mutual-action-plan-" + (record.company_name || "customer").replace(/[^a-z0-9]+/gi, "-").toLowerCase() + ".tsv";
+          a.click();
+          toast("Clipboard blocked. TSV downloaded; in Sheets use File > Import.", "warn");
+        }
+      } catch (err) {
+        toast("Sheets export failed: " + sanitizeError(err), "warn");
+      } finally {
+        sheetsBtn.disabled = false;
+        sheetsBtn.textContent = label;
+      }
+    });
+
+    if (regen) regen.addEventListener("click", async () => {
       if (!confirm("Re-generate this MAP from the source dossier? Inline edits will be replaced.")) return;
       regen.disabled = true; regen.textContent = "Re-generating...";
       try {
