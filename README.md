@@ -1,7 +1,7 @@
 <p align="center"><strong>FY27 Sales Kickoff</strong> | May 11 to 14, 2026 . Las Vegas, Nevada</p>
 
 <p align="center">
-  <img src="assets/hero-dashboard.png" alt="FE Copilot. Field Engineers, finally go home on time." width="1100" />
+  <img src="assets/hero-dashboard.png" alt="FE Copilot. Field Engineers, finally go home on time. 14+ MCP tools, 34+ Kibana agents (build more from the UI, auto-upsert into Agent Builder), 28 demo scenarios, 33 competitor specialists." width="1100" />
 </p>
 
 <p align="center"><em>Field Engineer Copilot. Fourteen MCP tools. 28 demo scenarios. Six hours per FE per week back.</em></p>
