@@ -257,13 +257,104 @@
 
   const ctxRef = { setRecord: null };
 
+  // Universal Elastic Mutual Action Plan template. Used when /map.html is
+  // loaded without a ?meeting_id= - the FE gets a ready-to-edit 90-day
+  // plan covering the canonical Elastic deal motion (POV, security, legal,
+  // commercial, executive, go-live). Dates are anchored on today + offset
+  // days so the timeline always reads as "next 90 days".
+  function buildUniversalTemplate() {
+    const today = new Date();
+    const iso = (offsetDays) => {
+      const d = new Date(today.getTime() + offsetDays * 86400000);
+      return d.toISOString().slice(0, 10);
+    };
+    return {
+      meeting_id: "universal-template",
+      company_id: "elastic-universal-template",
+      company_name: "[Customer Name]",
+      ad_hoc: true,
+      generated_at: today.toISOString(),
+      updated_at: today.toISOString(),
+      status: "draft",
+      plan: {
+        goal: {
+          outcome: "Land an Elastic deployment that replaces or augments the customer's current observability / search / security stack inside 90 days, with measurable ROI vs the incumbent.",
+          target_close_date: iso(90),
+          success_metric: "Signed contract for Elastic Cloud, with the POV's primary KPI hit (e.g. ingest cost down >=30% vs incumbent, or search relevance up >=20%, or MTTR down >=40%).",
+        },
+        target_close_date: iso(90),
+        deal_value_usd: null,
+        success_metric: "Signed contract for Elastic Cloud, with the POV's primary KPI hit (e.g. ingest cost down >=30% vs incumbent, or search relevance up >=20%, or MTTR down >=40%).",
+        stakeholders: [
+          { role: "Economic Buyer", name: "[VP / CIO / CTO]", alignment: "neutral", note: "Owns the budget. Needs to see TCO vs incumbent and the strategic narrative." },
+          { role: "Technical Evaluator", name: "[Lead Architect / SRE Lead]", alignment: "neutral", note: "Owns the POV success criteria. Drives the hands-on validation." },
+          { role: "Champion", name: "[Engineering Manager / Platform Lead]", alignment: "aligned", note: "Day-to-day advocate. The person who replies on Slack." },
+          { role: "Procurement", name: "[Procurement / Vendor Mgmt]", alignment: "neutral", note: "Owns the commercial paperwork and vendor onboarding." },
+          { role: "Security / Compliance", name: "[CISO Office]", alignment: "neutral", note: "Owns the infosec questionnaire, DPIA, and any regulatory mapping." },
+          { role: "Legal", name: "[Legal Counsel]", alignment: "neutral", note: "MSA / DPA review." },
+        ],
+        workstreams: [
+          { name: "POV / Technical Evaluation", owner_elastic: "Solutions Architect", owner_customer: "Lead Architect", outcome: "POV success criteria met on the live cluster." },
+          { name: "Security & Compliance Review", owner_elastic: "Field Compliance Architect", owner_customer: "CISO Office", outcome: "Infosec questionnaire returned and risk items resolved." },
+          { name: "Commercial & TCO", owner_elastic: "Pricing Architect + AE", owner_customer: "Procurement + Economic Buyer", outcome: "Signed proposal with agreed pricing model and term." },
+          { name: "Executive Alignment", owner_elastic: "AE + Sales Director", owner_customer: "Economic Buyer", outcome: "Executive sponsor signed off on the project." },
+          { name: "Legal", owner_elastic: "Deal Desk", owner_customer: "Legal Counsel", outcome: "MSA / DPA / order form executed." },
+          { name: "Go-live Readiness", owner_elastic: "CA (post-handover)", owner_customer: "Platform Lead", outcome: "Production environment deployed, runbooks in place." },
+        ],
+        milestones: [
+          { id: "ms-01", title: "Joint Kickoff: MAP signed by both sides", date: iso(3), owner_elastic: "SA", owner_customer: "Champion", status: "not_started", blocker_note: "If kickoff slips, every downstream date slips one-for-one." },
+          { id: "ms-02", title: "POV Success Criteria signed off", date: iso(10), owner_elastic: "SA", owner_customer: "Technical Evaluator", status: "not_started", blocker_note: "Without explicit criteria the POV cannot be declared a win." },
+          { id: "ms-03", title: "Procurement looped in, vendor preference confirmed", date: iso(15), owner_elastic: "AE", owner_customer: "Procurement", status: "not_started", blocker_note: "Late procurement engagement adds 3-6 weeks to close." },
+          { id: "ms-04", title: "Security questionnaire / DPIA submitted", date: iso(20), owner_elastic: "Field Compliance Architect", owner_customer: "CISO Office", status: "not_started", blocker_note: "Infosec is the most common deal blocker for regulated customers." },
+          { id: "ms-05", title: "POV environment provisioned, data ingest live", date: iso(25), owner_elastic: "SA", owner_customer: "Lead Architect", status: "not_started", blocker_note: "If data is not flowing by week 4 the POV cannot finish in 90 days." },
+          { id: "ms-06", title: "Mid-POV review with the Economic Buyer", date: iso(45), owner_elastic: "SA + AE", owner_customer: "Champion + Economic Buyer", status: "not_started", blocker_note: "First exec-level signal of momentum or risk." },
+          { id: "ms-07", title: "POV success criteria validated", date: iso(60), owner_elastic: "SA", owner_customer: "Technical Evaluator", status: "not_started", blocker_note: "Validation evidence (dashboards, screenshots, queries) captured in the deal record." },
+          { id: "ms-08", title: "Commercial proposal delivered + reviewed", date: iso(65), owner_elastic: "AE", owner_customer: "Economic Buyer", status: "not_started", blocker_note: "TCO vs incumbent must be explicit." },
+          { id: "ms-09", title: "Legal review (MSA / DPA / order form)", date: iso(75), owner_elastic: "Deal Desk", owner_customer: "Legal Counsel", status: "not_started", blocker_note: "Common slip: redlines on data residency or audit logging." },
+          { id: "ms-10", title: "Executive review and approval", date: iso(82), owner_elastic: "Sales Director", owner_customer: "Economic Buyer", status: "not_started", blocker_note: "If the Economic Buyer has not been re-engaged since the mid-POV, expect delays." },
+          { id: "ms-11", title: "Contract signature", date: iso(88), owner_elastic: "AE", owner_customer: "Economic Buyer", status: "not_started", blocker_note: "Hard date; downstream go-live planning depends on this." },
+          { id: "ms-12", title: "Go-live + handover to CA", date: iso(90), owner_elastic: "SA -> CA", owner_customer: "Platform Lead", status: "not_started", blocker_note: "First production workload onboarded; CA owns from here." },
+        ],
+        risks: [
+          { description: "Competing project consumes Champion's bandwidth.", mitigation: "Confirm weekly time commitment at kickoff." },
+          { description: "Budget freeze or fiscal-year cutoff before close date.", mitigation: "Confirm fiscal calendar with Procurement in week 1." },
+          { description: "Security questionnaire stretches over 30 days.", mitigation: "Start in parallel with the POV, not after." },
+          { description: "Existing incumbent contract has auto-renewal lock-in.", mitigation: "Identify cancellation window in week 1; brief AE." },
+          { description: "Holiday seasonality eats the executive-review window.", mitigation: "Anchor exec review off-cycle from public holidays." },
+        ],
+        cadence: {
+          weekly_sync: "Weekly 30-min sync, Champion + SA + AE (Tuesdays).",
+          map_review: "Bi-weekly MAP review with all named stakeholders.",
+          escalation_path: "Champion -> SA -> Sales Director on Elastic side; Champion -> Economic Buyer on customer side.",
+        },
+      },
+    };
+  }
+
   async function main() {
     const root = document.getElementById("map-root");
     const meetingId = qs("meeting_id");
     if (!meetingId) {
+      // No meeting picked: load a universal Elastic template so the FE can
+      // see the canonical 90-day plan, edit it, and save against a real
+      // meeting later. The "Save / generate" CTAs in the right panel handle
+      // the transition from template to persisted MAP.
       root.innerHTML = "";
-      root.appendChild(el("div", { class: "map-empty" }, "Missing ?meeting_id= in URL."));
-      setStatus("No meeting");
+      setStatus("Universal template");
+      const banner = el("div", {
+        class: "map-empty",
+        style: "background: linear-gradient(180deg, rgba(124,58,237,0.12) 0%, rgba(11,100,221,0.06) 100%); border:1px solid rgba(124,58,237,0.35); padding:14px 18px; border-radius:10px; margin-bottom:18px;",
+      }, [
+        el("div", { style: "font-size:13px; font-weight:700; color:#7C3AED; letter-spacing:0.04em; text-transform:uppercase; margin-bottom:4px;" }, "Universal template"),
+        el("div", { style: "font-size:14px; color:var(--ink); line-height:1.45;" },
+          "You are looking at the canonical Elastic 90-day Mutual Action Plan template. Edit any milestone inline, then open /map.html?meeting_id=<id> to attach this plan to a real meeting and persist it. To generate an account-specific MAP from a brief, open the meeting page and click Generate MAP."),
+      ]);
+      const tpl = buildUniversalTemplate();
+      const layout = el("div", { class: "map-layout" });
+      layout.appendChild(renderLeft(tpl));
+      layout.appendChild(renderRight(tpl, ctxRef));
+      root.appendChild(banner);
+      root.appendChild(layout);
       return;
     }
     setStatus("Loading...");
