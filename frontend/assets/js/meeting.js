@@ -809,6 +809,44 @@ function bindActions() {
     }
   });
 
+  // Generate TAR (Technical Account Review): CA-facing technical health
+  // review built from the post-meeting record. Result is rendered inline
+  // via window.renderTAR (tar-widget.js).
+  document.getElementById("generate-tar")?.addEventListener("click", async (ev) => {
+    const btn = ev.currentTarget;
+    const labelHTML = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Generating TAR...';
+    try {
+      const opts = { category: "llm", timeoutMs: 90000, retries: 0, silent: true, label: "Generate TAR" };
+      const result = typeof window.apiPostWithRetry === "function"
+        ? await window.apiPostWithRetry(`/tar/from-meeting/${encodeURIComponent(meetingId)}`, {}, opts)
+        : await apiPost(`/tar/from-meeting/${encodeURIComponent(meetingId)}`, {});
+      // Render inline below the brief. Reuse #abm-brief region so the FE
+      // sees the TAR without scrolling to a new panel.
+      const host = document.getElementById("abm-brief") || document.getElementById("brief");
+      if (host && typeof window.renderTAR === "function") {
+        const wrap = document.createElement("div");
+        wrap.style.marginTop = "18px";
+        host.appendChild(wrap);
+        window.renderTAR(wrap, result);
+        try { wrap.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (_) {}
+      }
+      toast("TAR ready", "ok");
+    } catch (e) {
+      const safe = (typeof sanitizeError === "function") ? sanitizeError(e) : (e && e.message) || "unknown error";
+      // The TAR backend requires a post-meeting record. Surface that hint
+      // explicitly when the 404 / 422 fires.
+      const friendly = /not.*found|404|no.*post.?meeting/i.test(safe)
+        ? "TAR needs a post-meeting record first. Run Post-Meeting on the Post-meeting tab, then try again."
+        : safe;
+      toast(`TAR failed: ${friendly}`, "bad");
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = labelHTML;
+    }
+  });
+
   document.getElementById("run-live")?.addEventListener("click", async (ev) => {
     const btn = ev.currentTarget;
     const labelHTML = btn.innerHTML;
