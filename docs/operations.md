@@ -70,7 +70,7 @@ Every Claude call lands in `runtime/audit.jsonl` with input/output token counts 
 ## CI
 
 GitHub Actions runs on every push:
-- **Lint**: ruff + a custom em-dash / en-dash check (no `—` or `–` allowed in committed text).
+- **Lint**: ruff + a custom em-dash / en-dash check (U+2014 and U+2013 are banned in committed text; use ASCII hyphen instead).
 - **Tests**: `pytest backend/tests` (30 tests, all mock-mode, no network or API keys).
 
 Both jobs target Python 3.11 and pin `actions/checkout@v5` and `actions/setup-python@v6`.
