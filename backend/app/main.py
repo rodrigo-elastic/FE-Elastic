@@ -32,6 +32,7 @@ from app.api import (
     routes_health,
     routes_industries,
     routes_kibana,
+    routes_map,
     routes_mcp,
     routes_meetings,
     routes_notifications,
@@ -40,6 +41,7 @@ from app.api import (
     routes_stats,
     routes_tar,
     routes_tools,
+    routes_war_room,
     routes_weekly_slides,
     routes_workflow_settings,
     routes_workflows,
@@ -197,6 +199,8 @@ app.include_router(routes_qbr.router, prefix="/api/v1")
 app.include_router(routes_tar.router, prefix="/api/v1")
 app.include_router(routes_handover.router, prefix="/api/v1")
 app.include_router(routes_customer_health.router, prefix="/api/v1")
+app.include_router(routes_map.router, prefix="/api/v1")
+app.include_router(routes_war_room.router, prefix="/api/v1")
 
 # Serve the markdown docs folder (compliance.md, architecture.md, etc.) before the catch-all frontend mount.
 docs_path = Path(__file__).resolve().parents[2] / "docs"

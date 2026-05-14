@@ -436,6 +436,78 @@ class CostInputs(BaseModel):
     competitor: str = "splunk"
 
 
+# ============================================================ MUTUAL ACTION PLAN ======
+
+
+MAPMilestoneStatus = Literal["not_started", "in_progress", "blocked", "done"]
+MAPStakeholderStance = Literal["aligned", "neutral", "skeptical"]
+MAPStakeholderRole = Literal[
+    "economic_buyer",
+    "technical_evaluator",
+    "champion",
+    "blocker",
+    "executive_sponsor",
+    "procurement",
+    "legal",
+    "security",
+    "other",
+]
+
+
+class MAPStakeholder(BaseModel):
+    name: str = Field(description="Stakeholder name as it appears in the dossier; never invent names.")
+    role: MAPStakeholderRole
+    title: Optional[str] = None
+    stance: MAPStakeholderStance = "neutral"
+    notes: Optional[str] = None
+
+
+class MAPWorkstream(BaseModel):
+    id: str
+    title: str
+    description: str
+    owner_elastic: str = Field(description="Elastic-side owner role (e.g. 'Solutions Architect', 'Account Executive').")
+    owner_customer: str = Field(description="Customer-side owner role (e.g. 'Platform Lead').")
+    status: MAPMilestoneStatus = "not_started"
+
+
+class MAPMilestone(BaseModel):
+    id: str
+    title: str
+    date: str = Field(description="ISO 8601 date YYYY-MM-DD.")
+    owner_elastic: str
+    owner_customer: str
+    status: MAPMilestoneStatus = "not_started"
+    blocker_note: str = Field(default="", description="What happens if this date slips.")
+    workstream_id: Optional[str] = None
+
+
+class MAPRisk(BaseModel):
+    title: str
+    severity: Literal["low", "medium", "high"] = "medium"
+    description: str
+    mitigation: str
+
+
+class MAPCadence(BaseModel):
+    weekly_sync: str = Field(description="When and who attends the weekly sync.")
+    map_review_cadence: str = Field(description="How often the MAP itself is reviewed jointly.")
+    escalation_path: str = Field(description="Who is paged when a milestone slips, on both sides.")
+
+
+class MutualActionPlanOut(BaseModel):
+    """Structured MAP that an Elastic SA and a customer champion can co-edit."""
+    goal: str = Field(description="One paragraph: the business problem, target close/go-live, headline success metric.")
+    target_close_date: str = Field(description="ISO 8601 target close date.")
+    deal_value_usd: Optional[float] = None
+    success_metric: str
+    stakeholders: List[MAPStakeholder]
+    workstreams: List[MAPWorkstream]
+    milestones: List[MAPMilestone]
+    risks: List[MAPRisk]
+    cadence: MAPCadence
+
+
 class CostOut(BaseModel):
     """Full cost-calc response. Every numeric line carries a data_quality tag."""
     inputs: CostInputs
@@ -447,3 +519,59 @@ class CostOut(BaseModel):
     savings_vs_current: Optional[float] = None
     savings_pct_vs_current: Optional[float] = None
     notes: List[str] = Field(default_factory=list)
+
+
+# ============================================================ WAR ROOM ================
+
+
+class WarRoomCompetitiveOut(BaseModel):
+    """Competitive Architect take: name the deal-killer competitor + one talking point."""
+    competitor: str = Field(description="The incumbent or deal-killer competitor name.")
+    talking_point: str = Field(description="One sharp talking point that flips the meeting in 15 seconds.")
+    battlecard_angle: str = Field(description="Which battlecard angle was used (e.g. 'Single data plane').")
+    summary: str = Field(description="One-paragraph natural-language summary suitable for streaming.")
+
+
+class WarRoomComplianceOut(BaseModel):
+    """Field Compliance Architect take: top regulation + the Elastic control."""
+    regulation: str
+    elastic_control: str
+    summary: str = Field(description="Two sentences naming the regulation and the Elastic control.")
+
+
+class WarRoomCostOut(BaseModel):
+    """Pricing Architect take: TCO delta in one number + the driving line item."""
+    tco_delta_usd: float = Field(description="Annual TCO delta vs incumbent in USD. Positive = savings to customer.")
+    driving_line_item: str = Field(description="The single line item that drives the delta.")
+    summary: str = Field(description="One-paragraph plain-text summary, ASCII hyphens only.")
+
+
+class WarRoomRenewalOut(BaseModel):
+    """Renewal Architect take: most urgent lever + the play to run this week."""
+    urgent_lever: str = Field(description="Renewal date, audit deadline, board mandate, etc.")
+    play_this_week: str = Field(description="Specific play to run this week.")
+    summary: str = Field(description="One-paragraph summary suitable for streaming.")
+
+
+WarRoomConfidence = Literal["low", "medium", "high"]
+
+
+class WarRoomSynthesisOut(BaseModel):
+    """Senior FE synthesis: exactly three bullets the FE will say in the next call."""
+    bullets: List[str] = Field(min_length=3, max_length=3)
+    confidence: WarRoomConfidence
+    why: str
+
+
+class WarRoomResultOut(BaseModel):
+    """Top-level war-room result returned by the non-streaming endpoint."""
+    meeting_id: str
+    company_id: Optional[str] = None
+    company_name: Optional[str] = None
+    focus: Optional[str] = None
+    competitive: WarRoomCompetitiveOut
+    compliance: WarRoomComplianceOut
+    cost: WarRoomCostOut
+    renewal: WarRoomRenewalOut
+    synthesis: WarRoomSynthesisOut
+    generated_at: str

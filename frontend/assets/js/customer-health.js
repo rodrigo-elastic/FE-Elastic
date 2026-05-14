@@ -156,6 +156,30 @@
       el("span", { class: "ch-detail-score-big" }, String(d.health_score)),
       el("span", { class: "ch-score " + d.health_status }, d.health_status.replace("_", " ")),
     ]));
+
+    // War Room CTA: opens the 4-specialist live debate. Mounts only when
+    // window.WarRoom is wired (the script is included on customer-health.html).
+    if (typeof window !== "undefined" && window.WarRoom && typeof window.WarRoom.open === "function") {
+      const warBtn = el("button", {
+        type: "button",
+        class: "btn primary",
+        style: "background: linear-gradient(135deg, #F04E98 0%, #0B64DD 60%, #00BFB3 100%); color:#fff; border:0; padding:8px 14px; border-radius:8px; font-weight:700; font-size:12.5px; cursor:pointer; box-shadow:0 6px 16px rgba(11,100,221,0.35); margin-left:14px; align-self:center; white-space:nowrap;",
+        title: "Open the Deal Strategy War Room: four specialist agents debate this account in real time",
+        onclick: () => {
+          try {
+            window.WarRoom.open({
+              meetingId: "most-recent-" + (d.customer && d.customer.id ? d.customer.id : "unknown"),
+              customerName: d.customer && d.customer.name ? d.customer.name : "this account",
+            });
+          } catch (e) { console.warn("WarRoom.open failed", e); }
+        },
+      }, [
+        el("span", { "aria-hidden": "true", html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>' }),
+        el("span", null, "Deal Strategy War Room"),
+      ]);
+      head.appendChild(warBtn);
+    }
+
     host.appendChild(head);
 
     // Signals at-a-glance grid

@@ -48,6 +48,7 @@
   <link rel="stylesheet" href="/assets/css/agent-builder.css" />
   <link rel="icon" type="image/svg+xml" href="/assets/img/elastic/glyph-cluster-color.svg" />
   <link rel="stylesheet" href="/assets/css/command-palette.css" />
+  <link rel="stylesheet" href="/assets/css/war-room.css?v=20260514" />
 </head>
 <body>
   <a class="skip-to-main" href="#main-content" data-i18n="a11y.skip_to_main">Skip to main content</a>
@@ -120,6 +121,10 @@
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
             Generate TAR
           </button>
+          <button class="btn ghost" id="generate-map" type="button" title="Generate a Mutual Action Plan with the customer champion.">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.6"/></svg>
+            Generate MAP
+          </button>
           <a class="btn ghost" id="download-pdf" target="_blank" rel="noopener" hidden aria-label="Download brief as PDF">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
             Download
@@ -160,6 +165,7 @@
         </div>
       </div>
       <div id="post"><p class="muted">Run the agent to extract action items, MEDDPICC signals, competitor mentions, and the follow-up email draft.</p></div>
+      <div id="map-link-row" style="margin-top:8px;"></div>
       <div id="abm-post"></div>
     </section>
 
@@ -211,5 +217,47 @@
   <script src="/assets/js/presales-playbook.js?v=20260513"></script>
   <script src="/assets/js/meeting.js?v=20260509b"></script>
   <script src="/assets/js/command-palette.js"></script>
+  <script>
+    /* Mutual Action Plan entry points: Brief tab button + Post tab link. */
+    (function () {
+      function meetingIdFromQuery() {
+        return new URLSearchParams(window.location.search).get("id") ||
+               new URLSearchParams(window.location.search).get("meeting_id");
+      }
+      const btn = document.getElementById("generate-map");
+      if (btn) {
+        btn.addEventListener("click", async () => {
+          const mid = meetingIdFromQuery();
+          if (!mid) { if (window.toast) toast("No meeting id in URL", "warn"); return; }
+          btn.disabled = true; const label = btn.lastChild;
+          const prev = (label && label.nodeType === 3) ? label.textContent : null;
+          if (label && label.nodeType === 3) label.textContent = " Generating MAP...";
+          try {
+            // Fire and forget; redirect immediately so the SA sees the page render.
+            apiPost(`/map/from-meeting/${encodeURIComponent(mid)}`, {}).catch(() => {});
+            window.location.href = `/map.html?meeting_id=${encodeURIComponent(mid)}`;
+          } catch (err) {
+            if (window.toast) toast("MAP request failed", "warn");
+            if (label && label.nodeType === 3 && prev) label.textContent = prev;
+            btn.disabled = false;
+          }
+        });
+      }
+      // Check if a MAP already exists for this meeting; show an Open MAP link in the post tab.
+      (async () => {
+        const mid = meetingIdFromQuery();
+        if (!mid || !window.apiGet) return;
+        try {
+          const rec = await apiGet(`/map/${encodeURIComponent(mid)}`);
+          if (rec && rec.exists) {
+            const row = document.getElementById("map-link-row");
+            if (row) {
+              row.innerHTML = `<a class="pill" href="/map.html?meeting_id=${encodeURIComponent(mid)}">Open Mutual Action Plan -&gt;</a>`;
+            }
+          }
+        } catch (_) { /* ignore */ }
+      })();
+    })();
+  </script>
 </body>
 </html>
